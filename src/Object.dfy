@@ -1,0 +1,95 @@
+// Ramdaf: Ramda v0.1.0 "Object Functions" (ramda.js lines 864-966) and `propEq`
+// (line 1271). A JS object is a map<string, V>; a missing property is JS
+// undefined, here None.
+
+module Ramdaf.Object {
+  import opened Prelude
+
+  export
+    reveals eq, prop, get, props, keys, values, pick, pickAll, omit, eqProps, propEq
+    provides Prelude
+
+  // `a === b`. Dafny equality is structural where JS compares objects and
+  // arrays by reference (see README "Deviations").
+  function eq<T(==)>(a: T, b: T): bool { a == b }
+
+  // `obj[p]`
+  function prop<V>(p: string, obj: map<string, V>): Option<V>
+  { if p in obj then Some(obj[p]) else None }
+  function get<V>(p: string, obj: map<string, V>): Option<V> { prop(p, obj) }
+
+  // `obj && obj[prop]`: prop with the arguments the other way round.
+  function props<V>(obj: map<string, V>, p: string): Option<V> { prop(p, obj) }
+
+  // The own enumerable property names. JS returns them in insertion order;
+  // a Dafny map has no order, so the result is a set.
+  function keys<V>(obj: map<string, V>): set<string> { obj.Keys }
+
+  // The own enumerable property values, one per key (so duplicates are kept).
+  // JS returns them in key order; the result is a multiset.
+  function values<V(==)>(obj: map<string, V>): multiset<V>
+    decreases |obj|
+    ensures |values(obj)| == |obj|
+    ensures forall k :: k in obj ==> obj[k] in values(obj)
+  { if |obj| == 0 then multiset{}
+    else var k :| k in obj;
+         var rest := obj - {k};
+         assert |rest| == |obj| - 1;
+         assert forall j :: j in obj && j != k ==> j in rest && rest[j] == obj[j];
+         multiset{obj[k]} + values(rest) }
+  by method {
+    var rest := obj;
+    var acc: multiset<V> := multiset{};
+    while |rest| > 0
+      invariant acc + values(rest) == values(obj)
+      decreases |rest|
+    {
+      var k :| k in rest;
+      ValuesRemove(rest, k);
+      acc := acc + multiset{rest[k]};
+      rest := rest - {k};
+    }
+    assert rest == map[];
+    return acc;
+  }
+
+  // values does not depend on which key it removes first.
+  lemma ValuesRemove<V>(obj: map<string, V>, k: string)
+    requires k in obj
+    ensures values(obj) == multiset{obj[k]} + values(obj - {k})
+    decreases |obj|
+  {
+    var k0 :| k0 in obj && values(obj) == multiset{obj[k0]} + values(obj - {k0});
+    if k0 != k {
+      var without0, withoutK := obj - {k0}, obj - {k};
+      assert k in without0 && without0[k] == obj[k];
+      assert k0 in withoutK && withoutK[k0] == obj[k0];
+      ValuesRemove(without0, k);
+      ValuesRemove(withoutK, k0);
+      assert without0 - {k} == withoutK - {k0};
+    }
+  }
+
+  // The listed properties that exist on obj.
+  function pick<V>(names: seq<string>, obj: map<string, V>): map<string, V>
+    ensures pick(names, obj).Keys == obj.Keys * set n | n in names
+  { map k | k in obj && k in names :: obj[k] }
+
+  // Every listed property, `undefined` (None) where obj lacks it.
+  function pickAll<V>(names: seq<string>, obj: map<string, V>): map<string, Option<V>>
+    ensures pickAll(names, obj).Keys == set n | n in names
+  { map k | k in names :: prop(k, obj) }
+
+  // The properties of obj that are not listed.
+  function omit<V>(names: seq<string>, obj: map<string, V>): map<string, V>
+    ensures omit(names, obj).Keys == obj.Keys - set n | n in names
+  { map k | k in obj && k !in names :: obj[k] }
+
+  // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal).
+  function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
+  { prop(p, obj1) == prop(p, obj2) }
+
+  // `obj[name] === val`
+  function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool
+  { name in obj && obj[name] == val }
+}

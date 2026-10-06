@@ -1,0 +1,252 @@
+// Ramdaf: Ramda v0.1.0 "List Functions" (ramda.js lines 492-841), except
+// `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
+
+module Ramdaf.List {
+  import opened Prelude
+
+  export
+    reveals foldl, reduce, foldl1, foldr, reduceRight, foldr1, unfoldr, mapSeq,
+            filter, reject, takeWhile, take, skipUntil, skip, drop, find,
+            all, every, any, some, contains, uniq, pluck, flatten, zipWith, zip,
+            xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, splice, nth
+    provides Prelude
+
+  // `acc = fn(acc, list[idx])` for idx ascending.
+  function foldl<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
+    ensures |list| > 0 ==>
+      foldl(fn, acc, list) == fn(foldl(fn, acc, list[..|list| - 1]), list[|list| - 1])
+  { if |list| == 0 then acc
+    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
+         foldl(fn, fn(acc, list[0]), list[1..]) }
+  function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A { foldl(fn, acc, list) }
+
+  // `foldl(fn, head(list), tail(list))`; JS throws on the empty list.
+  function foldl1<A>(fn: (A, A) -> A, list: seq<A>): A
+    requires |list| > 0
+  { foldl(fn, list[0], list[1..]) }
+
+  // `acc = fn(list[idx], acc)` for idx descending: the element comes first and
+  // the fold runs from the right, so foldr(fn, acc, [x0, ..., xn]) is
+  // fn(x0, fn(x1, ... fn(xn, acc))).
+  function foldr<A, B>(fn: (B, A) -> A, acc: A, list: seq<B>): A
+    ensures |list| > 0 ==>
+      foldr(fn, acc, list) == foldr(fn, fn(list[|list| - 1], acc), list[..|list| - 1])
+  { if |list| == 0 then acc
+    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
+         fn(list[0], foldr(fn, acc, list[1..])) }
+  function reduceRight<A, B>(fn: (B, A) -> A, acc: A, list: seq<B>): A { foldr(fn, acc, list) }
+
+  // The last element seeds the fold over the rest; JS throws on the empty list.
+  function foldr1<A>(fn: (A, A) -> A, list: seq<A>): A
+    requires |list| > 0
+  { foldr(fn, list[|list| - 1], list[..|list| - 1]) }
+
+  // JS loops until `fn` returns a falsy value (None here), possibly forever;
+  // Dafny functions must terminate, so at most `fuel` elements are produced.
+  function unfoldr<S, T>(fn: S -> Option<(T, S)>, seed: S, fuel: nat): seq<T>
+    decreases fuel
+    ensures |unfoldr(fn, seed, fuel)| <= fuel
+  { if fuel == 0 then []
+    else match fn(seed)
+      case None => []
+      case Some(pair) => [pair.0] + unfoldr(fn, pair.1, fuel - 1) }
+
+  // `map` is a Dafny keyword, so Ramda's `map` is named mapSeq.
+  function mapSeq<A, B>(fn: A -> B, list: seq<A>): seq<B>
+    ensures |mapSeq(fn, list)| == |list|
+    ensures forall i :: 0 <= i < |list| ==> mapSeq(fn, list)[i] == fn(list[i])
+  { seq(|list|, i requires 0 <= i < |list| => fn(list[i])) }
+
+  function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
+    ensures |filter(fn, list)| <= |list|
+    ensures forall i :: 0 <= i < |filter(fn, list)| ==> fn(filter(fn, list)[i])
+    ensures forall i :: 0 <= i < |filter(fn, list)| ==> filter(fn, list)[i] in list
+    ensures forall i :: 0 <= i < |list| && fn(list[i]) ==> list[i] in filter(fn, list)
+    ensures multiset(filter(fn, list)) <= multiset(list)
+  { if |list| == 0 then []
+    else assert list == [list[0]] + list[1..];
+         if fn(list[0]) then [list[0]] + filter(fn, list[1..]) else filter(fn, list[1..]) }
+
+  // `filter(notFn(fn), list)`
+  function reject<T>(fn: T -> bool, list: seq<T>): seq<T>
+    ensures forall i :: 0 <= i < |reject(fn, list)| ==> !fn(reject(fn, list)[i])
+    ensures forall i :: 0 <= i < |reject(fn, list)| ==> reject(fn, list)[i] in list
+    ensures forall i :: 0 <= i < |list| && !fn(list[i]) ==> list[i] in reject(fn, list)
+  { filter(x => !fn(x), list) }
+
+  // The longest prefix whose elements all satisfy fn.
+  function takeWhile<T>(fn: T -> bool, list: seq<T>): seq<T>
+    ensures takeWhile(fn, list) <= list
+    ensures forall i :: 0 <= i < |takeWhile(fn, list)| ==> fn(list[i])
+    ensures |takeWhile(fn, list)| < |list| ==> !fn(list[|takeWhile(fn, list)|])
+  { if |list| == 0 || !fn(list[0]) then [] else [list[0]] + takeWhile(fn, list[1..]) }
+
+  // JS sets the copy's length to n, so `take(5, [1, 2])` has three undefined
+  // slots, which seq<T> cannot hold: n is limited to the list's length.
+  function take<T>(n: nat, list: seq<T>): seq<T>
+    requires n <= |list|
+  { list[..n] }
+
+  // The suffix starting at the first element that satisfies fn.
+  function skipUntil<T>(fn: T -> bool, list: seq<T>): seq<T>
+    ensures |skipUntil(fn, list)| <= |list|
+    ensures skipUntil(fn, list) == list[|list| - |skipUntil(fn, list)|..]
+    ensures forall i :: 0 <= i < |list| - |skipUntil(fn, list)| ==> !fn(list[i])
+    ensures |skipUntil(fn, list)| > 0 ==> fn(skipUntil(fn, list)[0])
+  { if |list| == 0 || fn(list[0]) then list else skipUntil(fn, list[1..]) }
+
+  // All but the first n elements (none when n >= |list|). A negative n gives
+  // JS garbage (`skip(-1, [1, 2])` is `[undefined, 1, 2]`), so n is a nat.
+  function skip<T>(n: nat, list: seq<T>): seq<T>
+  { if n >= |list| then [] else list[n..] }
+  function drop<T>(n: nat, list: seq<T>): seq<T> { skip(n, list) }
+
+  // The first element satisfying fn; JS returns `false` when none does.
+  function find<T>(fn: T -> bool, list: seq<T>): Option<T>
+    ensures find(fn, list) == (if |filter(fn, list)| == 0 then None else Some(filter(fn, list)[0]))
+  { if |list| == 0 then None
+    else if fn(list[0]) then Some(list[0])
+    else find(fn, list[1..]) }
+
+  function all<T>(fn: T -> bool, list: seq<T>): bool
+  { forall i :: 0 <= i < |list| ==> fn(list[i]) }
+  function every<T>(fn: T -> bool, list: seq<T>): bool { all(fn, list) }
+
+  function any<T>(fn: T -> bool, list: seq<T>): bool
+  { exists i :: 0 <= i < |list| && fn(list[i]) }
+  function some<T>(fn: T -> bool, list: seq<T>): bool { any(fn, list) }
+
+  // `list.indexOf(a) > -1` (JS `===`; see README on equality).
+  function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
+
+  // `foldr(function(x, acc) { return contains(x, acc) ? acc : prepend(x, acc); }, [], list)`:
+  // scanning from the right keeps the LAST occurrence of each element, in the
+  // order of those last occurrences (`uniq([1, 2, 1, 3, 2]) == [1, 3, 2]`).
+  function {:isolate_assertions} uniq<T(==)>(list: seq<T>): seq<T>
+    ensures forall i :: 0 <= i < |uniq(list)| ==> uniq(list)[i] in list
+    ensures forall i :: 0 <= i < |list| ==> list[i] in uniq(list)
+    ensures forall i, j :: 0 <= i < j < |uniq(list)| ==> uniq(list)[i] != uniq(list)[j]
+    ensures forall i, j :: 0 <= i < j < |uniq(list)| ==>
+      lastIndexOf(uniq(list)[i], list) < lastIndexOf(uniq(list)[j], list)
+    ensures |list| > 0 ==>
+      (uniq(list) == if list[0] in list[1..] then uniq(list[1..]) else [list[0]] + uniq(list[1..]))
+  { if |list| == 0 then []
+    else var acc := uniq(list[1..]);
+         assert forall k :: 0 <= k < |acc| ==> acc[k] in list[1..];
+         assert forall y :: y in list[1..] ==> lastIndexOf(y, list) == 1 + lastIndexOf(y, list[1..]) by {
+           forall y | y in list[1..] ensures lastIndexOf(y, list) == 1 + lastIndexOf(y, list[1..]) {
+             var p := lastIndexOf(y, list[1..]);
+             var q := lastIndexOf(y, list);
+             assert p != -1;
+             assert 0 <= p < |list[1..]| && list[1..][p] == y;
+             assert list[p + 1] == y;
+             assert list[p + 1] in list;
+             assert q != -1;
+             if q < p + 1 { assert list[p + 1] != y; }
+             if q > p + 1 { assert list[1..][q - 1] == y; }
+           }
+         }
+         if list[0] in acc then acc
+         else
+           var r := [list[0]] + acc;
+           assert lastIndexOf(list[0], list) == 0 by {
+             var q := lastIndexOf(list[0], list);
+             assert list[0] !in list[1..];
+             if q > 0 { assert list[1..][q - 1] == list[0]; }
+           }
+           assert forall i, j :: 0 <= i < j < |r| ==> lastIndexOf(r[i], list) < lastIndexOf(r[j], list) by {
+             forall i, j | 0 <= i < j < |r| ensures lastIndexOf(r[i], list) < lastIndexOf(r[j], list) {
+               assert r[j] == acc[j - 1];
+               if i > 0 { assert r[i] == acc[i - 1]; }
+             }
+           }
+           r }
+
+  // `map(prop(p), list)`: a missing property is JS undefined, here None.
+  function pluck<V>(p: string, list: seq<map<string, V>>): seq<Option<V>>
+    ensures |pluck(p, list)| == |list|
+  { mapSeq((obj: map<string, V>) => if p in obj then Some(obj[p]) else None, list) }
+
+  // Depth-first, left-to-right concatenation of the leaves.
+  function flatten<T>(list: seq<Tree<T>>): seq<T>
+  { if |list| == 0 then []
+    else (match list[0] case Leaf(v) => [v] case Node(c) => flatten(c)) + flatten(list[1..]) }
+
+  // `rv[i] = fn(a[i], b[i])` for i < a.length. JS reads `undefined` past the end
+  // of b, which seq<C> cannot hold, so b must be at least as long as a.
+  function zipWith<A, B, C>(fn: (A, B) -> C, a: seq<A>, b: seq<B>): seq<C>
+    requires |a| <= |b|
+    ensures |zipWith(fn, a, b)| == |a|
+    ensures forall i :: 0 <= i < |a| ==> zipWith(fn, a, b)[i] == fn(a[i], b[i])
+  { seq(|a|, i requires 0 <= i < |a| => fn(a[i], b[i])) }
+
+  function zip<A, B>(a: seq<A>, b: seq<B>): seq<(A, B)>
+    requires |a| <= |b|
+    ensures |zip(a, b)| == |a|
+    ensures forall i :: 0 <= i < |a| ==> zip(a, b)[i] == (a[i], b[i])
+  { seq(|a|, i requires 0 <= i < |a| => (a[i], b[i])) }
+
+  // Every pair, the first list's index outermost.
+  function xprodWith<A, B, C>(fn: (A, B) -> C, a: seq<A>, b: seq<B>): seq<C>
+    ensures |xprodWith(fn, a, b)| == |a| * |b|
+  { if |a| == 0 || |b| == 0 then []
+    else mapSeq((y: B) => fn(a[0], y), b) + xprodWith(fn, a[1..], b) }
+
+  function xprod<A, B>(a: seq<A>, b: seq<B>): seq<(A, B)>
+    ensures |xprod(a, b)| == |a| * |b|
+  { xprodWith((x: A, y: B) => (x, y), a, b) }
+
+  function reverse<T>(list: seq<T>): seq<T>
+    ensures |reverse(list)| == |list|
+    ensures forall i :: 0 <= i < |list| ==> reverse(list)[i] == list[|list| - 1 - i]
+  { seq(|list|, i requires 0 <= i < |list| => list[|list| - 1 - i]) }
+
+  // from (inclusive) to to (exclusive); empty when from >= to.
+  function range(from: int, to: int): seq<int>
+    ensures |range(from, to)| == if from >= to then 0 else to - from
+    ensures forall i :: 0 <= i < |range(from, to)| ==> range(from, to)[i] == from + i
+  { if from >= to then [] else seq(to - from, i => from + i) }
+
+  // `list.indexOf(obj)`: the first index of obj, or -1.
+  function indexOf<T(==)>(obj: T, list: seq<T>): int
+    ensures -1 <= indexOf(obj, list) < |list|
+    ensures indexOf(obj, list) == -1 <==> obj !in list
+    ensures indexOf(obj, list) >= 0 ==>
+      indexOf(obj, list) < |list| && list[indexOf(obj, list)] == obj &&
+      forall i :: 0 <= i < indexOf(obj, list) ==> list[i] != obj
+  { if |list| == 0 then -1
+    else if list[0] == obj then 0
+    else var r := indexOf(obj, list[1..]);
+         if r < 0 then -1 else r + 1 }
+
+  // `list.lastIndexOf(obj)`: the last index of obj, or -1.
+  function lastIndexOf<T(==)>(obj: T, list: seq<T>): int
+    ensures -1 <= lastIndexOf(obj, list) < |list|
+    ensures lastIndexOf(obj, list) == -1 <==> obj !in list
+    ensures lastIndexOf(obj, list) >= 0 ==>
+      lastIndexOf(obj, list) < |list| && list[lastIndexOf(obj, list)] == obj &&
+      forall i :: lastIndexOf(obj, list) < i < |list| ==> list[i] != obj
+  { if |list| == 0 then -1
+    else if list[|list| - 1] == obj then |list| - 1
+    else lastIndexOf(obj, list[..|list| - 1]) }
+
+  // `list.join(sep)`; the elements are strings (see README on numbers).
+  function join(sep: string, list: seq<string>): string
+  { if |list| == 0 then ""
+    else if |list| == 1 then list[0]
+    else list[0] + sep + join(sep, list[1..]) }
+
+  // A copy of the list with `Array.prototype.splice(start, len)` applied: a
+  // negative start counts from the end, and both are clamped into the list.
+  function splice<T>(start: int, len: int, list: seq<T>): seq<T>
+    ensures |splice(start, len, list)| <= |list|
+  { var n := |list|;
+    var from := if start < 0 then (if n + start < 0 then 0 else n + start)
+                else if start > n then n else start;
+    var count := if len < 0 then 0 else if len > n - from then n - from else len;
+    list[..from] + list[from + count..] }
+
+  // `list[n]`, or null when that is undefined (out of range).
+  function nth<T>(n: int, list: seq<T>): Option<T>
+  { if 0 <= n < |list| then Some(list[n]) else None }
+}

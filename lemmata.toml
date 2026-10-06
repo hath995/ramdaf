@@ -1,0 +1,21 @@
+[package]
+name = "ramdaf"
+version = "1.0.0"
+preferredTarget = "cs"
+
+[toolchain]
+dafny = ">= 4.10.0"
+
+[source]
+to_export = ["src/**/*.dfy"]
+
+[options]
+
+[verification]
+expected-errors = [
+]
+
+[dependencies]
+
+[test.source]
+include = ["tests/**/*.dfy"]

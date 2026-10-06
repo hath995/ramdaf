@@ -1,0 +1,23 @@
+# The Ramda clone used for porting (`git -C ramda checkout <tag>`).
+ramda
+
+# Dafny / .NET build outputs.
+*.cs
+*.csproj
+*.deps.json
+*.dll
+*.pdb
+*.runtimeconfig.json
+*.exe
+bin/
+obj/
+deps/
+.lem-publish/
+
+# Executables that `dafny build`/`dafny run` drop next to the sources
+# (e.g. src/Core): keep only the .dfy files under src/ and tests/.
+/src/*
+!/src/*.dfy
+/tests/**/*
+!/tests/**/
+!/tests/**/*.dfy

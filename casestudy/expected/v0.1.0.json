@@ -1,0 +1,596 @@
+{
+  "ramda": "v0.1.0",
+  "tier": "initial",
+  "changes": [
+    {
+      "symbol": "Ramdaf.Core.clone",
+      "kind": "added",
+      "why": "R.clone"
+    },
+    {
+      "symbol": "Ramdaf.Core.isEmpty",
+      "kind": "added",
+      "why": "R.isEmpty"
+    },
+    {
+      "symbol": "Ramdaf.Core.prepend",
+      "kind": "added",
+      "why": "R.prepend"
+    },
+    {
+      "symbol": "Ramdaf.Core.cons",
+      "kind": "added",
+      "why": "R.cons (alias of R.prepend)"
+    },
+    {
+      "symbol": "Ramdaf.Core.head",
+      "kind": "added",
+      "why": "R.head"
+    },
+    {
+      "symbol": "Ramdaf.Core.car",
+      "kind": "added",
+      "why": "R.car (alias of R.head)"
+    },
+    {
+      "symbol": "Ramdaf.Core.tail",
+      "kind": "added",
+      "why": "R.tail"
+    },
+    {
+      "symbol": "Ramdaf.Core.cdr",
+      "kind": "added",
+      "why": "R.cdr (alias of R.tail)"
+    },
+    {
+      "symbol": "Ramdaf.Core.append",
+      "kind": "added",
+      "why": "R.append"
+    },
+    {
+      "symbol": "Ramdaf.Core.push",
+      "kind": "added",
+      "why": "R.push (alias of R.append)"
+    },
+    {
+      "symbol": "Ramdaf.Core.merge",
+      "kind": "added",
+      "why": "R.merge"
+    },
+    {
+      "symbol": "Ramdaf.Core.concat",
+      "kind": "added",
+      "why": "R.concat (alias of R.merge)"
+    },
+    {
+      "symbol": "Ramdaf.Core.identity",
+      "kind": "added",
+      "why": "R.identity"
+    },
+    {
+      "symbol": "Ramdaf.Core.I",
+      "kind": "added",
+      "why": "R.I (alias of R.identity)"
+    },
+    {
+      "symbol": "Ramdaf.Core.size",
+      "kind": "added",
+      "why": "R.size"
+    },
+    {
+      "symbol": "Ramdaf.Data.union",
+      "kind": "added",
+      "why": "R.union"
+    },
+    {
+      "symbol": "Ramdaf.Data.unionWith",
+      "kind": "added",
+      "why": "R.unionWith"
+    },
+    {
+      "symbol": "Ramdaf.Data.difference",
+      "kind": "added",
+      "why": "R.difference"
+    },
+    {
+      "symbol": "Ramdaf.Data.differenceWith",
+      "kind": "added",
+      "why": "R.differenceWith"
+    },
+    {
+      "symbol": "Ramdaf.Data.intersection",
+      "kind": "added",
+      "why": "R.intersection"
+    },
+    {
+      "symbol": "Ramdaf.Data.intersectionWith",
+      "kind": "added",
+      "why": "R.intersectionWith"
+    },
+    {
+      "symbol": "Ramdaf.Data.countBy",
+      "kind": "added",
+      "why": "R.countBy"
+    },
+    {
+      "symbol": "Ramdaf.Data.groupBy",
+      "kind": "added",
+      "why": "R.groupBy"
+    },
+    {
+      "symbol": "Ramdaf.Data.project",
+      "kind": "added",
+      "why": "R.project"
+    },
+    {
+      "symbol": "Ramdaf.Functions.compose",
+      "kind": "added",
+      "why": "R.compose"
+    },
+    {
+      "symbol": "Ramdaf.Functions.fog",
+      "kind": "added",
+      "why": "R.fog (alias of R.compose)"
+    },
+    {
+      "symbol": "Ramdaf.Functions.pipe",
+      "kind": "added",
+      "why": "R.pipe"
+    },
+    {
+      "symbol": "Ramdaf.Functions.sequence",
+      "kind": "added",
+      "why": "R.sequence (alias of R.pipe)"
+    },
+    {
+      "symbol": "Ramdaf.Functions.flip",
+      "kind": "added",
+      "why": "R.flip"
+    },
+    {
+      "symbol": "Ramdaf.Functions.always",
+      "kind": "added",
+      "why": "R.always"
+    },
+    {
+      "symbol": "Ramdaf.Functions.alwaysZero",
+      "kind": "added",
+      "why": "R.alwaysZero"
+    },
+    {
+      "symbol": "Ramdaf.Functions.alwaysFalse",
+      "kind": "added",
+      "why": "R.alwaysFalse"
+    },
+    {
+      "symbol": "Ramdaf.Functions.alwaysTrue",
+      "kind": "added",
+      "why": "R.alwaysTrue"
+    },
+    {
+      "symbol": "Ramdaf.List.foldl",
+      "kind": "added",
+      "why": "R.foldl"
+    },
+    {
+      "symbol": "Ramdaf.List.reduce",
+      "kind": "added",
+      "why": "R.reduce (alias of R.foldl)"
+    },
+    {
+      "symbol": "Ramdaf.List.foldl1",
+      "kind": "added",
+      "why": "R.foldl1"
+    },
+    {
+      "symbol": "Ramdaf.List.foldr",
+      "kind": "added",
+      "why": "R.foldr"
+    },
+    {
+      "symbol": "Ramdaf.List.reduceRight",
+      "kind": "added",
+      "why": "R.reduceRight (alias of R.foldr)"
+    },
+    {
+      "symbol": "Ramdaf.List.foldr1",
+      "kind": "added",
+      "why": "R.foldr1"
+    },
+    {
+      "symbol": "Ramdaf.List.unfoldr",
+      "kind": "added",
+      "why": "R.unfoldr"
+    },
+    {
+      "symbol": "Ramdaf.List.mapSeq",
+      "kind": "added",
+      "why": "R.map (map is a Dafny keyword)"
+    },
+    {
+      "symbol": "Ramdaf.List.filter",
+      "kind": "added",
+      "why": "R.filter"
+    },
+    {
+      "symbol": "Ramdaf.List.reject",
+      "kind": "added",
+      "why": "R.reject"
+    },
+    {
+      "symbol": "Ramdaf.List.takeWhile",
+      "kind": "added",
+      "why": "R.takeWhile"
+    },
+    {
+      "symbol": "Ramdaf.List.take",
+      "kind": "added",
+      "why": "R.take"
+    },
+    {
+      "symbol": "Ramdaf.List.skipUntil",
+      "kind": "added",
+      "why": "R.skipUntil"
+    },
+    {
+      "symbol": "Ramdaf.List.skip",
+      "kind": "added",
+      "why": "R.skip"
+    },
+    {
+      "symbol": "Ramdaf.List.drop",
+      "kind": "added",
+      "why": "R.drop (alias of R.skip)"
+    },
+    {
+      "symbol": "Ramdaf.List.find",
+      "kind": "added",
+      "why": "R.find"
+    },
+    {
+      "symbol": "Ramdaf.List.all",
+      "kind": "added",
+      "why": "R.all"
+    },
+    {
+      "symbol": "Ramdaf.List.every",
+      "kind": "added",
+      "why": "R.every (alias of R.all)"
+    },
+    {
+      "symbol": "Ramdaf.List.any",
+      "kind": "added",
+      "why": "R.any"
+    },
+    {
+      "symbol": "Ramdaf.List.some",
+      "kind": "added",
+      "why": "R.some (alias of R.any)"
+    },
+    {
+      "symbol": "Ramdaf.List.contains",
+      "kind": "added",
+      "why": "R.contains"
+    },
+    {
+      "symbol": "Ramdaf.List.uniq",
+      "kind": "added",
+      "why": "R.uniq"
+    },
+    {
+      "symbol": "Ramdaf.List.pluck",
+      "kind": "added",
+      "why": "R.pluck"
+    },
+    {
+      "symbol": "Ramdaf.List.flatten",
+      "kind": "added",
+      "why": "R.flatten"
+    },
+    {
+      "symbol": "Ramdaf.List.zipWith",
+      "kind": "added",
+      "why": "R.zipWith"
+    },
+    {
+      "symbol": "Ramdaf.List.zip",
+      "kind": "added",
+      "why": "R.zip"
+    },
+    {
+      "symbol": "Ramdaf.List.xprodWith",
+      "kind": "added",
+      "why": "R.xprodWith"
+    },
+    {
+      "symbol": "Ramdaf.List.xprod",
+      "kind": "added",
+      "why": "R.xprod"
+    },
+    {
+      "symbol": "Ramdaf.List.reverse",
+      "kind": "added",
+      "why": "R.reverse"
+    },
+    {
+      "symbol": "Ramdaf.List.range",
+      "kind": "added",
+      "why": "R.range"
+    },
+    {
+      "symbol": "Ramdaf.List.indexOf",
+      "kind": "added",
+      "why": "R.indexOf"
+    },
+    {
+      "symbol": "Ramdaf.List.lastIndexOf",
+      "kind": "added",
+      "why": "R.lastIndexOf"
+    },
+    {
+      "symbol": "Ramdaf.List.join",
+      "kind": "added",
+      "why": "R.join"
+    },
+    {
+      "symbol": "Ramdaf.List.splice",
+      "kind": "added",
+      "why": "R.splice"
+    },
+    {
+      "symbol": "Ramdaf.List.nth",
+      "kind": "added",
+      "why": "R.nth"
+    },
+    {
+      "symbol": "Ramdaf.Logic.and",
+      "kind": "added",
+      "why": "R.and"
+    },
+    {
+      "symbol": "Ramdaf.Logic.or",
+      "kind": "added",
+      "why": "R.or"
+    },
+    {
+      "symbol": "Ramdaf.Logic.not",
+      "kind": "added",
+      "why": "R.not"
+    },
+    {
+      "symbol": "Ramdaf.Logic.andFn",
+      "kind": "added",
+      "why": "R.andFn"
+    },
+    {
+      "symbol": "Ramdaf.Logic.orFn",
+      "kind": "added",
+      "why": "R.orFn"
+    },
+    {
+      "symbol": "Ramdaf.Logic.notFn",
+      "kind": "added",
+      "why": "R.notFn"
+    },
+    {
+      "symbol": "Ramdaf.Logic.allPredicates",
+      "kind": "added",
+      "why": "R.allPredicates"
+    },
+    {
+      "symbol": "Ramdaf.Logic.anyPredicates",
+      "kind": "added",
+      "why": "R.anyPredicates"
+    },
+    {
+      "symbol": "Ramdaf.Math.add",
+      "kind": "added",
+      "why": "R.add"
+    },
+    {
+      "symbol": "Ramdaf.Math.multiply",
+      "kind": "added",
+      "why": "R.multiply"
+    },
+    {
+      "symbol": "Ramdaf.Math.subtract",
+      "kind": "added",
+      "why": "R.subtract"
+    },
+    {
+      "symbol": "Ramdaf.Math.subtractN",
+      "kind": "added",
+      "why": "R.subtractN"
+    },
+    {
+      "symbol": "Ramdaf.Math.divide",
+      "kind": "added",
+      "why": "R.divide"
+    },
+    {
+      "symbol": "Ramdaf.Math.divideBy",
+      "kind": "added",
+      "why": "R.divideBy"
+    },
+    {
+      "symbol": "Ramdaf.Math.sum",
+      "kind": "added",
+      "why": "R.sum"
+    },
+    {
+      "symbol": "Ramdaf.Math.product",
+      "kind": "added",
+      "why": "R.product"
+    },
+    {
+      "symbol": "Ramdaf.Math.lt",
+      "kind": "added",
+      "why": "R.lt"
+    },
+    {
+      "symbol": "Ramdaf.Math.lte",
+      "kind": "added",
+      "why": "R.lte"
+    },
+    {
+      "symbol": "Ramdaf.Math.gt",
+      "kind": "added",
+      "why": "R.gt"
+    },
+    {
+      "symbol": "Ramdaf.Math.gte",
+      "kind": "added",
+      "why": "R.gte"
+    },
+    {
+      "symbol": "Ramdaf.Math.max",
+      "kind": "added",
+      "why": "R.max"
+    },
+    {
+      "symbol": "Ramdaf.Math.maxWith",
+      "kind": "added",
+      "why": "R.maxWith"
+    },
+    {
+      "symbol": "Ramdaf.Math.minWith",
+      "kind": "added",
+      "why": "R.minWith"
+    },
+    {
+      "symbol": "Ramdaf.Math.min",
+      "kind": "added",
+      "why": "R.min"
+    },
+    {
+      "symbol": "Ramdaf.Object.eq",
+      "kind": "added",
+      "why": "R.eq"
+    },
+    {
+      "symbol": "Ramdaf.Object.prop",
+      "kind": "added",
+      "why": "R.prop"
+    },
+    {
+      "symbol": "Ramdaf.Object.get",
+      "kind": "added",
+      "why": "R.get (alias of R.prop)"
+    },
+    {
+      "symbol": "Ramdaf.Object.props",
+      "kind": "added",
+      "why": "R.props"
+    },
+    {
+      "symbol": "Ramdaf.Object.keys",
+      "kind": "added",
+      "why": "R.keys"
+    },
+    {
+      "symbol": "Ramdaf.Object.values",
+      "kind": "added",
+      "why": "R.values"
+    },
+    {
+      "symbol": "Ramdaf.Object.pick",
+      "kind": "added",
+      "why": "R.pick"
+    },
+    {
+      "symbol": "Ramdaf.Object.pickAll",
+      "kind": "added",
+      "why": "R.pickAll"
+    },
+    {
+      "symbol": "Ramdaf.Object.omit",
+      "kind": "added",
+      "why": "R.omit"
+    },
+    {
+      "symbol": "Ramdaf.Object.eqProps",
+      "kind": "added",
+      "why": "R.eqProps"
+    },
+    {
+      "symbol": "Ramdaf.Object.propEq",
+      "kind": "added",
+      "why": "R.propEq"
+    },
+    {
+      "symbol": "Ramdaf.Prelude.Option",
+      "kind": "added",
+      "why": "support datatype (undefined/null/false results)"
+    },
+    {
+      "symbol": "Ramdaf.Prelude.Tree",
+      "kind": "added",
+      "why": "support datatype (nested arrays for flatten)"
+    },
+    {
+      "symbol": "Ramdaf.Sort.comparator",
+      "kind": "added",
+      "why": "R.comparator"
+    },
+    {
+      "symbol": "Ramdaf.Sort.sort",
+      "kind": "added",
+      "why": "R.sort"
+    },
+    {
+      "symbol": "Ramdaf.Sort.sortBy",
+      "kind": "added",
+      "why": "R.sortBy"
+    },
+    {
+      "symbol": "Ramdaf.String.substring",
+      "kind": "added",
+      "why": "R.substring"
+    },
+    {
+      "symbol": "Ramdaf.String.substringFrom",
+      "kind": "added",
+      "why": "R.substringFrom"
+    },
+    {
+      "symbol": "Ramdaf.String.substringTo",
+      "kind": "added",
+      "why": "R.substringTo"
+    },
+    {
+      "symbol": "Ramdaf.String.charAt",
+      "kind": "added",
+      "why": "R.charAt"
+    },
+    {
+      "symbol": "Ramdaf.String.charCodeAt",
+      "kind": "added",
+      "why": "R.charCodeAt"
+    },
+    {
+      "symbol": "Ramdaf.String.strIndexOf",
+      "kind": "added",
+      "why": "R.strIndexOf"
+    },
+    {
+      "symbol": "Ramdaf.String.strLastIndexOf",
+      "kind": "added",
+      "why": "R.strLastIndexOf"
+    },
+    {
+      "symbol": "Ramdaf.String.toUpperCase",
+      "kind": "added",
+      "why": "R.toUpperCase"
+    },
+    {
+      "symbol": "Ramdaf.String.toLowerCase",
+      "kind": "added",
+      "why": "R.toLowerCase"
+    },
+    {
+      "symbol": "Ramdaf.String.split",
+      "kind": "added",
+      "why": "R.split"
+    }
+  ]
+}
