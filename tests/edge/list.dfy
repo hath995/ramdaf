@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.1.3's own suite does not cover, each checked against
-// ramda.js v0.1.3 under node (the expected values are node's output). The
+// Edge cases Ramda v0.1.4's own suite does not cover, each checked against
+// ramda.js v0.1.4 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -14,6 +14,9 @@ module RamdafTests.Edge.List {
     expect tail(empty) == [];
     expect tail([1, 2]) == [2];
     expect head([5]) == 5;
+    expect first([1, 2, 3]) == 1;
+    expect last([1, 2, 3]) == 3;
+    expect last([5]) == 5;
     expect isEmpty([0]) == false;
     expect merge(empty, [1]) == [1];
     expect merge([1], empty) == [1];
@@ -77,6 +80,41 @@ module RamdafTests.Edge.List {
     expect findLast((x: int) => x < 3, [1, 2, 3]) == Some(2);
     expect findLast((x: int) => true, [5]) == None;
     expect findLast((x: int) => x % 2 == 0, [2, 4, 1]) == Some(4);
+  }
+
+  // Array.prototype.slice: negative indices count from the end, both are
+  // clamped, and an empty range gives [].
+  method {:test} SliceClampsLikeJs() {
+    var l := [1, 2, 3, 4, 5];
+    expect slice(1, 3, l) == [2, 3];
+    expect slice(-2, 100, l) == [4, 5];
+    expect slice(3, 1, l) == [];
+    expect slice(-100, 2, l) == [1, 2];
+    expect slice(2, -1, l) == [3, 4];
+    expect slice(0, 0, l) == [];
+    expect slice(5, 5, l) == [];
+    expect slice(-2, -1, l) == [4];
+    expect slice(10, 20, l) == [];
+    expect sliceFrom(2, [1, 2, 3]) == [3];
+    expect sliceFrom(-2, [1, 2, 3]) == [2, 3];
+  }
+
+  function parity(x: int): string { if x % 2 == 0 then "even" else "odd" }
+
+  // partition groups by whatever key the function returns.
+  method {:test} PartitionEdges() {
+    var empty: seq<int> := [];
+    expect partition(parity, [1, 2, 3, 4, 5]) == map["odd" := [1, 3, 5], "even" := [2, 4]];
+    expect partition((x: int) => "k", empty) == map[];
+    // `String(x > 2)`: a predicate's results as keys
+    expect partition((x: int) => if x > 2 then "true" else "false", [1, 3, 2, 4]) == map["false" := [1, 2], "true" := [3, 4]];
+    expect partition((s: string) => s, ["b", "a", "b"]) == map["b" := ["b", "b"], "a" := ["a"]];
+  }
+
+  method {:test} MapObjEdges() {
+    var none: map<string, int> := map[];
+    expect mapObj((v: int) => v + 1, none) == map[];
+    expect mapObj((v: int) => v * 2, map["a" := 1]) == map["a" := 2];
   }
 
   // isSet(list) is `uniq(list).length === list.length`.

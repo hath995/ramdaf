@@ -1,8 +1,8 @@
-// Ramda v0.1.3 test/test.booleans.js and test/test.allany.js, transcribed.
-// Not transcribed: the "should perform type coersion" cases (operands are
-// bool, README "Deviations"), the short-circuit cases that count calls with a
-// side effect, and the "reports its arity" cases. The multi-parameter
-// predicates take their arguments as a tuple.
+// Ramda v0.1.4 test/test.booleans.js and test/test.allany.js, transcribed.
+// Not transcribed: the short-circuit cases ("does not evaluate the second
+// expression"), which detect a call by its side effect, and the "reports its
+// arity" cases. The multi-parameter predicates take their arguments as a
+// tuple.
 
 module RamdafTests.Ramda.Logic {
   import opened Ramdaf.List
@@ -11,69 +11,47 @@ module RamdafTests.Ramda.Logic {
 
   // ---- test.booleans.js ----
 
-  // describe('or')
-  method {:test} OrMatchesJsOr() {
-    expect or(false, true) == true;
-    expect or(false, false) == false;
-    expect or(true, false) == true;
-    expect or(true, true) == true;
-  }
-
-  // describe('and')
-  method {:test} AndMatchesJsAnd() {
-    expect and(false, true) == false;
-    expect and(false, false) == false;
-    expect and(true, false) == false;
-    expect and(true, true) == true;
-  }
-
-  // describe('not')
-  method {:test} NotMatchesJsNot() {
-    expect not(false) == true;
-    expect not(true) == false;
-  }
-
   function even(x: int): bool { x % 2 == 0 }
   function gt10(x: int): bool { x > 10 }
   function between(t: (int, int, int)): bool { t.0 < t.1 && t.1 < t.2 }
   function total20(t: (int, int, int)): bool { t.0 + t.1 + t.2 == 20 }
 
-  // describe('orFn')
-  method {:test} OrFnCombinesTwoPredicates() {
-    var f := orFn(even, gt10);
+  // describe('or')
+  method {:test} OrCombinesTwoPredicates() {
+    var f := or(even, gt10);
     expect f(8) == true;
     expect f(13) == true;
     expect f(7) == false;
   }
-  method {:test} OrFnAcceptsMultiParameterFunctions() {
-    var f := orFn(between, total20);
+  method {:test} OrAcceptsMultiParameterFunctions() {
+    var f := or(between, total20);
     expect f((4, 5, 8)) == true;
     expect f((12, 2, 6)) == true;
     expect f((7, 5, 1)) == false;
   }
 
-  // describe('andFn')
-  method {:test} AndFnCombinesTwoPredicates() {
-    var f := andFn(even, gt10);
+  // describe('and')
+  method {:test} AndCombinesTwoPredicates() {
+    var f := and(even, gt10);
     expect f(8) == false;
     expect f(13) == false;
     expect f(14) == true;
   }
-  method {:test} AndFnAcceptsMultiParameterFunctions() {
-    var f := andFn(between, total20);
+  method {:test} AndAcceptsMultiParameterFunctions() {
+    var f := and(between, total20);
     expect f((4, 5, 11)) == true;
     expect f((12, 2, 6)) == false;
     expect f((5, 6, 15)) == false;
   }
 
-  // describe('notFn')
-  method {:test} NotFnReversesAPredicate() {
-    var f := notFn(even);
+  // describe('not')
+  method {:test} NotReversesAPredicate() {
+    var f := not(even);
     expect f(8) == false;
     expect f(13) == true;
   }
-  method {:test} NotFnAcceptsAMultiParameterFunction() {
-    var f := notFn(between);
+  method {:test} NotAcceptsAMultiParameterFunction() {
+    var f := not(between);
     expect f((4, 5, 11)) == false;
     expect f((12, 2, 6)) == true;
   }

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.1.3 "List Functions" (ramda.js lines 416-870), except
+// Ramdaf: Ramda v0.1.4 "List Functions" (ramda.js lines 421-881), except
 // `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
 
 module Ramdaf.List {
@@ -6,11 +6,11 @@ module Ramdaf.List {
 
   export
     reveals foldl, reduce, foldlIdx, reduceIdx, foldl1, foldr, reduceRight, foldrIdx,
-            reduceRightIdx, foldr1, unfoldr, mapSeq, mapIdx, filter, filterIdx,
+            reduceRightIdx, foldr1, unfoldr, mapSeq, mapIdx, mapObj, filter, filterIdx,
             reject, rejectIdx, takeWhile, take, skipUntil, skip, drop, find,
             findIndex, findLast, findLastIndex, all, every, any, some, contains,
             uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
-            range, indexOf, lastIndexOf, join, splice, nth
+            range, indexOf, lastIndexOf, join, slice, sliceFrom, splice, nth, partition
     provides Prelude
 
   // `acc = fn(acc, list[idx])` for idx ascending.
@@ -79,6 +79,13 @@ module Ramdaf.List {
     ensures |mapIdx(fn, list)| == |list|
     ensures forall i :: 0 <= i < |list| ==> mapIdx(fn, list)[i] == fn(list[i], i, list)
   { seq(|list|, i requires 0 <= i < |list| => fn(list[i], i, list)) }
+
+  // `foldl(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`:
+  // fn applied to every own property.
+  function mapObj<V, W>(fn: V -> W, obj: map<string, V>): map<string, W>
+    ensures mapObj(fn, obj).Keys == obj.Keys
+    ensures forall k :: k in obj ==> mapObj(fn, obj)[k] == fn(obj[k])
+  { map k | k in obj :: fn(obj[k]) }
 
   function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures |filter(fn, list)| <= |list|
@@ -364,6 +371,25 @@ module Ramdaf.List {
     else if |list| == 1 then list[0]
     else list[0] + sep + join(sep, list[1..]) }
 
+  // `Array.prototype.slice(from, to)` (an invoker since v0.1.4): a negative
+  // index counts from the end, both are clamped into the list, and the result
+  // is empty when `to` falls at or before `from`.
+  function slice<T>(from: int, to: int, list: seq<T>): seq<T>
+    ensures var n := |list|;
+      var a := if from < 0 then (if n + from < 0 then 0 else n + from) else if from > n then n else from;
+      var b := if to < 0 then (if n + to < 0 then 0 else n + to) else if to > n then n else to;
+      slice(from, to, list) == if a < b then list[a..b] else []
+  { var n := |list|;
+    var a := if from < 0 then (if n + from < 0 then 0 else n + from) else if from > n then n else from;
+    var b := if to < 0 then (if n + to < 0 then 0 else n + to) else if to > n then n else to;
+    if a < b then list[a..b] else [] }
+
+  // `slice.from = flip(slice)(undefined)`: `sliceFrom(from, list)` is
+  // `list.slice(from)`, everything from `from` (clamped, negative from the end).
+  function sliceFrom<T>(from: int, list: seq<T>): seq<T>
+    ensures sliceFrom(from, list) == slice(from, |list|, list)
+  { slice(from, |list|, list) }
+
   // A copy of the list with `Array.prototype.splice(start, len)` applied: a
   // negative start counts from the end, and both are clamped into the list.
   function splice<T>(start: int, len: int, list: seq<T>): seq<T>
@@ -377,4 +403,13 @@ module Ramdaf.List {
   // `list[n]`: undefined (None) out of range.
   function nth<T>(n: int, list: seq<T>): Option<T>
   { if 0 <= n < |list| then Some(list[n]) else None }
+
+  // `foldl(function(acc, elt) { var key = fn(elt); acc[key] = append(elt, acc[key] || []); ... }, {}, list)`:
+  // the elements grouped by the key fn gives them, each group in list order.
+  // (Not a split into two lists: Ramda's own test groups students by grade.)
+  function partition<T>(fn: T -> string, list: seq<T>): map<string, seq<T>>
+    ensures partition(fn, list).Keys == set i | 0 <= i < |list| :: fn(list[i])
+    ensures forall k :: k in partition(fn, list) ==> partition(fn, list)[k] == filter(x => fn(x) == k, list)
+  { var keys := set i | 0 <= i < |list| :: fn(list[i]);
+    map k | k in keys :: filter(x => fn(x) == k, list) }
 }

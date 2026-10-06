@@ -1,26 +1,22 @@
-// Ramdaf: Ramda v0.1.3 "Logic Functions" (ramda.js lines 1057-1138).
-// JS coerces operands by truthiness; the port's operands are bool (see README).
+// Ramdaf: Ramda v0.1.4 "Logic Functions" (ramda.js lines 1085-1148).
 
 module Ramdaf.Logic {
   export
-    reveals and, or, not, andFn, orFn, notFn, allPredicates, anyPredicates
+    reveals and, or, not, allPredicates, anyPredicates
 
-  // `!!(a && b)`
-  function and(a: bool, b: bool): bool { a && b }
+  // v0.1.4 deleted the boolean operators `and`, `or` and `not` and renamed
+  // `andFn`, `orFn` and `notFn` to those names. JS forwards any number of
+  // arguments to the predicates; the port's predicates are unary (tuple the
+  // arguments for more).
 
-  // `!!(a || b)`
-  function or(a: bool, b: bool): bool { a || b }
+  // `!!(f(...) && g(...))`, short-circuited.
+  function and<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) && g(x) }
 
-  // `!a`
-  function not(a: bool): bool { !a }
+  // `!!(f(...) || g(...))`, short-circuited.
+  function or<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) || g(x) }
 
-  // JS andFn/orFn/notFn forward any number of arguments; the port's predicates
-  // are unary (tuple the arguments for more).
-  function andFn<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) && g(x) }
-
-  function orFn<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) || g(x) }
-
-  function notFn<T>(f: T -> bool): T -> bool { x => !f(x) }
+  // `!f(...)`
+  function not<T>(f: T -> bool): T -> bool { x => !f(x) }
 
   // `allPredicates(preds)` is a predicate true exactly when every predicate
   // holds; the JS form that also takes the values (`allPredicates(preds, v)`)

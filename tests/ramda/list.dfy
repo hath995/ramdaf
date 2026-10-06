@@ -1,8 +1,8 @@
-// Ramda v0.1.3 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
+// Ramda v0.1.4 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
 // test/test.find.js, test/test.flatten.js, test/test.range.js,
 // test/test.reverse.js, test/test.unfold.js, test/test.zip.js,
-// and test/test.product.js, transcribed. Arity (`.length`) checks have no
-// Dafny counterpart and are omitted.
+// test/test.product.js and test/test.partition.js, transcribed. Arity
+// (`.length`) checks have no Dafny counterpart and are omitted.
 // `find(even, 'zing')` searches the string's characters: here a list of Js
 // strings.
 
@@ -36,6 +36,16 @@ module RamdafTests.Ramda.List {
   // to strings; join takes strings here.
   method {:test} JoinConcatenatesWithASeparator() {
     expect join("~", [NumStr(1), NumStr(2), NumStr(3), NumStr(4)]) == "1~2~3~4";
+  }
+
+  // describe('slice') (Ramda's other case is a commented-out TODO)
+  method {:test} SliceRetrievesTheProperSublist() {
+    expect slice(2, 5, [8, 6, 7, 5, 3, 0, 9]) == [7, 5, 3];
+  }
+
+  // describe('slice.from')
+  method {:test} SliceFromRetrievesTheSuffixFromTheIndex() {
+    expect sliceFrom(2, [8, 6, 7, 5, 3, 0, 9]) == [7, 5, 3, 0, 9];
   }
 
   // describe('splice')
@@ -121,6 +131,11 @@ module RamdafTests.Ramda.List {
   method {:test} MapIsAutomaticallyCurried() {
     var inc := (l: seq<int>) => mapSeq((x: int) => x + 1, l);
     expect inc([1, 2, 3]) == [2, 3, 4];
+  }
+
+  // describe('mapObj')
+  method {:test} MapObjRunsTheFunctionOverEachProperty() {
+    expect mapObj((n: int) => n * n, map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "b" := 4, "c" := 9];
   }
 
   // describe('map.idx')
@@ -307,4 +322,37 @@ module RamdafTests.Ramda.List {
       ["1a", "1b", "1c", "2a", "2b", "2c"];
   }
 
+
+  // ---- test.partition.js ----
+
+  function Student(name: string, score: int): map<string, Js> { map["name" := Str(name), "score" := Num(score)] }
+  function grade(score: int): string
+  { if score < 65 then "F" else if score < 70 then "D" else if score < 80 then "C" else if score < 90 then "B" else "A" }
+  // `grade(student.score || 0)`
+  function byGrade(s: map<string, Js>): string
+  { grade(if "score" in s && s["score"].Num? then s["score"].n else 0) }
+
+  method {:test} PartitionSplitsTheListIntoGroups() {
+    var students := [Student("Abby", 84), Student("Brad", 73), Student("Chris", 89), Student("Dianne", 99),
+                     Student("Eddy", 58), Student("Fred", 67), Student("Gillian", 91), Student("Hannah", 78),
+                     Student("Irene", 85), Student("Jack", 69)];
+    expect partition(byGrade, students) == map[
+      "A" := [Student("Dianne", 99), Student("Gillian", 91)],
+      "B" := [Student("Abby", 84), Student("Chris", 89), Student("Irene", 85)],
+      "C" := [Student("Brad", 73), Student("Hannah", 78)],
+      "D" := [Student("Fred", 67), Student("Jack", 69)],
+      "F" := [Student("Eddy", 58)]];
+  }
+
+  function Typed(t: string, v: int): map<string, Js> { map["type" := Str(t), "val" := Num(v)] }
+  // `prop("type")`; every record here has a string type.
+  function TypeOf(o: map<string, Js>): string { if "type" in o && o["type"].Str? then o["type"].s else "undefined" }
+
+  method {:test} PartitionIsAutomaticallyCurried() {
+    var splitByType := (l: seq<map<string, Js>>) => partition(TypeOf, l);
+    expect splitByType([Typed("A", 10), Typed("B", 20), Typed("A", 30), Typed("A", 40), Typed("C", 50), Typed("B", 60)]) ==
+      map["A" := [Typed("A", 10), Typed("A", 30), Typed("A", 40)],
+          "B" := [Typed("B", 20), Typed("B", 60)],
+          "C" := [Typed("C", 50)]];
+  }
 }

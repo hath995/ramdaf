@@ -1,9 +1,9 @@
-// Ramdaf: Ramda v0.1.3 "Core Functions" (ramda.js lines 240-306), `clone` and
+// Ramdaf: Ramda v0.1.4 "Core Functions" (ramda.js lines 240-312), `clone` and
 // `cloneDeep` (lines 231-239) and `size`.
 
 module Ramdaf.Core {
   export
-    reveals clone, cloneDeep, isEmpty, prepend, cons, head, car, tail, cdr,
+    reveals clone, cloneDeep, isEmpty, prepend, cons, head, car, first, last, tail, cdr,
             append, push, merge, concat, identity, I, repeatN, size
 
   // `clone(list)` is `list.concat()`, a shallow copy. Dafny sequences are
@@ -31,6 +31,15 @@ module Ramdaf.Core {
   function car<T>(list: seq<T>): T
     requires |list| > 0
   { head(list) }
+  function first<T>(list: seq<T>): T
+    requires |list| > 0
+  { head(list) }
+
+  // `arr[arr.length - 1]`: `last([])` is undefined, so the empty list is
+  // excluded.
+  function last<T>(list: seq<T>): T
+    requires |list| > 0
+  { list[|list| - 1] }
 
   // `(arr.length > 1) ? slice(arr, 1) : []`
   function tail<T>(list: seq<T>): seq<T>

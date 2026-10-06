@@ -110,22 +110,22 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.1.3)
+## Modules and exports (v0.1.4)
 
 | Module | Exports |
 |---|---|
-| `Ramdaf.Core` | clone, cloneDeep, isEmpty, prepend, cons, head, car, tail, cdr, append, push, merge, concat, identity, I, repeatN, size |
+| `Ramdaf.Core` | clone, cloneDeep, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, merge, concat, identity, I, repeatN, size |
 | `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, alwaysZero, alwaysFalse, alwaysTrue |
-| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldl1, foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), foldr1, unfoldr, mapSeq (`map`), mapIdx (`map.idx`), filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, splice, nth |
+| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldl1, foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), foldr1, unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, slice, sliceFrom (`slice.from`), splice, nth, partition |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | eq, prop, get, props, keys, values, pick, pickAll, omit, mixin, eqProps, where, propEq |
-| `Ramdaf.Logic` | and, or, not, andFn, orFn, notFn, allPredicates, anyPredicates |
+| `Ramdaf.Logic` | and, or, not, allPredicates, anyPredicates |
 | `Ramdaf.Math` | add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy, sum, product, lt, lte, gt, gte, max, maxWith, minWith, min |
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 126 of Ramda v0.1.3's 149 export names, plus 7 of the 9 functions
-stored as properties of exports (`map.idx` and the like). The other 23 names
+That is 128 of Ramda v0.1.4's 150 export names, plus 8 of the 10 functions
+stored as properties of exports (`map.idx` and the like). The other 22 names
 and the 2 properties `each.idx`/`forEach.idx` are listed under "Not portable".
 
 ### Support declarations
@@ -142,13 +142,13 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.1.3 does not export `uniqWith`, `containsWith` or `keyValue`; they
+Ramda v0.1.4 does not export `uniqWith`, `containsWith` or `keyValue`; they
 are local `var`s in `ramda.js`. Ramdaf does not export them either. The
 `*With` functions in Data carry `uniqWith`'s recursion themselves.
 
 ## Not portable
 
-These Ramda v0.1.3 exports are not ported, rather than faked:
+These Ramda v0.1.4 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -162,16 +162,15 @@ These Ramda v0.1.3 exports are not ported, rather than faked:
 | `construct` | Calls JS constructors with `new`. |
 | `tap` (`K`) | Its purpose is a side effect (`fn(x)`), which a pure function cannot have. |
 | `each` (`forEach`), `each.idx` (`forEach.idx`) | Call `fn` on each element for its side effect and return the list itself. |
-| `maybe` | Inspects how many arguments arrived and whether they are `null`/`undefined`. |
 | `installTo` | Copies the library onto a global or host object. |
 | `isAtom` | Tests the run-time type of an arbitrary value. |
 | `match` | Regular expressions. |
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.1.3 (node) | Ramdaf |
+| Function | Ramda v0.1.4 (node) | Ramdaf |
 |---|---|---|
-| `head`, `car` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0) | `requires \|list\| > 0` |
+| `head`, `car`, `first`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
 | `foldl1`, `foldr1` | throw `Error` on `[]` | `requires \|list\| > 0` |
 | `take` | `take(5, [1, 2])` → `[1, 2, <3 empty items>]`; `take(-1, l)` throws `RangeError` | `n: nat`, `requires n <= \|list\|` |
 | `skip`, `drop` | `skip(-1, [1, 2])` → `[undefined, 1, 2]` | `n: nat` |
@@ -189,7 +188,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.1.3 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.1.4 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
@@ -197,11 +196,12 @@ a signature (an arity or an operand type) is enforced by the types.
 | `unfoldr` | loops until `fn` returns a falsy value, possibly forever | extra `fuel: nat` parameter; stops after `fuel` elements | Dafny functions must terminate. |
 | `compose`, `pipe`/`sequence` | variadic: `compose(a, b, c, d)` | binary: `compose(a, compose(b, compose(c, d)))`. There is no unary form; `compose(f)` is `f`. | Dafny functions have fixed arity. |
 | `always`, `alwaysZero`, `alwaysFalse`, `alwaysTrue` | ignore however many arguments they get | take exactly one argument of any type (`always(7)(())`) | Fixed arity. |
-| `andFn`, `orFn`, `notFn`, `fork` | forward any number of arguments | unary functions (pass a tuple) | Fixed arity. |
+| `and`, `or`, `not`, `fork` | forward any number of arguments | unary functions (pass a tuple) | Fixed arity. |
+| `fork` | takes any number of functions after `after`: `fork(after, f1, f2, f3)` | exactly two, `fork(after, f1, f2)` | Fixed arity. |
 | `mapIdx`, `filterIdx`, `rejectIdx`, `foldlIdx`/`reduceIdx`, `foldrIdx`/`reduceRightIdx` | call `fn(x, idx, list)` (folds: `fn(acc, x, idx, list)`), and a function that declares fewer parameters ignores the rest: `map.idx(times2, l)` | the callback takes all three (four) | Fixed arity. |
 | `allPredicates`, `anyPredicates` | `allPredicates(preds, v)` applies at once; the result reports the longest predicate's arity | `allPredicates(preds)(v)`; no arity | Fixed arity. |
-| `and`, `or`, `not` | coerce operands by truthiness: `and([], "abc")` → `true`, `not("")` → `true` | `bool` operands | Typed. |
 | `add`, `subtract`, `multiply`, `sum`, `product`, `lt`, `lte`, `gt`, `gte`, `max`, `min`, `subtractN`, `modulo`, `moduloBy` | JS numbers (doubles) and coercion: `lt("abc", "xyz")` → `true`, `max([-4.3, -1.1])` → `-1.1` | `int` (`divide`/`divideBy`: `real`) | Typed. |
+| `partition` | uses whatever `fn` returns as a key, converted to a string: `partition(x => x > 2, [1, 3])` → `{false: [1], true: [3]}` | `fn: T -> string` | Typed. |
 | `join` | converts elements to strings: `join("~", [1, 2, 3, 4])` → `"1~2~3~4"` | `seq<string>` elements | Typed. |
 | `cloneDeep` | `JSON.stringify` drops a property whose value is `undefined`: `cloneDeep({g: undefined, a: 1})` → `{a: 1}` | the value itself, `map["g" := None, "a" := Some(1)]` | The copy of an immutable value is the value; dropping `None` entries cannot be written for an arbitrary `T`. |
 | `sortBy` | compares keys with JS `<`, so string keys sort: `sortBy(s => s, ["b", "a", "c"])` → `["a", "b", "c"]` | `int` keys | Dafny cannot order arbitrary key types, and overloading by key type is not possible. |
@@ -231,7 +231,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 | v0.1.1 | 2014-05-18 | ported | — |
 | v0.1.2 | 2014-05-18 | ported | — |
 | v0.1.3 | 2014-06-02 | ported | — |
-| v0.1.4 | 2014-06-10 | pending | — |
+| v0.1.4 | 2014-06-10 | ported | — |
 | v0.1.5 | 2014-06-15 | pending | — |
 | v0.2.0 | 2014-06-27 | pending | — |
 | v0.2.1 | 2014-06-27 | pending | — |
@@ -387,6 +387,39 @@ side-effect counting, JS coercion, reference equality, string-keyed
   describe replaces test.lazy.js's `repeat.nTimes`, which left `test/`.
 - **Expected tier: major.** `repeatNTimes` (Ramda's `repeat.nTimes`) was
   removed (`casestudy/expected/v0.1.3.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.1.4 (2014-06-10)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node):
+  - The boolean operators `and`, `or` and `not` are deleted, and the
+    predicate combinators `andFn`, `orFn` and `notFn` are renamed to `and`,
+    `or` and `not` (`and(true, false)` was `false`; now `and(f, g)` returns a
+    predicate).
+  - `fork` takes `after` first and any number of functions:
+    `fork(after, f1, ..., fn)`.
+  - New: `first` (an alias of `head`), `last`, `mapObj`, `partition`
+    (groups a list by the string key a function returns, like `groupBy`;
+    Ramda's test groups students by grade), `slice(from, to, list)` and
+    `slice.from(from, list)` (`Array.prototype.slice`).
+  - `maybe` is removed.
+  - `indexOf`, `lastIndexOf` and `join` become `invoker`s over
+    `Array.prototype`; on arrays their results are unchanged (checked in
+    node).
+- **Ramdaf:**
+  - `and`, `or`, `not` take and return predicates (`T -> bool`); `andFn`,
+    `orFn`, `notFn` are removed.
+  - `fork(after, f1, f2)`: exactly two functions ("Deviations").
+  - Added `first`, `last` (non-empty lists), `mapObj`, `slice`, `sliceFrom`
+    and `partition(fn: T -> string, list)` in List, where `ramda.js` defines
+    them.
+  - `maybe` leaves "Not portable"; the boolean-coercion deviation row goes
+    with the boolean operators.
+  - Tests: the rewritten test.booleans.js, the reordered `fork` test,
+    test.core.js's `last`, test.list.js's `slice`/`slice.from`, test.map.js's
+    `mapObj`, and the new test.partition.js.
+- **Expected tier: major.** `and`, `or`, `not` and `fork` changed signature,
+  and `andFn`, `orFn`, `notFn` were removed (`casestudy/expected/v0.1.4.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

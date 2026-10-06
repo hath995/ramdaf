@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.1.3 under node; the methods named Deviation* pin documented
+// ramda.js v0.1.4 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -150,6 +150,16 @@ module RamdafTests.Edge.Misc {
     expect toLowerCase("AbC-1") == "abc-1";
   }
 
+  // and/or/not combine predicates (v0.1.4 renamed andFn/orFn/notFn).
+  method {:test} PredicateCombinators() {
+    expect and((x: int) => x > 0, (x: int) => x < 10)(5) == true;
+    expect and((x: int) => x > 0, (x: int) => x < 10)(15) == false;
+    expect or((x: int) => x < 0, (x: int) => x > 10)(15) == true;
+    expect or((x: int) => x < 0, (x: int) => x > 10)(5) == false;
+    expect not((x: int) => x > 0)(5) == false;
+    expect not((x: int) => x > 0)(-1) == true;
+  }
+
   method {:test} LogicAndFunctionEdges() {
     var none: seq<int -> bool> := [];
     expect allPredicates(none)(5) == true;
@@ -163,11 +173,11 @@ module RamdafTests.Edge.Misc {
 
   // fork applies both functions to the same argument, then combines them.
   method {:test} ForkEdges() {
-    expect fork((x: int) => x + 1, (x: int) => x * 2, (a: int, b: int) => [a, b])(5) == [6, 10];
-    expect fork((s: string) => |s|, (s: string) => s + "!", (n: int, t: string) => t + NumStr(n))("ab") == "ab!2";
-    // node: fork((a, b) => a + b, (a, b) => a * b, (x, y) => [x, y])(2, 5)
+    expect fork((a: int, b: int) => [a, b], (x: int) => x + 1, (x: int) => x * 2)(5) == [6, 10];
+    expect fork((n: int, t: string) => t + NumStr(n), (s: string) => |s|, (s: string) => s + "!")("ab") == "ab!2";
+    // node: fork((x, y) => [x, y], (a, b) => a + b, (a, b) => a * b)(2, 5)
     // is [7, 10]; the port's result is unary, so the arguments are a tuple.
-    expect fork((t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1, (x: int, y: int) => [x, y])((2, 5)) == [7, 10];
+    expect fork((x: int, y: int) => [x, y], (t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1)((2, 5)) == [7, 10];
   }
 
   // ---- documented deviations (not node behaviour) ----

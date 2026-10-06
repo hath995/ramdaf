@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.1.3 "Arithmetic Functions" (ramda.js lines 1139-1249).
+// Ramdaf: Ramda v0.1.4 "Arithmetic Functions" (ramda.js lines 1149-1259).
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 

@@ -1,4 +1,4 @@
-// Ramda v0.1.3 test/test.objectBasics.js, test/test.keysvals.js and
+// Ramda v0.1.4 test/test.objectBasics.js, test/test.keysvals.js and
 // test/test.tapeq.js, transcribed. Not transcribed: describe('func') and
 // describe('tap') (not portable, README), `eq([], [])` (reference equality,
 // README "Deviations"; pinned in tests/edge/object.dfy).

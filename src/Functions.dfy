@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.1.3 "Function functions" (ramda.js lines 307-415) and the
-// `always` family (lines 929-932, 1046-1053).
+// Ramdaf: Ramda v0.1.4 "Function functions" (ramda.js lines 313-420) and the
+// `always` family (lines 965-968, 1074-1081).
 // compose/pipe are variadic in JS; the port is binary (nest for more functions).
 
 module Ramdaf.Functions {
@@ -18,10 +18,11 @@ module Ramdaf.Functions {
   // `flip(fn)(a, b) == fn(b, a)`
   function flip<A, B, C>(fn: (A, B) -> C): (B, A) -> C { (b, a) => fn(a, b) }
 
-  // `fork(f1, f2, after)(...args) == after(f1(...args), f2(...args))`. JS
-  // passes along however many arguments the result gets; the port's result
-  // is unary (tuple the arguments for more).
-  function fork<A, B, C, D>(f1: A -> B, f2: A -> C, after: (B, C) -> D): A -> D
+  // `fork(after, f1, ..., fn)(...args) == after(f1(...args), ..., fn(...args))`
+  // (v0.1.4 moved `after` first and allowed any number of functions). The
+  // port takes exactly two functions, and its result is unary (tuple the
+  // arguments for more).
+  function fork<A, B, C, D>(after: (B, C) -> D, f1: A -> B, f2: A -> C): A -> D
   { x => after(f1(x), f2(x)) }
 
   // JS `always(v)` ignores however many arguments it gets; the port's result

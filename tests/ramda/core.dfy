@@ -1,10 +1,10 @@
-// Ramda v0.1.3 test/test.core.js and test/test.clone.js, transcribed. Not
-// transcribed: describe('isAtom') (not portable, README); head's "returns null
-// for an empty list" and "for no arguments" (the empty list is outside head's
-// domain, README "Outside the modeled domain"); tail's "returns an empty list
-// for no arguments" (no-argument call of a list function); cloneDeep's "does
-// not copy objects in the array by reference" (asserts reference inequality,
-// which Dafny values do not have).
+// Ramda v0.1.4 test/test.core.js and test/test.clone.js, transcribed. Not
+// transcribed: describe('isAtom') (not portable, README); head's and last's
+// "returns undefined for an empty list" and "for no arguments" (the empty list
+// is outside their domain, README "Outside the modeled domain"); tail's
+// "returns an empty list for no arguments" (no-argument call of a list
+// function); cloneDeep's "does not copy objects in the array by reference"
+// (asserts reference inequality, which Dafny values do not have).
 
 module RamdafTests.Ramda.Core {
   import opened Ramdaf.Core
@@ -40,6 +40,11 @@ module RamdafTests.Ramda.Core {
   // describe('head')
   method {:test} HeadReturnsTheFirstElement() {
     expect head(["a", "b", "c", "d"]) == "a";
+  }
+
+  // describe('last') ("returns the first element of a list" checks the last)
+  method {:test} LastReturnsTheLastElement() {
+    expect last(["a", "b", "c", "d"]) == "d";
   }
 
   // describe('tail')

@@ -1,0 +1,19 @@
+{
+  "ramda": "v0.1.4",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Core.first", "kind": "added", "why": "new in v0.1.4: aliasFor('head').is('car').and('first')"},
+    {"symbol": "Ramdaf.Core.last", "kind": "added", "why": "new in v0.1.4: arr[arr.length - 1]"},
+    {"symbol": "Ramdaf.Functions.fork", "kind": "breaking", "why": "v0.1.4 fork(after, ...fns): after moved from last to first parameter"},
+    {"symbol": "Ramdaf.List.mapObj", "kind": "added", "why": "new in v0.1.4"},
+    {"symbol": "Ramdaf.List.slice", "kind": "added", "why": "new in v0.1.4: invoker('slice', Array.prototype)"},
+    {"symbol": "Ramdaf.List.sliceFrom", "kind": "added", "why": "new in v0.1.4: slice.from = flip(slice)(undefined)"},
+    {"symbol": "Ramdaf.List.partition", "kind": "added", "why": "new in v0.1.4: groups by the string key fn returns"},
+    {"symbol": "Ramdaf.Logic.and", "kind": "breaking", "why": "v0.1.4 deleted the boolean and; the name now holds andFn's predicate combinator ((bool, bool) -> bool became (T -> bool, T -> bool) -> (T -> bool))"},
+    {"symbol": "Ramdaf.Logic.or", "kind": "breaking", "why": "v0.1.4 deleted the boolean or; the name now holds orFn's predicate combinator"},
+    {"symbol": "Ramdaf.Logic.not", "kind": "breaking", "why": "v0.1.4 deleted the boolean not; the name now holds notFn's predicate negation"},
+    {"symbol": "Ramdaf.Logic.andFn", "kind": "removed", "why": "v0.1.4 renamed andFn to and"},
+    {"symbol": "Ramdaf.Logic.orFn", "kind": "removed", "why": "v0.1.4 renamed orFn to or"},
+    {"symbol": "Ramdaf.Logic.notFn", "kind": "removed", "why": "v0.1.4 renamed notFn to not"}
+  ]
+}
