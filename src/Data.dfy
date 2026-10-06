@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.1.0 "Data Analysis and Grouping Functions" (ramda.js lines
-// 1242-1348), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy).
+// Ramdaf: Ramda v0.1.1 "Data Analysis and Grouping Functions" (ramda.js lines
+// 1405-1508), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy).
 //
-// Ramda's `uniqWith` and `containsWith` are internal in v0.1.0 (not on `R`),
+// Ramda's `uniqWith` and `containsWith` are internal in v0.1.1 (not on `R`),
 // so the `*With` functions below carry their own recursion: each is
 // `uniqWith(pred, ...)` unrolled, where `uniqWith` scans from the right and
 // drops x when `pred(x, y)` holds for an element y it already kept.
@@ -63,12 +63,17 @@ module Ramdaf.Data {
             (exists j :: 0 <= j < |acc| && pred(first[0], acc[j]))
          then acc else [first[0]] + acc }
 
-  // `uniq` of the elements of list1 that occur in list2.
+  // `uniq(filter(flip(contains)(list1), list2))`: the elements of list2 that
+  // occur in list1, each kept at its last occurrence in list2 (since v0.1.1
+  // the order follows list2: `intersection([1, 2, 3, 4], [4, 3, 2]) ==
+  // [4, 3, 2]`).
   function intersection<T(==)>(list1: seq<T>, list2: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |intersection(list1, list2)| ==>
       intersection(list1, list2)[i] in list1 && intersection(list1, list2)[i] in list2
-    ensures forall i :: 0 <= i < |list1| && list1[i] in list2 ==> list1[i] in intersection(list1, list2)
-  { List.uniq(List.filter(x => x in list2, list1)) }
+    ensures forall i :: 0 <= i < |list2| && list2[i] in list1 ==> list2[i] in intersection(list1, list2)
+    ensures forall i, j :: 0 <= i < j < |intersection(list1, list2)| ==>
+      intersection(list1, list2)[i] != intersection(list1, list2)[j]
+  { List.uniq(List.filter(x => x in list1, list2)) }
 
   // `uniqWith(pred, results)`, where results are the elements x of list1 with
   // `pred(x, y)` for some y in list2.

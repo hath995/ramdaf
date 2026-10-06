@@ -1,12 +1,13 @@
-// Ramdaf: Ramda v0.1.0 "Object Functions" (ramda.js lines 864-966) and `propEq`
-// (line 1271). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.1.1 "Object Functions" (ramda.js lines 980-1119) and `propEq`
+// (line 1434). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None.
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, get, props, keys, values, pick, pickAll, omit, eqProps, propEq
+    reveals eq, prop, get, props, keys, values, pick, pickAll, omit, mixin, eqProps,
+            where, propEq
     provides Prelude
 
   // `a === b`. Dafny equality is structural where JS compares objects and
@@ -85,9 +86,30 @@ module Ramdaf.Object {
     ensures omit(names, obj).Keys == obj.Keys - set n | n in names
   { map k | k in obj && k !in names :: obj[k] }
 
+  // `pickAll(keys(a), a)`, then every own property of b is copied over it:
+  // b's value wins where both have the key (Dafny's right-biased map union).
+  function mixin<V>(a: map<string, V>, b: map<string, V>): map<string, V>
+    ensures mixin(a, b).Keys == a.Keys + b.Keys
+    ensures forall k :: k in b ==> mixin(a, b)[k] == b[k]
+    ensures forall k :: k in a && k !in b ==> mixin(a, b)[k] == a[k]
+  { a + b }
+
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal).
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
   { prop(p, obj1) == prop(p, obj2) }
+
+  // `all(key => typeof spec[key] === 'function' ? spec[key](test[key], test)
+  //                                             : test[key] === spec[key], keys(spec))`:
+  // a function entry is called with the test object's property (None when it
+  // is absent, i.e. undefined) and the test object; any other entry must equal
+  // the property, so an absent property fails it. (A spec property whose value
+  // is undefined cannot be written: in this encoding an undefined property is
+  // an absent one.)
+  function where<V(==)>(spec: map<string, SpecVal<V>>, test: map<string, V>): bool
+  { forall k :: k in spec ==>
+      match spec[k]
+        case Pred(fn) => fn(prop(k, test), test)
+        case Val(v) => k in test && test[k] == v }
 
   // `obj[name] === val`
   function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool

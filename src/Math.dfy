@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.1.0 "Arithmetic Functions" (ramda.js lines 1077-1173).
+// Ramdaf: Ramda v0.1.1 "Arithmetic Functions" (ramda.js lines 1228-1338).
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 
@@ -6,8 +6,8 @@ module Ramdaf.Math {
   import opened Prelude
 
   export
-    reveals add, multiply, subtract, subtractN, divide, divideBy, sum, product,
-            lt, lte, gt, gte, max, maxWith, minWith, min
+    reveals add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy,
+            sum, product, lt, lte, gt, gte, max, maxWith, minWith, min
     provides Prelude
 
   function add(a: int, b: int): int { a + b }
@@ -28,6 +28,30 @@ module Ramdaf.Math {
   function divideBy(a: real, b: real): real
     requires a != 0.0
   { b / a }
+
+  // JS `a % b`: the remainder of the division truncated toward zero, so it
+  // takes the dividend's sign (`modulo(-5, 4) == -1`, `modulo(7, -3) == 1`).
+  // Dafny's `%` is Euclidean (never negative), so the body works on absolute
+  // values. `a % 0` is NaN, which int cannot hold.
+  function modulo(a: int, b: int): int
+    requires b != 0
+    ensures exists q :: a == b * q + modulo(a, b)
+    ensures -(if b < 0 then -b else b) < modulo(a, b) < (if b < 0 then -b else b)
+    ensures a >= 0 ==> modulo(a, b) >= 0
+    ensures a <= 0 ==> modulo(a, b) <= 0
+  { var aa := if a < 0 then -a else a;
+    var bb := if b < 0 then -b else b;
+    var r := aa % bb;
+    var res := if a < 0 then -r else r;
+    var m := if (a < 0) == (b < 0) then aa / bb else -(aa / bb);
+    assert aa == bb * (aa / bb) + r;
+    assert a == b * m + res;
+    res }
+
+  // `moduloBy = flip(modulo)`: `moduloBy(a, b) == b % a`
+  function moduloBy(a: int, b: int): int
+    requires a != 0
+  { modulo(b, a) }
 
   // `foldl(add, 0)`
   function sum(list: seq<int>): int
@@ -69,6 +93,7 @@ module Ramdaf.Math {
   // Ramda keeps a running maximum, replacing it only when
   // `comparator(max, list[idx]) < 0`: the first maximal element wins. The
   // recursion folds the first two elements into one, which is that loop.
+  // The empty list gives null (undefined before v0.1.1), here None.
   function maxWith<T>(comparator: (T, T) -> int, list: seq<T>): Option<T>
     decreases |list|
     ensures maxWith(comparator, list).None? <==> |list| == 0

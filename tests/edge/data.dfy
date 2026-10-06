@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against ramda.js v0.1.0 under node;
+// Edge cases for Sort and Data, checked against ramda.js v0.1.1 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -33,15 +33,19 @@ module RamdafTests.Edge.Data {
     expect sortBy((r: (int, int)) => r.0, [(2, 0), (1, 1), (2, 2), (1, 3)]) == [(1, 1), (1, 3), (2, 0), (2, 2)];
   }
 
-  // union/difference/intersection keep the last occurrence (uniq).
+  // union/difference/intersection keep the last occurrence (uniq);
+  // intersection takes its elements, and their order, from the second list.
   method {:test} SetOperationsKeepLastOccurrences() {
     var empty: seq<int> := [];
     expect union([1, 2, 3], [1]) == [2, 3, 1];
     expect union(empty, empty) == [];
     expect difference([1, 2, 1, 3], [3]) == [2, 1];
     expect difference([1, 1, 2], empty) == [1, 2];
-    expect intersection([1, 2, 1, 3], [1, 2]) == [2, 1];
-    expect intersection([2, 1, 2], [2, 1]) == [1, 2];
+    expect intersection([1, 2, 1, 3], [1, 2]) == [1, 2];
+    expect intersection([2, 1, 2], [2, 1]) == [2, 1];
+    expect intersection([1, 2, 3, 4], [4, 3, 2]) == [4, 3, 2];
+    expect intersection([1, 2, 1, 3], [3, 1, 1]) == [3, 1];
+    expect intersection([1, 2], [3, 1, 2, 1]) == [2, 1];
   }
 
   function mod3(a: int, b: int): bool { a % 3 == b % 3 }

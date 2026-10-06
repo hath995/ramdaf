@@ -1,4 +1,4 @@
-// Ramda v0.1.0 test/test.filter.js, transcribed ("automatically curried" cases
+// Ramda v0.1.1 test/test.filter.js, transcribed ("automatically curried" cases
 // apply the partially applied function in full).
 
 module RamdafTests.Ramda.Filter {
@@ -16,6 +16,27 @@ module RamdafTests.Ramda.Filter {
     expect onlyEven([1, 2, 3, 4, 5, 6, 7]) == [2, 4, 6];
   }
 
+  // describe('filter.idx')
+  function everyOther(val: int, idx: nat, list: seq<int>): bool { idx % 2 == 0 }
+  function lastTwo(val: int, idx: nat, list: seq<int>): bool { |list| - idx < 3 }
+
+  method {:test} FilterIdxWorksJustLikeANormalFilter() {
+    expect filterIdx((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [2, 4];
+  }
+
+  method {:test} FilterIdxPassesTheIndexAsASecondParameter() {
+    expect filterIdx(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [8, 7, 3, 9];
+  }
+
+  method {:test} FilterIdxPassesTheEntireListAsAThirdParameter() {
+    expect filterIdx(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [0, 9];
+  }
+
+  method {:test} FilterIdxIsAutomaticallyCurried() {
+    var everyOtherPosition := (l: seq<int>) => filterIdx(everyOther, l);
+    expect everyOtherPosition([8, 6, 7, 5, 3, 0, 9]) == [8, 7, 3, 9];
+  }
+
   // describe('reject')
   method {:test} RejectReducesToNonMatchingElements() {
     expect reject(even, [1, 2, 3, 4, 5]) == [1, 3, 5];
@@ -24,6 +45,24 @@ module RamdafTests.Ramda.Filter {
   method {:test} RejectIsAutomaticallyCurried() {
     var odd := (l: seq<int>) => reject(even, l);
     expect odd([1, 2, 3, 4, 5, 6, 7]) == [1, 3, 5, 7];
+  }
+
+  // describe('reject.idx')
+  method {:test} RejectIdxWorksJustLikeANormalReject() {
+    expect rejectIdx((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [1, 3, 5];
+  }
+
+  method {:test} RejectIdxPassesTheIndexAsASecondParameter() {
+    expect rejectIdx(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [6, 5, 0];
+  }
+
+  method {:test} RejectIdxPassesTheEntireListAsAThirdParameter() {
+    expect rejectIdx(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [8, 6, 7, 5, 3];
+  }
+
+  method {:test} RejectIdxIsAutomaticallyCurried() {
+    var everyOtherPosition := (l: seq<int>) => rejectIdx(everyOther, l);
+    expect everyOtherPosition([8, 6, 7, 5, 3, 0, 9]) == [6, 5, 0];
   }
 
   // describe('takeWhile')

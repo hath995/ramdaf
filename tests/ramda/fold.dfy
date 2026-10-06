@@ -1,7 +1,9 @@
-// Ramda v0.1.0 test/test.fold.js, transcribed. The "should correctly report
-// the arity of curried versions" cases have no Dafny counterpart (functions
-// are uncurried); "should throw an error with an empty array" is the
-// `requires |list| > 0` precondition, checked statically.
+// Ramda v0.1.1 test/test.fold.js, transcribed. Not transcribed: the "should
+// correctly report the arity of curried versions" cases (Dafny functions have
+// no arity), and foldl.idx's "works just like normal foldl" and "passes the
+// entire list as a fourth parameter" (both have empty bodies in Ramda).
+// v0.1.1 dropped the foldl1 and foldr1 describes; their node-checked cases are
+// in tests/edge/list.dfy.
 
 module RamdafTests.Ramda.Fold {
   import opened Ramdaf.List
@@ -33,20 +35,9 @@ module RamdafTests.Ramda.Fold {
     expect reduce(add, 0, [1, 2, 3, 4]) == 10;
   }
 
-  // describe('foldl1')
-  method {:test} Foldl1FoldsWithoutAnAccumulator() {
-    expect foldl1(add, [1, 2, 3, 4]) == 10;
-    expect foldl1(mult, [1, 2, 3, 4]) == 24;
-  }
-
-  method {:test} Foldl1IsAutomaticallyCurried() {
-    var sum := (l: seq<int>) requires |l| > 0 => foldl1(add, l);
-    expect sum([1, 2, 3, 4]) == 10;
-  }
-
   // describe('foldr')
   method {:test} FoldrFoldsListsInTheRightOrder() {
-    expect foldr((a: string, b: string) => a + b, "", ["a", "b", "c", "d"]) == "abcd";
+    expect foldr((a: string, b: string) => a + b, "", ["a", "b", "c", "d"]) == "dcba";
   }
 
   method {:test} FoldrFoldsWithTheSuppliedAccumulator() {
@@ -67,17 +58,47 @@ module RamdafTests.Ramda.Fold {
     expect reduceRight(avg, 54.0, [12.0, 4.0, 10.0, 6.0]) == 12.0;
   }
 
-  // describe('foldr1')
-  method {:test} Foldr1FoldsListsInTheRightOrder() {
-    expect foldr1((a: string, b: string) => a + b, ["a", "b", "c", "d"]) == "abcd";
+  // describe('foldl.idx')
+  function timesIdx(tot: int, num: int, idx: nat, ls: seq<int>): int { tot + num * idx }
+
+  // `objectify` assigns `acc[elem] = idx` on an object.
+  method {:test} FoldlIdxPassesTheIndexAsAThirdParameter() {
+    expect foldlIdx(timesIdx, 0, [1, 2, 3, 4, 5]) == 40;
+    var empty: map<string, nat> := map[];
+    expect foldlIdx((acc: map<string, nat>, elem: string, idx: nat, ls: seq<string>) => acc[elem := idx],
+                    empty, ["a", "b", "c", "d", "e"]) == map["a" := 0, "b" := 1, "c" := 2, "d" := 3, "e" := 4];
   }
 
-  method {:test} Foldr1FoldsWithoutAnAccumulator() {
-    expect foldr1(avg, [12.0, 4.0, 10.0, 6.0, 54.0]) == 12.0;
+  // describe('foldr.idx')
+  method {:test} FoldrIdxFoldsListsInTheRightOrder() {
+    expect foldrIdx((a: string, b: string, idx: nat, list: seq<string>) => a + NumStr(idx) + b, "",
+                    ["a", "b", "c", "d"]) == "3d2c1b0a";
   }
 
-  method {:test} Foldr1IsAutomaticallyCurried() {
-    var something := (l: seq<real>) requires |l| > 0 => foldr1(avg, l);
-    expect something([12.0, 4.0, 10.0, 6.0, 54.0]) == 12.0;
+  method {:test} FoldrIdxFoldsWithTheSuppliedAccumulator() {
+    var empty: seq<int> := [];
+    expect foldrIdx((acc: seq<int>, n: int, i: nat, ls: seq<int>) => acc + [i, n], empty, [12, 4, 10, 6]) ==
+      [3, 6, 2, 10, 1, 4, 0, 12];
   }
+
+  // `assert.equal(..., 0)`: JS `[] == 0` is true; the result is the empty
+  // accumulator.
+  method {:test} FoldrIdxReturnsTheAccumulatorForAnEmptyArray() {
+    var empty: seq<int> := [];
+    expect foldrIdx((a: seq<int>, n: int, i: nat, ls: seq<int>) => a + [i], empty, empty) == empty;
+  }
+
+  method {:test} FoldrIdxIsAutomaticallyCurried() {
+    var something := (l: seq<int>) => foldrIdx((acc: int, b: int, i: nat, ls: seq<int>) => acc + i + b, 54, l);
+    expect something([12, 4, 10, 6]) == 92;
+  }
+
+  // "should be aliased by `reduceRight`" (`reduceRight.idx === foldr.idx`)
+  method {:test} FoldrIdxIsAliasedByReduceRightIdx() {
+    expect reduceRightIdx((acc: int, b: int, i: nat, ls: seq<int>) => acc + i + b, 54, [12, 4, 10, 6]) == 92;
+  }
+
+  // `'' + n` for the index in "folds lists in the right order"
+  function NumStr(n: nat): string
+  { if n < 10 then [('0' as int + n) as char] else NumStr(n / 10) + NumStr(n % 10) }
 }

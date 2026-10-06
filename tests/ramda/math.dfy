@@ -1,4 +1,4 @@
-// Ramda v0.1.0 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.1.1 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations").
 
@@ -33,6 +33,36 @@ module RamdafTests.Ramda.Math {
   // describe('divideBy')
   method {:test} DivideByDividesTwoNumbers() { expect divideBy(7.0, 28.0) == 4.0; }
   method {:test} DivideByIsAutomaticallyCurried() { var half := (x: real) => divideBy(2.0, x); expect half(40.0) == 20.0; }
+
+  // describe('modulo')
+  method {:test} ModuloDividesAndReturnsTheRemainder() {
+    expect modulo(100, 2) == 0;
+    expect modulo(100, 3) == 1;
+    expect modulo(100, 17) == 15;
+  }
+  method {:test} ModuloIsAutomaticallyCurried() {
+    var modOf120by := (x: int) requires x != 0 => modulo(120, x);
+    expect modOf120by(3) == 0;
+    expect modOf120by(19) == 6;
+  }
+  method {:test} ModuloPreservesJsModuloForNegativeNumbers() {
+    expect modulo(-5, 4) == -1;
+  }
+
+  // describe('moduloBy')
+  method {:test} ModuloByDividesTheSecondByTheFirst() {
+    expect moduloBy(2, 100) == 0;
+    expect moduloBy(3, 100) == 1;
+    expect moduloBy(17, 100) == 15;
+  }
+  method {:test} ModuloByIsAutomaticallyCurried() {
+    var isOdd := (x: int) => moduloBy(2, x);
+    expect isOdd(3) == 1;
+    expect isOdd(198) == 0;
+  }
+  method {:test} ModuloByPreservesJsModuloForNegativeNumbers() {
+    expect moduloBy(4, -5) == -1;
+  }
 
   // describe('sum'), describe('product')
   method {:test} SumAddsTheArray() { expect sum([1, 2, 3, 4]) == 10; }
@@ -110,7 +140,7 @@ module RamdafTests.Ramda.Math {
   method {:test} MaxWithUsesTheComparator() {
     expect maxWith(ByX, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
   }
-  method {:test} MaxWithReturnsUndefinedForTheEmptyList() {
+  method {:test} MaxWithReturnsNullForTheEmptyList() {
     var empty: seq<map<string, int>> := [];
     expect maxWith(ByX, empty) == None;
   }
@@ -123,7 +153,7 @@ module RamdafTests.Ramda.Math {
   method {:test} MinWithUsesTheComparator() {
     expect minWith(ByX, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
   }
-  method {:test} MinWithReturnsUndefinedForTheEmptyList() {
+  method {:test} MinWithReturnsNullForTheEmptyList() {
     var empty: seq<map<string, int>> := [];
     expect minWith(ByX, empty) == None;
   }

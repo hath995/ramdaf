@@ -1,0 +1,29 @@
+{
+  "ramda": "v0.1.1",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Prelude.SpecVal", "kind": "added", "why": "encodes the entries of where's spec object (function or value), new in v0.1.1"},
+    {"symbol": "Ramdaf.Core.cloneDeep", "kind": "added", "why": "new in v0.1.1: R.cloneDeep (JSON round trip)"},
+    {"symbol": "Ramdaf.Core.repeatNTimes", "kind": "added", "why": "new in v0.1.1: repeat.nTimes(value, n) (repeat itself is a generator, not ported)"},
+    {"symbol": "Ramdaf.Functions.fog", "kind": "removed", "why": "v0.1.1 dropped the aliasFor('compose').is('fog') alias"},
+    {"symbol": "Ramdaf.List.foldr", "kind": "breaking", "why": "v0.1.1 internalFoldr calls fn(acc, list[idx]): the callback type changed from (B, A) -> A to (A, B) -> A"},
+    {"symbol": "Ramdaf.List.reduceRight", "kind": "breaking", "why": "alias of foldr: the same callback signature change"},
+    {"symbol": "Ramdaf.List.foldr1", "kind": "breaking", "why": "delegates to foldr, so the callback now receives (acc, x): foldr1(f, [a, b, c]) is f(f(c, b), a), was f(a, f(b, c)); same type"},
+    {"symbol": "Ramdaf.Data.intersection", "kind": "breaking", "why": "v0.1.1 is uniq(filter(flip(contains)(list1), list2)): elements and order now come from list2 (node: [1,2,3,4],[4,3,2] gives [4,3,2], was [2,3,4])"},
+    {"symbol": "Ramdaf.List.foldlIdx", "kind": "added", "why": "new in v0.1.1: foldl.idx"},
+    {"symbol": "Ramdaf.List.reduceIdx", "kind": "added", "why": "new in v0.1.1: reduce.idx, the same function as foldl.idx"},
+    {"symbol": "Ramdaf.List.foldrIdx", "kind": "added", "why": "new in v0.1.1: foldr.idx"},
+    {"symbol": "Ramdaf.List.reduceRightIdx", "kind": "added", "why": "new in v0.1.1: reduceRight.idx, the same function as foldr.idx"},
+    {"symbol": "Ramdaf.List.mapIdx", "kind": "added", "why": "new in v0.1.1: map.idx"},
+    {"symbol": "Ramdaf.List.filterIdx", "kind": "added", "why": "new in v0.1.1: filter.idx"},
+    {"symbol": "Ramdaf.List.rejectIdx", "kind": "added", "why": "new in v0.1.1: reject.idx"},
+    {"symbol": "Ramdaf.List.findIndex", "kind": "added", "why": "new in v0.1.1"},
+    {"symbol": "Ramdaf.List.findLast", "kind": "added", "why": "new in v0.1.1 (its while (--idx) loop never tests index 0)"},
+    {"symbol": "Ramdaf.List.findLastIndex", "kind": "added", "why": "new in v0.1.1 (its while (--idx) loop never tests index 0)"},
+    {"symbol": "Ramdaf.List.isSet", "kind": "added", "why": "new in v0.1.1"},
+    {"symbol": "Ramdaf.Object.mixin", "kind": "added", "why": "new in v0.1.1"},
+    {"symbol": "Ramdaf.Object.where", "kind": "added", "why": "new in v0.1.1 (function and value spec entries)"},
+    {"symbol": "Ramdaf.Math.modulo", "kind": "added", "why": "new in v0.1.1: JS a % b"},
+    {"symbol": "Ramdaf.Math.moduloBy", "kind": "added", "why": "new in v0.1.1: flip(modulo)"}
+  ]
+}

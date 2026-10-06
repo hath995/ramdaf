@@ -1,4 +1,10 @@
-// Ramda v0.1.0 test/test.core.js, transcribed.
+// Ramda v0.1.1 test/test.core.js and test/test.clone.js, transcribed. Not
+// transcribed: describe('isAtom') (not portable, README); head's "returns null
+// for an empty list" and "for no arguments" (the empty list is outside head's
+// domain, README "Outside the modeled domain"); tail's "returns an empty list
+// for no arguments" (no-argument call of a list function); cloneDeep's "does
+// not copy objects in the array by reference" (asserts reference inequality,
+// which Dafny values do not have).
 
 module RamdafTests.Ramda.Core {
   import opened Ramdaf.Core
@@ -27,6 +33,8 @@ module RamdafTests.Ramda.Core {
   // describe('merge')
   method {:test} MergeCombinesTheLists() {
     expect merge(["a", "b"], ["c", "d"]) == ["a", "b", "c", "d"];
+    var empty: seq<string> := [];
+    expect merge(empty, ["c", "d"]) == ["c", "d"];
   }
 
   // describe('head')
@@ -35,6 +43,11 @@ module RamdafTests.Ramda.Core {
   }
 
   // describe('tail')
+  method {:test} TailReturnsAnEmptyListForAnEmptyList() {
+    var empty: seq<string> := [];
+    expect tail(empty) == [];
+  }
+
   method {:test} TailReturnsTheRest() {
     expect tail(["a", "b", "c", "d"]) == ["b", "c", "d"];
   }
@@ -66,5 +79,25 @@ module RamdafTests.Ramda.Core {
   // describe('comparator')
   method {:test} ComparatorBuildsAComparatorFromALessThanPredicate() {
     expect sort(comparator((a: int, b: int) => a < b), [3, 1, 8, 1, 2, 5]) == [1, 1, 2, 3, 5, 8];
+  }
+
+  // ---- test.clone.js ----
+
+  // describe('clone')
+  method {:test} CloneReturnsACopyOfAnArray() {
+    expect clone([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5];
+  }
+
+  // "copies objects in the array by reference": `c[0]` equals `o1` (Dafny
+  // compares values, so this holds without references).
+  method {:test} CloneCopiesObjectsInTheArrayByReference() {
+    var o1, o2, o3 := map["x" := 1], map["x" := 2], map["x" := 3];
+    var c := clone([o1, o2, o3]);
+    expect c[0] == o1;
+  }
+
+  // describe('cloneDeep')
+  method {:test} CloneDeepReturnsACopyOfAnArray() {
+    expect cloneDeep([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5];
   }
 }

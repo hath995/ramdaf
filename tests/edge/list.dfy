@@ -1,11 +1,12 @@
-// Edge cases Ramda v0.1.0's own suite does not cover, each checked against
-// ramda.js v0.1.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.1.1's own suite does not cover, each checked against
+// ramda.js v0.1.1 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
   import opened Ramdaf.Prelude
   import opened Ramdaf.Core
   import opened Ramdaf.List
+  import opened Support
 
   method {:test} CoreEdges() {
     var empty: seq<int> := [];
@@ -21,16 +22,73 @@ module RamdafTests.Edge.List {
     expect size(empty) == 0;
     expect clone([1, 2]) == [1, 2];
     expect identity(3) == 3;
+    expect cloneDeep([[1], [2, 3]]) == [[1], [2, 3]];
+    expect cloneDeep(map["a" := 1]) == map["a" := 1];
+    expect repeatNTimes(7, 0) == [];
+    expect repeatNTimes("a", 2) == ["a", "a"];
   }
 
-  // foldr folds from the right with the element first.
-  method {:test} FoldrIsRightAssociative() {
+  // foldr runs from the right with the accumulator first (since v0.1.1), and
+  // so does foldr1, which seeds it with the last element.
+  method {:test} FoldrRunsFromTheRightAccumulatorFirst() {
     var empty: seq<int> := [];
-    expect foldr((x: int, acc: seq<int>) => [x] + acc, empty, [1, 2]) == [1, 2];
-    expect foldr((a: string, acc: string) => a + acc, "", ["x", "y", "z"]) == "xyz";
-    expect foldr((a: int, acc: int) => a - acc, 0, [1, 2, 3, 4]) == -2;
-    expect foldr1((a: int, acc: int) => a - acc, [1, 2, 3]) == 2;
-    expect foldr1((a: int, acc: int) => a - acc, [5]) == 5;
+    expect foldr((acc: seq<int>, x: int) => [x] + acc, empty, [1, 2]) == [1, 2];
+    expect foldr((acc: string, a: string) => acc + a, "", ["x", "y", "z"]) == "zyx";
+    expect foldr((acc: int, a: int) => acc - a, 0, [1, 2, 3, 4]) == -10;
+    expect foldr1((acc: int, a: int) => acc - a, [1, 2, 3]) == 0;
+    expect foldr1((acc: int, a: int) => acc - a, [5]) == 5;
+    expect foldr1((a: string, b: string) => a + b, ["a", "b", "c", "d"]) == "dcba";
+  }
+
+  // The idx folds pass (acc, element, index, list).
+  method {:test} IdxFoldsPassTheIndexAndList() {
+    var empty: seq<string> := [];
+    var f := (acc: string, x: string, i: nat, l: seq<string>) => acc + x + NumStr(i) + NumStr(|l|);
+    expect foldlIdx(f, "", ["a", "b"]) == "a02b12";
+    expect foldrIdx(f, "", ["a", "b"]) == "b12a02";
+    expect foldlIdx(f, "5", empty) == "5";
+    expect reduceIdx((acc: int, x: int, i: nat, l: seq<int>) => acc + x * i, 0, [1, 2, 3]) == 8;
+    var none: seq<nat> := [];
+    expect reduceRightIdx((acc: seq<nat>, x: int, i: nat, l: seq<int>) => acc + [i], none, [9, 9, 9]) == [2, 1, 0];
+  }
+
+  method {:test} IdxMapFilterRejectEdges() {
+    var empty: seq<int> := [];
+    expect mapIdx((x: int, i: nat, l: seq<int>) => x + i, empty) == [];
+    expect mapIdx((x: int, i: nat, l: seq<int>) => |l| - i, [5, 5, 5]) == [3, 2, 1];
+    expect filterIdx((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7];
+    expect filterIdx((x: int, i: nat, l: seq<int>) => false, [1, 2]) == [];
+    expect filterIdx((x: int, i: nat, l: seq<int>) => i < |l|, [1, 2]) == [1, 2];
+    expect rejectIdx((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7, 7];
+    expect rejectIdx((x: int, i: nat, l: seq<int>) => true, empty) == [];
+  }
+
+  // findLast/findLastIndex never test index 0 (the `while (--idx)` loop).
+  method {:test} FindFamilyEdges() {
+    var empty: seq<int> := [];
+    expect findIndex((x: int) => true, empty) == None;
+    expect findIndex((x: int) => x > 1, [1, 2, 3]) == Some(1);
+    expect findIndex((x: int) => x > 9, [1, 2, 3]) == None;
+    expect findLastIndex((x: int) => x == 1, [1, 2, 3]) == None;
+    expect findLastIndex((x: int) => x > 1, [1, 2, 3]) == Some(2);
+    expect findLastIndex((x: int) => true, [5]) == None;
+    expect findLast((x: int) => x == 1, [1, 2, 3]) == None;
+    expect findLast((x: int) => x < 3, [1, 2, 3]) == Some(2);
+    expect findLast((x: int) => true, [5]) == None;
+    expect findLast((x: int) => x % 2 == 0, [2, 4, 1]) == Some(4);
+  }
+
+  // isSet(list) is `uniq(list).length === list.length`.
+  method {:test} IsSetEdges() {
+    var empty: seq<int> := [];
+    expect isSet(empty) == true;
+    expect isSet([1, 2, 1]) == false;
+    expect isSet(["a", "b"]) == true;
+    expect isSet([3, 3]) == false;
+    var lists := [[1, 2, 1, 3, 2], [4, 5], [6, 6, 6], empty];
+    for i := 0 to |lists| {
+      expect isSet(lists[i]) == (|uniq(lists[i])| == |lists[i]|);
+    }
   }
 
   method {:test} FoldlIsLeftAssociative() {

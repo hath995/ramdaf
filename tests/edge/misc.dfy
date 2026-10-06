@@ -1,9 +1,10 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.1.0 under node; the methods named Deviation* pin documented
+// ramda.js v0.1.1 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
   import opened Ramdaf.Prelude
+  import opened Ramdaf.Core
   import opened Ramdaf.Object
   import opened Ramdaf.Math
   import opened Ramdaf.String
@@ -34,6 +35,42 @@ module RamdafTests.Edge.Misc {
   // values keeps one entry per key (node: [1, 1]).
   method {:test} ValuesKeepsDuplicates() {
     expect values(map["a" := 1, "b" := 1]) == multiset{1, 1};
+  }
+
+  method {:test} MixinEdges() {
+    var none: map<string, int> := map[];
+    expect mixin(map["a" := 1, "b" := 2], map["b" := 3, "c" := 4]) == map["a" := 1, "b" := 3, "c" := 4];
+    expect mixin(none, map["b" := 3]) == map["b" := 3];
+    expect mixin(map["a" := 1], none) == map["a" := 1];
+  }
+
+  // A function entry sees an absent property as undefined (None); a value
+  // entry fails on an absent property.
+  method {:test} WhereEdges() {
+    var y1 := map["y" := 1];
+    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => v.None?)], y1) == true;
+    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => v == Some(1))], y1) == false;
+    expect where(map["x" := Val(1)], y1) == false;
+    var empty: map<string, SpecVal<int>> := map[];
+    expect where(empty, map["a" := 1]) == true;
+    var mixed := map["x" := Val(1), "y" := Pred((v: Option<int>, o: map<string, int>) => v.Some? && "x" in o && v.value > o["x"])];
+    expect where(mixed, map["x" := 1, "y" := 2]) == true;
+    expect where(mixed, map["x" := 1, "y" := 0]) == false;
+  }
+
+  // JS `%` truncates toward zero: the remainder takes the dividend's sign.
+  method {:test} ModuloTruncatesTowardZero() {
+    expect modulo(7, 3) == 1;
+    expect modulo(-7, 3) == -1;
+    expect modulo(7, -3) == 1;
+    expect modulo(-7, -3) == -1;
+    expect modulo(0, -3) == 0;
+    expect modulo(6, -3) == 0;
+    expect modulo(-6, 3) == 0;
+    expect modulo(5, -4) == 1;
+    expect modulo(1, 1) == 0;
+    expect modulo(-1, -5) == -1;
+    expect moduloBy(-3, 7) == 1;
   }
 
   method {:test} MathEdges() {
@@ -124,6 +161,13 @@ module RamdafTests.Edge.Misc {
   }
 
   // ---- documented deviations (not node behaviour) ----
+
+  // node: cloneDeep({g: undefined, a: 1}) is {a: 1} (JSON drops undefined);
+  // the copy here is the value itself.
+  method {:test} DeviationCloneDeepKeepsUndefinedProperties() {
+    var o := map["g" := None, "a" := Some(1)];
+    expect cloneDeep(o) == o;
+  }
 
   // node: eq([], []) is false (two distinct array objects).
   method {:test} DeviationEqIsStructural() {

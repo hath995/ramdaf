@@ -1,14 +1,16 @@
-// Ramdaf: Ramda v0.1.0 "List Functions" (ramda.js lines 492-841), except
+// Ramdaf: Ramda v0.1.1 "List Functions" (ramda.js lines 508-959), except
 // `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
 
 module Ramdaf.List {
   import opened Prelude
 
   export
-    reveals foldl, reduce, foldl1, foldr, reduceRight, foldr1, unfoldr, mapSeq,
-            filter, reject, takeWhile, take, skipUntil, skip, drop, find,
-            all, every, any, some, contains, uniq, pluck, flatten, zipWith, zip,
-            xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, splice, nth
+    reveals foldl, reduce, foldlIdx, reduceIdx, foldl1, foldr, reduceRight, foldrIdx,
+            reduceRightIdx, foldr1, unfoldr, mapSeq, mapIdx, filter, filterIdx,
+            reject, rejectIdx, takeWhile, take, skipUntil, skip, drop, find,
+            findIndex, findLast, findLastIndex, all, every, any, some, contains,
+            uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
+            range, indexOf, lastIndexOf, join, splice, nth
     provides Prelude
 
   // `acc = fn(acc, list[idx])` for idx ascending.
@@ -20,23 +22,38 @@ module Ramdaf.List {
          foldl(fn, fn(acc, list[0]), list[1..]) }
   function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A { foldl(fn, acc, list) }
 
+  // `foldl.idx` (alias `reduce.idx`): `acc = fn(acc, list[idx], idx, list)`
+  // for idx ascending. The body folds over (element, index) pairs.
+  function foldlIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> foldlIdx(fn, acc, list) == acc
+  { foldl((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
+  function reduceIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A { foldlIdx(fn, acc, list) }
+
   // `foldl(fn, head(list), tail(list))`; JS throws on the empty list.
   function foldl1<A>(fn: (A, A) -> A, list: seq<A>): A
     requires |list| > 0
   { foldl(fn, list[0], list[1..]) }
 
-  // `acc = fn(list[idx], acc)` for idx descending: the element comes first and
-  // the fold runs from the right, so foldr(fn, acc, [x0, ..., xn]) is
-  // fn(x0, fn(x1, ... fn(xn, acc))).
-  function foldr<A, B>(fn: (B, A) -> A, acc: A, list: seq<B>): A
+  // `acc = fn(acc, list[idx])` for idx descending: since v0.1.1 the
+  // accumulator comes first, as in foldl, and the fold runs from the right, so
+  // foldr(fn, acc, [x0, ..., xn]) is fn(... fn(fn(acc, xn), xn-1) ..., x0).
+  function foldr<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
-      foldr(fn, acc, list) == foldr(fn, fn(list[|list| - 1], acc), list[..|list| - 1])
+      foldr(fn, acc, list) == foldr(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
   { if |list| == 0 then acc
     else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         fn(list[0], foldr(fn, acc, list[1..])) }
-  function reduceRight<A, B>(fn: (B, A) -> A, acc: A, list: seq<B>): A { foldr(fn, acc, list) }
+         fn(foldr(fn, acc, list[1..]), list[0]) }
+  function reduceRight<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A { foldr(fn, acc, list) }
 
-  // The last element seeds the fold over the rest; JS throws on the empty list.
+  // `foldr.idx` (alias `reduceRight.idx`): `acc = fn(acc, list[idx], idx, list)`
+  // for idx descending. The body folds over (element, index) pairs.
+  function foldrIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> foldrIdx(fn, acc, list) == acc
+  { foldr((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
+  function reduceRightIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A { foldrIdx(fn, acc, list) }
+
+  // The last element seeds foldr over the rest, so (accumulator first)
+  // foldr1(fn, [x0, x1, x2]) is fn(fn(x2, x1), x0); JS throws on the empty list.
   function foldr1<A>(fn: (A, A) -> A, list: seq<A>): A
     requires |list| > 0
   { foldr(fn, list[|list| - 1], list[..|list| - 1]) }
@@ -57,6 +74,12 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |list| ==> mapSeq(fn, list)[i] == fn(list[i])
   { seq(|list|, i requires 0 <= i < |list| => fn(list[i])) }
 
+  // `map.idx`: `fn(list[idx], idx, list)` for each index.
+  function mapIdx<A, B>(fn: (A, nat, seq<A>) -> B, list: seq<A>): seq<B>
+    ensures |mapIdx(fn, list)| == |list|
+    ensures forall i :: 0 <= i < |list| ==> mapIdx(fn, list)[i] == fn(list[i], i, list)
+  { seq(|list|, i requires 0 <= i < |list| => fn(list[i], i, list)) }
+
   function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures |filter(fn, list)| <= |list|
     ensures forall i :: 0 <= i < |filter(fn, list)| ==> fn(filter(fn, list)[i])
@@ -67,12 +90,68 @@ module Ramdaf.List {
     else assert list == [list[0]] + list[1..];
          if fn(list[0]) then [list[0]] + filter(fn, list[1..]) else filter(fn, list[1..]) }
 
+  // `filter.idx`: the elements list[idx] with `fn(list[idx], idx, list)`, in
+  // list order. The body pairs each element with its index, filters the
+  // pairs and keeps the elements.
+  function filterIdx<T>(fn: (T, nat, seq<T>) -> bool, list: seq<T>): seq<T>
+    ensures |filterIdx(fn, list)| <= |list|
+    ensures forall k :: 0 <= k < |filterIdx(fn, list)| ==>
+      exists i :: 0 <= i < |list| && list[i] == filterIdx(fn, list)[k] && fn(list[i], i, list)
+    ensures forall i :: 0 <= i < |list| && fn(list[i], i, list) ==> list[i] in filterIdx(fn, list)
+  { var pairs: seq<(T, nat)> := seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat));
+    var kept := filter((p: (T, nat)) => fn(p.0, p.1, list), pairs);
+    assert forall k :: 0 <= k < |kept| ==>
+      kept[k].1 < |list| && list[kept[k].1] == kept[k].0 && fn(kept[k].0, kept[k].1, list) by {
+      forall k | 0 <= k < |kept|
+        ensures kept[k].1 < |list| && list[kept[k].1] == kept[k].0 && fn(kept[k].0, kept[k].1, list) {
+        assert kept[k] in pairs;
+      }
+    }
+    assert forall i :: 0 <= i < |list| && fn(list[i], i, list) ==> pairs[i] in kept;
+    var r := mapSeq((p: (T, nat)) => p.0, kept);
+    assert forall k :: 0 <= k < |r| ==>
+      exists i :: 0 <= i < |list| && list[i] == r[k] && fn(list[i], i, list) by {
+      forall k | 0 <= k < |r| ensures exists i :: 0 <= i < |list| && list[i] == r[k] && fn(list[i], i, list) {
+        var i := kept[k].1;
+        assert 0 <= i < |list| && list[i] == r[k] && fn(list[i], i, list);
+      }
+    }
+    r }
+
   // `filter(notFn(fn), list)`
   function reject<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |reject(fn, list)| ==> !fn(reject(fn, list)[i])
     ensures forall i :: 0 <= i < |reject(fn, list)| ==> reject(fn, list)[i] in list
     ensures forall i :: 0 <= i < |list| && !fn(list[i]) ==> list[i] in reject(fn, list)
   { filter(x => !fn(x), list) }
+
+  // `reject.idx`: `filter.idx(notFn(fn), list)`, the elements list[idx] with
+  // `!fn(list[idx], idx, list)`, in list order (the body is filter.idx's with
+  // the test negated).
+  function rejectIdx<T>(fn: (T, nat, seq<T>) -> bool, list: seq<T>): seq<T>
+    ensures |rejectIdx(fn, list)| <= |list|
+    ensures forall k :: 0 <= k < |rejectIdx(fn, list)| ==>
+      exists i :: 0 <= i < |list| && list[i] == rejectIdx(fn, list)[k] && !fn(list[i], i, list)
+    ensures forall i :: 0 <= i < |list| && !fn(list[i], i, list) ==> list[i] in rejectIdx(fn, list)
+  { var pairs: seq<(T, nat)> := seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat));
+    var kept := filter((p: (T, nat)) => !fn(p.0, p.1, list), pairs);
+    assert forall k :: 0 <= k < |kept| ==>
+      kept[k].1 < |list| && list[kept[k].1] == kept[k].0 && !fn(kept[k].0, kept[k].1, list) by {
+      forall k | 0 <= k < |kept|
+        ensures kept[k].1 < |list| && list[kept[k].1] == kept[k].0 && !fn(kept[k].0, kept[k].1, list) {
+        assert kept[k] in pairs;
+      }
+    }
+    assert forall i :: 0 <= i < |list| && !fn(list[i], i, list) ==> pairs[i] in kept;
+    var r := mapSeq((p: (T, nat)) => p.0, kept);
+    assert forall k :: 0 <= k < |r| ==>
+      exists i :: 0 <= i < |list| && list[i] == r[k] && !fn(list[i], i, list) by {
+      forall k | 0 <= k < |r| ensures exists i :: 0 <= i < |list| && list[i] == r[k] && !fn(list[i], i, list) {
+        var i := kept[k].1;
+        assert 0 <= i < |list| && list[i] == r[k] && !fn(list[i], i, list);
+      }
+    }
+    r }
 
   // The longest prefix whose elements all satisfy fn.
   function takeWhile<T>(fn: T -> bool, list: seq<T>): seq<T>
@@ -101,12 +180,56 @@ module Ramdaf.List {
   { if n >= |list| then [] else list[n..] }
   function drop<T>(n: nat, list: seq<T>): seq<T> { skip(n, list) }
 
-  // The first element satisfying fn; JS returns `false` when none does.
+  // The first element satisfying fn; JS returns undefined when none does.
   function find<T>(fn: T -> bool, list: seq<T>): Option<T>
     ensures find(fn, list) == (if |filter(fn, list)| == 0 then None else Some(filter(fn, list)[0]))
   { if |list| == 0 then None
     else if fn(list[0]) then Some(list[0])
     else find(fn, list[1..]) }
+
+  // The index of the first element satisfying fn; undefined when none does.
+  function findIndex<T>(fn: T -> bool, list: seq<T>): Option<nat>
+    ensures findIndex(fn, list).Some? ==>
+      findIndex(fn, list).value < |list| && fn(list[findIndex(fn, list).value]) &&
+      forall j :: 0 <= j < findIndex(fn, list).value ==> !fn(list[j])
+    ensures findIndex(fn, list).None? <==> forall j :: 0 <= j < |list| ==> !fn(list[j])
+  { if |list| == 0 then None
+    else if fn(list[0]) then Some(0)
+    else match findIndex(fn, list[1..])
+      case None => None
+      case Some(j) => Some(j + 1) }
+
+  // `var idx = list.length; while (--idx) { if (fn(list[idx])) return list[idx]; }`.
+  // The loop stops when idx reaches 0, so the first element is never tested
+  // (`findLast(fn, [x])` is undefined even when fn(x) holds). On the empty
+  // list idx runs -1, -2, ... and fn(undefined) is called until it is truthy,
+  // which a predicate on T cannot express (it loops forever when it is falsy):
+  // the empty list is excluded.
+  function findLast<T>(fn: T -> bool, list: seq<T>): Option<T>
+    requires |list| > 0
+    ensures findLast(fn, list).Some? ==>
+      exists i :: 1 <= i < |list| && list[i] == findLast(fn, list).value && fn(list[i]) &&
+                  forall j :: i < j < |list| ==> !fn(list[j])
+    ensures findLast(fn, list).None? <==> forall j :: 1 <= j < |list| ==> !fn(list[j])
+  { if |list| == 1 then None
+    else if fn(list[|list| - 1]) then Some(list[|list| - 1])
+    else var r := findLast(fn, list[..|list| - 1]);
+         assert forall j :: 1 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
+         r }
+
+  // As findLast, returning the index: list index 0 is never tested, and the
+  // empty list is excluded.
+  function findLastIndex<T>(fn: T -> bool, list: seq<T>): Option<nat>
+    requires |list| > 0
+    ensures findLastIndex(fn, list).Some? ==>
+      1 <= findLastIndex(fn, list).value < |list| && fn(list[findLastIndex(fn, list).value]) &&
+      forall j :: findLastIndex(fn, list).value < j < |list| ==> !fn(list[j])
+    ensures findLastIndex(fn, list).None? <==> forall j :: 1 <= j < |list| ==> !fn(list[j])
+  { if |list| == 1 then None
+    else if fn(list[|list| - 1]) then Some(|list| - 1)
+    else var r := findLastIndex(fn, list[..|list| - 1]);
+         assert forall j :: 1 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
+         r }
 
   function all<T>(fn: T -> bool, list: seq<T>): bool
   { forall i :: 0 <= i < |list| ==> fn(list[i]) }
@@ -161,6 +284,11 @@ module Ramdaf.List {
              }
            }
            r }
+
+  // `uniq(list).length === list.length`: true exactly when no element occurs
+  // twice, which is the body (uniq keeps one copy of each element).
+  function isSet<T(==)>(list: seq<T>): bool
+  { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
 
   // `map(prop(p), list)`: a missing property is JS undefined, here None.
   function pluck<V>(p: string, list: seq<map<string, V>>): seq<Option<V>>
@@ -246,7 +374,7 @@ module Ramdaf.List {
     var count := if len < 0 then 0 else if len > n - from then n - from else len;
     list[..from] + list[from + count..] }
 
-  // `list[n]`, or null when that is undefined (out of range).
+  // `list[n]`: undefined (None) out of range.
   function nth<T>(n: int, list: seq<T>): Option<T>
   { if 0 <= n < |list| then Some(list[n]) else None }
 }
