@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.1.4's own suite does not cover, each checked against
-// ramda.js v0.1.4 under node (the expected values are node's output). The
+// Edge cases Ramda v0.1.5's own suite does not cover, each checked against
+// ramda.js v0.1.5 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -117,6 +117,14 @@ module RamdafTests.Edge.List {
     expect mapObj((v: int) => v * 2, map["a" := 1]) == map["a" := 2];
   }
 
+  method {:test} ContainsWithEdges() {
+    var empty: seq<int> := [];
+    expect containsWith((a: int, b: int) => a == b + 1, 3, [1, 2]) == true;
+    expect containsWith((a: int, b: int) => a == b + 1, 5, [1, 2]) == false;
+    expect containsWith((a: int, b: int) => true, 1, empty) == false;
+    expect containsWith((a: int, b: int) => a % 10 == b % 10, 12, [2, 3]) == true;
+  }
+
   // isSet(list) is `uniq(list).length === list.length`.
   method {:test} IsSetEdges() {
     var empty: seq<int> := [];
@@ -143,9 +151,14 @@ module RamdafTests.Edge.List {
     expect uniq([3, 3, 3]) == [3];
   }
 
+  // Since v0.1.5 take clamps n to the list's length.
   method {:test} TakeSkipEdges() {
+    var empty: seq<int> := [];
     expect take(0, [1, 2]) == [];
     expect take(2, [1, 2]) == [1, 2];
+    expect take(5, [1, 2]) == [1, 2];
+    expect take(3, empty) == [];
+    expect take(2, [1, 2, 3]) == [1, 2];
     expect skip(5, [1, 2]) == [];
     expect skip(0, [1, 2]) == [1, 2];
     expect skip(2, [1, 2]) == [];

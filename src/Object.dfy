@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.1.4 "Object Functions" (ramda.js lines 927-1058) and `propEq`
-// (line 1355). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.1.5 "Object Functions" (ramda.js lines 938-1088) and `propEq`
+// (line 1385). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None.
 
 module Ramdaf.Object {
@@ -98,13 +98,13 @@ module Ramdaf.Object {
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
   { prop(p, obj1) == prop(p, obj2) }
 
-  // `all(key => typeof spec[key] === 'function' ? spec[key](test[key], test)
-  //                                             : test[key] === spec[key], keys(spec))`:
-  // a function entry is called with the test object's property (None when it
-  // is absent, i.e. undefined) and the test object; any other entry must equal
-  // the property, so an absent property fails it. (A spec property whose value
-  // is undefined cannot be written: in this encoding an undefined property is
-  // an absent one.)
+  // Every function entry holds, `spec[key](test[key], test)`, and every other
+  // entry is an own property of test equal to it, `test.hasOwnProperty(key) &&
+  // test[key] === spec[key]` (v0.1.5; a null-ish test gives false). A function
+  // entry gets None when the property is absent (undefined). Neither a spec
+  // property whose value is undefined nor a null test can be written here (an
+  // undefined property is an absent one, and the test is a map), so v0.1.5's
+  // changes leave this definition as it was.
   function where<V(==)>(spec: map<string, SpecVal<V>>, test: map<string, V>): bool
   { forall k :: k in spec ==>
       match spec[k]

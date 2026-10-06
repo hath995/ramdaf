@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.1.4 "List Functions" (ramda.js lines 421-881), except
+// Ramdaf: Ramda v0.1.5 "List Functions" (ramda.js lines 431-892), except
 // `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
 
 module Ramdaf.List {
@@ -8,7 +8,7 @@ module Ramdaf.List {
     reveals foldl, reduce, foldlIdx, reduceIdx, foldl1, foldr, reduceRight, foldrIdx,
             reduceRightIdx, foldr1, unfoldr, mapSeq, mapIdx, mapObj, filter, filterIdx,
             reject, rejectIdx, takeWhile, take, skipUntil, skip, drop, find,
-            findIndex, findLast, findLastIndex, all, every, any, some, contains,
+            findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith,
             uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
             range, indexOf, lastIndexOf, join, slice, sliceFrom, splice, nth, partition
     provides Prelude
@@ -167,11 +167,14 @@ module Ramdaf.List {
     ensures |takeWhile(fn, list)| < |list| ==> !fn(list[|takeWhile(fn, list)|])
   { if |list| == 0 || !fn(list[0]) then [] else [list[0]] + takeWhile(fn, list[1..]) }
 
-  // JS sets the copy's length to n, so `take(5, [1, 2])` has three undefined
-  // slots, which seq<T> cannot hold: n is limited to the list's length.
+  // A copy of the list with its length set to `Math.min(n, list.length)`
+  // (v0.1.5; before, `take(5, [1, 2])` had three undefined slots): the first
+  // n elements, or the whole list. A negative n throws RangeError, so n is a
+  // nat.
   function take<T>(n: nat, list: seq<T>): seq<T>
-    requires n <= |list|
-  { list[..n] }
+    ensures |take(n, list)| == if n <= |list| then n else |list|
+    ensures take(n, list) <= list
+  { if n <= |list| then list[..n] else list }
 
   // The suffix starting at the first element that satisfies fn.
   function skipUntil<T>(fn: T -> bool, list: seq<T>): seq<T>
@@ -248,6 +251,10 @@ module Ramdaf.List {
 
   // `list.indexOf(a) > -1` (JS `===`; see README on equality).
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
+
+  // `pred(x, list[idx])` for some idx (exported since v0.1.5).
+  function containsWith<T>(pred: (T, T) -> bool, x: T, list: seq<T>): bool
+  { exists i :: 0 <= i < |list| && pred(x, list[i]) }
 
   // `foldr(function(x, acc) { return contains(x, acc) ? acc : prepend(x, acc); }, [], list)`:
   // scanning from the right keeps the LAST occurrence of each element, in the

@@ -1,0 +1,8 @@
+{
+  "ramda": "v0.1.5",
+  "tier": "patch",
+  "changes": [
+    {"symbol": "Ramdaf.List.take", "kind": "compatible", "why": "v0.1.5 clamps (ls.length = Math.min(n, list.length)): the precondition n <= |list| is dropped; results unchanged where defined"},
+    {"symbol": "Ramdaf.List.containsWith", "kind": "added", "why": "v0.1.5 exports it (var containsWith = R.containsWith)"}
+  ]
+}

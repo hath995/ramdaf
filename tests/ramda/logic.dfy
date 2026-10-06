@@ -1,4 +1,4 @@
-// Ramda v0.1.4 test/test.booleans.js and test/test.allany.js, transcribed.
+// Ramda v0.1.5 test/test.booleans.js and test/test.allany.js, transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression"), which detect a call by its side effect, and the "reports its
 // arity" cases. The multi-parameter predicates take their arguments as a

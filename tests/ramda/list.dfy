@@ -1,4 +1,4 @@
-// Ramda v0.1.4 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
+// Ramda v0.1.5 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
 // test/test.find.js, test/test.flatten.js, test/test.range.js,
 // test/test.reverse.js, test/test.unfold.js, test/test.zip.js,
 // test/test.product.js and test/test.partition.js, transcribed. Arity

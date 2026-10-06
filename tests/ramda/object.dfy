@@ -1,4 +1,4 @@
-// Ramda v0.1.4 test/test.objectBasics.js, test/test.keysvals.js and
+// Ramda v0.1.5 test/test.objectBasics.js, test/test.keysvals.js and
 // test/test.tapeq.js, transcribed. Not transcribed: describe('func') and
 // describe('tap') (not portable, README), `eq([], [])` (reference equality,
 // README "Deviations"; pinned in tests/edge/object.dfy).
@@ -122,6 +122,15 @@ module RamdafTests.Ramda.Object {
     var spec := map["x" := Val(100)];
     expect where(spec, map["x" := 20, "y" := 100, "z" := 100]) == false;
     expect where(spec, map["w" := 1, "x" := 100, "y" := 100, "z" := 100]) == true;
+  }
+
+  // "is false if the test object is null-ish" and "matches specs that have
+  // undefined properties" (v0.1.5) are not transcribed: a test object is a
+  // map, never null, and an undefined property is an absent one here.
+  method {:test} WhereIsAutomaticallyCurried() {
+    var pred := (o: map<string, int>) => where(map["x" := Val(1), "y" := Val(2)], o);
+    expect pred(map["x" := 1, "y" := 2, "z" := 3]) == true;
+    expect pred(map["x" := 3, "y" := 2, "z" := 1]) == false;
   }
 
   // describe('mixin')

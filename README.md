@@ -110,13 +110,13 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.1.4)
+## Modules and exports (v0.1.5)
 
 | Module | Exports |
 |---|---|
 | `Ramdaf.Core` | clone, cloneDeep, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, merge, concat, identity, I, repeatN, size |
 | `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, alwaysZero, alwaysFalse, alwaysTrue |
-| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldl1, foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), foldr1, unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, slice, sliceFrom (`slice.from`), splice, nth, partition |
+| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldl1, foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), foldr1, unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith, uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, slice, sliceFrom (`slice.from`), splice, nth, partition |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | eq, prop, get, props, keys, values, pick, pickAll, omit, mixin, eqProps, where, propEq |
 | `Ramdaf.Logic` | and, or, not, allPredicates, anyPredicates |
@@ -124,7 +124,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 128 of Ramda v0.1.4's 150 export names, plus 8 of the 10 functions
+That is 129 of Ramda v0.1.5's 151 export names, plus 8 of the 10 functions
 stored as properties of exports (`map.idx` and the like). The other 22 names
 and the 2 properties `each.idx`/`forEach.idx` are listed under "Not portable".
 
@@ -142,13 +142,14 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.1.4 does not export `uniqWith`, `containsWith` or `keyValue`; they
-are local `var`s in `ramda.js`. Ramdaf does not export them either. The
-`*With` functions in Data carry `uniqWith`'s recursion themselves.
+Ramda v0.1.5 does not export `uniqWith` or `keyValue`; they are local `var`s
+in `ramda.js`. Ramdaf does not export them either. The `*With` functions in
+Data carry `uniqWith`'s recursion themselves. (`containsWith` was internal
+too until v0.1.5 exported it; it is in List.)
 
 ## Not portable
 
-These Ramda v0.1.4 exports are not ported, rather than faked:
+These Ramda v0.1.5 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -168,11 +169,11 @@ These Ramda v0.1.4 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.1.4 (node) | Ramdaf |
+| Function | Ramda v0.1.5 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car`, `first`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
 | `foldl1`, `foldr1` | throw `Error` on `[]` | `requires \|list\| > 0` |
-| `take` | `take(5, [1, 2])` → `[1, 2, <3 empty items>]`; `take(-1, l)` throws `RangeError` | `n: nat`, `requires n <= \|list\|` |
+| `take` | `take(-1, l)` throws `RangeError`. (Before v0.1.5, `take(5, [1, 2])` → `[1, 2, <3 empty items>]`, and Ramdaf required `n <= \|list\|`; v0.1.5 clamps to `[1, 2]`.) | `n: nat` |
 | `skip`, `drop` | `skip(-1, [1, 2])` → `[undefined, 1, 2]` | `n: nat` |
 | `zip`, `zipWith` | read past the end of the second list: `zip([1, 2], [3])` → `[[1, 3], [2, undefined]]`, `zipWith(add, [1, 2], [10])` → `[11, NaN]` | `requires \|a\| <= \|b\|` |
 | `charCodeAt` | `charCodeAt(10, "abc")` → `NaN` | `requires 0 <= n < \|s\|` |
@@ -180,6 +181,7 @@ These Ramda v0.1.4 exports are not ported, rather than faked:
 | `divide`, `divideBy` | `divide(1, 0)` → `Infinity` | `requires` a nonzero divisor |
 | `modulo`, `moduloBy` | `modulo(1, 0)` → `NaN` | `requires` a nonzero divisor |
 | `findLast`, `findLastIndex` | on `[]` the `while (--idx)` loop runs idx through -1, -2, … calling `fn(undefined)` until it is truthy (forever for `x => false`; `findLastIndex(x => x === undefined, [])` → `-1`) | `requires \|list\| > 0` |
+| `where` | `where({x: undefined}, {})` → `false`, `where({x: undefined}, {x: undefined})` → `true`, `where(spec, null)` → `false` (v0.1.5) | not expressible: an undefined property is an absent one, and the test object is a `map` |
 | `cloneDeep` | JSON cannot carry functions: `cloneDeep(f)` throws `SyntaxError`, a function inside an object is dropped | `T(==)`, which excludes every type containing a function |
 
 ## Deviations
@@ -188,7 +190,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.1.4 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.1.5 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
@@ -232,7 +234,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 | v0.1.2 | 2014-05-18 | ported | — |
 | v0.1.3 | 2014-06-02 | ported | — |
 | v0.1.4 | 2014-06-10 | ported | — |
-| v0.1.5 | 2014-06-15 | pending | — |
+| v0.1.5 | 2014-06-15 | ported | — |
 | v0.2.0 | 2014-06-27 | pending | — |
 | v0.2.1 | 2014-06-27 | pending | — |
 | v0.2.2 | 2014-06-30 | pending | — |
@@ -420,6 +422,35 @@ side-effect counting, JS coercion, reference equality, string-keyed
     `mapObj`, and the new test.partition.js.
 - **Expected tier: major.** `and`, `or`, `not` and `fork` changed signature,
   and `andFn`, `orFn`, `notFn` were removed (`casestudy/expected/v0.1.4.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.1.5 (2014-06-15)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node):
+  - `take` sets the copy's length to `Math.min(n, list.length)`:
+    `take(5, [1, 2])` → `[1, 2]` (it had three empty slots).
+  - `containsWith` is exported.
+  - `where` is rewritten: a value entry must be an *own* property of the test
+    object (`where({x: undefined}, {})` → `false`, was `true`), a null-ish
+    test object gives `false` (it threw), function entries are checked before
+    value entries, and `where(spec)` is curried by hand. Function and value
+    entries, and `where(spec)` returning a predicate, already existed in
+    v0.1.1.
+  - `nAry` and `arity` pre-fill their wrapper cache (not portable).
+- **Ramdaf:**
+  - `take` drops its `n <= |list|` precondition and clamps.
+  - `containsWith` is exported from List, where `ramda.js` defines it.
+  - `where` is unchanged: its value entries already require the property
+    (`k in test`), and the other v0.1.5 cases (an undefined spec value, a null
+    test object) cannot be written in this encoding ("Outside the modeled
+    domain").
+  - Tests: test.objectBasics.js's new curried `where` case (its null-ish and
+    undefined-property cases cannot be written); `take` and `containsWith`
+    edge cases.
+- **Expected tier: patch.** `take`'s precondition was weakened with every
+  previous result unchanged (compatible), and `containsWith` was added.
+  Conventional semver would call that minor; `lem` treats such changes as
+  patch (`casestudy/expected/v0.1.5.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

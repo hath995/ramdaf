@@ -1,4 +1,4 @@
-// Ramda v0.1.4 test/test.filter.js, transcribed ("automatically curried" cases
+// Ramda v0.1.5 test/test.filter.js, transcribed ("automatically curried" cases
 // apply the partially applied function in full).
 
 module RamdafTests.Ramda.Filter {
@@ -82,7 +82,7 @@ module RamdafTests.Ramda.Filter {
   }
 
   method {:test} TakeIsAutomaticallyCurried() {
-    var take3 := (l: seq<string>) requires |l| >= 3 => take(3, l);
+    var take3 := (l: seq<string>) => take(3, l);
     expect take3(["a", "b", "c", "d", "e", "f", "g"]) == ["a", "b", "c"];
     expect take3(["w", "x", "y", "z"]) == ["w", "x", "y"];
   }
