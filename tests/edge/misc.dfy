@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.2.0 under node; the methods named Deviation* pin documented
+// ramda.js v0.2.2 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -81,6 +81,15 @@ module RamdafTests.Edge.Misc {
     expect modulo(1, 1) == 0;
     expect modulo(-1, -5) == -1;
     expect moduloBy(-3, 7) == 1;
+  }
+
+  // v0.2.2's curry3 starts every call of sum and product afresh (v0.2.0 and
+  // v0.2.1 kept the accumulator between calls).
+  method {:test} SumAndProductKeepNoState() {
+    expect sum([1, 2, 3]) == 6;
+    expect sum([1, 2, 3]) == 6;
+    expect product([2]) == 2;
+    expect product([2]) == 2;
   }
 
   method {:test} MathEdges() {
@@ -186,15 +195,6 @@ module RamdafTests.Edge.Misc {
 
   // ---- documented deviations (not node behaviour) ----
 
-  // node v0.2.0: the partially applied foldl behind sum and product keeps
-  // its accumulator between calls, so the second call gives 12 (product: 4);
-  // the port is pure.
-  method {:test} DeviationSumAndProductKeepNoState() {
-    expect sum([1, 2, 3]) == 6;
-    expect sum([1, 2, 3]) == 6;
-    expect product([2]) == 2;
-    expect product([2]) == 2;
-  }
 
   // node: eq([], []) is false (two distinct array objects).
   method {:test} DeviationEqIsStructural() {

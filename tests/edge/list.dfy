@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.2.0's own suite does not cover, each checked against
-// ramda.js v0.2.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.2.2's own suite does not cover, each checked against
+// ramda.js v0.2.2 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -109,6 +109,11 @@ module RamdafTests.Edge.List {
     var none: map<string, int> := map[];
     expect mapObj((v: int) => v + 1, none) == map[];
     expect mapObj((v: int) => v * 2, map["a" := 1]) == map["a" := 2];
+    expect mapObjIdx((v: int, k: string, o: map<string, int>) => k + NumStr(v), map["a" := 1, "b" := 2]) ==
+      map["a" := "a1", "b" := "b2"];
+    expect mapObjIdx((v: int, k: string, o: map<string, int>) => |o| + v, map["a" := 1, "b" := 2]) ==
+      map["a" := 3, "b" := 4];
+    expect mapObjIdx((v: int, k: string, o: map<string, int>) => v, none) == map[];
   }
 
   method {:test} ContainsWithEdges() {
@@ -178,19 +183,59 @@ module RamdafTests.Edge.List {
     expect zipWith((a: int, b: int) => a + b, [1, 2], [10]) == [11];
   }
 
-  // Since v0.2.0 splice is `_slice(list, 0, start).concat(_slice(list, start + len))`:
-  // a start of 0 copies the whole list first, and a negative len re-reads
-  // elements.
-  method {:test} SpliceUsesRamdasSlice() {
-    expect splice(1, 2, [1, 2, 3, 4, 5]) == [1, 4, 5];
-    expect splice(0, 2, [1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5, 3, 4, 5];
-    expect splice(0, 0, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
-    expect splice(0, 3, [1, 2, 3]) == [1, 2, 3];
-    expect splice(3, 0, [1, 2, 3]) == [1, 2, 3];
-    expect splice(1, -1, [1, 2, 3]) == [1, 1, 2, 3];
-    expect splice(3, -3, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
-    expect splice(2, 1, [1, 2, 3]) == [1, 2];
-    expect splice(1, 2, [1, 2, 3]) == [1];
+  // v0.2.2's remove, insert and insert.all are built on `_slice`, whose end
+  // index 0 reads as "the end": a cut at 0 copies the whole list first.
+  method {:test} RemoveUsesRamdasSlice() {
+    var l := [1, 2, 3, 4, 5];
+    var empty: seq<int> := [];
+    expect remove(1, 2, l) == [1, 4, 5];
+    expect remove(0, 2, l) == [1, 2, 3, 4, 5, 3, 4, 5];
+    expect remove(0, 0, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
+    expect remove(3, 10, [1, 2, 3]) == [1, 2, 3];
+    expect remove(5, 1, [1, 2, 3]) == [1, 2, 3];
+    expect remove(1, -1, l) == [1, 1, 2, 3, 4, 5];
+    expect remove(3, -1, l) == [1, 2, 3, 3, 4, 5];
+    expect remove(2, -2, l) == [1, 2, 1, 2, 3, 4, 5];
+    expect remove(1, 0, l) == l;
+    expect remove(0, 1, empty) == [];
+    expect remove(2, 0, empty) == [];
+  }
+
+  method {:test} InsertUsesRamdasSlice() {
+    var empty: seq<int> := [];
+    expect insert(1, 9, [1, 2, 3]) == [1, 9, 2, 3];
+    expect insert(0, 9, [1, 2, 3]) == [1, 2, 3, 9, 1, 2, 3];
+    expect insert(2, 9, [1, 2, 3]) == [1, 2, 9, 3];
+    expect insert(3, 9, [1, 2, 3]) == [1, 2, 3, 9];
+    expect insert(10, 9, [1, 2, 3]) == [1, 2, 3, 9];
+    expect insert(-1, 9, [1, 2, 3]) == [1, 2, 3, 9];
+    expect insert(0, 9, empty) == [9];
+    expect insert(5, 9, empty) == [9];
+    expect insertAll(1, [7, 8], [1, 2, 3]) == [1, 7, 8, 2, 3];
+    expect insertAll(0, [7, 8], [1, 2, 3]) == [1, 2, 3, 7, 8, 1, 2, 3];
+    expect insertAll(-1, [7, 8], [1, 2, 3]) == [1, 2, 3, 7, 8];
+    expect insertAll(5, [7, 8], [1, 2, 3]) == [1, 2, 3, 7, 8];
+    expect insertAll(0, empty, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
+    expect insertAll(2, empty, [1, 2, 3]) == [1, 2, 3];
+    expect insertAll(0, [7], empty) == [7];
+  }
+
+  // indexOf.from/lastIndexOf.from (v0.2.2): a negative fromIdx counts from
+  // the end; lastIndexOf.from searches at and below fromIdx.
+  method {:test} IndexOfFromEdges() {
+    var empty: seq<int> := [];
+    expect indexOfFrom(2, 1, [2, 1, 2, 3]) == 2;
+    expect indexOfFrom(2, -2, [2, 1, 2, 3]) == 2;
+    expect indexOfFrom(2, -10, [2, 1, 2]) == 0;
+    expect indexOfFrom(2, 10, [2]) == -1;
+    expect indexOfFrom(2, 0, empty) == -1;
+    expect indexOfFrom(3, 3, [1, 2, 3]) == -1;
+    expect lastIndexOfFrom(2, 1, [2, 1, 2, 3]) == 0;
+    expect lastIndexOfFrom(2, -1, [2, 1, 2]) == 2;
+    expect lastIndexOfFrom(2, -10, [2, 1, 2]) == -1;
+    expect lastIndexOfFrom(2, 10, [2, 1, 2]) == 2;
+    expect lastIndexOfFrom(2, 0, empty) == -1;
+    expect lastIndexOfFrom(1, -3, [1, 2, 3]) == 0;
   }
 
   method {:test} NthEdges() {

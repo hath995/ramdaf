@@ -1,4 +1,4 @@
-// Ramda v0.2.0 test/test.booleans.js and test/test.allany.js, transcribed.
+// Ramda v0.2.2 test/test.booleans.js and test/test.allany.js, transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression"), which detect a call by its side effect, and the "reports its
 // arity" cases. The multi-parameter predicates take their arguments as a
@@ -97,6 +97,11 @@ module RamdafTests.Ramda.Logic {
     var empty: seq<int> := [];
     expect all((x: int) => true, empty) == true;
   }
+  // v0.2.2 (the call count is not asserted)
+  method {:test} AllIsAutomaticallyCurried() {
+    var allEven := (l: seq<int>) => all(even, l);
+    expect allEven([2, 4, 6, 7, 8, 10]) == false;
+  }
   method {:test} AllIsAliasedByEvery() { expect every(even, [2, 4, 6, 8, 10]) == true; }
 
   // describe('any') (`n % 2 === 1`)
@@ -104,6 +109,11 @@ module RamdafTests.Ramda.Logic {
 
   method {:test} AnyTrueWhenOneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 11, 12]) == true; }
   method {:test} AnyFalseWhenNoneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 12]) == false; }
+  // v0.2.2 (the call count is not asserted)
+  method {:test} AnyIsAutomaticallyCurried() {
+    var anyOdd := (l: seq<int>) => any(oddJs, l);
+    expect anyOdd([2, 4, 6, 7, 8, 10]) == true;
+  }
 
   function Person(first: string, last: string): map<string, string> { map["first" := first, "last" := last] }
   // `person.first.charAt(0) === person.last.charAt(0)`

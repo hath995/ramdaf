@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.2.0 "Arithmetic Functions" (ramda.js lines 1517-1659).
+// Ramdaf: Ramda v0.2.2 "Arithmetic Functions" (ramda.js lines 1486-1622).
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 
@@ -53,15 +53,12 @@ module Ramdaf.Math {
     requires a != 0
   { modulo(b, a) }
 
-  // `foldl(add, 0)`. In v0.2.0 the partially applied foldl keeps its
-  // accumulator in a closure that every call mutates, so a second call starts
-  // from the first call's total (`sum([1, 2, 3])` is 6, then 12); the port is
-  // pure and always gives the first call's result (README "Deviations").
+  // `foldl(add, 0)`. (In v0.2.0 and v0.2.1 the partially applied foldl kept
+  // its accumulator between calls; v0.2.2's curry3 starts each call afresh.)
   function sum(list: seq<int>): int
   { if |list| == 0 then 0 else list[0] + sum(list[1..]) }
 
-  // `foldl(multiply, 1)`, with the same shared accumulator as sum in v0.2.0
-  // (README "Deviations").
+  // `foldl(multiply, 1)`
   function product(list: seq<int>): int
   { if |list| == 0 then 1 else list[0] * product(list[1..]) }
 

@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.2.0 "Function functions" (ramda.js lines 408-532) and the
-// `always` family (lines 1257-1263, 1448-1455).
+// Ramdaf: Ramda v0.2.2 "Function functions" (ramda.js lines 432-556) and the
+// `always` family (lines 1240-1246, 1418-1425).
 // compose/pipe are variadic in JS; the port is binary (nest for more functions).
 
 module Ramdaf.Functions {

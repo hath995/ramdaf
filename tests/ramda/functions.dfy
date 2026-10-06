@@ -1,12 +1,11 @@
-// Ramda v0.2.0 test/test.always.js, test/test.compose.js and
+// Ramda v0.2.2 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
 // single-function compose/pipe (the port is binary); use/useWith, once,
-// memoize, construct, and v0.2.0's unary and binary (not portable, README);
-// test.objectBasics.js's path describes are in tests/ramda/object.dfy's
-// header; test.each.js,
-// test.maybe.js, test.partial.js, test.wrap.js and test.expose.js test
-// functions that are not portable. (v0.1.3 moved test.lazy.js out of test/.)
+// memoize, construct, unary and binary (not portable, README). test.each.js,
+// test.maybe.js, test.partial.js, test.wrap.js, test.expose.js, and v0.2.2's
+// new test.curry.js and test.path.js test functions that are not portable.
+// (v0.1.3 moved test.lazy.js out of test/.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions

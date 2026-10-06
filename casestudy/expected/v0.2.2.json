@@ -1,0 +1,13 @@
+{
+  "ramda": "v0.2.2",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.splice", "kind": "removed", "why": "v0.2.2 deleted R.splice (replaced by remove/insert)"},
+    {"symbol": "Ramdaf.List.remove", "kind": "added", "why": "new in v0.2.2: concat(_slice(list, 0, min(start, length)), _slice(list, min(length, start + count)))"},
+    {"symbol": "Ramdaf.List.insert", "kind": "added", "why": "new in v0.2.2"},
+    {"symbol": "Ramdaf.List.insertAll", "kind": "added", "why": "new in v0.2.2: R.insert.all"},
+    {"symbol": "Ramdaf.List.mapObjIdx", "kind": "added", "why": "new in v0.2.2: R.mapObj.idx, fn(value, key, obj)"},
+    {"symbol": "Ramdaf.List.indexOfFrom", "kind": "added", "why": "new in v0.2.2: R.indexOf.from(target, fromIdx, list)"},
+    {"symbol": "Ramdaf.List.lastIndexOfFrom", "kind": "added", "why": "new in v0.2.2: R.lastIndexOf.from(target, fromIdx, list)"}
+  ]
+}

@@ -1,10 +1,15 @@
-// Ramda v0.2.0 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
-// test/test.find.js, test/test.flatten.js, test/test.range.js,
-// test/test.reverse.js, test/test.unfold.js, test/test.zip.js,
-// test/test.product.js and test/test.partition.js, transcribed. Arity
-// (`.length`) checks have no Dafny counterpart and are omitted.
-// `find(even, 'zing')` searches the string's characters: here a list of Js
-// strings.
+// Ramda v0.2.2 test/test.list.js, test/test.indexof.js,
+// test/test.containsuniq.js, test/test.map.js, test/test.find.js,
+// test/test.flatten.js, test/test.range.js, test/test.reverse.js,
+// test/test.unfold.js, test/test.zip.js, test/test.product.js and
+// test/test.partition.js, transcribed. Arity (`.length`) checks have no Dafny
+// counterpart and are omitted. `find(even, 'zing')` searches the string's
+// characters: here a list of Js strings. test.indexof.js also sets a
+// non-index property (`arr[-2] = 4`) on its arrays, which a seq cannot
+// carry and which indexOf ignores. Not transcribed: test.flatten.js's "is not
+// destructive" (reference inequality) and "handles ridiculously large
+// inputs" (its `new Array(1000000)` is a million empty slots, which a seq
+// cannot hold).
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -13,24 +18,6 @@ module RamdafTests.Ramda.List {
   import opened Support
 
   // ---- test.list.js ----
-
-  // describe('indexOf')
-  method {:test} IndexOfReturnsThePosition() {
-    expect indexOf(30, [0, 10, 20, 30]) == 3;
-  }
-
-  method {:test} IndexOfReturnsMinusOneWhenAbsent() {
-    expect indexOf(40, [0, 10, 20, 30]) == -1;
-  }
-
-  // describe('lastIndexOf')
-  method {:test} LastIndexOfReturnsTheLastPosition() {
-    expect lastIndexOf(30, [0, 10, 20, 30, 0, 10, 20, 30, 0, 10]) == 7;
-  }
-
-  method {:test} LastIndexOfReturnsMinusOneWhenAbsent() {
-    expect lastIndexOf(40, [0, 10, 20, 30]) == -1;
-  }
 
   // describe('join'): the list [1, 2, 3, 4] holds numbers, which JS converts
   // to strings; join takes strings here.
@@ -48,9 +35,58 @@ module RamdafTests.Ramda.List {
     expect sliceFrom(2, [8, 6, 7, 5, 3, 0, 9]) == [7, 5, 3, 0, 9];
   }
 
-  // describe('splice')
-  method {:test} SpliceRemovesTheSpecifiedElements() {
-    expect splice(3, 2, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) == [0, 1, 2, 5, 6, 7, 8, 9];
+  // describe('remove') (v0.2.2)
+  function Letters(): seq<string> { ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"] }
+
+  method {:test} RemoveSplicesOutASubList() {
+    expect remove(2, 5, Letters()) == ["a", "b", "h", "i", "j"];
+  }
+
+  method {:test} RemoveRemovesTheEndIfTheCountIsTooLarge() {
+    expect remove(2, 20, Letters()) == ["a", "b"];
+  }
+
+  method {:test} RemoveRetainsTheEntireListIfTheStartIsTooLarge() {
+    expect remove(13, 3, Letters()) == Letters();
+  }
+
+  method {:test} RemoveShouldBeCurried() {
+    var r := (l: seq<string>) => remove(13, 3, l);
+    expect r(Letters()) == Letters();
+  }
+
+  // describe('insert') (v0.2.2)
+  method {:test} InsertInsertsAnElement() {
+    expect insert(2, "x", ["a", "b", "c", "d", "e"]) == ["a", "b", "x", "c", "d", "e"];
+  }
+
+  method {:test} InsertInsertsAnotherListAsAnElement() {
+    var list := [Str("a"), Str("b"), Str("c"), Str("d"), Str("e")];
+    var st := Arr([Str("s"), Str("t")]);
+    expect insert(2, st, list) == [Str("a"), Str("b"), st, Str("c"), Str("d"), Str("e")];
+  }
+
+  method {:test} InsertAppendsIfTheIndexIsTooLarge() {
+    expect insert(8, "z", ["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "z"];
+  }
+
+  method {:test} InsertShouldBeCurried() {
+    var ins := (l: seq<string>) => insert(8, "z", l);
+    expect ins(["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "z"];
+  }
+
+  // describe('insert.all') (v0.2.2)
+  method {:test} InsertAllInsertsAListOfElements() {
+    expect insertAll(2, ["x", "y", "z"], ["a", "b", "c", "d", "e"]) == ["a", "b", "x", "y", "z", "c", "d", "e"];
+  }
+
+  method {:test} InsertAllAppendsIfTheIndexIsTooLarge() {
+    expect insertAll(8, ["p", "q", "r"], ["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "p", "q", "r"];
+  }
+
+  method {:test} InsertAllShouldBeCurried() {
+    var ins := (elts: seq<string>, l: seq<string>) => insertAll(8, elts, l);
+    expect ins(["p", "q", "r"], ["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "p", "q", "r"];
   }
 
   // describe('nth')
@@ -83,6 +119,119 @@ module RamdafTests.Ramda.List {
   method {:test} RepeatNIsAutomaticallyCurried() {
     var nTrues := (n: nat) => repeatN(true, n);
     expect nTrues(4) == [true, true, true, true];
+  }
+
+  // ---- test.indexof.js (v0.2.2; indexOf and lastIndexOf moved here from
+  // test.list.js) ----
+
+  // describe('indexOf')
+  method {:test} IndexOfReturnsThePosition() {
+    expect indexOf(30, [0, 10, 20, 30]) == 3;
+  }
+
+  method {:test} IndexOfReturnsMinusOneWhenAbsent() {
+    expect indexOf(40, [0, 10, 20, 30]) == -1;
+  }
+
+  method {:test} IndexOfReturnsTheIndexOfTheFirstItem() {
+    expect indexOf(1, [1, 2, 3, 4, 5]) == 0;
+  }
+
+  method {:test} IndexOfReturnsTheIndexOfTheLastItem() {
+    expect indexOf(5, [1, 2, 3, 4, 5]) == 4;
+  }
+
+  function Arr123(): seq<Js> { [Num(1), Num(2), Num(3)] }
+
+  // "finds 1" and "finds 1 and is result strictly it"
+  method {:test} IndexOfFinds1() {
+    expect indexOf(Num(1), Arr123()) == 0;
+  }
+
+  method {:test} IndexOfDoesNotFind4() {
+    expect indexOf(Num(4), Arr123()) == -1;
+  }
+
+  method {:test} IndexOfUsesStrictEquality() {
+    expect indexOf(Str("1"), Arr123()) == -1;
+  }
+
+  method {:test} IndexOfShouldBeCurried() {
+    var curried := (l: seq<Js>) => indexOf(Num(3), l);
+    expect curried(Arr123()) == 2;
+  }
+
+  // describe('indexOf.from')
+  method {:test} IndexOfFromIndex1() { expect indexOfFrom(Num(2), 1, Arr123()) == 1; }
+  method {:test} IndexOfFromIndex2() { expect indexOfFrom(Num(2), 2, Arr123()) == -1; }
+  method {:test} IndexOfFromIndex3() { expect indexOfFrom(Num(2), 3, Arr123()) == -1; }
+  method {:test} IndexOfFromIndex4() { expect indexOfFrom(Num(2), 4, Arr123()) == -1; }
+  method {:test} IndexOfFromIndexMinus1() { expect indexOfFrom(Num(3), -1, Arr123()) == 2; }
+  method {:test} IndexOfFromIndexMinus2() { expect indexOfFrom(Num(3), -2, Arr123()) == 2; }
+  method {:test} IndexOfFromIndexMinus3() { expect indexOfFrom(Num(3), -3, Arr123()) == 2; }
+  method {:test} IndexOfFromIndexMinus4() { expect indexOfFrom(Num(3), -4, Arr123()) == 2; }
+
+  method {:test} IndexOfFromShouldBeCurried() {
+    var curried := (from: int, l: seq<Js>) => indexOfFrom(Num(3), from, l);
+    expect curried(0, Arr123()) == 2;
+  }
+
+  // describe('lastIndexOf')
+  method {:test} LastIndexOfReturnsTheLastPosition() {
+    expect lastIndexOf(30, [0, 10, 20, 30, 0, 10, 20, 30, 0, 10]) == 7;
+  }
+
+  method {:test} LastIndexOfReturnsMinusOneWhenAbsent() {
+    expect lastIndexOf(40, [0, 10, 20, 30]) == -1;
+  }
+
+  method {:test} LastIndexOfReturnsTheLastIndexOfTheFirstItem() {
+    expect lastIndexOf(1, [1, 2, 3, 4, 5, 1]) == 5;
+  }
+
+  method {:test} LastIndexOfReturnsTheIndexOfTheLastItem() {
+    expect lastIndexOf(5, [1, 2, 3, 4, 5, 1]) == 4;
+  }
+
+  function Ana(): seq<Js> { [Str("a"), Num(1), Str("a")] }
+
+  method {:test} LastIndexOfFindsA() { expect lastIndexOf(Str("a"), Ana()) == 2; }
+  method {:test} LastIndexOfDoesNotFindC() { expect lastIndexOf(Str("c"), Ana()) == -1; }
+  method {:test} LastIndexOfUsesStrictEquality() { expect lastIndexOf(Str("1"), Ana()) == -1; }
+
+  // describe('lastIndexOf')'s "from index" cases (repeated under
+  // describe('lastIndexOf.from') below)
+  method {:test} LastIndexOfFromIndexCasesInLastIndexOf() {
+    expect lastIndexOfFrom(Str("a"), 1, Ana()) == 0;
+    expect lastIndexOfFrom(Str("a"), 2, Ana()) == 2;
+    expect lastIndexOfFrom(Str("a"), 3, Ana()) == 2;
+    expect lastIndexOfFrom(Str("a"), 4, Ana()) == 2;
+    expect lastIndexOfFrom(Str("a"), 0, Ana()) == 0;
+    expect lastIndexOfFrom(Str("a"), -1, Ana()) == 2;
+    expect lastIndexOfFrom(Str("a"), -2, Ana()) == 0;
+    expect lastIndexOfFrom(Str("a"), -3, Ana()) == 0;
+    expect lastIndexOfFrom(Str("a"), -4, Ana()) == -1;
+  }
+
+  method {:test} LastIndexOfShouldBeCurried() {
+    var curried := (l: seq<Js>) => lastIndexOf(Str("a"), l);
+    expect curried(Ana()) == 2;
+  }
+
+  // describe('lastIndexOf.from')
+  method {:test} LastIndexOfFromIndex1() { expect lastIndexOfFrom(Str("a"), 1, Ana()) == 0; }
+  method {:test} LastIndexOfFromIndex2() { expect lastIndexOfFrom(Str("a"), 2, Ana()) == 2; }
+  method {:test} LastIndexOfFromIndex3() { expect lastIndexOfFrom(Str("a"), 3, Ana()) == 2; }
+  method {:test} LastIndexOfFromIndex4() { expect lastIndexOfFrom(Str("a"), 4, Ana()) == 2; }
+  method {:test} LastIndexOfFromIndex0() { expect lastIndexOfFrom(Str("a"), 0, Ana()) == 0; }
+  method {:test} LastIndexOfFromIndexMinus1() { expect lastIndexOfFrom(Str("a"), -1, Ana()) == 2; }
+  method {:test} LastIndexOfFromIndexMinus2() { expect lastIndexOfFrom(Str("a"), -2, Ana()) == 0; }
+  method {:test} LastIndexOfFromIndexMinus3() { expect lastIndexOfFrom(Str("a"), -3, Ana()) == 0; }
+  method {:test} LastIndexOfFromIndexMinus4() { expect lastIndexOfFrom(Str("a"), -4, Ana()) == -1; }
+
+  method {:test} LastIndexOfFromShouldBeCurried() {
+    var curried := (from: int, l: seq<Js>) => lastIndexOfFrom(Str("a"), from, l);
+    expect curried(3, Ana()) == 2;
   }
 
   // ---- test.containsuniq.js ----
@@ -158,6 +307,32 @@ module RamdafTests.Ramda.List {
   method {:test} MapIdxIsAutomaticallyCurried() {
     var makeSquareEnds := (l: seq<int>) => mapIdx(squareEnds, l);
     expect makeSquareEnds([8, 6, 7, 5, 3, 0, 9]) == [64, 6, 7, 5, 3, 0, 81];
+  }
+
+  // describe('mapObj.idx') (v0.2.2)
+  function Vowelly(): map<string, int> { map["a" := 8, "b" := 6, "c" := 7, "d" := 5, "e" := 3, "f" := 0, "g" := 9] }
+  function squareVowels(x: int, key: string, obj: map<string, int>): int
+  { if key in ["a", "e", "i", "o", "u"] then x * x else x }
+
+  method {:test} MapObjIdxWorksJustLikeANormalMapObj() {
+    expect mapObjIdx((x: int, k: string, o: map<string, int>) => x * 2, map["a" := 1, "b" := 2, "c" := 3, "d" := 4]) ==
+      map["a" := 2, "b" := 4, "c" := 6, "d" := 8];
+  }
+
+  // `x + key` concatenates the number and the key as strings.
+  method {:test} MapObjIdxPassesTheKeyAsASecondParameter() {
+    expect mapObjIdx((x: int, k: string, o: map<string, int>) => NumStr(x) + k, Vowelly()) ==
+      map["a" := "8a", "b" := "6b", "c" := "7c", "d" := "5d", "e" := "3e", "f" := "0f", "g" := "9g"];
+  }
+
+  method {:test} MapObjIdxPassesTheEntireObjectAsAThirdParameter() {
+    expect mapObjIdx(squareVowels, Vowelly()) ==
+      map["a" := 64, "b" := 6, "c" := 7, "d" := 5, "e" := 9, "f" := 0, "g" := 9];
+  }
+
+  method {:test} MapObjIdxIsAutomaticallyCurried() {
+    var makeSquareVowels := (o: map<string, int>) => mapObjIdx(squareVowels, o);
+    expect makeSquareVowels(Vowelly()) == map["a" := 64, "b" := 6, "c" := 7, "d" := 5, "e" := 9, "f" := 0, "g" := 9];
   }
 
   // ---- test.find.js ----
@@ -237,6 +412,8 @@ module RamdafTests.Ramda.List {
     var nest2 := [Node([Node([Node([Leaf(3)])]), Leaf(2), Leaf(1)]), Leaf(0),
                   Node([Node([Leaf(-1), Leaf(-2)]), Leaf(-3)])];
     expect flatten(nest2) == [3, 2, 1, 0, -1, -2, -3];
+    // v0.2.2
+    expect flatten([Leaf(1), Leaf(2), Leaf(3), Leaf(4), Leaf(5)]) == [1, 2, 3, 4, 5];
   }
 
   // ---- test.range.js ----

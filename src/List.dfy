@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.2.0 "List Functions" (ramda.js lines 533-1156), except
+// Ramdaf: Ramda v0.2.2 "List Functions" (ramda.js lines 557-1145), except
 // `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
 
 module Ramdaf.List {
@@ -6,11 +6,12 @@ module Ramdaf.List {
 
   export
     reveals foldl, reduce, foldlIdx, reduceIdx, foldr, reduceRight, foldrIdx,
-            reduceRightIdx, unfoldr, mapSeq, mapIdx, mapObj, filter, filterIdx,
+            reduceRightIdx, unfoldr, mapSeq, mapIdx, mapObj, mapObjIdx, filter, filterIdx,
             reject, rejectIdx, takeWhile, take, skipUntil, skip, drop, find,
             findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith,
             uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
-            range, indexOf, lastIndexOf, join, slice, sliceFrom, splice, nth, partition
+            range, indexOf, indexOfFrom, lastIndexOf, lastIndexOfFrom, join, slice, sliceFrom,
+            remove, insert, insertAll, nth, partition
     provides Prelude
 
   // `acc = fn(acc, list[idx])` for idx ascending.
@@ -75,6 +76,12 @@ module Ramdaf.List {
     ensures mapObj(fn, obj).Keys == obj.Keys
     ensures forall k :: k in obj ==> mapObj(fn, obj)[k] == fn(obj[k])
   { map k | k in obj :: fn(obj[k]) }
+
+  // `mapObj.idx` (v0.2.2): `fn(obj[key], key, obj)` for every own property.
+  function mapObjIdx<V, W>(fn: (V, string, map<string, V>) -> W, obj: map<string, V>): map<string, W>
+    ensures mapObjIdx(fn, obj).Keys == obj.Keys
+    ensures forall k :: k in obj ==> mapObjIdx(fn, obj)[k] == fn(obj[k], k, obj)
+  { map k | k in obj :: fn(obj[k], k, obj) }
 
   function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures |filter(fn, list)| <= |list|
@@ -394,6 +401,25 @@ module Ramdaf.List {
     else var r := indexOf(obj, list[1..]);
          if r < 0 then -1 else r + 1 }
 
+  // `indexOf.from(target, fromIdx, list)` (v0.2.2): the search starts at
+  // fromIdx, a negative fromIdx counting from the end (`Math.max(0, length +
+  // fromIdx)`); -1 when target does not occur from there on. The body
+  // searches the suffix with indexOf.
+  function indexOfFrom<T(==)>(target: T, fromIdx: int, list: seq<T>): int
+    ensures var i := if fromIdx < 0 then (if |list| + fromIdx < 0 then 0 else |list| + fromIdx)
+                     else if fromIdx > |list| then |list| else fromIdx;
+      -1 <= indexOfFrom(target, fromIdx, list) < |list| &&
+      (indexOfFrom(target, fromIdx, list) == -1 <==> target !in list[i..]) &&
+      (indexOfFrom(target, fromIdx, list) >= 0 ==>
+         i <= indexOfFrom(target, fromIdx, list) && list[indexOfFrom(target, fromIdx, list)] == target &&
+         forall j :: i <= j < indexOfFrom(target, fromIdx, list) ==> list[j] != target)
+  { var i := if fromIdx < 0 then (if |list| + fromIdx < 0 then 0 else |list| + fromIdx)
+             else if fromIdx > |list| then |list| else fromIdx;
+    var r := indexOf(target, list[i..]);
+    assert r >= 0 ==> list[i..][r] == list[i + r];
+    assert forall j :: i <= j < i + r ==> list[j] == list[i..][j - i];
+    if r == -1 then -1 else r + i }
+
   // `list.lastIndexOf(obj)`: the last index of obj, or -1.
   function lastIndexOf<T(==)>(obj: T, list: seq<T>): int
     ensures -1 <= lastIndexOf(obj, list) < |list|
@@ -404,6 +430,24 @@ module Ramdaf.List {
   { if |list| == 0 then -1
     else if list[|list| - 1] == obj then |list| - 1
     else lastIndexOf(obj, list[..|list| - 1]) }
+
+  // `lastIndexOf.from(target, fromIdx, list)` (v0.2.2): the search runs
+  // down from fromIdx, a negative fromIdx counting from the end (the loop
+  // starts below `length + fromIdx + 1`, or below `Math.min(length,
+  // fromIdx + 1)`); -1 when target does not occur at or before it. The body
+  // searches the prefix with lastIndexOf.
+  function lastIndexOfFrom<T(==)>(target: T, fromIdx: int, list: seq<T>): int
+    ensures var e := if fromIdx < 0 then |list| + fromIdx + 1
+                     else if fromIdx + 1 < |list| then fromIdx + 1 else |list|;
+      -1 <= lastIndexOfFrom(target, fromIdx, list) < |list| &&
+      (e <= 0 ==> lastIndexOfFrom(target, fromIdx, list) == -1) &&
+      (e > 0 ==> (lastIndexOfFrom(target, fromIdx, list) == -1 <==> target !in list[..e])) &&
+      (lastIndexOfFrom(target, fromIdx, list) >= 0 ==>
+         lastIndexOfFrom(target, fromIdx, list) < e && list[lastIndexOfFrom(target, fromIdx, list)] == target &&
+         forall j :: lastIndexOfFrom(target, fromIdx, list) < j < e ==> list[j] != target)
+  { var e := if fromIdx < 0 then |list| + fromIdx + 1
+             else if fromIdx + 1 < |list| then fromIdx + 1 else |list|;
+    if e <= 0 then -1 else lastIndexOf(target, list[..e]) }
 
   // `list.join(sep)`; the elements are strings (see README on numbers).
   function join(sep: string, list: seq<string>): string
@@ -430,21 +474,46 @@ module Ramdaf.List {
     ensures sliceFrom(from, list) == slice(from, |list|, list)
   { slice(from, |list|, list) }
 
-  // `_slice(list, 0, start).concat(_slice(list, start + len))` (v0.2.0; it
-  // was a copy with `Array.prototype.splice(start, len)` applied).
-  // `_slice(args, from, to)` copies args[from..to) into `new Array(to - from)`,
-  // reading `from || 0` and `to || args.length`, so:
-  // - start == 0 reads as "to the end", and the first part is the whole list
-  //   (`splice(0, 2, [1, 2, 3, 4, 5])` is `[1, 2, 3, 4, 5, 3, 4, 5]`);
-  // - a negative start, or start + len > |list|, makes a negative length,
-  //   which throws RangeError;
-  // - start > |list| or start + len < 0 reads past an end (undefined holes).
-  // So 0 <= start <= |list| and 0 <= start + len <= |list|.
-  function splice<T>(start: int, len: int, list: seq<T>): seq<T>
-    requires 0 <= start <= |list|
-    requires 0 <= start + len <= |list|
-    ensures splice(start, len, list) == (if start == 0 then list else list[..start]) + list[start + len..]
-  { (if start == 0 then list else list[..start]) + list[start + len..] }
+  // v0.2.2 replaces `splice` with `remove`, `insert` and `insert.all`, all
+  // built on `_slice(args, from, to)`, which copies args[from..to) into
+  // `new Array(to - from)` reading `from || 0` and `to || args.length`: an end
+  // index of 0 reads as "the end" (so `_slice(list, 0, 0)` is the whole
+  // list), a negative length throws RangeError, and indices past an end read
+  // undefined holes.
+
+  // `concat(_slice(list, 0, Math.min(start, length)), _slice(list,
+  // Math.min(length, start + count)))`: the list without `count` elements
+  // from `start`, except that when the first cut is 0 (start 0, or the empty
+  // list) the whole list comes first (`remove(0, 2, [1, 2, 3, 4, 5])` is
+  // `[1, 2, 3, 4, 5, 3, 4, 5]`). A negative start throws RangeError, and
+  // start + count < 0 reads undefined holes, so both are excluded.
+  function remove<T>(start: int, count: int, list: seq<T>): seq<T>
+    requires 0 <= start
+    requires 0 <= start + count
+    ensures var a := if start < |list| then start else |list|;
+      var b := if start + count < |list| then start + count else |list|;
+      remove(start, count, list) == (if a == 0 then list else list[..a]) + list[b..]
+  { var a := if start < |list| then start else |list|;
+    var b := if start + count < |list| then start + count else |list|;
+    (if a == 0 then list else list[..a]) + list[b..] }
+
+  // `index` is used when `0 <= index < length` and is `length` (the end)
+  // otherwise; then `concat(append(elt, _slice(list, 0, index)),
+  // _slice(list, index))`. When index is 0 the first part is the whole list:
+  // `insert(0, 9, [1, 2, 3])` is `[1, 2, 3, 9, 1, 2, 3]`.
+  function insert<T>(index: int, elt: T, list: seq<T>): seq<T>
+    ensures var i := if 0 <= index < |list| then index else |list|;
+      insert(index, elt, list) == (if i == 0 then list else list[..i]) + [elt] + list[i..]
+  { var i := if 0 <= index < |list| then index else |list|;
+    (if i == 0 then list else list[..i]) + [elt] + list[i..] }
+
+  // `insert.all`: as insert, with the list elts in place of one element:
+  // `concat(concat(_slice(list, 0, index), elts), _slice(list, index))`.
+  function insertAll<T>(index: int, elts: seq<T>, list: seq<T>): seq<T>
+    ensures var i := if 0 <= index < |list| then index else |list|;
+      insertAll(index, elts, list) == (if i == 0 then list else list[..i]) + elts + list[i..]
+  { var i := if 0 <= index < |list| then index else |list|;
+    (if i == 0 then list else list[..i]) + elts + list[i..] }
 
   // `list[n]`: undefined (None) out of range.
   function nth<T>(n: int, list: seq<T>): Option<T>

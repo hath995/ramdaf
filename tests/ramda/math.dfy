@@ -1,4 +1,4 @@
-// Ramda v0.2.0 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.2.2 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations").
 
@@ -66,6 +66,12 @@ module RamdafTests.Ramda.Math {
 
   // describe('sum'), describe('product')
   method {:test} SumAddsTheArray() { expect sum([1, 2, 3, 4]) == 10; }
+  // v0.2.2
+  method {:test} SumDoesNotSaveTheStateOfTheAccumulator() {
+    expect sum([1, 2, 3, 4]) == 10;
+    expect sum([1]) == 1;
+    expect sum([5, 5, 5, 5, 5]) == 25;
+  }
   method {:test} ProductMultipliesTheArray() { expect product([1, 2, 3, 4]) == 24; }
 
   // describe('lt') etc. (the string cases are not expressible)

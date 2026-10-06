@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.2.0 "Core Functions" (ramda.js lines 326-407), `clone`
-// (lines 321-324) and `size`. (v0.2.0 removed `cloneDeep`.)
+// Ramdaf: Ramda v0.2.2 "Core Functions" (ramda.js lines 357-431), `clone`
+// (lines 352-355) and `size`. (v0.2.0 removed `cloneDeep`.)
 
 module Ramdaf.Core {
   export

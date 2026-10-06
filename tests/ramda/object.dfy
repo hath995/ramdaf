@@ -1,9 +1,8 @@
-// Ramda v0.2.0 test/test.objectBasics.js, test/test.keysvals.js and
+// Ramda v0.2.2 test/test.objectBasics.js, test/test.keysvals.js and
 // test/test.tapeq.js, transcribed. Not transcribed: describe('func') and
 // describe('tap') (not portable, README), `eq([], [])` (reference equality,
-// README "Deviations"; pinned in tests/edge/object.dfy); v0.2.0's
-// describe('pathWith'), describe('pathOn') and describe('path') (not
-// portable, README); and test.keysvals.js's cases on an object built by a
+// README "Deviations"; pinned in tests/edge/object.dfy); and
+// test.keysvals.js's cases on an object built by a
 // constructor whose prototype has properties ("does not include"/"includes
 // the given object's prototype properties"): a map has no prototype.
 
