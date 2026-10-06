@@ -110,11 +110,11 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.2.3)
+## Modules and exports (v0.2.4)
 
 | Module | Exports |
 |---|---|
-| `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, merge, concat, identity, I, times, repeatN, size |
+| `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, concat, identity, I, times, repeatN, size |
 | `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, constant, alwaysZero, alwaysFalse, alwaysTrue |
 | `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, mapObjIdx (`mapObj.idx`), filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, indexOfFrom (`indexOf.from`), lastIndexOf, lastIndexOfFrom (`lastIndexOf.from`), join, slice, sliceFrom (`slice.from`), remove, insert, insertAll (`insert.all`), nth, partition |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
@@ -124,7 +124,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 133 of Ramda v0.2.3's 160 export names, plus 12 of the 14 functions
+That is 132 of Ramda v0.2.4's 159 export names, plus 12 of the 14 functions
 stored as properties of exports (`map.idx` and the like). The other 27 names
 and the 2 properties `each.idx`/`forEach.idx` are listed under "Not portable".
 
@@ -142,15 +142,15 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.2.3 does not export `keyValue`; it is a local `var` in `ramda.js`,
+Ramda v0.2.4 does not export `keyValue`; it is a local `var` in `ramda.js`,
 and Ramdaf does not export it either. (`containsWith` was internal until
-v0.1.5 exported it, and `uniqWith` until v0.2.0; both are in List. The
-`*With` functions in Data carry `uniqWith`'s recursion themselves, as they
-did while it was internal.)
+v0.1.5 exported it, and `uniqWith` until v0.2.0; both are in List. Until
+v0.2.3 the `*With` functions in Data carried `uniqWith`'s recursion
+themselves; since v0.2.4 they call `List.uniqWith`, as Ramda does.)
 
 ## Not portable
 
-These Ramda v0.2.3 exports are not ported, rather than faked:
+These Ramda v0.2.4 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -171,7 +171,7 @@ These Ramda v0.2.3 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.2.3 (node) | Ramdaf |
+| Function | Ramda v0.2.4 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car`, `first`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
 | `take` | `take(-1, l)` throws `RangeError`. (Before v0.1.5, `take(5, [1, 2])` → `[1, 2, <3 empty items>]`, and Ramdaf required `n <= \|list\|`; v0.1.5 clamps to `[1, 2]`.) | `n: nat` |
@@ -191,7 +191,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.2.3 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.2.4 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys`, `keysIn` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
@@ -239,7 +239,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 | v0.2.1 | 2014-06-27 | ported | — |
 | v0.2.2 | 2014-06-30 | ported | — |
 | v0.2.3 | 2014-07-09 | ported | — |
-| v0.2.4 | 2014-07-18 | pending | — |
+| v0.2.4 | 2014-07-18 | ported | — |
 | v0.3.0 | 2014-08-10 | pending | — |
 | v0.4.0 | 2014-08-28 | pending | — |
 | v0.4.1 | 2014-08-31 | pending | — |
@@ -614,6 +614,54 @@ side-effect counting, JS coercion, reference equality, string-keyed
 - **Expected tier: major.** `where` changed results for a function entry on
   an absent property; `times` and `pickWith` were added
   (`casestudy/expected/v0.2.3.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.2.4 (2014-07-18)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node; most of the
+  diff is new JSDoc comments, and the code changes are these):
+  - `merge` is removed. `concat`, its alias since v0.1.x, is now its own
+    function and dispatches to a `concat` method of a non-array first
+    argument (`concat('foo', 'bar')` → `'foobar'`); on arrays its results are
+    unchanged.
+  - `uniq` and `uniqWith` keep the FIRST occurrence (class representative)
+    instead of the last, with new tests "keeps elements from the left":
+    `uniq([1, 2, 1, 3, 2])` → `[1, 2, 3]` (was `[1, 3, 2]`). `uniqWith` keeps
+    an item unless `pred(item, kept)` holds for an element already kept
+    (`uniqWith((a, b) => a < b, [1, 2, 3])` → `[1, 2, 3]`, was `[3]`).
+  - Through them `union`, `unionWith`, `difference`, `differenceWith`,
+    `intersection` and `intersectionWith` change their results
+    (`difference([1, 2, 1, 3], [])` → `[1, 2, 3]`, was `[2, 1, 3]`).
+  - `_slice` reads `from`/`to` only when they are numbers, so an end index of
+    0 is no longer "the end": `takeWhile(x => x > 5, [1, 2, 3])` → `[]` (was
+    `[1, 2, 3]`), `insert(0, 9, [1, 2, 3])` → `[9, 1, 2, 3]`,
+    `remove(0, 2, [1, 2, 3, 4, 5])` → `[3, 4, 5]`, and `insert.all` alike
+    (new test "returns the appropriate sublist when start == 0").
+    `skip` past the end and `remove` with a negative start still throw.
+  - `isSet`, `mixin` and `installTo` are reimplemented with unchanged
+    results; `where` tests `key in testObj`, which also accepts inherited
+    properties (no counterpart for a map).
+- **Ramdaf:**
+  - Removed `merge`; `concat` is `list1 + list2` (same results).
+  - `uniq` and `uniqWith` keep the first occurrence and call
+    `pred(item, kept)`; their bodies recurse on all but the last element, as
+    the loop does.
+  - The Data `*With` functions are now `List.uniqWith` of the combined or
+    filtered list, as in Ramda; `union`, `difference` and `intersection`
+    follow `List.uniq`. The `*With` postconditions now say
+    `!pred(later, earlier)`.
+  - `takeWhile`, `remove`, `insert` and `insertAll` drop the index-0
+    behaviour.
+  - Tests: test.containsuniq.js's "keeps elements from the left" and the new
+    `uniqWith` describe (its `alwaysTrue`/`alwaysFalse` markers are strings
+    here), test.core.js's `concat` (the object-with-a-`concat`-method case is
+    not portable), test.list.js's `remove` at 0, and test.objectBasics.js's
+    new `where` and `mixin` cases (the prototype ones cannot be written);
+    the edge cases switch to first occurrences and the fixed index 0.
+- **Expected tier: major.** `merge` was removed, and `uniq`, `uniqWith`,
+  `union`, `unionWith`, `difference`, `differenceWith`, `intersection`,
+  `intersectionWith`, `takeWhile`, `remove`, `insert` and `insertAll`
+  changed results (`casestudy/expected/v0.2.4.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

@@ -1,4 +1,4 @@
-// Ramda v0.2.3 test/test.core.js and test/test.clone.js, transcribed. Not
+// Ramda v0.2.4 test/test.core.js and test/test.clone.js, transcribed. Not
 // transcribed: describe('isAtom') (not portable, README); head's and last's
 // "returns undefined for an empty list" and "for no arguments" (the empty list
 // is outside their domain, README "Outside the modeled domain"); tail's
@@ -37,11 +37,19 @@ module RamdafTests.Ramda.Core {
     expect append(az, [Str("x"), Str("y")]) == [Str("x"), Str("y"), az];
   }
 
-  // describe('merge')
-  method {:test} MergeCombinesTheLists() {
-    expect merge(["a", "b"], ["c", "d"]) == ["a", "b", "c", "d"];
+  // describe('concat') (v0.2.4; it was describe('merge')). Its first `it`
+  // appears twice, with the same body.
+  method {:test} ConcatCombinesTheLists() {
+    expect concat(["a", "b"], ["c", "d"]) == ["a", "b", "c", "d"];
     var empty: seq<string> := [];
-    expect merge(empty, ["c", "d"]) == ["c", "d"];
+    expect concat(empty, ["c", "d"]) == ["c", "d"];
+  }
+
+  // "works for objects with a concat method": the string case (a string is a
+  // seq here); `concat(z1, z2)`, an object with a `concat` method, is not
+  // portable.
+  method {:test} ConcatWorksForStrings() {
+    expect concat("foo", "bar") == "foobar";
   }
 
   // describe('head')

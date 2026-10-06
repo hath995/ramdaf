@@ -1,10 +1,10 @@
-// Ramdaf: Ramda v0.2.3 "Core Functions" (ramda.js lines 346-421), `clone`
-// (lines 341-344) and `size`. (v0.2.0 removed `cloneDeep`.)
+// Ramdaf: Ramda v0.2.4 "Core Functions" (ramda.js lines 716-964), `clone`
+// (lines 712-714) and `size`. (v0.2.0 removed `cloneDeep`.)
 
 module Ramdaf.Core {
   export
     reveals clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr,
-            append, push, merge, concat, identity, I, times, repeatN, size
+            append, push, concat, identity, I, times, repeatN, size
 
   // `clone(list)` is `_slice(list)` (`list.concat()` before v0.2.0), a
   // shallow copy. Dafny sequences are values, so the copy is the list itself.
@@ -42,8 +42,12 @@ module Ramdaf.Core {
   function append<T>(el: T, list: seq<T>): seq<T> { list + [el] }
   function push<T>(el: T, list: seq<T>): seq<T> { append(el, list) }
 
-  function merge<T>(list1: seq<T>, list2: seq<T>): seq<T> { list1 + list2 }
-  function concat<T>(list1: seq<T>, list2: seq<T>): seq<T> { merge(list1, list2) }
+  // `R.concat` (v0.2.4; until v0.2.3 it was an alias of `merge`, which v0.2.4
+  // removed): the elements of list1 followed by those of list2. A non-array
+  // first argument with a `concat` method dispatches to it
+  // (`concat("foo", "bar")` is `"foobar"`); a Dafny string is a seq, so the
+  // same function covers it.
+  function concat<T>(list1: seq<T>, list2: seq<T>): seq<T> { list1 + list2 }
 
   function identity<T>(x: T): T { x }
   function I<T>(x: T): T { identity(x) }

@@ -1,4 +1,4 @@
-// Ramda v0.2.3 test/test.list.js, test/test.indexof.js,
+// Ramda v0.2.4 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js and
@@ -40,6 +40,13 @@ module RamdafTests.Ramda.List {
 
   method {:test} RemoveSplicesOutASubList() {
     expect remove(2, 5, Letters()) == ["a", "b", "h", "i", "j"];
+  }
+
+  // v0.2.4
+  method {:test} RemoveReturnsTheAppropriateSublistWhenStartIs0() {
+    expect remove(0, 5, Letters()) == ["f", "g", "h", "i", "j"];
+    expect remove(0, 1, Letters()) == ["b", "c", "d", "e", "f", "g", "h", "i", "j"];
+    expect remove(0, |Letters()|, Letters()) == [];
   }
 
   method {:test} RemoveRemovesTheEndIfTheCountIsTooLarge() {
@@ -277,9 +284,38 @@ module RamdafTests.Ramda.List {
     expect uniq([1, 2, 3, 1, 2, 3, 1, 2, 3]) == [1, 2, 3];
   }
 
+  // v0.2.4
+  method {:test} UniqKeepsElementsFromTheLeft() {
+    expect uniq([1, 2, 3, 4, 1]) == [1, 2, 3, 4];
+  }
+
   method {:test} UniqOfTheEmptyArray() {
     var empty: seq<int> := [];
     expect uniq(empty) == [];
+  }
+
+  // describe('uniqWith') (v0.2.4). The objects' `x` holds `alwaysTrue` or
+  // `alwaysFalse`, compared by reference; here the markers "T" and "F".
+  function Ox(x: string, i: int): map<string, Js> { map["x" := Str(x), "i" := Num(i)] }
+  function Oi(i: int): map<string, Js> { map["i" := Num(i)] }
+  // `x.i === accX.i`
+  function eqI(x: map<string, Js>, accX: map<string, Js>): bool
+  { ("i" in x) == ("i" in accX) && ("i" in x ==> x["i"] == accX["i"]) }
+
+  method {:test} UniqWithReturnsASetBasedOnThePredicate() {
+    var objs := [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3), Ox("F", 4), Ox("F", 5), Ox("T", 6), Ox("F", 7)];
+    var objs2 := [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3), Ox("F", 0), Ox("T", 1), Ox("F", 2), Ox("F", 3)];
+    expect uniqWith(eqI, objs) == objs;
+    expect uniqWith(eqI, objs2) == [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3)];
+  }
+
+  method {:test} UniqWithKeepsElementsFromTheLeft() {
+    expect uniqWith(eqI, [Oi(1), Oi(2), Oi(3), Oi(4), Oi(1)]) == [Oi(1), Oi(2), Oi(3), Oi(4)];
+  }
+
+  method {:test} UniqWithOfTheEmptyArray() {
+    var empty: seq<map<string, Js>> := [];
+    expect uniqWith(eqI, empty) == [];
   }
 
   // ---- test.map.js ----

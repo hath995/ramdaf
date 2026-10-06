@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.2.3's own suite does not cover, each checked against
-// ramda.js v0.2.3 under node (the expected values are node's output). The
+// Edge cases Ramda v0.2.4's own suite does not cover, each checked against
+// ramda.js v0.2.4 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -18,8 +18,9 @@ module RamdafTests.Edge.List {
     expect last([1, 2, 3]) == 3;
     expect last([5]) == 5;
     expect isEmpty([0]) == false;
-    expect merge(empty, [1]) == [1];
-    expect merge([1], empty) == [1];
+    expect concat(empty, [1]) == [1];
+    expect concat([1], empty) == [1];
+    expect concat([1, 2], [3]) == [1, 2, 3];
     expect append(1, empty) == [1];
     expect prepend(1, empty) == [1];
     expect size(empty) == 0;
@@ -144,20 +145,21 @@ module RamdafTests.Edge.List {
     expect foldl((acc: string, x: string) => acc + x, "", ["a", "b", "c"]) == "abc";
   }
 
-  // uniq keeps the last occurrence of each element.
-  method {:test} UniqKeepsLastOccurrences() {
-    expect uniq([1, 2, 1, 3, 2]) == [1, 3, 2];
+  // Since v0.2.4 uniq keeps the first occurrence of each element (it kept
+  // the last).
+  method {:test} UniqKeepsFirstOccurrences() {
+    expect uniq([1, 2, 1, 3, 2]) == [1, 2, 3];
     expect uniq([3, 3, 3]) == [3];
   }
 
-  // uniqWith (exported since v0.2.0) keeps the last representative and drops
-  // x when pred(x, y) holds for a kept y.
-  method {:test} UniqWithKeepsLastRepresentatives() {
+  // Since v0.2.4 uniqWith keeps the first representative and drops item when
+  // pred(item, r) holds for a kept r.
+  method {:test} UniqWithKeepsFirstRepresentatives() {
     var empty: seq<int> := [];
-    expect uniqWith((a: int, b: int) => a % 3 == b % 3, [1, 2, 3, 4]) == [2, 3, 4];
-    expect uniqWith((a: int, b: int) => a < b, [1, 2, 3]) == [3];
-    expect uniqWith((a: int, b: int) => a < b, [3, 2, 1]) == [3, 2, 1];
-    expect uniqWith((a: int, b: int) => a == b, [1, 2, 1]) == [2, 1];
+    expect uniqWith((a: int, b: int) => a % 3 == b % 3, [1, 2, 3, 4]) == [1, 2, 3];
+    expect uniqWith((a: int, b: int) => a < b, [1, 2, 3]) == [1, 2, 3];
+    expect uniqWith((a: int, b: int) => a < b, [3, 2, 1]) == [3];
+    expect uniqWith((a: int, b: int) => a == b, [1, 2, 1]) == [1, 2];
     expect uniqWith((a: int, b: int) => a == b, empty) == [];
   }
 
@@ -185,14 +187,15 @@ module RamdafTests.Edge.List {
     expect zipWith((a: int, b: int) => a + b, [1, 2], [10]) == [11];
   }
 
-  // v0.2.2's remove, insert and insert.all are built on `_slice`, whose end
-  // index 0 reads as "the end": a cut at 0 copies the whole list first.
+  // remove, insert and insert.all are built on `_slice`; since v0.2.4 a cut
+  // at 0 is empty (until v0.2.3 it copied the whole list).
   method {:test} RemoveUsesRamdasSlice() {
     var l := [1, 2, 3, 4, 5];
     var empty: seq<int> := [];
     expect remove(1, 2, l) == [1, 4, 5];
-    expect remove(0, 2, l) == [1, 2, 3, 4, 5, 3, 4, 5];
-    expect remove(0, 0, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
+    expect remove(0, 2, l) == [3, 4, 5];
+    expect remove(0, 0, [1, 2, 3]) == [1, 2, 3];
+    expect remove(0, 5, l) == [];
     expect remove(3, 10, [1, 2, 3]) == [1, 2, 3];
     expect remove(5, 1, [1, 2, 3]) == [1, 2, 3];
     expect remove(1, -1, l) == [1, 1, 2, 3, 4, 5];
@@ -206,7 +209,7 @@ module RamdafTests.Edge.List {
   method {:test} InsertUsesRamdasSlice() {
     var empty: seq<int> := [];
     expect insert(1, 9, [1, 2, 3]) == [1, 9, 2, 3];
-    expect insert(0, 9, [1, 2, 3]) == [1, 2, 3, 9, 1, 2, 3];
+    expect insert(0, 9, [1, 2, 3]) == [9, 1, 2, 3];
     expect insert(2, 9, [1, 2, 3]) == [1, 2, 9, 3];
     expect insert(3, 9, [1, 2, 3]) == [1, 2, 3, 9];
     expect insert(10, 9, [1, 2, 3]) == [1, 2, 3, 9];
@@ -214,10 +217,10 @@ module RamdafTests.Edge.List {
     expect insert(0, 9, empty) == [9];
     expect insert(5, 9, empty) == [9];
     expect insertAll(1, [7, 8], [1, 2, 3]) == [1, 7, 8, 2, 3];
-    expect insertAll(0, [7, 8], [1, 2, 3]) == [1, 2, 3, 7, 8, 1, 2, 3];
+    expect insertAll(0, [7, 8], [1, 2, 3]) == [7, 8, 1, 2, 3];
     expect insertAll(-1, [7, 8], [1, 2, 3]) == [1, 2, 3, 7, 8];
     expect insertAll(5, [7, 8], [1, 2, 3]) == [1, 2, 3, 7, 8];
-    expect insertAll(0, empty, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
+    expect insertAll(0, empty, [1, 2, 3]) == [1, 2, 3];
     expect insertAll(2, empty, [1, 2, 3]) == [1, 2, 3];
     expect insertAll(0, [7], empty) == [7];
   }
@@ -266,8 +269,8 @@ module RamdafTests.Edge.List {
     expect takeWhile((x: int) => x > 0, empty) == [];
     expect takeWhile((x: int) => x < 2, [1, 2, 3]) == [1];
     expect takeWhile((x: int) => x < 9, [1, 2]) == [1, 2];
-    // v0.2.0: `_slice(list, 0, 0)` is the whole list
-    expect takeWhile((x: int) => x > 5, [1, 2, 3]) == [1, 2, 3];
+    // v0.2.4 (it was the whole list from v0.2.0 to v0.2.3)
+    expect takeWhile((x: int) => x > 5, [1, 2, 3]) == [];
     expect skipUntil((x: int) => x > 2, [1, 2, 3, 1]) == [3, 1];
     expect skipUntil((x: int) => x > 0, empty) == [];
   }

@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against ramda.js v0.2.3 under node;
+// Edge cases for Sort and Data, checked against ramda.js v0.2.4 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -33,35 +33,36 @@ module RamdafTests.Edge.Data {
     expect sortBy((r: (int, int)) => r.0, [(2, 0), (1, 1), (2, 2), (1, 3)]) == [(1, 1), (1, 3), (2, 0), (2, 2)];
   }
 
-  // union/difference/intersection keep the last occurrence (uniq);
-  // intersection takes its elements, and their order, from the second list.
-  method {:test} SetOperationsKeepLastOccurrences() {
+  // Since v0.2.4 union/difference/intersection keep the first occurrence
+  // (uniq); intersection takes its elements, and their order, from the
+  // second list.
+  method {:test} SetOperationsKeepFirstOccurrences() {
     var empty: seq<int> := [];
-    expect union([1, 2, 3], [1]) == [2, 3, 1];
+    expect union([1, 2, 3], [1]) == [1, 2, 3];
     expect union(empty, empty) == [];
-    expect difference([1, 2, 1, 3], [3]) == [2, 1];
+    expect difference([1, 2, 1, 3], [3]) == [1, 2];
     expect difference([1, 1, 2], empty) == [1, 2];
     expect intersection([1, 2, 1, 3], [1, 2]) == [1, 2];
     expect intersection([2, 1, 2], [2, 1]) == [2, 1];
     expect intersection([1, 2, 3, 4], [4, 3, 2]) == [4, 3, 2];
     expect intersection([1, 2, 1, 3], [3, 1, 1]) == [3, 1];
-    expect intersection([1, 2], [3, 1, 2, 1]) == [2, 1];
+    expect intersection([1, 2], [3, 1, 2, 1]) == [1, 2];
   }
 
   function mod3(a: int, b: int): bool { a % 3 == b % 3 }
   function par(a: int, b: int): bool { a % 2 == b % 2 }
 
-  // The *With functions keep the last representative too (uniqWith scans
-  // from the right), and call pred(earlier, later).
-  method {:test} WithFunctionsKeepLastRepresentatives() {
+  // Since v0.2.4 the *With functions keep the first representative too
+  // (uniqWith), and call pred(later, earlier kept).
+  method {:test} WithFunctionsKeepFirstRepresentatives() {
     var empty: seq<int> := [];
-    expect unionWith(mod3, [1, 2], [4]) == [2, 4];
-    expect unionWith(mod3, [1, 2], [4, 5, 6]) == [4, 5, 6];
-    expect unionWith(mod3, [1, 2, 3, 4], empty) == [2, 3, 4];
-    expect unionWith((a: int, b: int) => a < b, [3, 1, 2], empty) == [3, 2];
-    expect differenceWith(par, [1, 2, 3], [4]) == [3];
-    expect differenceWith((a: int, b: int) => a == b, [1, 2, 1], [3]) == [2, 1];
-    expect intersectionWith(par, [1, 2, 3], [4, 5]) == [2, 3];
+    expect unionWith(mod3, [1, 2], [4]) == [1, 2];
+    expect unionWith(mod3, [1, 2], [4, 5, 6]) == [1, 2, 6];
+    expect unionWith(mod3, [1, 2, 3, 4], empty) == [1, 2, 3];
+    expect unionWith((a: int, b: int) => a < b, [3, 1, 2], empty) == [3];
+    expect differenceWith(par, [1, 2, 3], [4]) == [1];
+    expect differenceWith((a: int, b: int) => a == b, [1, 2, 1], [3]) == [1, 2];
+    expect intersectionWith(par, [1, 2, 3], [4, 5]) == [1, 2];
     expect intersectionWith((a: int, b: int) => a == b, [2, 1, 2], [2]) == [2];
   }
 

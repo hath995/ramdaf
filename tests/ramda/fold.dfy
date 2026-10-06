@@ -1,4 +1,4 @@
-// Ramda v0.2.3 test/test.fold.js, transcribed. Not transcribed: the "should
+// Ramda v0.2.4 test/test.fold.js, transcribed. Not transcribed: the "should
 // correctly report the arity of curried versions" cases (Dafny functions have
 // no arity), and foldl.idx's "works just like normal foldl" and "passes the
 // entire list as a fourth parameter" (both have empty bodies in Ramda).

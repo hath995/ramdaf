@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.2.3 "Object Functions" (ramda.js lines 1194-1427) and `propEq`
-// (line 1775). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.2.4 "Object Functions" (ramda.js lines 2415-2744) and `propEq`
+// (line 3225). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None.
 
 module Ramdaf.Object {
@@ -102,8 +102,9 @@ module Ramdaf.Object {
     ensures forall k :: k in pickWith(test, obj) ==> pickWith(test, obj)[k] == obj[k]
   { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
 
-  // `pickAll(keys(a), a)`, then every own property of b is copied over it:
-  // b's value wins where both have the key (Dafny's right-biased map union).
+  // `extend(extend({}, a), b)` (v0.2.4; before, `pickAll(keys(a), a)` with
+  // b's properties copied over it): b's value wins where both have the key
+  // (Dafny's right-biased map union).
   function mixin<V>(a: map<string, V>, b: map<string, V>): map<string, V>
     ensures mixin(a, b).Keys == a.Keys + b.Keys
     ensures forall k :: k in b ==> mixin(a, b)[k] == b[k]
@@ -114,10 +115,11 @@ module Ramdaf.Object {
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
   { prop(p, obj1) == prop(p, obj2) }
 
-  // Every function entry is an own property of test and holds,
-  // `hasOwnProperty.call(testObj, key) && spec[key](testObj[key], testObj)`,
-  // and every other entry equals the property, `spec[key] === testObj[key]`
-  // (v0.2.3; a null-ish test gives false). Since v0.2.3 a function entry whose
+  // Every function entry is a property of test and holds,
+  // `(key in testObj) && spec[key](testObj[key], testObj)`, and every other
+  // entry equals the property, `spec[key] === testObj[key]` (v0.2.4, which
+  // also accepts inherited properties where v0.2.3 checked
+  // `hasOwnProperty`; a map has none; a null-ish test gives false). Since v0.2.3 a function entry whose
   // property is absent fails without being called; before, it was called with
   // undefined (None). So a function now only ever sees Some. Neither a spec
   // property whose value is undefined nor a null test can be written here (an

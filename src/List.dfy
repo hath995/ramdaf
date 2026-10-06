@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.2.3 "List Functions" (ramda.js lines 559-1145), except
+// Ramdaf: Ramda v0.2.4 "List Functions" (ramda.js lines 1357-2359), except
 // `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
 
 module Ramdaf.List {
@@ -156,20 +156,18 @@ module Ramdaf.List {
     }
     r }
 
-  // `while (++idx < len && fn(list[idx])) {}; return _slice(list, 0, idx);`
-  // (v0.2.0): the longest prefix whose elements all satisfy fn, except that
-  // `_slice` reads an end index of 0 as "the end" (`to || args.length`), so
-  // when the first element fails fn the WHOLE list comes back
-  // (`takeWhile(x => x > 5, [1, 2, 3])` is `[1, 2, 3]`). The body finds the
-  // first failing index with findIndex (-1 when every element passes).
+  // `while (++idx < len && fn(list[idx])) {}; return _slice(list, 0, idx);`:
+  // the longest prefix whose elements all satisfy fn. (From v0.2.0 to v0.2.3
+  // `_slice` read an end index of 0 as "the end", so when the first element
+  // failed fn the whole list came back; v0.2.4 fixed `_slice`.) The body
+  // finds the first failing index with findIndex (-1 when every element
+  // passes).
   function takeWhile<T>(fn: T -> bool, list: seq<T>): seq<T>
-    ensures |list| > 0 && !fn(list[0]) ==> takeWhile(fn, list) == list
-    ensures !(|list| > 0 && !fn(list[0])) ==>
-      takeWhile(fn, list) <= list &&
-      (forall i :: 0 <= i < |takeWhile(fn, list)| ==> fn(list[i])) &&
-      (|takeWhile(fn, list)| < |list| ==> !fn(list[|takeWhile(fn, list)|]))
+    ensures takeWhile(fn, list) <= list
+    ensures forall i :: 0 <= i < |takeWhile(fn, list)| ==> fn(list[i])
+    ensures |takeWhile(fn, list)| < |list| ==> !fn(list[|takeWhile(fn, list)|])
   { var i := findIndex(x => !fn(x), list);
-    if i <= 0 then list else list[..i] }
+    if i == -1 then list else list[..i] }
 
   // A copy of the list with its length set to `Math.min(n, list.length)`
   // (v0.1.5; before, `take(5, [1, 2])` had three undefined slots): the first
@@ -269,78 +267,105 @@ module Ramdaf.List {
   function containsWith<T>(pred: (T, T) -> bool, x: T, list: seq<T>): bool
   { exists i :: 0 <= i < |list| && pred(x, list[i]) }
 
-  // `foldr(function(x, acc) { return contains(x, acc) ? acc : prepend(x, acc); }, [], list)`:
-  // scanning from the right keeps the LAST occurrence of each element, in the
-  // order of those last occurrences (`uniq([1, 2, 1, 3, 2]) == [1, 3, 2]`).
+  // `var result = []; ... if (!contains(item, result)) result.push(item);`
+  // for each item in order (v0.2.4; until v0.2.3 a foldr from the right kept
+  // the LAST occurrences): each element at its FIRST occurrence, in list
+  // order (`uniq([1, 2, 1, 3, 2]) == [1, 2, 3]`). The body recurses on all
+  // but the last element and then decides the last one, which is the loop.
   function {:isolate_assertions} uniq<T(==)>(list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |uniq(list)| ==> uniq(list)[i] in list
     ensures forall i :: 0 <= i < |list| ==> list[i] in uniq(list)
     ensures forall i, j :: 0 <= i < j < |uniq(list)| ==> uniq(list)[i] != uniq(list)[j]
     ensures forall i, j :: 0 <= i < j < |uniq(list)| ==>
-      lastIndexOf(uniq(list)[i], list) < lastIndexOf(uniq(list)[j], list)
+      indexOf(uniq(list)[i], list) < indexOf(uniq(list)[j], list)
     ensures |list| > 0 ==>
-      (uniq(list) == if list[0] in list[1..] then uniq(list[1..]) else [list[0]] + uniq(list[1..]))
+      uniq(list) ==
+        (if list[|list| - 1] in uniq(list[..|list| - 1]) then uniq(list[..|list| - 1])
+         else uniq(list[..|list| - 1]) + [list[|list| - 1]])
   { if |list| == 0 then []
-    else var acc := uniq(list[1..]);
-         assert forall k :: 0 <= k < |acc| ==> acc[k] in list[1..];
-         assert forall y :: y in list[1..] ==> lastIndexOf(y, list) == 1 + lastIndexOf(y, list[1..]) by {
-           forall y | y in list[1..] ensures lastIndexOf(y, list) == 1 + lastIndexOf(y, list[1..]) {
-             var p := lastIndexOf(y, list[1..]);
-             var q := lastIndexOf(y, list);
-             assert p != -1;
-             assert 0 <= p < |list[1..]| && list[1..][p] == y;
-             assert list[p + 1] == y;
-             assert list[p + 1] in list;
+    else var init := list[..|list| - 1];
+         var x := list[|list| - 1];
+         var acc := uniq(init);
+         assert forall k :: 0 <= k < |acc| ==> acc[k] in init;
+         assert forall k :: 0 <= k < |init| ==> init[k] == list[k];
+         assert forall y :: y in init ==> indexOf(y, list) == indexOf(y, init) by {
+           forall y | y in init ensures indexOf(y, list) == indexOf(y, init) {
+             var p := indexOf(y, init);
+             var q := indexOf(y, list);
+             assert 0 <= p < |init| && init[p] == y;
+             assert list[p] == y;
              assert q != -1;
-             if q < p + 1 { assert list[p + 1] != y; }
-             if q > p + 1 { assert list[1..][q - 1] == y; }
+             if q < p { assert init[q] == y; }
            }
          }
-         if list[0] in acc then acc
-         else
-           var r := [list[0]] + acc;
-           assert lastIndexOf(list[0], list) == 0 by {
-             var q := lastIndexOf(list[0], list);
-             assert list[0] !in list[1..];
-             if q > 0 { assert list[1..][q - 1] == list[0]; }
+         assert forall k :: 0 <= k < |init| ==> init[k] in acc;
+         if x in acc then
+           assert forall i :: 0 <= i < |list| ==> list[i] in acc by {
+             forall i | 0 <= i < |list| ensures list[i] in acc {
+               if i < |list| - 1 { assert list[i] == init[i]; }
+             }
            }
-           assert forall i, j :: 0 <= i < j < |r| ==> lastIndexOf(r[i], list) < lastIndexOf(r[j], list) by {
-             forall i, j | 0 <= i < j < |r| ensures lastIndexOf(r[i], list) < lastIndexOf(r[j], list) {
-               assert r[j] == acc[j - 1];
-               if i > 0 { assert r[i] == acc[i - 1]; }
+           acc
+         else
+           var r := acc + [x];
+           assert forall i :: 0 <= i < |list| ==> list[i] in r by {
+             forall i | 0 <= i < |list| ensures list[i] in r {
+               if i < |list| - 1 { assert list[i] == init[i]; assert init[i] in acc; }
+             }
+           }
+           assert x !in init by {
+             if x in init {
+               var k :| 0 <= k < |init| && init[k] == x;
+               assert init[k] in acc;
+             }
+           }
+           assert indexOf(x, list) == |list| - 1 by {
+             var q := indexOf(x, list);
+             if 0 <= q < |list| - 1 { assert init[q] == x; }
+           }
+           assert forall i, j :: 0 <= i < j < |r| ==> indexOf(r[i], list) < indexOf(r[j], list) by {
+             forall i, j | 0 <= i < j < |r| ensures indexOf(r[i], list) < indexOf(r[j], list) {
+               assert r[i] == acc[i];
+               assert acc[i] in init;
+               if j < |acc| { assert r[j] == acc[j]; }
              }
            }
            r }
 
-  // `uniq(list).length === list.length`: true exactly when no element occurs
-  // twice, which is the body (uniq keeps one copy of each element).
+  // True exactly when no element occurs twice, which is the body. (v0.2.4
+  // checks `indexOf(list, list[i], i + 1) < 0` for every i; until v0.2.3 it
+  // was `uniq(list).length === list.length`, the same result.)
   function isSet<T(==)>(list: seq<T>): bool
   { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
 
-  // `foldr(function(acc, x) { return containsWith(pred, x, acc) ? acc : prepend(x, acc); }, EMPTY, list)`
-  // (exported since v0.2.0): scanning from the right, x is dropped when
-  // `pred(x, y)` holds for an element y already kept, so each class keeps its
-  // LAST representative (`uniqWith((a, b) => a % 3 == b % 3, [1, 2, 3, 4])`
-  // is `[2, 3, 4]`).
+  // `var result = []; ... if (!containsWith(pred, item, result)) result.push(item);`
+  // for each item in order (v0.2.4; exported since v0.2.0, and until v0.2.3
+  // a foldr from the right that kept the LAST representative): item is kept
+  // when `pred(item, r)` fails for every r already kept, so each class keeps
+  // its FIRST representative (`uniqWith((a, b) => a % 3 == b % 3, [1, 2, 3, 4])`
+  // is `[1, 2, 3]`). The body recurses on all but the last element.
   function uniqWith<T>(pred: (T, T) -> bool, list: seq<T>): seq<T>
     ensures |list| == 0 ==> uniqWith(pred, list) == []
     ensures |list| > 0 ==>
       uniqWith(pred, list) ==
-        (if containsWith(pred, list[0], uniqWith(pred, list[1..])) then uniqWith(pred, list[1..])
-         else [list[0]] + uniqWith(pred, list[1..]))
+        (if containsWith(pred, list[|list| - 1], uniqWith(pred, list[..|list| - 1]))
+         then uniqWith(pred, list[..|list| - 1])
+         else uniqWith(pred, list[..|list| - 1]) + [list[|list| - 1]])
     ensures forall i :: 0 <= i < |uniqWith(pred, list)| ==> uniqWith(pred, list)[i] in list
     ensures forall i, j :: 0 <= i < j < |uniqWith(pred, list)| ==>
-      !pred(uniqWith(pred, list)[i], uniqWith(pred, list)[j])
+      !pred(uniqWith(pred, list)[j], uniqWith(pred, list)[i])
     ensures forall x | x in list ::
       x in uniqWith(pred, list) ||
       exists j :: 0 <= j < |uniqWith(pred, list)| && pred(x, uniqWith(pred, list)[j])
   { if |list| == 0 then []
-    else var acc := uniqWith(pred, list[1..]);
-         assert forall x | x in list :: x == list[0] || x in list[1..];
-         if containsWith(pred, list[0], acc) then acc
-         else var r := [list[0]] + acc;
-              assert forall j :: 0 <= j < |acc| ==> r[j + 1] == acc[j];
-              assert forall x | x in acc :: x in r;
+    else var init := list[..|list| - 1];
+         var x := list[|list| - 1];
+         var acc := uniqWith(pred, init);
+         assert forall y | y in list :: y == x || y in init;
+         if containsWith(pred, x, acc) then acc
+         else var r := acc + [x];
+              assert forall j :: 0 <= j < |acc| ==> r[j] == acc[j];
+              assert forall y | y in acc :: y in r;
               r }
 
   // `map(prop(p), list)`: a missing property is JS undefined, here None.
@@ -474,46 +499,46 @@ module Ramdaf.List {
     ensures sliceFrom(from, list) == slice(from, |list|, list)
   { slice(from, |list|, list) }
 
-  // v0.2.2 replaces `splice` with `remove`, `insert` and `insert.all`, all
-  // built on `_slice(args, from, to)`, which copies args[from..to) into
-  // `new Array(to - from)` reading `from || 0` and `to || args.length`: an end
-  // index of 0 reads as "the end" (so `_slice(list, 0, 0)` is the whole
-  // list), a negative length throws RangeError, and indices past an end read
-  // undefined holes.
+  // `remove`, `insert` and `insert.all` (v0.2.2) are built on
+  // `_slice(args, from, to)`, which copies args[from..to) into
+  // `new Array(to - from)`: a negative length throws RangeError, and indices
+  // past an end read undefined holes. From v0.2.2 to v0.2.3 `_slice` read an
+  // end index of 0 as "the end" (`to || args.length`), so a cut at 0 copied
+  // the whole list; v0.2.4 checks `typeof to === "number"` instead.
 
   // `concat(_slice(list, 0, Math.min(start, length)), _slice(list,
   // Math.min(length, start + count)))`: the list without `count` elements
-  // from `start`, except that when the first cut is 0 (start 0, or the empty
-  // list) the whole list comes first (`remove(0, 2, [1, 2, 3, 4, 5])` is
-  // `[1, 2, 3, 4, 5, 3, 4, 5]`). A negative start throws RangeError, and
-  // start + count < 0 reads undefined holes, so both are excluded.
+  // from `start` (`remove(0, 2, [1, 2, 3, 4, 5])` is `[3, 4, 5]`; it was
+  // `[1, 2, 3, 4, 5, 3, 4, 5]` before v0.2.4). A negative start throws
+  // RangeError, and start + count < 0 reads undefined holes, so both are
+  // excluded.
   function remove<T>(start: int, count: int, list: seq<T>): seq<T>
     requires 0 <= start
     requires 0 <= start + count
     ensures var a := if start < |list| then start else |list|;
       var b := if start + count < |list| then start + count else |list|;
-      remove(start, count, list) == (if a == 0 then list else list[..a]) + list[b..]
+      remove(start, count, list) == list[..a] + list[b..]
   { var a := if start < |list| then start else |list|;
     var b := if start + count < |list| then start + count else |list|;
-    (if a == 0 then list else list[..a]) + list[b..] }
+    list[..a] + list[b..] }
 
   // `index` is used when `0 <= index < length` and is `length` (the end)
   // otherwise; then `concat(append(elt, _slice(list, 0, index)),
-  // _slice(list, index))`. When index is 0 the first part is the whole list:
-  // `insert(0, 9, [1, 2, 3])` is `[1, 2, 3, 9, 1, 2, 3]`.
+  // _slice(list, index))`: `insert(0, 9, [1, 2, 3])` is `[9, 1, 2, 3]` (it
+  // was `[1, 2, 3, 9, 1, 2, 3]` before v0.2.4).
   function insert<T>(index: int, elt: T, list: seq<T>): seq<T>
     ensures var i := if 0 <= index < |list| then index else |list|;
-      insert(index, elt, list) == (if i == 0 then list else list[..i]) + [elt] + list[i..]
+      insert(index, elt, list) == list[..i] + [elt] + list[i..]
   { var i := if 0 <= index < |list| then index else |list|;
-    (if i == 0 then list else list[..i]) + [elt] + list[i..] }
+    list[..i] + [elt] + list[i..] }
 
   // `insert.all`: as insert, with the list elts in place of one element:
   // `concat(concat(_slice(list, 0, index), elts), _slice(list, index))`.
   function insertAll<T>(index: int, elts: seq<T>, list: seq<T>): seq<T>
     ensures var i := if 0 <= index < |list| then index else |list|;
-      insertAll(index, elts, list) == (if i == 0 then list else list[..i]) + elts + list[i..]
+      insertAll(index, elts, list) == list[..i] + elts + list[i..]
   { var i := if 0 <= index < |list| then index else |list|;
-    (if i == 0 then list else list[..i]) + elts + list[i..] }
+    list[..i] + elts + list[i..] }
 
   // `list[n]`: undefined (None) out of range.
   function nth<T>(n: int, list: seq<T>): Option<T>

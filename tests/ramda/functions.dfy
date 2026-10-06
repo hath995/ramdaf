@@ -1,4 +1,4 @@
-// Ramda v0.2.3 test/test.always.js, test/test.compose.js and
+// Ramda v0.2.4 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
 // compose/pipe's "passes context to functions" (`this`, v0.2.3, which also

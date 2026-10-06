@@ -1,7 +1,10 @@
-// Ramda v0.2.3 test/test.objectBasics.js, test/test.keysvals.js and
-// test/test.tapeq.js, transcribed. Not transcribed: v0.2.3's "should work for
+// Ramda v0.2.4 test/test.objectBasics.js, test/test.keysvals.js and
+// test/test.tapeq.js, transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument
-// is a map); describe('func') and
+// is a map); v0.2.4's where cases on prototypes ("matches inherited props",
+// "doesnt match inherited spec", the `toString` half of "matches inherited
+// functions") and on `where(Lib, Lib)` ("equal objects are true": one object
+// as both spec and test); describe('func') and
 // describe('tap') (not portable, README), `eq([], [])` (reference equality,
 // README "Deviations"; pinned in tests/edge/object.dfy); and
 // test.keysvals.js's cases on an object built by a
@@ -160,6 +163,19 @@ module RamdafTests.Ramda.Object {
     expect pred(map["x" := 3, "y" := 2, "z" := 1]) == false;
   }
 
+  // v0.2.4: "empty spec is true" (its `where(null, {a: 1})` case cannot be
+  // written: the spec is a map)
+  method {:test} WhereEmptySpecIsTrue() {
+    var empty: map<string, SpecVal<int>> := map[];
+    expect where(empty, map["a" := 1]) == true;
+  }
+
+  // v0.2.4: "matches inherited functions", the case that does not rely on
+  // Object.prototype (`toString`): a function entry on a missing property.
+  method {:test} WhereMatchesInheritedFunctions() {
+    expect where(map["a" := Pred((v: Option<int>, o: map<string, int>) => true)], map["x" := 1]) == false;
+  }
+
   // describe('mixin')
   method {:test} MixinMergesOwnPropertiesIntoANewObject() {
     expect mixin(map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
@@ -168,6 +184,30 @@ module RamdafTests.Ramda.Object {
   method {:test} MixinOverridesPropertiesOfTheFirstObject() {
     expect mixin(map["w" := 1, "x" := 2], map["w" := 100, "y" := 3, "z" := 4]) ==
       map["w" := 100, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  // v0.2.4: "should not be destructive" (its reference-inequality half has no
+  // counterpart; the map a is a value)
+  method {:test} MixinShouldNotBeDestructive() {
+    var a := map["w" := 1, "x" := 2];
+    var res := mixin(a, map["x" := 5]);
+    expect res == map["w" := 1, "x" := 5];
+    expect a == map["w" := 1, "x" := 2];
+  }
+
+  // v0.2.4: "only own properties". `new Cla` has no own property (its x is
+  // on the prototype), so as a map it is empty.
+  method {:test} MixinOnlyOwnProperties() {
+    var a := map["w" := 1, "x" := 2];
+    var cla: map<string, int> := map[];
+    expect mixin(cla, a) == map["w" := 1, "x" := 2];
+    expect mixin(a, cla) == map["w" := 1, "x" := 2];
+  }
+
+  // v0.2.4: "outta be curried"
+  method {:test} MixinOughtToBeCurried() {
+    var curried := (b: map<string, int>) => mixin(map["w" := 1, "x" := 2], b);
+    expect curried(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
   }
 
   // ---- test.keysvals.js ----
