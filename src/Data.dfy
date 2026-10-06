@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.2.2 "Data Analysis and Grouping Functions" (ramda.js lines
-// 1721-1855), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy), and
+// Ramdaf: Ramda v0.2.3 "Data Analysis and Grouping Functions" (ramda.js lines
+// 1746-1880), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy), and
 // `groupBy`, which v0.2.0 defines in "List Functions" as an alias of
 // `partition` but which stays here (functions do not move between modules).
 //

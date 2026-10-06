@@ -1,0 +1,9 @@
+{
+  "ramda": "v0.2.3",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Core.times", "kind": "added", "why": "new in v0.2.3: R.times(fn, n)"},
+    {"symbol": "Ramdaf.Object.pickWith", "kind": "added", "why": "new in v0.2.3: R.pickWith(test, obj), test(val, key, obj)"},
+    {"symbol": "Ramdaf.Object.where", "kind": "breaking", "why": "v0.2.3 fails a function entry whose property is absent (hasOwnProperty check) instead of calling it with undefined: where({a: x => x === undefined}, {}) went from true to false"}
+  ]
+}

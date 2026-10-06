@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.2.2 "Logic Functions" (ramda.js lines 1429-1485).
+// Ramdaf: Ramda v0.2.3 "Logic Functions" (ramda.js lines 1454-1510).
 
 module Ramdaf.Logic {
   export

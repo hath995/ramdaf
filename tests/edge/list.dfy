@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.2.2's own suite does not cover, each checked against
-// ramda.js v0.2.2 under node (the expected values are node's output). The
+// Edge cases Ramda v0.2.3's own suite does not cover, each checked against
+// ramda.js v0.2.3 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -27,6 +27,8 @@ module RamdafTests.Edge.List {
     expect identity(3) == 3;
     expect repeatN(7, 0) == [];
     expect repeatN("a", 2) == ["a", "a"];
+    expect times((i: nat) => i * i, 4) == [0, 1, 4, 9];
+    expect times((i: nat) => i, 0) == [];
   }
 
   // foldr runs from the right with the accumulator first (since v0.1.1).

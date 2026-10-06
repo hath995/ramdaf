@@ -1,4 +1,4 @@
-// Ramdaf: a Dafny port of Ramda v0.2.2 (2014-06-30).
+// Ramdaf: a Dafny port of Ramda v0.2.3 (2014-07-09).
 // Support datatypes shared by the area modules. These are not Ramda exports;
 // they are the encodings the README's "JS -> Dafny mapping" names.
 
@@ -16,7 +16,8 @@ module Ramdaf.Prelude {
   datatype Tree<T> = Leaf(value: T) | Node(children: seq<Tree<T>>)
 
   // A value of `where`'s spec object: a function, called with the test
-  // object's property (None when absent, i.e. JS undefined) and the whole test
-  // object, or any other value, compared with `===`.
+  // object's property and the whole test object, or any other value, compared
+  // with `===`. (Up to v0.2.2 the function was also called for an absent
+  // property, with None, i.e. JS undefined; since v0.2.3 it is not.)
   datatype SpecVal<!V> = Pred(fn: (Option<V>, map<string, V>) -> bool) | Val(v: V)
 }

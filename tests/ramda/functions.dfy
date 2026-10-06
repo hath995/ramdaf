@@ -1,7 +1,8 @@
-// Ramda v0.2.2 test/test.always.js, test/test.compose.js and
+// Ramda v0.2.3 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
-// single-function compose/pipe (the port is binary); use/useWith, once,
+// compose/pipe's "passes context to functions" (`this`, v0.2.3, which also
+// dropped the single-function cases); use/useWith, once,
 // memoize, construct, unary and binary (not portable, README). test.each.js,
 // test.maybe.js, test.partial.js, test.wrap.js, test.expose.js, and v0.2.2's
 // new test.curry.js and test.path.js test functions that are not portable.
@@ -10,6 +11,7 @@
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions
   import opened Ramdaf.Math
+  import opened Support
 
   // ---- test.always.js ----
 
@@ -62,10 +64,22 @@ module RamdafTests.Ramda.Functions {
     expect compose(a, compose(b, compose(c, d)))("") == "DCBA";
   }
 
+  // v0.2.3: "first function is passed multiple args" (`e(a, b, c)` takes the
+  // three arguments as a tuple here).
+  function e(t: (int, int, int)): string { NumStr(t.2) + "E" }
+
+  method {:test} ComposeFirstFunctionIsPassedMultipleArgs() {
+    expect compose(a, compose(b, compose(c, e)))((1, 2, 3)) == "3ECBA";
+  }
+
   // `pipe(a, b, c, d)`, nested
   method {:test} PipeRunsLeftToRight() {
     expect pipe(a, pipe(b, pipe(c, d)))("") == "ABCD";
     expect sequence(a, sequence(b, sequence(c, d)))("") == "ABCD";
+  }
+
+  method {:test} PipeFirstFunctionIsPassedMultipleArgs() {
+    expect pipe(e, pipe(a, pipe(b, c)))((1, 2, 3)) == "3EABC";
   }
 
   // describe('fork')

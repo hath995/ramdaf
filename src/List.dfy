@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.2.2 "List Functions" (ramda.js lines 557-1145), except
+// Ramdaf: Ramda v0.2.3 "List Functions" (ramda.js lines 559-1145), except
 // `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
 
 module Ramdaf.List {

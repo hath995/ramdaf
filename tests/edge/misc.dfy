@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.2.2 under node; the methods named Deviation* pin documented
+// ramda.js v0.2.3 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -47,6 +47,15 @@ module RamdafTests.Edge.Misc {
     expect valuesIn(map["a" := 1, "b" := 1]) == multiset{1, 1};
   }
 
+  // pickWith (v0.2.3) passes (value, key, object).
+  method {:test} PickWithEdges() {
+    var none: map<string, int> := map[];
+    expect pickWith((v: int, k: string, o: map<string, int>) => k == "a", map["a" := 1, "b" := 2]) == map["a" := 1];
+    expect pickWith((v: int, k: string, o: map<string, int>) => "b" in o && o["b"] == v, map["a" := 2, "b" := 2, "c" := 3]) ==
+      map["a" := 2, "b" := 2];
+    expect pickWith((v: int, k: string, o: map<string, int>) => v > 1, none) == map[];
+  }
+
   method {:test} MixinEdges() {
     var none: map<string, int> := map[];
     expect mixin(map["a" := 1, "b" := 2], map["b" := 3, "c" := 4]) == map["a" := 1, "b" := 3, "c" := 4];
@@ -54,11 +63,14 @@ module RamdafTests.Edge.Misc {
     expect mixin(map["a" := 1], none) == map["a" := 1];
   }
 
-  // A function entry sees an absent property as undefined (None); a value
-  // entry fails on an absent property.
+  // Since v0.2.3 a function entry fails on an absent property without being
+  // called (it was called with undefined, None, before); a value entry fails
+  // on an absent property.
   method {:test} WhereEdges() {
     var y1 := map["y" := 1];
-    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => v.None?)], y1) == true;
+    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => v.None?)], y1) == false;
+    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => true)], y1) == false;
+    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => true)], map["x" := 1]) == true;
     expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => v == Some(1))], y1) == false;
     expect where(map["x" := Val(1)], y1) == false;
     var empty: map<string, SpecVal<int>> := map[];
@@ -66,6 +78,7 @@ module RamdafTests.Edge.Misc {
     var mixed := map["x" := Val(1), "y" := Pred((v: Option<int>, o: map<string, int>) => v.Some? && "x" in o && v.value > o["x"])];
     expect where(mixed, map["x" := 1, "y" := 2]) == true;
     expect where(mixed, map["x" := 1, "y" := 0]) == false;
+    expect where(mixed, map["x" := 1]) == false;
   }
 
   // JS `%` truncates toward zero: the remainder takes the dividend's sign.

@@ -1,5 +1,7 @@
-// Ramda v0.2.2 test/test.objectBasics.js, test/test.keysvals.js and
-// test/test.tapeq.js, transcribed. Not transcribed: describe('func') and
+// Ramda v0.2.3 test/test.objectBasics.js, test/test.keysvals.js and
+// test/test.tapeq.js, transcribed. Not transcribed: v0.2.3's "should work for
+// primitives" cases (keys/values of null, 55, "" and the like: the argument
+// is a map); describe('func') and
 // describe('tap') (not portable, README), `eq([], [])` (reference equality,
 // README "Deviations"; pinned in tests/edge/object.dfy); and
 // test.keysvals.js's cases on an object built by a
@@ -83,6 +85,28 @@ module RamdafTests.Ramda.Object {
     expect skipAB(Abc()) == map["c" := 3, "d" := 4, "e" := 5, "f" := 6];
   }
 
+  // describe('pickWith') (v0.2.3). "should create a copy of the object"
+  // asserts reference inequality, which Dafny values do not have; the
+  // truthy/falsy cases use boolean predicates (`always({})`, `always(1)`,
+  // `always(0)` and `always(null)` are true, true, false, false).
+  method {:test} PickWithReturningTruthyKeepsTheKey() {
+    expect pickWith((v: int, k: string, o: map<string, int>) => true, Abc()) == Abc();
+  }
+
+  // "returning falsy keeps the key" (the title says keeps; the cases drop it)
+  method {:test} PickWithReturningFalsyDropsTheKey() {
+    expect pickWith((v: int, k: string, o: map<string, int>) => false, Abc()) == map[];
+  }
+
+  method {:test} PickWithShouldBeCalledWithValKeyObj() {
+    expect pickWith((v: int, k: string, o: map<string, int>) => o == Abc() && k == "d" && v == 4, Abc()) == map["d" := 4];
+  }
+
+  method {:test} PickWithShouldBeAutomaticallyCurried() {
+    var copier := (o: map<string, int>) => pickWith((v: int, k: string, o': map<string, int>) => true, o);
+    expect copier(Abc()) == Abc();
+  }
+
   // describe('eqProps')
   method {:test} EqPropsComparesAProperty() {
     expect eqProps("name", map["name" := Str("fred"), "age" := Num(10)], map["name" := Str("fred"), "age" := Num(12)]) == true;
@@ -161,6 +185,16 @@ module RamdafTests.Ramda.Object {
   method {:test} ValuesReturnsTheObjectsValues() {
     expect values(KeysValsObj()) == multiset{Num(100), Arr([Num(1), Num(2), Num(3)]),
       Obj(map["x" := Num(200), "y" := Num(300)]), Str("D"), Null, Undefined};
+  }
+
+  // v0.2.3: "should work with hasOwnProperty override" (keys and values threw
+  // a TypeError on such an object up to v0.2.2)
+  method {:test} KeysWorksWithHasOwnPropertyOverride() {
+    expect keys(map["hasOwnProperty" := false]) == {"hasOwnProperty"};
+  }
+
+  method {:test} ValuesWorksWithHasOwnPropertyOverride() {
+    expect values(map["hasOwnProperty" := false]) == multiset{false};
   }
 
   // v0.2.0: describe('keysIn'), "returns an array of the given object's keys"

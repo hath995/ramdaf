@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.2.2 "Object Functions" (ramda.js lines 1194-1402) and `propEq`
-// (line 1750). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.2.3 "Object Functions" (ramda.js lines 1194-1427) and `propEq`
+// (line 1775). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None.
 
 module Ramdaf.Object {
@@ -7,7 +7,7 @@ module Ramdaf.Object {
 
   export
     reveals eq, prop, get, props, keys, keysIn, values, valuesIn, pick, pickAll, omit,
-            mixin, eqProps, where, propEq
+            pickWith, mixin, eqProps, where, propEq
     provides Prelude
 
   // `a === b`. Dafny equality is structural where JS compares objects and
@@ -95,6 +95,13 @@ module Ramdaf.Object {
     ensures omit(names, obj).Keys == obj.Keys - set n | n in names
   { map k | k in obj && k !in names :: obj[k] }
 
+  // v0.2.3: the own properties of obj for which `test(val, key, obj)` is
+  // truthy (pick and omit are now written with it, with unchanged results).
+  function pickWith<V>(test: (V, string, map<string, V>) -> bool, obj: map<string, V>): map<string, V>
+    ensures pickWith(test, obj).Keys == set k | k in obj && test(obj[k], k, obj)
+    ensures forall k :: k in pickWith(test, obj) ==> pickWith(test, obj)[k] == obj[k]
+  { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
+
   // `pickAll(keys(a), a)`, then every own property of b is copied over it:
   // b's value wins where both have the key (Dafny's right-biased map union).
   function mixin<V>(a: map<string, V>, b: map<string, V>): map<string, V>
@@ -107,17 +114,18 @@ module Ramdaf.Object {
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
   { prop(p, obj1) == prop(p, obj2) }
 
-  // Every function entry holds, `spec[key](test[key], test)`, and every other
-  // entry is an own property of test equal to it, `test.hasOwnProperty(key) &&
-  // test[key] === spec[key]` (v0.1.5; a null-ish test gives false). A function
-  // entry gets None when the property is absent (undefined). Neither a spec
+  // Every function entry is an own property of test and holds,
+  // `hasOwnProperty.call(testObj, key) && spec[key](testObj[key], testObj)`,
+  // and every other entry equals the property, `spec[key] === testObj[key]`
+  // (v0.2.3; a null-ish test gives false). Since v0.2.3 a function entry whose
+  // property is absent fails without being called; before, it was called with
+  // undefined (None). So a function now only ever sees Some. Neither a spec
   // property whose value is undefined nor a null test can be written here (an
-  // undefined property is an absent one, and the test is a map), so v0.1.5's
-  // changes leave this definition as it was.
+  // undefined property is an absent one, and the test is a map).
   function where<V(==)>(spec: map<string, SpecVal<V>>, test: map<string, V>): bool
   { forall k :: k in spec ==>
       match spec[k]
-        case Pred(fn) => fn(prop(k, test), test)
+        case Pred(fn) => k in test && fn(Some(test[k]), test)
         case Val(v) => k in test && test[k] == v }
 
   // `obj[name] === val`

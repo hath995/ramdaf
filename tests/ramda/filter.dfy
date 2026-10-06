@@ -1,4 +1,4 @@
-// Ramda v0.2.2 test/test.filter.js, transcribed ("automatically curried" cases
+// Ramda v0.2.3 test/test.filter.js, transcribed ("automatically curried" cases
 // apply the partially applied function in full). The "should start at the
 // right arg" cases use a predicate that would fail the test if called; here
 // it is a predicate whose result does not matter (the list is empty), and

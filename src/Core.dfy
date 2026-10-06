@@ -1,10 +1,10 @@
-// Ramdaf: Ramda v0.2.2 "Core Functions" (ramda.js lines 357-431), `clone`
-// (lines 352-355) and `size`. (v0.2.0 removed `cloneDeep`.)
+// Ramdaf: Ramda v0.2.3 "Core Functions" (ramda.js lines 346-421), `clone`
+// (lines 341-344) and `size`. (v0.2.0 removed `cloneDeep`.)
 
 module Ramdaf.Core {
   export
     reveals clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr,
-            append, push, merge, concat, identity, I, repeatN, size
+            append, push, merge, concat, identity, I, times, repeatN, size
 
   // `clone(list)` is `_slice(list)` (`list.concat()` before v0.2.0), a
   // shallow copy. Dafny sequences are values, so the copy is the list itself.
@@ -48,10 +48,19 @@ module Ramdaf.Core {
   function identity<T>(x: T): T { x }
   function I<T>(x: T): T { identity(x) }
 
-  // `var arr = new Array(n), i = -1; while (++i < n) { arr[i] = value; }`: n
-  // copies of value. Since v0.2.0 the array is allocated with `new Array(n)`,
-  // which throws RangeError for a negative n (v0.1.3 to v0.1.5 returned []),
-  // so n is a nat.
+  // `var arr = new Array(n); while (++i < n) { arr[i] = fn(i); }` (v0.2.3):
+  // fn applied to 0, 1, ..., n - 1. `new Array(n)` throws RangeError for a
+  // negative n, so n is a nat.
+  function times<T>(fn: nat -> T, n: nat): seq<T>
+    ensures |times(fn, n)| == n
+    ensures forall i :: 0 <= i < n ==> times(fn, n)[i] == fn(i)
+  { seq(n, i requires 0 <= i < n => fn(i)) }
+
+  // n copies of value: since v0.2.3 `times(always(value), n)`, before that
+  // `var arr = new Array(n), i = -1; while (++i < n) { arr[i] = value; }`.
+  // Since v0.2.0 the array is allocated with `new Array(n)`, which throws
+  // RangeError for a negative n (v0.1.3 to v0.1.5 returned []), so n is a
+  // nat.
   function repeatN<T>(value: T, n: nat): seq<T>
     ensures |repeatN(value, n)| == n
     ensures forall i :: 0 <= i < n ==> repeatN(value, n)[i] == value

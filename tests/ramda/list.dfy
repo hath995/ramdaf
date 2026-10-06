@@ -1,4 +1,4 @@
-// Ramda v0.2.2 test/test.list.js, test/test.indexof.js,
+// Ramda v0.2.3 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js and
@@ -97,7 +97,7 @@ module RamdafTests.Ramda.List {
     expect nth(3, list) == Some(Arr([Num(4), Num(5), Num(6)]));
   }
 
-  // "returns null if n is out of the list's range"
+  // "returns null if n is out of the list's range" (v0.2.3 asserts undefined)
   method {:test} NthReturnsNoneOutOfRange() {
     expect nth(4, [1, 2, 3]) == None;
   }
@@ -105,6 +105,17 @@ module RamdafTests.Ramda.List {
   method {:test} NthIsAutomaticallyCurried() {
     var get3rd := (l: seq<int>) => nth(2, l);
     expect get3rd([3, 4, 5, 6, 7, 8]) == Some(5);
+  }
+
+  // describe('times') (v0.2.3)
+  method {:test} TimesTakesAMapFunc() {
+    expect times((i: nat) => i, 5) == [0, 1, 2, 3, 4];
+    expect times((x: nat) => x * 2, 5) == [0, 2, 4, 6, 8];
+  }
+
+  method {:test} TimesIsCurried() {
+    var mapid := (n: nat) => times((i: nat) => i, n);
+    expect mapid(5) == [0, 1, 2, 3, 4];
   }
 
   // describe('repeatN')
@@ -426,6 +437,13 @@ module RamdafTests.Ramda.List {
   method {:test} RangeIsEmptyUnlessFromIsBelowTo() {
     expect range(7, 3) == [];
     expect range(5, 5) == [];
+  }
+
+  // v0.2.3 (its second half checks that pushing onto the result does not
+  // change a later result; a seq is a value)
+  method {:test} RangeReturnsAnEmptyArrayIfFromIsAboveTo() {
+    expect range(10, 5) == [];
+    expect range(10, 5) == [];
   }
 
   method {:test} RangeIsAutomaticallyCurried() {

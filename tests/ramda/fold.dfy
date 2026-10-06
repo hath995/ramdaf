@@ -1,4 +1,4 @@
-// Ramda v0.2.2 test/test.fold.js, transcribed. Not transcribed: the "should
+// Ramda v0.2.3 test/test.fold.js, transcribed. Not transcribed: the "should
 // correctly report the arity of curried versions" cases (Dafny functions have
 // no arity), and foldl.idx's "works just like normal foldl" and "passes the
 // entire list as a fourth parameter" (both have empty bodies in Ramda).
@@ -80,8 +80,8 @@ module RamdafTests.Ramda.Fold {
       [3, 6, 2, 10, 1, 4, 0, 12];
   }
 
-  // `assert.equal(..., 0)`: JS `[] == 0` is true; the result is the empty
-  // accumulator.
+  // The result is the accumulator itself (v0.2.3 asserts `memo`; before, it
+  // asserted `== 0`, which JS's `[] == 0` satisfies).
   method {:test} FoldrIdxReturnsTheAccumulatorForAnEmptyArray() {
     var empty: seq<int> := [];
     expect foldrIdx((a: seq<int>, n: int, i: nat, ls: seq<int>) => a + [i], empty, empty) == empty;

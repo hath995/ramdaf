@@ -110,21 +110,21 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.2.2)
+## Modules and exports (v0.2.3)
 
 | Module | Exports |
 |---|---|
-| `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, merge, concat, identity, I, repeatN, size |
+| `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, merge, concat, identity, I, times, repeatN, size |
 | `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, constant, alwaysZero, alwaysFalse, alwaysTrue |
 | `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, mapObjIdx (`mapObj.idx`), filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, indexOfFrom (`indexOf.from`), lastIndexOf, lastIndexOfFrom (`lastIndexOf.from`), join, slice, sliceFrom (`slice.from`), remove, insert, insertAll (`insert.all`), nth, partition |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
-| `Ramdaf.Object` | eq, prop, get, props, keys, keysIn, values, valuesIn, pick, pickAll, omit, mixin, eqProps, where, propEq |
+| `Ramdaf.Object` | eq, prop, get, props, keys, keysIn, values, valuesIn, pick, pickAll, omit, pickWith, mixin, eqProps, where, propEq |
 | `Ramdaf.Logic` | and, or, not, allPredicates, anyPredicates |
 | `Ramdaf.Math` | add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy, sum, product, lt, lte, gt, gte, max, maxWith, minWith, min |
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 131 of Ramda v0.2.2's 158 export names, plus 12 of the 14 functions
+That is 133 of Ramda v0.2.3's 160 export names, plus 12 of the 14 functions
 stored as properties of exports (`map.idx` and the like). The other 27 names
 and the 2 properties `each.idx`/`forEach.idx` are listed under "Not portable".
 
@@ -142,7 +142,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.2.2 does not export `keyValue`; it is a local `var` in `ramda.js`,
+Ramda v0.2.3 does not export `keyValue`; it is a local `var` in `ramda.js`,
 and Ramdaf does not export it either. (`containsWith` was internal until
 v0.1.5 exported it, and `uniqWith` until v0.2.0; both are in List. The
 `*With` functions in Data carry `uniqWith`'s recursion themselves, as they
@@ -150,7 +150,7 @@ did while it was internal.)
 
 ## Not portable
 
-These Ramda v0.2.2 exports are not ported, rather than faked:
+These Ramda v0.2.3 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -171,19 +171,19 @@ These Ramda v0.2.2 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.2.2 (node) | Ramdaf |
+| Function | Ramda v0.2.3 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car`, `first`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
 | `take` | `take(-1, l)` throws `RangeError`. (Before v0.1.5, `take(5, [1, 2])` → `[1, 2, <3 empty items>]`, and Ramdaf required `n <= \|list\|`; v0.1.5 clamps to `[1, 2]`.) | `n: nat` |
 | `skip`, `drop` | `skip(-1, [1, 2])` → `[undefined, 1, 2]`; since v0.2.0 `skip(5, [1, 2])` throws `RangeError` (`_slice` allocates `new Array(2 - 5)`; it was `[]`) | `n: nat`, `requires n <= \|list\|` |
-| `repeatN` | since v0.2.0 `repeatN(7, -2)` throws `RangeError` (`new Array(-2)`; it was `[]`) | `n: nat` |
+| `repeatN`, `times` | `new Array(n)` throws `RangeError` for a negative n: `repeatN(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3) | `n: nat` |
 | `remove` | (v0.2.2) `_slice(list, 0, Math.min(start, length))` throws `RangeError` for a negative start (`remove(-1, 1, [1, 2, 3, 4, 5])`), and `_slice(list, start + count)` reads before the start for `start + count < 0` (`remove(2, -5, [1, 2, 3, 4, 5])` → `[1, 2, undefined, undefined, undefined, 1, 2, 3, 4, 5]`) | `requires 0 <= start`, `requires 0 <= start + count` |
 | `charCodeAt` | `charCodeAt(10, "abc")` → `NaN` | `requires 0 <= n < \|s\|` |
 | `max`, `min` | `max([])` → `-Infinity`, `min([])` → `Infinity` | `requires \|list\| > 0` |
 | `divide`, `divideBy` | `divide(1, 0)` → `Infinity` | `requires` a nonzero divisor |
 | `modulo`, `moduloBy` | `modulo(1, 0)` → `NaN` | `requires` a nonzero divisor |
 | `findLast`, `findLastIndex` | on `[]` the `while (--idx)` loop runs idx through -1, -2, … calling `fn(undefined)` until it is truthy (forever for `x => false`; `findLastIndex(x => x === undefined, [])` → `-1`) | `requires \|list\| > 0` |
-| `where` | `where({x: undefined}, {})` → `false`, `where({x: undefined}, {x: undefined})` → `true`, `where(spec, null)` → `false` (v0.1.5) | not expressible: an undefined property is an absent one, and the test object is a `map` |
+| `where` | a spec or test property whose value is `undefined`: since v0.2.3 `where({x: undefined}, {})` → `true` (it was `false`), `where({x: undefined}, {x: undefined})` → `true`, `where({x: f}, {x: undefined})` calls `f(undefined)`; and `where(spec, null)` → `false` | not expressible: an undefined property is an absent one, and the test object is a `map` |
 
 ## Deviations
 
@@ -191,7 +191,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.2.2 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.2.3 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys`, `keysIn` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
@@ -238,7 +238,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 | v0.2.0 | 2014-06-27 | ported | — |
 | v0.2.1 | 2014-06-27 | ported | — |
 | v0.2.2 | 2014-06-30 | ported | — |
-| v0.2.3 | 2014-07-09 | pending | — |
+| v0.2.3 | 2014-07-09 | ported | — |
 | v0.2.4 | 2014-07-18 | pending | — |
 | v0.3.0 | 2014-08-10 | pending | — |
 | v0.4.0 | 2014-08-28 | pending | — |
@@ -573,6 +573,47 @@ side-effect counting, JS coercion, reference equality, string-keyed
     behaviour, negative counts and the `.from` variants.
 - **Expected tier: major.** `splice` was removed
   (`casestudy/expected/v0.2.2.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.2.3 (2014-07-09)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node):
+  - New: `times(fn, n)` (`[fn(0), …, fn(n - 1)]`; a negative n throws
+    `RangeError`), and `pickWith(test, obj)`, the own properties for which
+    `test(value, key, obj)` is truthy. `pick`, `omit` and `repeatN` are
+    rewritten on top of them with unchanged results.
+  - `where` is rewritten. A function entry whose property the test object
+    does not own now fails without calling the function: `where({a: x => x
+    === undefined}, {})` → `false` (was `true`). A value entry compares
+    `spec[key] !== testObj[key]` without checking ownership, which changes
+    only undefined-valued spec properties (`where({x: undefined}, {})` →
+    `true`, was `false`; outside the modeled domain).
+  - `keys` uses `Object.keys` and `values` goes through `keys`, so an object
+    with its own `hasOwnProperty` property no longer throws
+    (`keys({hasOwnProperty: false})` → `['hasOwnProperty']`; up to v0.2.2
+    `keys`, `values`, `pick`, `omit`, `mixin` and `where` threw a
+    `TypeError` there).
+  - `compose`/`pipe` with a single function return a partially applied
+    `compose`/`pipe`, and pass `this` through (the binary port is
+    unaffected); `curry`'s `toString`/`source` decoration is gone.
+- **Ramdaf:**
+  - Added `times` (Core, `fn: nat -> T`, `n: nat`) and `pickWith` (Object).
+  - `where`'s function entries require the property:
+    `Pred(fn) => k in test && fn(Some(test[k]), test)`. `SpecVal`'s function
+    type is unchanged; the function now never receives `None`.
+  - The `hasOwnProperty` throw was never modeled: a map's keys never throw,
+    so the earlier ports did not document that input as outside their domain
+    (an omission in v0.1.0 to v0.2.2), and nothing changes now.
+  - Tests: test.list.js's `times`, test.objectBasics.js's `pickWith` (its
+    reference-inequality case cannot be written), test.keysvals.js's
+    `hasOwnProperty` cases (its primitive-argument cases cannot be written),
+    test.range.js's `from > to`, test.compose.js's multi-argument first
+    function (as a tuple; the `this` cases are not portable), and
+    test.fold.js's reworded `foldr.idx` case. Edge cases cover `where`'s
+    absent properties, `pickWith`'s arguments and `times`.
+- **Expected tier: major.** `where` changed results for a function entry on
+  an absent property; `times` and `pickWith` were added
+  (`casestudy/expected/v0.2.3.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
