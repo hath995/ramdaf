@@ -110,12 +110,12 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.1.1)
+## Modules and exports (v0.1.2)
 
 | Module | Exports |
 |---|---|
 | `Ramdaf.Core` | clone, cloneDeep, isEmpty, prepend, cons, head, car, tail, cdr, append, push, merge, concat, identity, I, repeatNTimes (`repeat.nTimes`), size |
-| `Ramdaf.Functions` | compose, pipe, sequence, flip, always, alwaysZero, alwaysFalse, alwaysTrue |
+| `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, alwaysZero, alwaysFalse, alwaysTrue |
 | `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldl1, foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), foldr1, unfoldr, mapSeq (`map`), mapIdx (`map.idx`), filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, splice, nth |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | eq, prop, get, props, keys, values, pick, pickAll, omit, mixin, eqProps, where, propEq |
@@ -124,7 +124,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 124 of Ramda v0.1.1's 149 export names, plus 8 of the 10 functions
+That is 125 of Ramda v0.1.2's 150 export names, plus 8 of the 10 functions
 stored as properties of exports (`map.idx` and the like). The other 25 names
 and the 2 properties `each.idx`/`forEach.idx` are listed under "Not portable".
 
@@ -142,13 +142,13 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.1.1 does not export `uniqWith`, `containsWith` or `keyValue`; they
+Ramda v0.1.2 does not export `uniqWith`, `containsWith` or `keyValue`; they
 are local `var`s in `ramda.js`. Ramdaf does not export them either. The
 `*With` functions in Data carry `uniqWith`'s recursion themselves.
 
 ## Not portable
 
-These Ramda v0.1.1 exports are not ported, rather than faked:
+These Ramda v0.1.2 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -171,7 +171,7 @@ These Ramda v0.1.1 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.1.1 (node) | Ramdaf |
+| Function | Ramda v0.1.2 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0) | `requires \|list\| > 0` |
 | `foldl1`, `foldr1` | throw `Error` on `[]` | `requires \|list\| > 0` |
@@ -192,7 +192,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.1.1 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.1.2 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
@@ -200,7 +200,7 @@ a signature (an arity or an operand type) is enforced by the types.
 | `unfoldr` | loops until `fn` returns a falsy value, possibly forever | extra `fuel: nat` parameter; stops after `fuel` elements | Dafny functions must terminate. |
 | `compose`, `pipe`/`sequence` | variadic: `compose(a, b, c, d)` | binary: `compose(a, compose(b, compose(c, d)))`. There is no unary form; `compose(f)` is `f`. | Dafny functions have fixed arity. |
 | `always`, `alwaysZero`, `alwaysFalse`, `alwaysTrue` | ignore however many arguments they get | take exactly one argument of any type (`always(7)(())`) | Fixed arity. |
-| `andFn`, `orFn`, `notFn` | forward any number of arguments | unary predicates (pass a tuple) | Fixed arity. |
+| `andFn`, `orFn`, `notFn`, `fork` | forward any number of arguments | unary functions (pass a tuple) | Fixed arity. |
 | `mapIdx`, `filterIdx`, `rejectIdx`, `foldlIdx`/`reduceIdx`, `foldrIdx`/`reduceRightIdx` | call `fn(x, idx, list)` (folds: `fn(acc, x, idx, list)`), and a function that declares fewer parameters ignores the rest: `map.idx(times2, l)` | the callback takes all three (four) | Fixed arity. |
 | `allPredicates`, `anyPredicates` | `allPredicates(preds, v)` applies at once; the result reports the longest predicate's arity | `allPredicates(preds)(v)`; no arity | Fixed arity. |
 | `and`, `or`, `not` | coerce operands by truthiness: `and([], "abc")` → `true`, `not("")` → `true` | `bool` operands | Typed. |
@@ -233,7 +233,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 |---|---|---|---|
 | v0.1.0 | 2013-12-26 | ported | — |
 | v0.1.1 | 2014-05-18 | ported | — |
-| v0.1.2 | 2014-05-18 | pending | — |
+| v0.1.2 | 2014-05-18 | ported | — |
 | v0.1.3 | 2014-06-02 | pending | — |
 | v0.1.4 | 2014-06-10 | pending | — |
 | v0.1.5 | 2014-06-15 | pending | — |
@@ -351,6 +351,26 @@ side-effect counting, JS coercion, reference equality, string-keyed
 - **Expected tier: major.** `foldr` and `reduceRight` changed signature,
   `foldr1` and `intersection` changed meaning, and `fog` was removed
   (`casestudy/expected/v0.1.1.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.1.2 (2014-05-18)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node):
+  - New: `fork(f1, f2, after)`, which returns a function that applies `f1`
+    and `f2` to its arguments and passes both results to `after` (not
+    curried).
+  - `range` sizes its result array `Math.floor(to) - Math.ceil(from)` instead
+    of `to - from`. The values are unchanged; float bounds that used to throw
+    "Invalid array length" now work (`range(0.5, 3)` → `[0.5, 1.5, 2.5]`).
+    Integer ranges are identical.
+  - Generators gained `takeWhile`, and `R.takeWhile` dispatches to it.
+- **Ramdaf:** added `fork` (unary result; see "Deviations"). `range` is over
+  `int` and generators are not portable, so nothing else changes. Tests: the
+  `fork` describe of test.compose.js; test.lazy.js's generator `takeWhile` is
+  not portable.
+- **Expected tier: patch.** The only change is an addition (`fork`).
+  Conventional semver would call that minor; `lem` treats pure additions as
+  patch by design (`casestudy/expected/v0.1.2.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

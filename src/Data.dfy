@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.1.1 "Data Analysis and Grouping Functions" (ramda.js lines
-// 1405-1508), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy).
+// Ramdaf: Ramda v0.1.2 "Data Analysis and Grouping Functions" (ramda.js lines
+// 1425-1528), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy).
 //
-// Ramda's `uniqWith` and `containsWith` are internal in v0.1.1 (not on `R`),
+// Ramda's `uniqWith` and `containsWith` are internal in v0.1.2 (not on `R`),
 // so the `*With` functions below carry their own recursion: each is
 // `uniqWith(pred, ...)` unrolled, where `uniqWith` scans from the right and
 // drops x when `pred(x, y)` holds for an element y it already kept.

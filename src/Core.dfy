@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.1.1 "Core Functions" (ramda.js lines 236-293), `clone` and
-// `cloneDeep` (lines 226-235), `repeat.nTimes` (Generators, line 403) and
+// Ramdaf: Ramda v0.1.2 "Core Functions" (ramda.js lines 236-293), `clone` and
+// `cloneDeep` (lines 226-235), `repeat.nTimes` (Generators, line 411) and
 // `size`.
 
 module Ramdaf.Core {

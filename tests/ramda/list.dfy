@@ -1,4 +1,4 @@
-// Ramda v0.1.1 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
+// Ramda v0.1.2 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
 // test/test.find.js, test/test.flatten.js, test/test.range.js,
 // test/test.reverse.js, test/test.unfold.js, test/test.zip.js,
 // test/test.product.js and describe('repeat.nTimes') of test/test.lazy.js,

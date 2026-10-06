@@ -1,4 +1,4 @@
-// Ramda v0.1.1 test/test.core.js and test/test.clone.js, transcribed. Not
+// Ramda v0.1.2 test/test.core.js and test/test.clone.js, transcribed. Not
 // transcribed: describe('isAtom') (not portable, README); head's "returns null
 // for an empty list" and "for no arguments" (the empty list is outside head's
 // domain, README "Outside the modeled domain"); tail's "returns an empty list

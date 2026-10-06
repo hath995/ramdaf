@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.1.1 under node; the methods named Deviation* pin documented
+// ramda.js v0.1.2 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -10,6 +10,7 @@ module RamdafTests.Edge.Misc {
   import opened Ramdaf.String
   import opened Ramdaf.Logic
   import opened Ramdaf.Functions
+  import opened Support
 
   method {:test} PickFamilyEdges() {
     var o := map["a" := 1];
@@ -158,6 +159,15 @@ module RamdafTests.Edge.Misc {
     expect flip((a: int, b: int) => a - b)(1, 2) == 1;
     expect compose((x: int) => x + 1, (x: int) => 2 * x)(3) == 7;
     expect pipe((x: int) => 2 * x, (x: int) => x + 1)(3) == 7;
+  }
+
+  // fork applies both functions to the same argument, then combines them.
+  method {:test} ForkEdges() {
+    expect fork((x: int) => x + 1, (x: int) => x * 2, (a: int, b: int) => [a, b])(5) == [6, 10];
+    expect fork((s: string) => |s|, (s: string) => s + "!", (n: int, t: string) => t + NumStr(n))("ab") == "ab!2";
+    // node: fork((a, b) => a + b, (a, b) => a * b, (x, y) => [x, y])(2, 5)
+    // is [7, 10]; the port's result is unary, so the arguments are a tuple.
+    expect fork((t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1, (x: int, y: int) => [x, y])((2, 5)) == [7, 10];
   }
 
   // ---- documented deviations (not node behaviour) ----

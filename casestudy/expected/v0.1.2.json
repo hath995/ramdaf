@@ -1,0 +1,7 @@
+{
+  "ramda": "v0.1.2",
+  "tier": "patch",
+  "changes": [
+    {"symbol": "Ramdaf.Functions.fork", "kind": "added", "why": "new in v0.1.2: fork(f1, f2, after)(x) == after(f1(x), f2(x))"}
+  ]
+}
