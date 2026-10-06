@@ -237,7 +237,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 | v0.1.4 | 2014-06-10 | ported | — |
 | v0.1.5 | 2014-06-15 | ported | — |
 | v0.2.0 | 2014-06-27 | ported | — |
-| v0.2.1 | 2014-06-27 | pending | — |
+| v0.2.1 | 2014-06-27 | ported | — |
 | v0.2.2 | 2014-06-30 | pending | — |
 | v0.2.3 | 2014-07-09 | pending | — |
 | v0.2.4 | 2014-07-18 | pending | — |
@@ -523,6 +523,17 @@ side-effect counting, JS coercion, reference equality, string-keyed
   `findIndex`, `findLastIndex`, `maxWith`, `minWith` and `repeatN` changed
   signature; `takeWhile` and `splice` changed results; `skip`, `drop` and
   `splice` gained preconditions (`casestudy/expected/v0.2.0.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.2.1 (2014-06-27)
+
+- **Ramda:** packaging only. The logo files leave the repository (and
+  `bower.json` ignores `logo`), the README's logo credit is reworded, and
+  `package.json`'s version is bumped. `ramda.js` and `test/` are
+  byte-identical to v0.2.0.
+- **Ramdaf:** no source or test change; this entry and the manifest only.
+- **Expected tier: patch.** Nothing changed (`casestudy/expected/v0.2.1.json`,
+  with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
