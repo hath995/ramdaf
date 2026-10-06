@@ -1,4 +1,4 @@
-// Ramda v0.1.2 test/test.stringBasics.js, transcribed. Not transcribed:
+// Ramda v0.1.3 test/test.stringBasics.js, transcribed. Not transcribed:
 // describe('match') (regular expressions are not portable, README).
 
 module RamdafTests.Ramda.String {

@@ -1,9 +1,8 @@
-// Ramda v0.1.2 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
+// Ramda v0.1.3 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
 // test/test.find.js, test/test.flatten.js, test/test.range.js,
 // test/test.reverse.js, test/test.unfold.js, test/test.zip.js,
-// test/test.product.js and describe('repeat.nTimes') of test/test.lazy.js,
-// transcribed. Arity (`.length`) checks have no Dafny counterpart and are
-// omitted. The rest of test.lazy.js tests generators (not portable, README).
+// and test/test.product.js, transcribed. Arity (`.length`) checks have no
+// Dafny counterpart and are omitted.
 // `find(even, 'zing')` searches the string's characters: here a list of Js
 // strings.
 
@@ -60,6 +59,20 @@ module RamdafTests.Ramda.List {
   method {:test} NthIsAutomaticallyCurried() {
     var get3rd := (l: seq<int>) => nth(2, l);
     expect get3rd([3, 4, 5, 6, 7, 8]) == Some(5);
+  }
+
+  // describe('repeatN')
+  method {:test} RepeatNReturnsAListOfIdenticalValues() {
+    expect repeatN(0, 5) == [0, 0, 0, 0, 0];
+  }
+
+  method {:test} RepeatNCanAcceptAnyValueIncludingNull() {
+    expect repeatN(Null, 3) == [Null, Null, Null];
+  }
+
+  method {:test} RepeatNIsAutomaticallyCurried() {
+    var nTrues := (n: int) => repeatN(true, n);
+    expect nTrues(4) == [true, true, true, true];
   }
 
   // ---- test.containsuniq.js ----
@@ -294,18 +307,4 @@ module RamdafTests.Ramda.List {
       ["1a", "1b", "1c", "2a", "2b", "2c"];
   }
 
-  // ---- test.lazy.js: describe('repeat.nTimes') ----
-
-  method {:test} RepeatNTimesReturnsAListOfIdenticalValues() {
-    expect repeatNTimes(0, 5) == [0, 0, 0, 0, 0];
-  }
-
-  method {:test} RepeatNTimesCanAcceptAnyValueIncludingNull() {
-    expect repeatNTimes(Null, 3) == [Null, Null, Null];
-  }
-
-  method {:test} RepeatNTimesIsAutomaticallyCurried() {
-    var nTrues := (n: nat) => repeatNTimes(true, n);
-    expect nTrues(4) == [true, true, true, true];
-  }
 }

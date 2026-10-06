@@ -1,0 +1,8 @@
+{
+  "ramda": "v0.1.3",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Core.repeatNTimes", "kind": "removed", "why": "v0.1.3 removed repeat and repeat.nTimes (generators moved to ext/lazylist)"},
+    {"symbol": "Ramdaf.Core.repeatN", "kind": "added", "why": "new in v0.1.3: repeatN(value, n), n copies, [] for n <= 0"}
+  ]
+}

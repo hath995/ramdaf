@@ -1,4 +1,4 @@
-// Ramda v0.1.2 test/test.booleans.js and test/test.allany.js, transcribed.
+// Ramda v0.1.3 test/test.booleans.js and test/test.allany.js, transcribed.
 // Not transcribed: the "should perform type coersion" cases (operands are
 // bool, README "Deviations"), the short-circuit cases that count calls with a
 // side effect, and the "reports its arity" cases. The multi-parameter

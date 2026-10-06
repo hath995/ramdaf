@@ -1,4 +1,4 @@
-// Ramda v0.1.2 test/test.filter.js, transcribed ("automatically curried" cases
+// Ramda v0.1.3 test/test.filter.js, transcribed ("automatically curried" cases
 // apply the partially applied function in full).
 
 module RamdafTests.Ramda.Filter {

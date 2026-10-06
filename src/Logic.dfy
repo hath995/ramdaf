@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.1.2 "Logic Functions" (ramda.js lines 1166-1247).
+// Ramdaf: Ramda v0.1.3 "Logic Functions" (ramda.js lines 1057-1138).
 // JS coerces operands by truthiness; the port's operands are bool (see README).
 
 module Ramdaf.Logic {

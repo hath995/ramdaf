@@ -1,11 +1,10 @@
-// Ramdaf: Ramda v0.1.2 "Core Functions" (ramda.js lines 236-293), `clone` and
-// `cloneDeep` (lines 226-235), `repeat.nTimes` (Generators, line 411) and
-// `size`.
+// Ramdaf: Ramda v0.1.3 "Core Functions" (ramda.js lines 240-306), `clone` and
+// `cloneDeep` (lines 231-239) and `size`.
 
 module Ramdaf.Core {
   export
     reveals clone, cloneDeep, isEmpty, prepend, cons, head, car, tail, cdr,
-            append, push, merge, concat, identity, I, repeatNTimes, size
+            append, push, merge, concat, identity, I, repeatN, size
 
   // `clone(list)` is `list.concat()`, a shallow copy. Dafny sequences are
   // values, so the copy is the list itself.
@@ -48,13 +47,13 @@ module Ramdaf.Core {
   function identity<T>(x: T): T { x }
   function I<T>(x: T): T { identity(x) }
 
-  // `repeat.nTimes(value, n)` is `take(n, repeat(value))`, n copies of value
-  // (`repeat` itself is an infinite generator, README "Not portable"). JS
-  // recurses until the stack overflows for a negative n, so n is a nat.
-  function repeatNTimes<T>(value: T, n: nat): seq<T>
-    ensures |repeatNTimes(value, n)| == n
-    ensures forall i :: 0 <= i < n ==> repeatNTimes(value, n)[i] == value
-  { seq(n, _ => value) }
+  // `var arr = [], i = -1; while (++i < n) { arr[i] = value; }`: n copies of
+  // value, none when n <= 0 (v0.1.3 replaced the generator-based
+  // `repeat.nTimes`).
+  function repeatN<T>(value: T, n: int): seq<T>
+    ensures |repeatN(value, n)| == if n <= 0 then 0 else n
+    ensures forall i :: 0 <= i < |repeatN(value, n)| ==> repeatN(value, n)[i] == value
+  { if n <= 0 then [] else seq(n, _ => value) }
 
   function size<T>(list: seq<T>): nat { |list| }
 }
