@@ -1,4 +1,4 @@
-// Ramda v0.1.5 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
+// Ramda v0.2.0 test/test.list.js, test/test.containsuniq.js, test/test.map.js,
 // test/test.find.js, test/test.flatten.js, test/test.range.js,
 // test/test.reverse.js, test/test.unfold.js, test/test.zip.js,
 // test/test.product.js and test/test.partition.js, transcribed. Arity
@@ -81,7 +81,7 @@ module RamdafTests.Ramda.List {
   }
 
   method {:test} RepeatNIsAutomaticallyCurried() {
-    var nTrues := (n: int) => repeatN(true, n);
+    var nTrues := (n: nat) => repeatN(true, n);
     expect nTrues(4) == [true, true, true, true];
   }
 
@@ -189,26 +189,40 @@ module RamdafTests.Ramda.List {
 
   // describe('findIndex')
   method {:test} FindIndexReturnsTheIndexOfTheFirstElementThatSatisfiesThePredicate() {
-    expect findIndex(Even, A()) == Some(1);
-    expect findIndex(Gt100, A()) == Some(8);
-    expect findIndex(IsStr, A()) == Some(3);
-    expect findIndex(XGt100, A()) == Some(10);
+    expect findIndex(Even, A()) == 1;
+    expect findIndex(Gt100, A()) == 8;
+    expect findIndex(IsStr, A()) == 3;
+    expect findIndex(XGt100, A()) == 10;
   }
 
-  method {:test} FindIndexReturnsUndefinedWhenNoElementSatisfiesThePredicate() {
-    expect findIndex(Even, Zing()) == None;
+  method {:test} FindIndexReturnsMinusOneWhenNoElementSatisfiesThePredicate() {
+    expect findIndex(Even, Zing()) == -1;
   }
 
-  // describe('findLast') (Ramda's describe tests findLastIndex)
+  // describe('findLast') (new in the v0.2.0 suite; "returns the index of the
+  // last element" checks the element)
+  method {:test} FindLastReturnsTheLastElementThatSatisfiesThePredicate() {
+    expect findLast(Even, A()) == Some(Num(0));
+    expect findLast(Gt100, A()) == Some(Num(300));
+    expect findLast(IsStr, A()) == Some(Str("cow"));
+    expect findLast(XGt100, A()) == Some(Obj2());
+  }
+
+  method {:test} FindLastReturnsUndefinedWhenNoElementSatisfiesThePredicate() {
+    expect findLast(Even, Zing()) == None;
+  }
+
+  // describe('findLastIndex') (the v0.1.5 suite tested it under
+  // describe('findLast'))
   method {:test} FindLastIndexReturnsTheIndexOfTheLastElementThatSatisfiesThePredicate() {
-    expect findLastIndex(Even, A()) == Some(15);
-    expect findLastIndex(Gt100, A()) == Some(9);
-    expect findLastIndex(IsStr, A()) == Some(3);
-    expect findLastIndex(XGt100, A()) == Some(10);
+    expect findLastIndex(Even, A()) == 15;
+    expect findLastIndex(Gt100, A()) == 9;
+    expect findLastIndex(IsStr, A()) == 3;
+    expect findLastIndex(XGt100, A()) == 10;
   }
 
-  method {:test} FindLastIndexReturnsUndefinedWhenNoElementSatisfiesThePredicate() {
-    expect findLastIndex(Even, Zing()) == None;
+  method {:test} FindLastIndexReturnsMinusOneWhenNoElementSatisfiesThePredicate() {
+    expect findLastIndex(Even, Zing()) == -1;
   }
 
   // ---- test.flatten.js ----
@@ -285,6 +299,13 @@ module RamdafTests.Ramda.List {
 
   method {:test} ZipReturnsAnArrayOfTuples() {
     expect zip([1, 2, 3], [100, 200, 300]) == [(1, 100), (2, 200), (3, 300)];
+  }
+
+  // v0.2.0
+  method {:test} ZipReturnsAListAsLongAsTheShorterInput() {
+    var a, b, c := [1, 2, 3], [100, 200, 300, 400], [10, 20];
+    expect zip(a, b) == [(1, 100), (2, 200), (3, 300)];
+    expect zip(a, c) == [(1, 10), (2, 20)];
   }
 
   // ---- test.product.js ----

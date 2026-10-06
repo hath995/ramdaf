@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.1.5's own suite does not cover, each checked against
-// ramda.js v0.1.5 under node (the expected values are node's output). The
+// Edge cases Ramda v0.2.0's own suite does not cover, each checked against
+// ramda.js v0.2.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -25,23 +25,16 @@ module RamdafTests.Edge.List {
     expect size(empty) == 0;
     expect clone([1, 2]) == [1, 2];
     expect identity(3) == 3;
-    expect cloneDeep([[1], [2, 3]]) == [[1], [2, 3]];
-    expect cloneDeep(map["a" := 1]) == map["a" := 1];
     expect repeatN(7, 0) == [];
     expect repeatN("a", 2) == ["a", "a"];
-    expect repeatN(7, -2) == [];
   }
 
-  // foldr runs from the right with the accumulator first (since v0.1.1), and
-  // so does foldr1, which seeds it with the last element.
+  // foldr runs from the right with the accumulator first (since v0.1.1).
   method {:test} FoldrRunsFromTheRightAccumulatorFirst() {
     var empty: seq<int> := [];
     expect foldr((acc: seq<int>, x: int) => [x] + acc, empty, [1, 2]) == [1, 2];
     expect foldr((acc: string, a: string) => acc + a, "", ["x", "y", "z"]) == "zyx";
     expect foldr((acc: int, a: int) => acc - a, 0, [1, 2, 3, 4]) == -10;
-    expect foldr1((acc: int, a: int) => acc - a, [1, 2, 3]) == 0;
-    expect foldr1((acc: int, a: int) => acc - a, [5]) == 5;
-    expect foldr1((a: string, b: string) => a + b, ["a", "b", "c", "d"]) == "dcba";
   }
 
   // The idx folds pass (acc, element, index, list).
@@ -67,15 +60,16 @@ module RamdafTests.Edge.List {
     expect rejectIdx((x: int, i: nat, l: seq<int>) => true, empty) == [];
   }
 
-  // findLast/findLastIndex never test index 0 (the `while (--idx)` loop).
+  // findLast/findLastIndex never test index 0 (the `while (--idx)` loop);
+  // since v0.2.0 findIndex and findLastIndex return -1 on a miss.
   method {:test} FindFamilyEdges() {
     var empty: seq<int> := [];
-    expect findIndex((x: int) => true, empty) == None;
-    expect findIndex((x: int) => x > 1, [1, 2, 3]) == Some(1);
-    expect findIndex((x: int) => x > 9, [1, 2, 3]) == None;
-    expect findLastIndex((x: int) => x == 1, [1, 2, 3]) == None;
-    expect findLastIndex((x: int) => x > 1, [1, 2, 3]) == Some(2);
-    expect findLastIndex((x: int) => true, [5]) == None;
+    expect findIndex((x: int) => true, empty) == -1;
+    expect findIndex((x: int) => x > 1, [1, 2, 3]) == 1;
+    expect findIndex((x: int) => x > 9, [1, 2, 3]) == -1;
+    expect findLastIndex((x: int) => x == 1, [1, 2, 3]) == -1;
+    expect findLastIndex((x: int) => x > 1, [1, 2, 3]) == 2;
+    expect findLastIndex((x: int) => true, [5]) == -1;
     expect findLast((x: int) => x == 1, [1, 2, 3]) == None;
     expect findLast((x: int) => x < 3, [1, 2, 3]) == Some(2);
     expect findLast((x: int) => true, [5]) == None;
@@ -141,8 +135,6 @@ module RamdafTests.Edge.List {
   method {:test} FoldlIsLeftAssociative() {
     expect foldl((acc: int, x: int) => acc - x, 0, [1, 2, 3]) == -6;
     expect foldl((acc: string, x: string) => acc + x, "", ["a", "b", "c"]) == "abc";
-    expect foldl1((a: int, b: int) => a - b, [1, 2, 3]) == -4;
-    expect foldl1((a: int, b: int) => a - b, [5]) == 5;
   }
 
   // uniq keeps the last occurrence of each element.
@@ -151,7 +143,19 @@ module RamdafTests.Edge.List {
     expect uniq([3, 3, 3]) == [3];
   }
 
-  // Since v0.1.5 take clamps n to the list's length.
+  // uniqWith (exported since v0.2.0) keeps the last representative and drops
+  // x when pred(x, y) holds for a kept y.
+  method {:test} UniqWithKeepsLastRepresentatives() {
+    var empty: seq<int> := [];
+    expect uniqWith((a: int, b: int) => a % 3 == b % 3, [1, 2, 3, 4]) == [2, 3, 4];
+    expect uniqWith((a: int, b: int) => a < b, [1, 2, 3]) == [3];
+    expect uniqWith((a: int, b: int) => a < b, [3, 2, 1]) == [3, 2, 1];
+    expect uniqWith((a: int, b: int) => a == b, [1, 2, 1]) == [2, 1];
+    expect uniqWith((a: int, b: int) => a == b, empty) == [];
+  }
+
+  // Since v0.1.5 take clamps n to the list's length; since v0.2.0 skip
+  // throws for n > |list| (outside the domain).
   method {:test} TakeSkipEdges() {
     var empty: seq<int> := [];
     expect take(0, [1, 2]) == [];
@@ -159,28 +163,34 @@ module RamdafTests.Edge.List {
     expect take(5, [1, 2]) == [1, 2];
     expect take(3, empty) == [];
     expect take(2, [1, 2, 3]) == [1, 2];
-    expect skip(5, [1, 2]) == [];
     expect skip(0, [1, 2]) == [1, 2];
     expect skip(2, [1, 2]) == [];
+    expect drop(1, [1, 2]) == [2];
   }
 
+  // Since v0.2.0 zip and zipWith stop at the shorter list.
   method {:test} ZipEdges() {
     var empty: seq<int> := [];
     expect zip([1], [3, 4]) == [(1, 3)];
     expect zip(empty, [1]) == [];
     expect zipWith((a: int, b: int) => a + b, [1, 2], [10, 20, 30]) == [11, 22];
+    expect zip([1, 2, 3], [4]) == [(1, 4)];
+    expect zipWith((a: int, b: int) => a + b, [1, 2], [10]) == [11];
   }
 
-  // Array.prototype.splice clamping: a negative start counts from the end.
-  method {:test} SpliceClampsLikeJs() {
+  // Since v0.2.0 splice is `_slice(list, 0, start).concat(_slice(list, start + len))`:
+  // a start of 0 copies the whole list first, and a negative len re-reads
+  // elements.
+  method {:test} SpliceUsesRamdasSlice() {
     expect splice(1, 2, [1, 2, 3, 4, 5]) == [1, 4, 5];
-    expect splice(-2, 1, [1, 2, 3, 4]) == [1, 2, 4];
-    expect splice(1, 10, [1, 2, 3]) == [1];
-    expect splice(5, 1, [1, 2]) == [1, 2];
-    expect splice(1, -1, [1, 2, 3]) == [1, 2, 3];
-    expect splice(-10, 1, [1, 2, 3]) == [2, 3];
-    expect splice(-1, 5, [1, 2, 3]) == [1, 2];
-    expect splice(0, 0, [1, 2, 3]) == [1, 2, 3];
+    expect splice(0, 2, [1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5, 3, 4, 5];
+    expect splice(0, 0, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
+    expect splice(0, 3, [1, 2, 3]) == [1, 2, 3];
+    expect splice(3, 0, [1, 2, 3]) == [1, 2, 3];
+    expect splice(1, -1, [1, 2, 3]) == [1, 1, 2, 3];
+    expect splice(3, -3, [1, 2, 3]) == [1, 2, 3, 1, 2, 3];
+    expect splice(2, 1, [1, 2, 3]) == [1, 2];
+    expect splice(1, 2, [1, 2, 3]) == [1];
   }
 
   method {:test} NthEdges() {
@@ -207,6 +217,10 @@ module RamdafTests.Edge.List {
     expect find((x: int) => x > 1, [1, 2, 3]) == Some(2);
     expect takeWhile((x: int) => x < 3, [1, 2, 3, 1]) == [1, 2];
     expect takeWhile((x: int) => x > 0, empty) == [];
+    expect takeWhile((x: int) => x < 2, [1, 2, 3]) == [1];
+    expect takeWhile((x: int) => x < 9, [1, 2]) == [1, 2];
+    // v0.2.0: `_slice(list, 0, 0)` is the whole list
+    expect takeWhile((x: int) => x > 5, [1, 2, 3]) == [1, 2, 3];
     expect skipUntil((x: int) => x > 2, [1, 2, 3, 1]) == [3, 1];
     expect skipUntil((x: int) => x > 0, empty) == [];
   }

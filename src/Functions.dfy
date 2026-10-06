@@ -1,11 +1,11 @@
-// Ramdaf: Ramda v0.1.5 "Function functions" (ramda.js lines 323-430) and the
-// `always` family (lines 976-979, 1104-1111).
+// Ramdaf: Ramda v0.2.0 "Function functions" (ramda.js lines 408-532) and the
+// `always` family (lines 1257-1263, 1448-1455).
 // compose/pipe are variadic in JS; the port is binary (nest for more functions).
 
 module Ramdaf.Functions {
   export
     reveals compose, pipe, sequence, flip, fork,
-            always, alwaysZero, alwaysFalse, alwaysTrue
+            always, constant, alwaysZero, alwaysFalse, alwaysTrue
 
   // `compose(f, g)(x) == f(g(x))`
   // (v0.1.1 dropped the `fog` alias.)
@@ -28,6 +28,8 @@ module Ramdaf.Functions {
   // JS `always(v)` ignores however many arguments it gets; the port's result
   // takes one argument of any type.
   function always<T, U>(val: T): U -> T { _ => val }
+  // v0.2.0: `aliasFor("always").is("constant")`.
+  function constant<T, U>(val: T): U -> T { always(val) }
 
   // `alwaysZero = always(0)` etc.: the functions themselves, applied to one
   // argument of any type.

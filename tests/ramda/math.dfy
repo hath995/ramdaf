@@ -1,4 +1,4 @@
-// Ramda v0.1.5 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.2.0 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations").
 
@@ -134,31 +134,33 @@ module RamdafTests.Ramda.Math {
   }
 
   function Xy(x: int, y: int): map<string, int> { map["x" := x, "y" := y] }
-  function ByX(a: map<string, int>, b: map<string, int>): int { Field(a, "x") - Field(b, "x") }
+  // `prop('x')`: every record here has an x.
+  function X(o: map<string, int>): int { Field(o, "x") }
 
-  // describe('maxWith')
-  method {:test} MaxWithUsesTheComparator() {
-    expect maxWith(ByX, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
+  // describe('maxWith') (v0.2.0: a key function instead of a comparator)
+  method {:test} MaxWithCalculatesTheLargestValueUsingTheKey() {
+    expect maxWith(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
   }
-  method {:test} MaxWithReturnsNullForTheEmptyList() {
+  method {:test} MaxWithReturnsUndefinedForTheEmptyList() {
     var empty: seq<map<string, int>> := [];
-    expect maxWith(ByX, empty) == None;
+    expect maxWith(X, empty) == None;
   }
   method {:test} MaxWithIsProperlyCurried() {
-    var highestX := (l: seq<map<string, int>>) => maxWith(ByX, l);
+    var highestX := (l: seq<map<string, int>>) => maxWith(X, l);
     expect highestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
   }
 
   // describe('minWith')
-  method {:test} MinWithUsesTheComparator() {
-    expect minWith(ByX, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
+  method {:test} MinWithCalculatesTheSmallestValueUsingTheKey() {
+    expect minWith(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
   }
-  method {:test} MinWithReturnsNullForTheEmptyList() {
+  // "returns null for the empty list" checks for undefined
+  method {:test} MinWithReturnsUndefinedForTheEmptyList() {
     var empty: seq<map<string, int>> := [];
-    expect minWith(ByX, empty) == None;
+    expect minWith(X, empty) == None;
   }
   method {:test} MinWithIsProperlyCurried() {
-    var lowestX := (l: seq<map<string, int>>) => minWith(ByX, l);
+    var lowestX := (l: seq<map<string, int>>) => minWith(X, l);
     expect lowestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
   }
 }

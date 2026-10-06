@@ -1,22 +1,14 @@
-// Ramdaf: Ramda v0.1.5 "Core Functions" (ramda.js lines 250-322), `clone` and
-// `cloneDeep` (lines 241-249) and `size`.
+// Ramdaf: Ramda v0.2.0 "Core Functions" (ramda.js lines 326-407), `clone`
+// (lines 321-324) and `size`. (v0.2.0 removed `cloneDeep`.)
 
 module Ramdaf.Core {
   export
-    reveals clone, cloneDeep, isEmpty, prepend, cons, head, car, first, last, tail, cdr,
+    reveals clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr,
             append, push, merge, concat, identity, I, repeatN, size
 
-  // `clone(list)` is `list.concat()`, a shallow copy. Dafny sequences are
-  // values, so the copy is the list itself.
+  // `clone(list)` is `_slice(list)` (`list.concat()` before v0.2.0), a
+  // shallow copy. Dafny sequences are values, so the copy is the list itself.
   function clone<T>(list: seq<T>): seq<T> { list }
-
-  // `JSON.parse(JSON.stringify(obj))`, a deep copy. Dafny values are
-  // immutable, so the copy is the value itself. JSON cannot carry a function
-  // (`cloneDeep(f)` throws a SyntaxError, a function inside an object is
-  // dropped), so T is limited to types with equality, which excludes every
-  // type that contains a function. A property that is undefined (None) is
-  // dropped by JSON but kept here (README "Deviations").
-  function cloneDeep<T(==)>(obj: T): T { obj }
 
   function isEmpty<T>(list: seq<T>): bool { |list| == 0 }
 
@@ -56,13 +48,14 @@ module Ramdaf.Core {
   function identity<T>(x: T): T { x }
   function I<T>(x: T): T { identity(x) }
 
-  // `var arr = [], i = -1; while (++i < n) { arr[i] = value; }`: n copies of
-  // value, none when n <= 0 (v0.1.3 replaced the generator-based
-  // `repeat.nTimes`).
-  function repeatN<T>(value: T, n: int): seq<T>
-    ensures |repeatN(value, n)| == if n <= 0 then 0 else n
-    ensures forall i :: 0 <= i < |repeatN(value, n)| ==> repeatN(value, n)[i] == value
-  { if n <= 0 then [] else seq(n, _ => value) }
+  // `var arr = new Array(n), i = -1; while (++i < n) { arr[i] = value; }`: n
+  // copies of value. Since v0.2.0 the array is allocated with `new Array(n)`,
+  // which throws RangeError for a negative n (v0.1.3 to v0.1.5 returned []),
+  // so n is a nat.
+  function repeatN<T>(value: T, n: nat): seq<T>
+    ensures |repeatN(value, n)| == n
+    ensures forall i :: 0 <= i < n ==> repeatN(value, n)[i] == value
+  { seq(n, _ => value) }
 
   function size<T>(list: seq<T>): nat { |list| }
 }

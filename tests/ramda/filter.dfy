@@ -1,8 +1,12 @@
-// Ramda v0.1.5 test/test.filter.js, transcribed ("automatically curried" cases
-// apply the partially applied function in full).
+// Ramda v0.2.0 test/test.filter.js, transcribed ("automatically curried" cases
+// apply the partially applied function in full). The "should start at the
+// right arg" cases use a predicate that would fail the test if called; here
+// it is a predicate whose result does not matter (the list is empty), and
+// `undefined` elements are Js values.
 
 module RamdafTests.Ramda.Filter {
   import opened Ramdaf.List
+  import opened Support
 
   function even(x: int): bool { x % 2 == 0 }
 
@@ -76,6 +80,13 @@ module RamdafTests.Ramda.Filter {
     expect takeUntil7([2, 4, 6, 8, 10]) == [2, 4, 6, 8, 10];
   }
 
+  // v0.2.0
+  method {:test} TakeWhileStartsAtTheRightArgAndAcknowledgesUndefined() {
+    var empty: seq<Js> := [];
+    expect takeWhile((x: Js) => false, empty) == [];
+    expect takeWhile((x: Js) => !x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]) == [Num(1), Num(3)];
+  }
+
   // describe('take')
   method {:test} TakeTakesTheFirstNElements() {
     expect take(3, ["a", "b", "c", "d", "e", "f", "g"]) == ["a", "b", "c"];
@@ -98,13 +109,20 @@ module RamdafTests.Ramda.Filter {
     expect skipUntil7([2, 4, 6, 8, 10]) == [];
   }
 
+  // v0.2.0
+  method {:test} SkipUntilStartsAtTheRightArgAndAcknowledgesUndefined() {
+    var empty: seq<Js> := [];
+    expect skipUntil((x: Js) => false, empty) == [];
+    expect skipUntil((x: Js) => x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]) == [Undefined, Num(5), Num(7)];
+  }
+
   // describe('skip')
   method {:test} SkipSkipsTheFirstNElements() {
     expect skip(3, ["a", "b", "c", "d", "e", "f", "g"]) == ["d", "e", "f", "g"];
   }
 
   method {:test} SkipIsAutomaticallyCurried() {
-    var skip2 := (l: seq<string>) => skip(2, l);
+    var skip2 := (l: seq<string>) requires 2 <= |l| => skip(2, l);
     expect skip2(["a", "b", "c", "d", "e"]) == ["c", "d", "e"];
     expect skip2(["x", "y", "z"]) == ["z"];
   }

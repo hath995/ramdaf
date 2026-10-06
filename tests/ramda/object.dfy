@@ -1,7 +1,11 @@
-// Ramda v0.1.5 test/test.objectBasics.js, test/test.keysvals.js and
+// Ramda v0.2.0 test/test.objectBasics.js, test/test.keysvals.js and
 // test/test.tapeq.js, transcribed. Not transcribed: describe('func') and
 // describe('tap') (not portable, README), `eq([], [])` (reference equality,
-// README "Deviations"; pinned in tests/edge/object.dfy).
+// README "Deviations"; pinned in tests/edge/object.dfy); v0.2.0's
+// describe('pathWith'), describe('pathOn') and describe('path') (not
+// portable, README); and test.keysvals.js's cases on an object built by a
+// constructor whose prototype has properties ("does not include"/"includes
+// the given object's prototype properties"): a map has no prototype.
 
 module RamdafTests.Ramda.Object {
   import opened Ramdaf.Prelude
@@ -157,6 +161,19 @@ module RamdafTests.Ramda.Object {
   // JS returns the values in key order; values is a multiset here (README).
   method {:test} ValuesReturnsTheObjectsValues() {
     expect values(KeysValsObj()) == multiset{Num(100), Arr([Num(1), Num(2), Num(3)]),
+      Obj(map["x" := Num(200), "y" := Num(300)]), Str("D"), Null, Undefined};
+  }
+
+  // v0.2.0: describe('keysIn'), "returns an array of the given object's keys"
+  // (a set here, as for keys).
+  method {:test} KeysInReturnsTheObjectsKeys() {
+    expect keysIn(KeysValsObj()) == {"a", "b", "c", "d", "e", "f"};
+  }
+
+  // v0.2.0: describe('valuesIn'), "returns an array of the given object's
+  // values" (a multiset here, as for values).
+  method {:test} ValuesInReturnsTheObjectsValues() {
+    expect valuesIn(KeysValsObj()) == multiset{Num(100), Arr([Num(1), Num(2), Num(3)]),
       Obj(map["x" := Num(200), "y" := Num(300)]), Str("D"), Null, Undefined};
   }
 

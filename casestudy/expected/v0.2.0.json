@@ -1,0 +1,25 @@
+{
+  "ramda": "v0.2.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Core.cloneDeep", "kind": "removed", "why": "v0.2.0 deleted R.cloneDeep"},
+    {"symbol": "Ramdaf.Core.repeatN", "kind": "breaking", "why": "v0.2.0 allocates new Array(n): a negative n throws RangeError (was []), so n: int became n: nat"},
+    {"symbol": "Ramdaf.Functions.constant", "kind": "added", "why": "new in v0.2.0: aliasFor('always').is('constant')"},
+    {"symbol": "Ramdaf.List.foldl1", "kind": "removed", "why": "v0.2.0 deleted R.foldl1"},
+    {"symbol": "Ramdaf.List.foldr1", "kind": "removed", "why": "v0.2.0 deleted R.foldr1"},
+    {"symbol": "Ramdaf.List.uniqWith", "kind": "added", "why": "v0.2.0 exports uniqWith (var uniqWith = R.uniqWith); it was internal"},
+    {"symbol": "Ramdaf.List.findIndex", "kind": "breaking", "why": "v0.2.0 returns -1 on a miss instead of undefined: the result type Option<nat> became int"},
+    {"symbol": "Ramdaf.List.findLastIndex", "kind": "breaking", "why": "v0.2.0 returns -1 on a miss instead of undefined: the result type Option<nat> became int"},
+    {"symbol": "Ramdaf.List.takeWhile", "kind": "breaking", "why": "v0.2.0 returns _slice(list, 0, idx), and idx == 0 reads as the end: the whole list when the first element fails (was [])"},
+    {"symbol": "Ramdaf.List.skip", "kind": "breaking", "why": "v0.2.0 _slice(list, n) throws RangeError for n > list.length (was []): precondition n <= |list| added"},
+    {"symbol": "Ramdaf.List.drop", "kind": "breaking", "why": "alias of skip: the same new precondition"},
+    {"symbol": "Ramdaf.List.splice", "kind": "breaking", "why": "v0.2.0 is _slice(list, 0, start).concat(_slice(list, start + len)): start == 0 copies the whole list first, and a negative start or start + len > length throws (preconditions added)"},
+    {"symbol": "Ramdaf.List.zipWith", "kind": "compatible", "why": "v0.2.0 stops at Math.min(a.length, b.length): the |a| <= |b| precondition is dropped, results unchanged where defined"},
+    {"symbol": "Ramdaf.List.zip", "kind": "compatible", "why": "v0.2.0 stops at the shorter list: the |a| <= |b| precondition is dropped, results unchanged where defined"},
+    {"symbol": "Ramdaf.Math.maxWith", "kind": "breaking", "why": "v0.2.0 maxWith(keyFn, list) takes a key function instead of a comparator"},
+    {"symbol": "Ramdaf.Math.minWith", "kind": "breaking", "why": "v0.2.0 minWith(keyFn, list) takes a key function instead of a comparator"},
+    {"symbol": "Ramdaf.Object.keysIn", "kind": "added", "why": "new in v0.2.0"},
+    {"symbol": "Ramdaf.Object.valuesIn", "kind": "added", "why": "new in v0.2.0"},
+    {"symbol": "Ramdaf.Data.groupBy", "kind": "compatible", "why": "v0.2.0 defines groupBy as an alias of partition; the revealed body now calls List.partition, same results"}
+  ]
+}

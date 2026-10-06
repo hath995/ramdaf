@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.1.5 under node; the methods named Deviation* pin documented
+// ramda.js v0.2.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -36,6 +36,15 @@ module RamdafTests.Edge.Misc {
   // values keeps one entry per key (node: [1, 1]).
   method {:test} ValuesKeepsDuplicates() {
     expect values(map["a" := 1, "b" := 1]) == multiset{1, 1};
+  }
+
+  // v0.2.0: a map has no prototype chain, so keysIn and valuesIn are keys and
+  // values (node, on plain objects: [], [1, 1]).
+  method {:test} KeysInValuesInOfPlainObjects() {
+    var none: map<string, int> := map[];
+    expect keysIn(none) == {};
+    expect keysIn(map["a" := 1, "b" := 2]) == {"a", "b"};
+    expect valuesIn(map["a" := 1, "b" := 1]) == multiset{1, 1};
   }
 
   method {:test} MixinEdges() {
@@ -85,26 +94,21 @@ module RamdafTests.Edge.Misc {
     expect product(empty) == 1;
   }
 
-  function ByV(a: (int, int), b: (int, int)): int { a.0 - b.0 }
-
-  // The running maximum/minimum is replaced only by a strictly better
-  // element, so the first of equals wins.
+  // v0.2.0: maxWith/minWith take a key function, and the running winner is
+  // replaced only by a strictly better key, so the first of equals wins.
   method {:test} MaxWithMinWithKeepTheFirstOfEquals() {
-    expect maxWith(ByV, [(3, 0), (5, 1), (5, 2), (1, 3)]) == Some((5, 1));
-    expect minWith(ByV, [(3, 0), (1, 1), (1, 2)]) == Some((1, 1));
+    expect maxWith((r: (int, int)) => r.0, [(3, 0), (5, 1), (5, 2), (1, 3)]) == Some((5, 1));
+    expect minWith((r: (int, int)) => r.0, [(3, 0), (1, 1), (1, 2)]) == Some((1, 1));
+    expect maxWith((x: int) => x % 2, [1, 3, 2]) == Some(1);
+    expect minWith((x: int) => x % 2, [2, 4, 1]) == Some(2);
   }
 
-  // Rock-paper-scissors is not transitive: the left-to-right fold decides.
-  function Rps(a: char, b: char): int
-  { if a == b then 0
-    else if (a == 'R' && b == 'S') || (a == 'P' && b == 'R') || (a == 'S' && b == 'P') then 1
-    else -1 }
-
-  method {:test} MaxWithMinWithFoldLeftToRight() {
-    expect maxWith(Rps, ['R', 'P', 'S']) == Some('S');
-    expect minWith(Rps, ['R', 'P', 'S']) == Some('S');
-    expect maxWith(Rps, ['S', 'P', 'R']) == Some('R');
-    expect minWith(Rps, ['P', 'S', 'R']) == Some('R');
+  method {:test} MaxWithMinWithCompareKeys() {
+    var empty: seq<int> := [];
+    expect maxWith((x: int) => -x, [1, 2, 3]) == Some(1);
+    expect minWith((x: int) => -x, [1, 2, 3]) == Some(3);
+    expect maxWith((x: int) => x, [7]) == Some(7);
+    expect minWith((x: int) => x, empty) == None;
   }
 
   // String.prototype.substring clamps both indices and swaps them if needed.
@@ -182,11 +186,14 @@ module RamdafTests.Edge.Misc {
 
   // ---- documented deviations (not node behaviour) ----
 
-  // node: cloneDeep({g: undefined, a: 1}) is {a: 1} (JSON drops undefined);
-  // the copy here is the value itself.
-  method {:test} DeviationCloneDeepKeepsUndefinedProperties() {
-    var o := map["g" := None, "a" := Some(1)];
-    expect cloneDeep(o) == o;
+  // node v0.2.0: the partially applied foldl behind sum and product keeps
+  // its accumulator between calls, so the second call gives 12 (product: 4);
+  // the port is pure.
+  method {:test} DeviationSumAndProductKeepNoState() {
+    expect sum([1, 2, 3]) == 6;
+    expect sum([1, 2, 3]) == 6;
+    expect product([2]) == 2;
+    expect product([2]) == 2;
   }
 
   // node: eq([], []) is false (two distinct array objects).

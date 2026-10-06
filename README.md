@@ -98,7 +98,7 @@ For each Ramda tag, in order:
 | array (list) | `seq<T>` |
 | plain object | `map<string, V>` (no key order) |
 | a property that is absent or `undefined` | `None` of `Ramdaf.Prelude.Option<V>` |
-| a documented "no value" result (`find`/`findIndex` miss → `undefined`, `nth` out of range → `undefined`, `maxWith([])` → `null`) | `Option<T>` |
+| a documented "no value" result (`find` miss → `undefined`, `nth` out of range → `undefined`, `maxWith([])` → `undefined`) | `Option<T>` |
 | `where`'s spec object, whose properties are functions or values | `map<string, Ramdaf.Prelude.SpecVal<V>>`: `Pred(fn)` for a function, `Val(v)` for a value |
 | nested arrays (`flatten`'s input) | `Ramdaf.Prelude.Tree<T>`: `Leaf(v)` or `Node(children)` |
 | number | `int`, or `real` for `divide`/`divideBy` |
@@ -110,22 +110,22 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.1.5)
+## Modules and exports (v0.2.0)
 
 | Module | Exports |
 |---|---|
-| `Ramdaf.Core` | clone, cloneDeep, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, merge, concat, identity, I, repeatN, size |
-| `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, alwaysZero, alwaysFalse, alwaysTrue |
-| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldl1, foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), foldr1, unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith, uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, slice, sliceFrom (`slice.from`), splice, nth, partition |
+| `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, merge, concat, identity, I, repeatN, size |
+| `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, constant, alwaysZero, alwaysFalse, alwaysTrue |
+| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, lastIndexOf, join, slice, sliceFrom (`slice.from`), splice, nth, partition |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
-| `Ramdaf.Object` | eq, prop, get, props, keys, values, pick, pickAll, omit, mixin, eqProps, where, propEq |
+| `Ramdaf.Object` | eq, prop, get, props, keys, keysIn, values, valuesIn, pick, pickAll, omit, mixin, eqProps, where, propEq |
 | `Ramdaf.Logic` | and, or, not, allPredicates, anyPredicates |
 | `Ramdaf.Math` | add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy, sum, product, lt, lte, gt, gte, max, maxWith, minWith, min |
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 129 of Ramda v0.1.5's 151 export names, plus 8 of the 10 functions
-stored as properties of exports (`map.idx` and the like). The other 22 names
+That is 130 of Ramda v0.2.0's 157 export names, plus 8 of the 10 functions
+stored as properties of exports (`map.idx` and the like). The other 27 names
 and the 2 properties `each.idx`/`forEach.idx` are listed under "Not portable".
 
 ### Support declarations
@@ -142,19 +142,20 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.1.5 does not export `uniqWith` or `keyValue`; they are local `var`s
-in `ramda.js`. Ramdaf does not export them either. The `*With` functions in
-Data carry `uniqWith`'s recursion themselves. (`containsWith` was internal
-too until v0.1.5 exported it; it is in List.)
+Ramda v0.2.0 does not export `keyValue`; it is a local `var` in `ramda.js`,
+and Ramdaf does not export it either. (`containsWith` was internal until
+v0.1.5 exported it, and `uniqWith` until v0.2.0; both are in List. The
+`*With` functions in Data carry `uniqWith`'s recursion themselves, as they
+did while it was internal.)
 
 ## Not portable
 
-These Ramda v0.1.5 exports are not ported, rather than faked:
+These Ramda v0.2.0 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
 | `curry` | Ramdaf functions are uncurried, and Dafny has no partial application to curry into. |
-| `nAry`, `arity` | Change a function's reported arity (`fn.length`), which Dafny functions do not have. |
+| `nAry`, `arity`, `unary`, `binary` | Change a function's reported arity (`fn.length`), which Dafny functions do not have (`unary(fn)` is `nAry(1, fn)`, `binary(fn)` is `nAry(2, fn)`; v0.2.0). |
 | `invoker`, `func` | Call a method looked up by name on an object at run time. |
 | `useWith`, `use` | Variadic argument transformers. |
 | `lPartial` (`applyLeft`), `rPartial` (`applyRight`) | Variadic partial application. |
@@ -166,23 +167,23 @@ These Ramda v0.1.5 exports are not ported, rather than faked:
 | `installTo` | Copies the library onto a global or host object. |
 | `isAtom` | Tests the run-time type of an arbitrary value. |
 | `match` | Regular expressions. |
+| `path`, `pathOn`, `pathWith` | Walk an arbitrary JS value along a list of property names (v0.2.0): object properties, array indices (`path('a.e.f.1', obj)` → `101`, Ramda's own test) and string characters, returning whatever value is there (an object, an array or a primitive). The mapping has no type for such a heterogeneous nested value: a `map<string, V>` is homogeneous, and `Tree<T>` has no keys. A nested-object datatype would cover only the object case and leave most of Ramda's `path` tests untranscribable. |
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.1.5 (node) | Ramdaf |
+| Function | Ramda v0.2.0 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car`, `first`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
-| `foldl1`, `foldr1` | throw `Error` on `[]` | `requires \|list\| > 0` |
 | `take` | `take(-1, l)` throws `RangeError`. (Before v0.1.5, `take(5, [1, 2])` → `[1, 2, <3 empty items>]`, and Ramdaf required `n <= \|list\|`; v0.1.5 clamps to `[1, 2]`.) | `n: nat` |
-| `skip`, `drop` | `skip(-1, [1, 2])` → `[undefined, 1, 2]` | `n: nat` |
-| `zip`, `zipWith` | read past the end of the second list: `zip([1, 2], [3])` → `[[1, 3], [2, undefined]]`, `zipWith(add, [1, 2], [10])` → `[11, NaN]` | `requires \|a\| <= \|b\|` |
+| `skip`, `drop` | `skip(-1, [1, 2])` → `[undefined, 1, 2]`; since v0.2.0 `skip(5, [1, 2])` throws `RangeError` (`_slice` allocates `new Array(2 - 5)`; it was `[]`) | `n: nat`, `requires n <= \|list\|` |
+| `repeatN` | since v0.2.0 `repeatN(7, -2)` throws `RangeError` (`new Array(-2)`; it was `[]`) | `n: nat` |
+| `splice` | since v0.2.0 (`_slice(list, 0, start).concat(_slice(list, start + len))`) a negative `start` or `start + len > length` throws `RangeError` (`splice(-1, 1, [1, 2, 3])`, `splice(1, 10, [1, 2, 3])`), and `start > length` or `start + len < 0` reads past an end (`splice(2, -3, [1, 2, 3])` → `[1, 2, undefined, 1, 2, 3]`) | `requires 0 <= start <= \|list\|`, `requires 0 <= start + len <= \|list\|` |
 | `charCodeAt` | `charCodeAt(10, "abc")` → `NaN` | `requires 0 <= n < \|s\|` |
 | `max`, `min` | `max([])` → `-Infinity`, `min([])` → `Infinity` | `requires \|list\| > 0` |
 | `divide`, `divideBy` | `divide(1, 0)` → `Infinity` | `requires` a nonzero divisor |
 | `modulo`, `moduloBy` | `modulo(1, 0)` → `NaN` | `requires` a nonzero divisor |
 | `findLast`, `findLastIndex` | on `[]` the `while (--idx)` loop runs idx through -1, -2, … calling `fn(undefined)` until it is truthy (forever for `x => false`; `findLastIndex(x => x === undefined, [])` → `-1`) | `requires \|list\| > 0` |
 | `where` | `where({x: undefined}, {})` → `false`, `where({x: undefined}, {x: undefined})` → `true`, `where(spec, null)` → `false` (v0.1.5) | not expressible: an undefined property is an absent one, and the test object is a `map` |
-| `cloneDeep` | JSON cannot carry functions: `cloneDeep(f)` throws `SyntaxError`, a function inside an object is dropped | `T(==)`, which excludes every type containing a function |
 
 ## Deviations
 
@@ -190,11 +191,11 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.1.5 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.2.0 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
-| `keys` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
-| `values` | `values({a: 1, b: 1})` → `[1, 1]`, in key order | `multiset{1, 1}` | A `map` has no key order. |
+| `keys`, `keysIn` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
+| `values`, `valuesIn` | `values({a: 1, b: 1})` → `[1, 1]`, in key order | `multiset{1, 1}` | A `map` has no key order. |
 | `unfoldr` | loops until `fn` returns a falsy value, possibly forever | extra `fuel: nat` parameter; stops after `fuel` elements | Dafny functions must terminate. |
 | `compose`, `pipe`/`sequence` | variadic: `compose(a, b, c, d)` | binary: `compose(a, compose(b, compose(c, d)))`. There is no unary form; `compose(f)` is `f`. | Dafny functions have fixed arity. |
 | `always`, `alwaysZero`, `alwaysFalse`, `alwaysTrue` | ignore however many arguments they get | take exactly one argument of any type (`always(7)(())`) | Fixed arity. |
@@ -203,10 +204,10 @@ a signature (an arity or an operand type) is enforced by the types.
 | `mapIdx`, `filterIdx`, `rejectIdx`, `foldlIdx`/`reduceIdx`, `foldrIdx`/`reduceRightIdx` | call `fn(x, idx, list)` (folds: `fn(acc, x, idx, list)`), and a function that declares fewer parameters ignores the rest: `map.idx(times2, l)` | the callback takes all three (four) | Fixed arity. |
 | `allPredicates`, `anyPredicates` | `allPredicates(preds, v)` applies at once; the result reports the longest predicate's arity | `allPredicates(preds)(v)`; no arity | Fixed arity. |
 | `add`, `subtract`, `multiply`, `sum`, `product`, `lt`, `lte`, `gt`, `gte`, `max`, `min`, `subtractN`, `modulo`, `moduloBy` | JS numbers (doubles) and coercion: `lt("abc", "xyz")` → `true`, `max([-4.3, -1.1])` → `-1.1` | `int` (`divide`/`divideBy`: `real`) | Typed. |
-| `partition` | uses whatever `fn` returns as a key, converted to a string: `partition(x => x > 2, [1, 3])` → `{false: [1], true: [3]}` | `fn: T -> string` | Typed. |
+| `partition`, `groupBy` | uses whatever `fn` returns as a key, converted to a string: `partition(x => x > 2, [1, 3])` → `{false: [1], true: [3]}` | `fn: T -> string` | Typed. |
 | `join` | converts elements to strings: `join("~", [1, 2, 3, 4])` → `"1~2~3~4"` | `seq<string>` elements | Typed. |
-| `cloneDeep` | `JSON.stringify` drops a property whose value is `undefined`: `cloneDeep({g: undefined, a: 1})` → `{a: 1}` | the value itself, `map["g" := None, "a" := Some(1)]` | The copy of an immutable value is the value; dropping `None` entries cannot be written for an arbitrary `T`. |
-| `sortBy` | compares keys with JS `<`, so string keys sort: `sortBy(s => s, ["b", "a", "c"])` → `["a", "b", "c"]` | `int` keys | Dafny cannot order arbitrary key types, and overloading by key type is not possible. |
+| `sum`, `product` | v0.2.0 defines them as `foldl(add, 0)` and `foldl(multiply, 1)`, and the partially applied `foldl` keeps its accumulator in a closure that every call updates: `sum([1, 2, 3])` → `6`, then `12` on a second call (`product([2])` → `2`, then `4`) | pure: `6` every time | Hidden mutable state has no counterpart in a function; the port gives the first call's result. |
+| `sortBy`, `maxWith`, `minWith` | compare keys with JS `<`/`>`, so string keys work: `sortBy(s => s, ["b", "a", "c"])` → `["a", "b", "c"]` | `int` keys | Dafny cannot order arbitrary key types, and overloading by key type is not possible. |
 | `sort` | an inconsistent comparator gives an engine-defined order: `sort(() => -1, [1, 2, 3])` → `[3, 2, 1]` | The postconditions say nothing for inconsistent comparators; the implementation (stable insertion sort) gives `[1, 2, 3]`. | ECMAScript leaves it unspecified. |
 | string functions | count UTF-16 code units: `charCodeAt(0, "😀")` → `55357`, `"😀".length` → `2` | count code points: `0x1F600`, `1` | A Dafny `string` is a sequence of Unicode scalar values. |
 | `toUpperCase`, `toLowerCase` | full Unicode case mapping: `toUpperCase("straße")` → `"STRASSE"`, `toUpperCase("ä")` → `"Ä"` | ASCII letters only: `"STRAßE"`, `"ä"` | Unicode case tables are out of scope. |
@@ -235,7 +236,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 | v0.1.3 | 2014-06-02 | ported | — |
 | v0.1.4 | 2014-06-10 | ported | — |
 | v0.1.5 | 2014-06-15 | ported | — |
-| v0.2.0 | 2014-06-27 | pending | — |
+| v0.2.0 | 2014-06-27 | ported | — |
 | v0.2.1 | 2014-06-27 | pending | — |
 | v0.2.2 | 2014-06-30 | pending | — |
 | v0.2.3 | 2014-07-09 | pending | — |
@@ -451,6 +452,77 @@ side-effect counting, JS coercion, reference equality, string-keyed
   previous result unchanged (compatible), and `containsWith` was added.
   Conventional semver would call that minor; `lem` treats such changes as
   patch (`casestudy/expected/v0.1.5.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.2.0 (2014-06-27)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node):
+  - Most functions are now curried by hand (`arguments.length < 2 ? … : …`),
+    and a new private `_slice(args, from, to)` copies into
+    `new Array(to - from)`, reading `from || 0` and `to || args.length`. It
+    backs `clone`, `skip`, `takeWhile`, `skipUntil` and `splice`, with these
+    observable effects:
+    - `takeWhile` returns the whole list when the first element fails the
+      predicate (`takeWhile(x => x > 5, [1, 2, 3])` → `[1, 2, 3]`, was `[]`);
+    - `skip`/`drop` throw `RangeError` for n > length (`skip(5, [1, 2])`, was
+      `[]`);
+    - `splice` is `_slice(list, 0, start).concat(_slice(list, start + len))`
+      instead of `Array.prototype.splice`: `splice(0, 2, [1, 2, 3, 4, 5])` →
+      `[1, 2, 3, 4, 5, 3, 4, 5]` (was `[3, 4, 5]`), and a negative start or
+      `start + len > length` throws `RangeError` (both were clamped).
+  - `repeatN` allocates `new Array(n)`, so a negative n throws `RangeError`
+    (was `[]`).
+  - `sum` and `product` (`foldl(add, 0)`, `foldl(multiply, 1)`) share one
+    accumulator across calls (`sum([1, 2, 3])` → `6`, then `12`); v0.2.2
+    fixes it.
+  - Removed: `cloneDeep`, `foldl1`, `foldr1`.
+  - New: `constant` (an alias of `always`), `keysIn` and `valuesIn` (with
+    prototype properties), `path`, `pathOn`, `pathWith`, `unary`, `binary`;
+    `uniqWith` is exported.
+  - `groupBy` becomes an alias of `partition`. Both group by the string key
+    `fn` returns, so `groupBy`'s results are unchanged.
+  - `findIndex`/`findLastIndex` return `-1` on a miss (was `undefined`).
+  - `maxWith`/`minWith` take a key function instead of a comparator
+    (`maxWith(prop('x'), list)`, Ramda's test): the first element with the
+    greatest (least) key wins, and `[]` gives `undefined` (was `null`).
+  - `zip`/`zipWith` stop at the shorter list (they read `undefined` past the
+    end of the second).
+  - Not visible in this encoding: `filter` no longer calls a failing
+    predicate a second time with `(x, idx, list)`; `compose()` with no
+    functions returns `undefined`; `allPredicates`/`anyPredicates` share one
+    implementation; `max`/`min` fold with `Math.max`/`Math.min`.
+- **Ramdaf:**
+  - Removed `cloneDeep` (Core), `foldl1` and `foldr1` (List), with their
+    "Outside the modeled domain" rows and `cloneDeep`'s deviation.
+  - Added `constant` (Functions), `keysIn`/`valuesIn` (Object; a map has no
+    prototype, so they are `keys`/`values`) and `uniqWith` (List; it keeps
+    the last representative, the recursion the Data `*With` functions already
+    carry).
+  - `groupBy` (Data) is now `List.partition(fn, list)`; its results are
+    unchanged.
+  - `findIndex`/`findLastIndex` return `int`, `-1` on a miss.
+  - `maxWith`/`minWith` take `keyFn: T -> int` (int keys, as for `sortBy`).
+  - `zip`/`zipWith` drop their `|a| <= |b|` precondition and stop at the
+    shorter list.
+  - The `_slice` behaviour is reproduced: `takeWhile` returns the whole list
+    when the first element fails; `splice` follows `_slice`, with
+    `0 <= start <= |list|` and `0 <= start + len <= |list|` required;
+    `skip`/`drop` require `n <= |list|`; `repeatN` takes `n: nat`.
+  - "Not portable" gains `unary`, `binary`, `path`, `pathOn` and `pathWith`.
+  - New deviation: `sum` and `product` keep no state between calls.
+  - Tests: the v0.2.0 changes to test.always.js (`constant`), test.clone.js
+    (`cloneDeep` gone), test.core.js (array elements in `prepend`/`append`),
+    test.filter.js (`takeWhile`/`skipUntil` with `undefined`), test.find.js
+    (`-1`, the new `findLast` describe), test.keysvals.js (`keysIn`,
+    `valuesIn`; the prototype cases cannot be written), test.math.js
+    (`maxWith`/`minWith` by key) and test.zip.js (the shorter list); the
+    path describes and test.functionBasics.js's `unary`/`binary` test
+    unportable functions. Edge cases cover the `_slice` behaviour,
+    `uniqWith`, `maxWith`/`minWith` and `zip`.
+- **Expected tier: major.** `cloneDeep`, `foldl1` and `foldr1` were removed;
+  `findIndex`, `findLastIndex`, `maxWith`, `minWith` and `repeatN` changed
+  signature; `takeWhile` and `splice` changed results; `skip`, `drop` and
+  `splice` gained preconditions (`casestudy/expected/v0.2.0.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

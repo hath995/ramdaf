@@ -1,11 +1,13 @@
-// Ramdaf: Ramda v0.1.5 "Data Analysis and Grouping Functions" (ramda.js lines
-// 1356-1459), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy).
+// Ramdaf: Ramda v0.2.0 "Data Analysis and Grouping Functions" (ramda.js lines
+// 1764-1909), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy), and
+// `groupBy`, which v0.2.0 defines in "List Functions" as an alias of
+// `partition` but which stays here (functions do not move between modules).
 //
-// Ramda's `uniqWith` is internal in v0.1.5 (not on `R`; `containsWith` is
-// exported from v0.1.5, in List), so the `*With` functions below carry their
-// own recursion: each is
+// The `*With` functions below carry their own recursion: each is
 // `uniqWith(pred, ...)` unrolled, where `uniqWith` scans from the right and
-// drops x when `pred(x, y)` holds for an element y it already kept.
+// drops x when `pred(x, y)` holds for an element y it already kept. Ramda
+// exports `uniqWith` from v0.2.0 (List.uniqWith, the same recursion); before
+// that it was internal.
 
 module Ramdaf.Data {
   import opened Prelude
@@ -95,10 +97,12 @@ module Ramdaf.Data {
   { var keys := set i | 0 <= i < |list| :: fn(list[i]);
     map k | k in keys :: |List.filter(x => fn(x) == k, list)| }
 
-  // For each key fn produces, the elements that produce it, in list order.
+  // v0.2.0: `aliasFor("partition").is("groupBy")`. partition groups by the
+  // string key fn returns, exactly as groupBy did, so the results are
+  // unchanged: for each key fn produces, the elements that produce it, in
+  // list order.
   function groupBy<T>(fn: T -> string, list: seq<T>): map<string, seq<T>>
-  { var keys := set i | 0 <= i < |list| :: fn(list[i]);
-    map k | k in keys :: List.filter(x => fn(x) == k, list) }
+  { List.partition(fn, list) }
 
   // `useWith(map, pickAll, identity)`: `map(pickAll(names), list)`.
   function project<V>(names: seq<string>, list: seq<map<string, V>>): seq<map<string, Option<V>>>

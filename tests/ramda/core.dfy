@@ -1,14 +1,15 @@
-// Ramda v0.1.5 test/test.core.js and test/test.clone.js, transcribed. Not
+// Ramda v0.2.0 test/test.core.js and test/test.clone.js, transcribed. Not
 // transcribed: describe('isAtom') (not portable, README); head's and last's
 // "returns undefined for an empty list" and "for no arguments" (the empty list
 // is outside their domain, README "Outside the modeled domain"); tail's
 // "returns an empty list for no arguments" (no-argument call of a list
-// function); cloneDeep's "does not copy objects in the array by reference"
-// (asserts reference inequality, which Dafny values do not have).
+// function). (v0.2.0 removed test.clone.js's describe('cloneDeep') with the
+// function.) The lists that mix strings and arrays are lists of Js values.
 
 module RamdafTests.Ramda.Core {
   import opened Ramdaf.Core
   import opened Ramdaf.Sort
+  import opened Support
 
   // describe('isEmpty')
   method {:test} IsEmptyTrueForEmptyList() {
@@ -23,11 +24,17 @@ module RamdafTests.Ramda.Core {
   // describe('prepend')
   method {:test} PrependAddsToTheBeginning() {
     expect prepend("x", ["y", "z"]) == ["x", "y", "z"];
+    // v0.2.0: an array element is prepended as one element
+    var az := Arr([Str("a"), Str("z")]);
+    expect prepend(az, [Str("x"), Str("y")]) == [az, Str("x"), Str("y")];
   }
 
   // describe('append')
   method {:test} AppendAddsToTheEnd() {
     expect append("z", ["x", "y"]) == ["x", "y", "z"];
+    // v0.2.0: an array element is appended as one element
+    var az := Arr([Str("a"), Str("z")]);
+    expect append(az, [Str("x"), Str("y")]) == [Str("x"), Str("y"), az];
   }
 
   // describe('merge')
@@ -99,10 +106,5 @@ module RamdafTests.Ramda.Core {
     var o1, o2, o3 := map["x" := 1], map["x" := 2], map["x" := 3];
     var c := clone([o1, o2, o3]);
     expect c[0] == o1;
-  }
-
-  // describe('cloneDeep')
-  method {:test} CloneDeepReturnsACopyOfAnArray() {
-    expect cloneDeep([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5];
   }
 }

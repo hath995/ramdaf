@@ -1,13 +1,13 @@
-// Ramdaf: Ramda v0.1.5 "Object Functions" (ramda.js lines 938-1088) and `propEq`
-// (line 1385). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.2.0 "Object Functions" (ramda.js lines 1208-1432) and `propEq`
+// (line 1793). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None.
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, get, props, keys, values, pick, pickAll, omit, mixin, eqProps,
-            where, propEq
+    reveals eq, prop, get, props, keys, keysIn, values, valuesIn, pick, pickAll, omit,
+            mixin, eqProps, where, propEq
     provides Prelude
 
   // `a === b`. Dafny equality is structural where JS compares objects and
@@ -25,6 +25,11 @@ module Ramdaf.Object {
   // The own enumerable property names. JS returns them in insertion order;
   // a Dafny map has no order, so the result is a set.
   function keys<V>(obj: map<string, V>): set<string> { obj.Keys }
+
+  // v0.2.0: `for (prop in obj) ks.push(prop)`, every enumerable property name
+  // including inherited ones. A map is a plain object with no prototype
+  // chain, so these are its keys.
+  function keysIn<V>(obj: map<string, V>): set<string> { keys(obj) }
 
   // The own enumerable property values, one per key (so duplicates are kept).
   // JS returns them in key order; the result is a multiset.
@@ -53,6 +58,10 @@ module Ramdaf.Object {
     assert rest == map[];
     return acc;
   }
+
+  // v0.2.0: `for (prop in obj) vs.push(obj[prop])`, every enumerable
+  // property value including inherited ones; for a map, its values.
+  function valuesIn<V(==)>(obj: map<string, V>): multiset<V> { values(obj) }
 
   // values does not depend on which key it removes first.
   lemma ValuesRemove<V>(obj: map<string, V>, k: string)

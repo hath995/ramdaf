@@ -1,9 +1,8 @@
-// Ramda v0.1.5 test/test.fold.js, transcribed. Not transcribed: the "should
+// Ramda v0.2.0 test/test.fold.js, transcribed. Not transcribed: the "should
 // correctly report the arity of curried versions" cases (Dafny functions have
 // no arity), and foldl.idx's "works just like normal foldl" and "passes the
 // entire list as a fourth parameter" (both have empty bodies in Ramda).
-// v0.1.1 dropped the foldl1 and foldr1 describes; their node-checked cases are
-// in tests/edge/list.dfy.
+// v0.1.1 dropped the foldl1 and foldr1 describes, and v0.2.0 the functions.
 
 module RamdafTests.Ramda.Fold {
   import opened Ramdaf.List

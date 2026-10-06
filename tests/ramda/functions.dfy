@@ -1,8 +1,10 @@
-// Ramda v0.1.5 test/test.always.js, test/test.compose.js and
+// Ramda v0.2.0 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
 // single-function compose/pipe (the port is binary); use/useWith, once,
-// memoize and construct (not portable, README); test.each.js,
+// memoize, construct, and v0.2.0's unary and binary (not portable, README);
+// test.objectBasics.js's path describes are in tests/ramda/object.dfy's
+// header; test.each.js,
 // test.maybe.js, test.partial.js, test.wrap.js and test.expose.js test
 // functions that are not portable. (v0.1.3 moved test.lazy.js out of test/.)
 
@@ -24,6 +26,12 @@ module RamdafTests.Ramda.Functions {
     expect always(map["a" := 1, "b" := 2])(()) == map["a" := 1, "b" := 2];
     var obj := map["a" := 1, "b" := 2];
     expect always(obj)(()) == obj;
+  }
+  // v0.2.0: "should be aliased by `constant`" asserts `constant === always`;
+  // Dafny functions have no identity, so the alias is compared by its results.
+  method {:test} AlwaysIsAliasedByConstant() {
+    expect constant(42)(()) == always(42)(());
+    expect constant("abc")(10) == always("abc")(10);
   }
 
   // describe('alwaysZero'), describe('alwaysFalse'), describe('alwaysTrue')

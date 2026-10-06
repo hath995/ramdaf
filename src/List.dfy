@@ -1,15 +1,15 @@
-// Ramdaf: Ramda v0.1.5 "List Functions" (ramda.js lines 431-892), except
+// Ramdaf: Ramda v0.2.0 "List Functions" (ramda.js lines 533-1156), except
 // `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
 
 module Ramdaf.List {
   import opened Prelude
 
   export
-    reveals foldl, reduce, foldlIdx, reduceIdx, foldl1, foldr, reduceRight, foldrIdx,
-            reduceRightIdx, foldr1, unfoldr, mapSeq, mapIdx, mapObj, filter, filterIdx,
+    reveals foldl, reduce, foldlIdx, reduceIdx, foldr, reduceRight, foldrIdx,
+            reduceRightIdx, unfoldr, mapSeq, mapIdx, mapObj, filter, filterIdx,
             reject, rejectIdx, takeWhile, take, skipUntil, skip, drop, find,
             findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith,
-            uniq, isSet, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
+            uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
             range, indexOf, lastIndexOf, join, slice, sliceFrom, splice, nth, partition
     provides Prelude
 
@@ -29,11 +29,6 @@ module Ramdaf.List {
   { foldl((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
   function reduceIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A { foldlIdx(fn, acc, list) }
 
-  // `foldl(fn, head(list), tail(list))`; JS throws on the empty list.
-  function foldl1<A>(fn: (A, A) -> A, list: seq<A>): A
-    requires |list| > 0
-  { foldl(fn, list[0], list[1..]) }
-
   // `acc = fn(acc, list[idx])` for idx descending: since v0.1.1 the
   // accumulator comes first, as in foldl, and the fold runs from the right, so
   // foldr(fn, acc, [x0, ..., xn]) is fn(... fn(fn(acc, xn), xn-1) ..., x0).
@@ -51,12 +46,6 @@ module Ramdaf.List {
     ensures |list| == 0 ==> foldrIdx(fn, acc, list) == acc
   { foldr((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
   function reduceRightIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A { foldrIdx(fn, acc, list) }
-
-  // The last element seeds foldr over the rest, so (accumulator first)
-  // foldr1(fn, [x0, x1, x2]) is fn(fn(x2, x1), x0); JS throws on the empty list.
-  function foldr1<A>(fn: (A, A) -> A, list: seq<A>): A
-    requires |list| > 0
-  { foldr(fn, list[|list| - 1], list[..|list| - 1]) }
 
   // JS loops until `fn` returns a falsy value (None here), possibly forever;
   // Dafny functions must terminate, so at most `fuel` elements are produced.
@@ -160,12 +149,20 @@ module Ramdaf.List {
     }
     r }
 
-  // The longest prefix whose elements all satisfy fn.
+  // `while (++idx < len && fn(list[idx])) {}; return _slice(list, 0, idx);`
+  // (v0.2.0): the longest prefix whose elements all satisfy fn, except that
+  // `_slice` reads an end index of 0 as "the end" (`to || args.length`), so
+  // when the first element fails fn the WHOLE list comes back
+  // (`takeWhile(x => x > 5, [1, 2, 3])` is `[1, 2, 3]`). The body finds the
+  // first failing index with findIndex (-1 when every element passes).
   function takeWhile<T>(fn: T -> bool, list: seq<T>): seq<T>
-    ensures takeWhile(fn, list) <= list
-    ensures forall i :: 0 <= i < |takeWhile(fn, list)| ==> fn(list[i])
-    ensures |takeWhile(fn, list)| < |list| ==> !fn(list[|takeWhile(fn, list)|])
-  { if |list| == 0 || !fn(list[0]) then [] else [list[0]] + takeWhile(fn, list[1..]) }
+    ensures |list| > 0 && !fn(list[0]) ==> takeWhile(fn, list) == list
+    ensures !(|list| > 0 && !fn(list[0])) ==>
+      takeWhile(fn, list) <= list &&
+      (forall i :: 0 <= i < |takeWhile(fn, list)| ==> fn(list[i])) &&
+      (|takeWhile(fn, list)| < |list| ==> !fn(list[|takeWhile(fn, list)|]))
+  { var i := findIndex(x => !fn(x), list);
+    if i <= 0 then list else list[..i] }
 
   // A copy of the list with its length set to `Math.min(n, list.length)`
   // (v0.1.5; before, `take(5, [1, 2])` had three undefined slots): the first
@@ -184,11 +181,18 @@ module Ramdaf.List {
     ensures |skipUntil(fn, list)| > 0 ==> fn(skipUntil(fn, list)[0])
   { if |list| == 0 || fn(list[0]) then list else skipUntil(fn, list[1..]) }
 
-  // All but the first n elements (none when n >= |list|). A negative n gives
-  // JS garbage (`skip(-1, [1, 2])` is `[undefined, 1, 2]`), so n is a nat.
+  // `_slice(list, n)`: all but the first n elements. Since v0.2.0 `_slice`
+  // allocates `new Array(list.length - n)`, which throws RangeError when
+  // n > |list| (`skip(5, [1, 2])`; it was [] before), so n is at most |list|.
+  // A negative n gives JS garbage (`skip(-1, [1, 2])` is
+  // `[undefined, 1, 2]`), so n is a nat.
   function skip<T>(n: nat, list: seq<T>): seq<T>
-  { if n >= |list| then [] else list[n..] }
-  function drop<T>(n: nat, list: seq<T>): seq<T> { skip(n, list) }
+    requires n <= |list|
+    ensures skip(n, list) == list[n..]
+  { list[n..] }
+  function drop<T>(n: nat, list: seq<T>): seq<T>
+    requires n <= |list|
+  { skip(n, list) }
 
   // The first element satisfying fn; JS returns undefined when none does.
   function find<T>(fn: T -> bool, list: seq<T>): Option<T>
@@ -197,17 +201,17 @@ module Ramdaf.List {
     else if fn(list[0]) then Some(list[0])
     else find(fn, list[1..]) }
 
-  // The index of the first element satisfying fn; undefined when none does.
-  function findIndex<T>(fn: T -> bool, list: seq<T>): Option<nat>
-    ensures findIndex(fn, list).Some? ==>
-      findIndex(fn, list).value < |list| && fn(list[findIndex(fn, list).value]) &&
-      forall j :: 0 <= j < findIndex(fn, list).value ==> !fn(list[j])
-    ensures findIndex(fn, list).None? <==> forall j :: 0 <= j < |list| ==> !fn(list[j])
-  { if |list| == 0 then None
-    else if fn(list[0]) then Some(0)
-    else match findIndex(fn, list[1..])
-      case None => None
-      case Some(j) => Some(j + 1) }
+  // The index of the first element satisfying fn, or -1 when none does
+  // (v0.2.0; it was undefined, here None, before).
+  function findIndex<T>(fn: T -> bool, list: seq<T>): int
+    ensures -1 <= findIndex(fn, list) < |list|
+    ensures findIndex(fn, list) >= 0 ==>
+      fn(list[findIndex(fn, list)]) && forall j :: 0 <= j < findIndex(fn, list) ==> !fn(list[j])
+    ensures findIndex(fn, list) == -1 <==> forall j :: 0 <= j < |list| ==> !fn(list[j])
+  { if |list| == 0 then -1
+    else if fn(list[0]) then 0
+    else var r := findIndex(fn, list[1..]);
+         if r == -1 then -1 else r + 1 }
 
   // `var idx = list.length; while (--idx) { if (fn(list[idx])) return list[idx]; }`.
   // The loop stops when idx reaches 0, so the first element is never tested
@@ -227,16 +231,18 @@ module Ramdaf.List {
          assert forall j :: 1 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
          r }
 
-  // As findLast, returning the index: list index 0 is never tested, and the
-  // empty list is excluded.
-  function findLastIndex<T>(fn: T -> bool, list: seq<T>): Option<nat>
+  // As findLast, returning the index, or -1 when no tested element satisfies
+  // fn (v0.2.0; it was undefined, here None, before): list index 0 is never
+  // tested, and the empty list is excluded.
+  function findLastIndex<T>(fn: T -> bool, list: seq<T>): int
     requires |list| > 0
-    ensures findLastIndex(fn, list).Some? ==>
-      1 <= findLastIndex(fn, list).value < |list| && fn(list[findLastIndex(fn, list).value]) &&
-      forall j :: findLastIndex(fn, list).value < j < |list| ==> !fn(list[j])
-    ensures findLastIndex(fn, list).None? <==> forall j :: 1 <= j < |list| ==> !fn(list[j])
-  { if |list| == 1 then None
-    else if fn(list[|list| - 1]) then Some(|list| - 1)
+    ensures findLastIndex(fn, list) == -1 || 1 <= findLastIndex(fn, list) < |list|
+    ensures findLastIndex(fn, list) >= 1 ==>
+      fn(list[findLastIndex(fn, list)]) &&
+      forall j :: findLastIndex(fn, list) < j < |list| ==> !fn(list[j])
+    ensures findLastIndex(fn, list) == -1 <==> forall j :: 1 <= j < |list| ==> !fn(list[j])
+  { if |list| == 1 then -1
+    else if fn(list[|list| - 1]) then |list| - 1
     else var r := findLastIndex(fn, list[..|list| - 1]);
          assert forall j :: 1 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
          r }
@@ -304,6 +310,32 @@ module Ramdaf.List {
   function isSet<T(==)>(list: seq<T>): bool
   { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
 
+  // `foldr(function(acc, x) { return containsWith(pred, x, acc) ? acc : prepend(x, acc); }, EMPTY, list)`
+  // (exported since v0.2.0): scanning from the right, x is dropped when
+  // `pred(x, y)` holds for an element y already kept, so each class keeps its
+  // LAST representative (`uniqWith((a, b) => a % 3 == b % 3, [1, 2, 3, 4])`
+  // is `[2, 3, 4]`).
+  function uniqWith<T>(pred: (T, T) -> bool, list: seq<T>): seq<T>
+    ensures |list| == 0 ==> uniqWith(pred, list) == []
+    ensures |list| > 0 ==>
+      uniqWith(pred, list) ==
+        (if containsWith(pred, list[0], uniqWith(pred, list[1..])) then uniqWith(pred, list[1..])
+         else [list[0]] + uniqWith(pred, list[1..]))
+    ensures forall i :: 0 <= i < |uniqWith(pred, list)| ==> uniqWith(pred, list)[i] in list
+    ensures forall i, j :: 0 <= i < j < |uniqWith(pred, list)| ==>
+      !pred(uniqWith(pred, list)[i], uniqWith(pred, list)[j])
+    ensures forall x | x in list ::
+      x in uniqWith(pred, list) ||
+      exists j :: 0 <= j < |uniqWith(pred, list)| && pred(x, uniqWith(pred, list)[j])
+  { if |list| == 0 then []
+    else var acc := uniqWith(pred, list[1..]);
+         assert forall x | x in list :: x == list[0] || x in list[1..];
+         if containsWith(pred, list[0], acc) then acc
+         else var r := [list[0]] + acc;
+              assert forall j :: 0 <= j < |acc| ==> r[j + 1] == acc[j];
+              assert forall x | x in acc :: x in r;
+              r }
+
   // `map(prop(p), list)`: a missing property is JS undefined, here None.
   function pluck<V>(p: string, list: seq<map<string, V>>): seq<Option<V>>
     ensures |pluck(p, list)| == |list|
@@ -314,19 +346,20 @@ module Ramdaf.List {
   { if |list| == 0 then []
     else (match list[0] case Leaf(v) => [v] case Node(c) => flatten(c)) + flatten(list[1..]) }
 
-  // `rv[i] = fn(a[i], b[i])` for i < a.length. JS reads `undefined` past the end
-  // of b, which seq<C> cannot hold, so b must be at least as long as a.
+  // `rv[i] = fn(a[i], b[i])` for i below `Math.min(a.length, b.length)`
+  // (v0.2.0; before, i ran to a.length and read `undefined` past the end of
+  // b, so b had to be at least as long as a).
   function zipWith<A, B, C>(fn: (A, B) -> C, a: seq<A>, b: seq<B>): seq<C>
-    requires |a| <= |b|
-    ensures |zipWith(fn, a, b)| == |a|
-    ensures forall i :: 0 <= i < |a| ==> zipWith(fn, a, b)[i] == fn(a[i], b[i])
-  { seq(|a|, i requires 0 <= i < |a| => fn(a[i], b[i])) }
+    ensures |zipWith(fn, a, b)| == if |a| <= |b| then |a| else |b|
+    ensures forall i :: 0 <= i < |zipWith(fn, a, b)| ==> zipWith(fn, a, b)[i] == fn(a[i], b[i])
+  { var n := if |a| <= |b| then |a| else |b|;
+    seq(n, i requires 0 <= i < n => fn(a[i], b[i])) }
 
   function zip<A, B>(a: seq<A>, b: seq<B>): seq<(A, B)>
-    requires |a| <= |b|
-    ensures |zip(a, b)| == |a|
-    ensures forall i :: 0 <= i < |a| ==> zip(a, b)[i] == (a[i], b[i])
-  { seq(|a|, i requires 0 <= i < |a| => (a[i], b[i])) }
+    ensures |zip(a, b)| == if |a| <= |b| then |a| else |b|
+    ensures forall i :: 0 <= i < |zip(a, b)| ==> zip(a, b)[i] == (a[i], b[i])
+  { var n := if |a| <= |b| then |a| else |b|;
+    seq(n, i requires 0 <= i < n => (a[i], b[i])) }
 
   // Every pair, the first list's index outermost.
   function xprodWith<A, B, C>(fn: (A, B) -> C, a: seq<A>, b: seq<B>): seq<C>
@@ -397,15 +430,21 @@ module Ramdaf.List {
     ensures sliceFrom(from, list) == slice(from, |list|, list)
   { slice(from, |list|, list) }
 
-  // A copy of the list with `Array.prototype.splice(start, len)` applied: a
-  // negative start counts from the end, and both are clamped into the list.
+  // `_slice(list, 0, start).concat(_slice(list, start + len))` (v0.2.0; it
+  // was a copy with `Array.prototype.splice(start, len)` applied).
+  // `_slice(args, from, to)` copies args[from..to) into `new Array(to - from)`,
+  // reading `from || 0` and `to || args.length`, so:
+  // - start == 0 reads as "to the end", and the first part is the whole list
+  //   (`splice(0, 2, [1, 2, 3, 4, 5])` is `[1, 2, 3, 4, 5, 3, 4, 5]`);
+  // - a negative start, or start + len > |list|, makes a negative length,
+  //   which throws RangeError;
+  // - start > |list| or start + len < 0 reads past an end (undefined holes).
+  // So 0 <= start <= |list| and 0 <= start + len <= |list|.
   function splice<T>(start: int, len: int, list: seq<T>): seq<T>
-    ensures |splice(start, len, list)| <= |list|
-  { var n := |list|;
-    var from := if start < 0 then (if n + start < 0 then 0 else n + start)
-                else if start > n then n else start;
-    var count := if len < 0 then 0 else if len > n - from then n - from else len;
-    list[..from] + list[from + count..] }
+    requires 0 <= start <= |list|
+    requires 0 <= start + len <= |list|
+    ensures splice(start, len, list) == (if start == 0 then list else list[..start]) + list[start + len..]
+  { (if start == 0 then list else list[..start]) + list[start + len..] }
 
   // `list[n]`: undefined (None) out of range.
   function nth<T>(n: int, list: seq<T>): Option<T>
