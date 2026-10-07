@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.4.1's own suite does not cover, each checked against
-// ramda.js v0.4.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.4.2's own suite does not cover, each checked against
+// ramda.js v0.4.2 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -63,20 +63,27 @@ module RamdafTests.Edge.List {
     expect rejectIdx((x: int, i: nat, l: seq<int>) => true, empty) == [];
   }
 
-  // findLast/findLastIndex never test index 0 (the `while (--idx)` loop);
-  // since v0.2.0 findIndex and findLastIndex return -1 on a miss.
+  // Since v0.4.2 findLast/findLastIndex test index 0 and end on the empty
+  // list (the `while (idx--)` loop; until v0.4.1 `while (--idx)` skipped
+  // index 0); since v0.2.0 findIndex and findLastIndex return -1 on a miss.
   method {:test} FindFamilyEdges() {
     var empty: seq<int> := [];
     expect findIndex((x: int) => true, empty) == -1;
     expect findIndex((x: int) => x > 1, [1, 2, 3]) == 1;
     expect findIndex((x: int) => x > 9, [1, 2, 3]) == -1;
-    expect findLastIndex((x: int) => x == 1, [1, 2, 3]) == -1;
+    expect findLastIndex((x: int) => x == 1, [1, 2, 3]) == 0;
     expect findLastIndex((x: int) => x > 1, [1, 2, 3]) == 2;
-    expect findLastIndex((x: int) => true, [5]) == -1;
-    expect findLast((x: int) => x == 1, [1, 2, 3]) == None;
+    expect findLastIndex((x: int) => true, [5]) == 0;
+    expect findLastIndex((x: int) => x == 9, [9, 1, 9]) == 2;
+    expect findLastIndex((x: int) => x == 9, [9, 1, 2]) == 0;
+    expect findLastIndex((x: int) => false, empty) == -1;
+    expect findLastIndex((x: int) => true, empty) == -1;
+    expect findLast((x: int) => x == 1, [1, 2, 3]) == Some(1);
     expect findLast((x: int) => x < 3, [1, 2, 3]) == Some(2);
-    expect findLast((x: int) => true, [5]) == None;
+    expect findLast((x: int) => true, [5]) == Some(5);
     expect findLast((x: int) => x % 2 == 0, [2, 4, 1]) == Some(4);
+    expect findLast((x: int) => false, empty) == None;
+    expect findLast((x: int) => x > 9, [1, 2]) == None;
   }
 
   // Array.prototype.slice: negative indices count from the end, both are

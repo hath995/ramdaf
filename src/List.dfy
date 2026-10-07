@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.4.1 "List Functions" (ramda.js lines 1479-3206), except
+// Ramdaf: Ramda v0.4.2 "List Functions" (ramda.js lines 1480-3206), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
 // (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
 // `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
@@ -267,38 +267,37 @@ module Ramdaf.List {
     else var r := findIndex(fn, list[1..]);
          if r == -1 then -1 else r + 1 }
 
-  // `var idx = list.length; while (--idx) { if (fn(list[idx])) return list[idx]; }`.
-  // The loop stops when idx reaches 0, so the first element is never tested
-  // (`findLast(fn, [x])` is undefined even when fn(x) holds). On the empty
-  // list idx runs -1, -2, ... and fn(undefined) is called until it is truthy,
-  // which a predicate on T cannot express (it loops forever when it is falsy):
-  // the empty list is excluded.
+  // `var idx = list.length; while (idx--) { if (fn(list[idx])) return list[idx]; }`
+  // (v0.4.2): the last element satisfying fn, or undefined (None) when none
+  // does. Until v0.4.1 the loop was `while (--idx)`, which never tested index
+  // 0 (`findLast(fn, [x])` was undefined even when fn(x) held) and on the
+  // empty list ran idx through -1, -2, ... calling fn(undefined) until it was
+  // truthy, so the empty list was excluded.
   function findLast<T>(fn: T -> bool, list: seq<T>): Option<T>
-    requires |list| > 0
     ensures findLast(fn, list).Some? ==>
-      exists i :: 1 <= i < |list| && list[i] == findLast(fn, list).value && fn(list[i]) &&
+      exists i :: 0 <= i < |list| && list[i] == findLast(fn, list).value && fn(list[i]) &&
                   forall j :: i < j < |list| ==> !fn(list[j])
-    ensures findLast(fn, list).None? <==> forall j :: 1 <= j < |list| ==> !fn(list[j])
-  { if |list| == 1 then None
+    ensures findLast(fn, list).None? <==> forall j :: 0 <= j < |list| ==> !fn(list[j])
+  { if |list| == 0 then None
     else if fn(list[|list| - 1]) then Some(list[|list| - 1])
     else var r := findLast(fn, list[..|list| - 1]);
-         assert forall j :: 1 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
+         assert forall j :: 0 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
          r }
 
-  // As findLast, returning the index, or -1 when no tested element satisfies
-  // fn (v0.2.0; it was undefined, here None, before): list index 0 is never
-  // tested, and the empty list is excluded.
+  // As findLast, returning the index, or -1 when no element satisfies fn
+  // (v0.2.0; it was undefined, here None, before). Since v0.4.2 index 0 is
+  // tested and the empty list gives -1 (until v0.4.1 neither held, and the
+  // empty list was excluded).
   function findLastIndex<T>(fn: T -> bool, list: seq<T>): int
-    requires |list| > 0
-    ensures findLastIndex(fn, list) == -1 || 1 <= findLastIndex(fn, list) < |list|
-    ensures findLastIndex(fn, list) >= 1 ==>
+    ensures -1 <= findLastIndex(fn, list) < |list|
+    ensures findLastIndex(fn, list) >= 0 ==>
       fn(list[findLastIndex(fn, list)]) &&
       forall j :: findLastIndex(fn, list) < j < |list| ==> !fn(list[j])
-    ensures findLastIndex(fn, list) == -1 <==> forall j :: 1 <= j < |list| ==> !fn(list[j])
-  { if |list| == 1 then -1
+    ensures findLastIndex(fn, list) == -1 <==> forall j :: 0 <= j < |list| ==> !fn(list[j])
+  { if |list| == 0 then -1
     else if fn(list[|list| - 1]) then |list| - 1
     else var r := findLastIndex(fn, list[..|list| - 1]);
-         assert forall j :: 1 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
+         assert forall j :: 0 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
          r }
 
   // v0.4.1 renames `all` to `every` (`R.every = curry2(every)`; `every` was

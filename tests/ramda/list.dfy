@@ -1,4 +1,4 @@
-// Ramda v0.4.1 test/test.list.js, test/test.indexof.js,
+// Ramda v0.4.2 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js,
@@ -447,6 +447,17 @@ module RamdafTests.Ramda.List {
     expect findLast(Even, Zing()) == None;
   }
 
+  // v0.4.2
+  method {:test} FindLastWorksWhenTheFirstElementMatches() {
+    expect findLast(Even, [Num(2), Num(3), Num(5)]) == Some(Num(2));
+  }
+
+  // v0.4.2
+  method {:test} FindLastDoesNotGoIntoAnInfiniteLoopOnAnEmptyArray() {
+    var none: seq<Js> := [];
+    expect findLast(Even, none) == None;
+  }
+
   // describe('findLastIndex') (the v0.1.5 suite tested it under
   // describe('findLast'))
   method {:test} FindLastIndexReturnsTheIndexOfTheLastElementThatSatisfiesThePredicate() {
@@ -458,6 +469,17 @@ module RamdafTests.Ramda.List {
 
   method {:test} FindLastIndexReturnsMinusOneWhenNoElementSatisfiesThePredicate() {
     expect findLastIndex(Even, Zing()) == -1;
+  }
+
+  // v0.4.2
+  method {:test} FindLastIndexWorksWhenTheFirstElementMatches() {
+    expect findLastIndex(Even, [Num(2), Num(3), Num(5)]) == 0;
+  }
+
+  // v0.4.2
+  method {:test} FindLastIndexDoesNotGoIntoAnInfiniteLoopOnAnEmptyArray() {
+    var none: seq<Js> := [];
+    expect findLastIndex(Even, none) == -1;
   }
 
   // ---- test.flatten.js ----

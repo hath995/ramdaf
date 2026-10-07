@@ -111,12 +111,12 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.4.1)
+## Modules and exports (v0.4.2)
 
 | Module | Exports |
 |---|---|
 | `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, last, tail, cdr, append, push, concat, identity, I, times, repeatN, size, length |
-| `Ramdaf.Functions` | compose, pipe, flip, fork, always, alwaysZero, alwaysFalse, alwaysTrue |
+| `Ramdaf.Functions` | compose, pipe, flip, converge, always, alwaysZero, alwaysFalse, alwaysTrue |
 | `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, mapObjIdx (`mapObj.idx`), filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, find, findIndex, findLast, findLastIndex, every, some, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, indexOfFrom (`indexOf.from`), lastIndexOf, lastIndexOfFrom (`lastIndexOf.from`), join, slice, sliceFrom (`slice.from`), remove, insert, insertAll (`insert.all`), partition, ap, of, empty, chain, unnest, zipObj, fromPairs |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | eq, prop, get, props, propOrDefault, keys, keysIn, toPairs, toPairsIn, values, valuesIn, pick, pickAll, omit, pickWith, mixin, eqProps, where, propEq |
@@ -125,7 +125,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 137 of Ramda v0.4.1's 162 export names, plus 12 of the 13 functions
+That is 137 of Ramda v0.4.2's 162 export names, plus 12 of the 13 functions
 stored as properties of exports (`map.idx` and the like). The other 25 names
 and the property `forEach.idx` are listed under "Not portable".
 
@@ -143,7 +143,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.4.1 does not export `keyValue`, nor the helpers `isArrayLike`,
+Ramda v0.4.2 does not export `keyValue`, nor the helpers `isArrayLike`,
 `makeFlat`, `checkForMethod` and `isInteger` (v0.3.0) or `pairWith` and
 `functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); they are local to `ramda.js`, and Ramdaf does
@@ -155,7 +155,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.4.1 exports are not ported, rather than faked:
+These Ramda v0.4.2 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -178,7 +178,7 @@ These Ramda v0.4.1 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.4.1 (node) | Ramdaf |
+| Function | Ramda v0.4.2 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
 | `take` | `take(-1, l)` throws `RangeError`. (Before v0.1.5, `take(5, [1, 2])` → `[1, 2, <3 empty items>]`, and Ramdaf required `n <= \|list\|`; v0.1.5 clamps to `[1, 2]`.) | `n: nat` |
@@ -189,8 +189,7 @@ These Ramda v0.4.1 exports are not ported, rather than faked:
 | `max`, `min` | `max([])` → `-Infinity`, `min([])` → `Infinity` | `requires \|list\| > 0` |
 | `divide`, `divideBy` | `divide(1, 0)` → `Infinity` | `requires` a nonzero divisor |
 | `modulo`, `moduloBy` | `modulo(1, 0)` → `NaN` | `requires` a nonzero divisor |
-| `mathMod` | (v0.3.0) `NaN` unless m is an integer of at least 1 and p an integer: the code tests the dividend, though its documentation names the modulus, so `mathMod(-17, 5)` and `mathMod(0, 5)` → `NaN` (and `mathMod(17, -5)` → `-3`); `mathMod(17, 0)` → `NaN` | `requires 1 <= m`, `requires p != 0` |
-| `findLast`, `findLastIndex` | on `[]` the `while (--idx)` loop runs idx through -1, -2, … calling `fn(undefined)` until it is truthy (forever for `x => false`; `findLastIndex(x => x === undefined, [])` → `-1`) | `requires \|list\| > 0` |
+| `mathMod` | (v0.4.2) `NaN` unless m and p are integers and p is at least 1: `mathMod(17, -5)` and `mathMod(17, 0)` → `NaN`. (v0.3.0 to v0.4.1 tested the dividend instead, against the documentation: `mathMod(-17, 5)` and `mathMod(0, 5)` were `NaN` and `mathMod(17, -5)` was `-3`, and Ramdaf required `1 <= m` and `p != 0`.) | `requires p >= 1` |
 | `zipObj` | (v0.3.0) a key without a value gets `undefined` and is still an own property: `zipObj(['a', 'b'], [1])` → `{a: 1, b: undefined}`, whose `Object.keys` are `['a', 'b']` (Ramda's test "extra keys are undefined") | `requires \|keys\| <= \|values\|` |
 | `fromPairs` | (v0.3.0) an element that is not an array, or is empty, is skipped (`fromPairs([['a', 1], 'x', [], {}])` → `{a: 1}`); a one-element array gives an `undefined` value (`fromPairs([['a']])` → `{a: undefined}`), and elements past the second are ignored | not expressible: the elements are typed pairs `(string, V)` |
 | `where` | a spec or test property whose value is `undefined`: since v0.2.3 `where({x: undefined}, {})` → `true` (it was `false`), `where({x: undefined}, {x: undefined})` → `true`, `where({x: f}, {x: undefined})` calls `f(undefined)`; and `where(spec, null)` → `false` | not expressible: an undefined property is an absent one, and the test object is a `map` |
@@ -201,7 +200,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.4.1 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.4.2 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order | `{"a", "b"}` and `{("a", 2), ("b", 1)}`, sets | A `map` has no key order. |
@@ -209,8 +208,8 @@ a signature (an arity or an operand type) is enforced by the types.
 | `unfoldr` | loops until `fn` returns a falsy value, possibly forever | extra `fuel: nat` parameter; stops after `fuel` elements | Dafny functions must terminate. |
 | `compose`, `pipe` | variadic: `compose(a, b, c, d)` | binary: `compose(a, compose(b, compose(c, d)))`. There is no unary form; `compose(f)` is `f` (since v0.3.0 in node too), and so is `pipe(f)` (since v0.4.0). | Dafny functions have fixed arity. |
 | `always`, `alwaysZero`, `alwaysFalse`, `alwaysTrue` | ignore however many arguments they get | take exactly one argument of any type (`always(7)(())`) | Fixed arity. |
-| `and`, `or`, `not`, `fork` | forward any number of arguments | unary functions (pass a tuple) | Fixed arity. |
-| `fork` | takes any number of functions after `after`: `fork(after, f1, f2, f3)` | exactly two, `fork(after, f1, f2)` | Fixed arity. |
+| `and`, `or`, `not`, `converge` | forward any number of arguments | unary functions (pass a tuple) | Fixed arity. |
+| `converge` (`fork` until v0.4.1) | takes any number of functions after `after`: `converge(after, f1, f2, f3)` (its v0.4.2 documentation names three) | exactly two, `converge(after, f1, f2)` | Fixed arity. |
 | `of` | `of(x, container)` dispatches to `container.of(x)` (Fantasy-land) and ignores any other container: `of(1, [9])` → `[1]` | `of(x)`: no container parameter | Fixed arity; no Dafny value has an `of` method. |
 | `mapIdx`, `filterIdx`, `rejectIdx`, `foldlIdx`/`reduceIdx`, `foldrIdx`/`reduceRightIdx` | call `fn(x, idx, list)` (folds: `fn(acc, x, idx, list)`), and a function that declares fewer parameters ignores the rest: `map.idx(times2, l)` | the callback takes all three (four) | Fixed arity. |
 | `allPredicates`, `anyPredicates` | `allPredicates(preds, v)` applies at once; the result reports the longest predicate's arity | `allPredicates(preds)(v)`; no arity | Fixed arity. |
@@ -262,7 +261,7 @@ prototypes, string-keyed `sortBy`, and the unportable functions' files
 | v0.3.0 | 2014-08-10 | ported | — |
 | v0.4.0 | 2014-08-28 | ported | — |
 | v0.4.1 | 2014-08-31 | ported | — |
-| v0.4.2 | 2014-09-01 | pending | — |
+| v0.4.2 | 2014-09-01 | ported | — |
 | v0.4.3 | 2014-09-01 | pending | — |
 | v0.5.0 | 2014-09-16 | pending | — |
 | v0.6.0 | 2014-10-04 | pending | — |
@@ -879,6 +878,43 @@ prototypes, string-keyed `sortBy`, and the unportable functions' files
   `flattenShallow` were removed; `every`, `some`, `reduceRight`, `foldr`,
   `reduceIdx`, `foldlIdx`, `reduceRightIdx` and `foldrIdx` have rewritten
   revealed bodies with the same results (`casestudy/expected/v0.4.1.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.4.2 (2014-09-01)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node; the rest of
+  the diff is JSDoc, `ramda.` → `R.` in examples):
+  - `fork` is renamed `converge`, with the same code.
+  - `findLast` and `findLastIndex` loop `while (idx--)` instead of
+    `while (--idx)` ("Fix two bugs"): index 0 is tested
+    (`findLast(even, [2, 3, 5])` → `2`, was `undefined`;
+    `findLastIndex(even, [2, 3, 5])` → `0`, was `-1`), and the empty list
+    returns at once (`undefined`, `-1`) where it used to call
+    `fn(undefined)` until it was truthy, possibly forever.
+  - `mathMod` returns `NaN` for a modulus below 1 instead of a dividend
+    below 1 ("Fix a critical bug"): `mathMod(-17, 5)` → `3` (was `NaN`) and
+    `mathMod(17, -5)` → `NaN` (was `-3`); results agree where both versions
+    are defined.
+  - Not visible in this encoding: `_slice` dispatches on its argument count,
+    which changes only non-number counts (`skip(undefined, l)` now throws);
+    `func` renames a parameter; the browser global also gets `R`.
+- **Ramdaf:**
+  - Removed `fork` and added `converge` (Functions) with the same body and
+    the same two deviations.
+  - `findLast` and `findLastIndex` test index 0 and accept the empty list
+    (None, -1); their `|list| > 0` precondition and its "Outside the
+    modeled domain" row are gone.
+  - `mathMod` requires `p >= 1` instead of `1 <= m` and `p != 0`.
+  - Tests: test.compose.js's `converge` (renamed from `fork`), test.find.js's
+    new first-element and empty-list cases, and test.math.js's
+    `mathMod(-17, 5) == 3`. The transcribed "behaves differently than JS
+    modulo" assert moves from `mathMod(17, -5)` (now `NaN`) to
+    `mathMod(-17, 5)` (now defined); the `NaN` and fractional asserts are not
+    transcribable. The find and `mathMod` edge cases follow the new results,
+    and the negative-modulus ones are gone.
+- **Expected tier: major.** `fork` was removed (`converge` added);
+  `findLast`, `findLastIndex` and `mathMod` changed results, and `mathMod`'s
+  precondition moved to the modulus (`casestudy/expected/v0.4.2.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

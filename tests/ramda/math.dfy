@@ -1,10 +1,12 @@
-// Ramda v0.4.1 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.4.2 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). Not
 // transcribed: mathMod's "requires integer arguments" (string and fractional
-// arguments, which give NaN), and the first two asserts of its "behaves
-// differently than JS modulo": `mathMod(-17, 5)` is NaN (a dividend below 1
-// is outside the domain, README), and 17.2 is fractional; v0.4.0's 13
+// arguments, which give NaN); the last two asserts of its "behaves
+// differently than JS modulo" (17.2 is fractional, and since v0.4.2
+// `mathMod(17, -5)` is NaN: a modulus below 1 is outside the domain, README)
+// and the four NaN asserts of v0.4.2's "computes the true modulo function"
+// (`mathMod(17, -5)`, `mathMod(17, 0)` and fractional arguments); v0.4.0's 13
 // "throws if given no arguments" cases (add, multiply, subtract, subtractN,
 // divide, divideBy, modulo, moduloBy, mathMod, lt, lte, gt, gte): no-argument
 // calls.
@@ -71,13 +73,19 @@ module RamdafTests.Ramda.Math {
     expect moduloBy(4, -5) == -1;
   }
 
-  // describe('mathMod') (v0.3.0): the third assert of "behaves differently
-  // than JS modulo" (`17 % -5` is 2, `mathMod(17, -5)` is -3).
+  // describe('mathMod') (v0.3.0): the first assert of "behaves differently
+  // than JS modulo" (`-17 % 5` is -2, `mathMod(-17, 5)` is 3 since v0.4.2;
+  // until v0.4.1 it was NaN, and the port transcribed the third assert,
+  // `mathMod(17, -5)`, which v0.4.2 makes NaN).
   method {:test} MathModBehavesDifferentlyThanJsModulo() {
-    expect mathMod(17, -5) != modulo(17, -5);
+    expect mathMod(-17, 5) != modulo(-17, 5);
+  }
+  // v0.4.2: the first assert of "computes the true modulo function"
+  method {:test} MathModComputesTheTrueModuloFunction() {
+    expect mathMod(-17, 5) == 3;
   }
   method {:test} MathModIsCurried() {
-    var f := (p: int) requires p != 0 => mathMod(29, p);
+    var f := (p: int) requires p >= 1 => mathMod(29, p);
     expect f(6) == 5;
   }
 

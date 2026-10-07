@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.4.1 "Arithmetic Functions" (ramda.js lines 4112-4558).
+// Ramdaf: Ramda v0.4.2 "Arithmetic Functions" (ramda.js lines 4114-4561).
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 
@@ -53,15 +53,14 @@ module Ramdaf.Math {
     requires a != 0
   { modulo(b, a) }
 
-  // `if (!isInteger(m) || m < 1) return NaN; if (!isInteger(p)) return NaN;
-  // return ((m % p) + p) % p;` (v0.3.0), with JS's truncated `%` (modulo
-  // here). The code tests the dividend m, not the modulus its documentation
-  // names: `mathMod(-17, 5)` is NaN (the doc says 3) and `mathMod(17, -5)` is
-  // -3 (the doc says NaN). So m must be at least 1, and p nonzero (`m % 0` is
-  // NaN). `mathMod(10, -5)` is -0 in JS, which `===` equals 0.
+  // `if (!isInteger(m)) return NaN; if (!isInteger(p) || p < 1) return NaN;
+  // return ((m % p) + p) % p;` (v0.4.2, "Fix a critical bug in R.mathMod"),
+  // with JS's truncated `%` (modulo here): for p >= 1 the remainder in
+  // [0, p) (`mathMod(-17, 5)` is 3). A modulus below 1 is NaN, so p must be
+  // at least 1. (v0.3.0 to v0.4.1 tested the dividend instead, requiring
+  // m >= 1 and p != 0: `mathMod(-17, 5)` was NaN and `mathMod(17, -5)` -3.)
   function mathMod(m: int, p: int): int
-    requires 1 <= m
-    requires p != 0
+    requires p >= 1
   { modulo(modulo(m, p) + p, p) }
 
   // `foldl(add, 0)`. (In v0.2.0 and v0.2.1 the partially applied foldl kept

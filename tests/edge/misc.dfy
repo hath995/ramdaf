@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.4.1 under node; the methods named Deviation* pin documented
+// ramda.js v0.4.2 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -129,22 +129,24 @@ module RamdafTests.Edge.Misc {
     expect moduloBy(-3, 7) == 1;
   }
 
-  // mathMod (v0.3.0) is `((m % p) + p) % p` with JS's truncated `%`, for an
-  // integer m >= 1 and a nonzero p. node prints -0 for (10, -5), (1, -1) and
-  // (7, -7), which `===` equals 0.
+  // mathMod is `((m % p) + p) % p` with JS's truncated `%`; since v0.4.2 it
+  // needs an integer p >= 1 (until v0.4.1 an integer m >= 1, so the negative
+  // dividends here were NaN and negative moduli gave values).
   method {:test} MathModEdges() {
     expect mathMod(17, 5) == 2;
-    expect mathMod(17, -5) == -3;
     expect mathMod(29, 6) == 5;
-    expect mathMod(2, -3) == -1;
     expect mathMod(1, 5) == 1;
     expect mathMod(5, 5) == 0;
     expect mathMod(3, 7) == 3;
     expect mathMod(100, 1) == 0;
     expect mathMod(12, 5) == 2;
-    expect mathMod(10, -5) == 0;
-    expect mathMod(1, -1) == 0;
-    expect mathMod(7, -7) == 0;
+    expect mathMod(-17, 5) == 3;
+    expect mathMod(0, 5) == 0;
+    expect mathMod(-1, 1) == 0;
+    expect mathMod(-3, 3) == 0;
+    expect mathMod(-5, 3) == 1;
+    expect mathMod(-6, 4) == 2;
+    expect mathMod(-7, 1) == 0;
   }
 
   // v0.2.2's curry3 starts every call of sum and product afresh (v0.2.0 and
@@ -248,13 +250,14 @@ module RamdafTests.Edge.Misc {
     expect pipe((x: int) => 2 * x, (x: int) => x + 1)(3) == 7;
   }
 
-  // fork applies both functions to the same argument, then combines them.
-  method {:test} ForkEdges() {
-    expect fork((a: int, b: int) => [a, b], (x: int) => x + 1, (x: int) => x * 2)(5) == [6, 10];
-    expect fork((n: int, t: string) => t + NumStr(n), (s: string) => |s|, (s: string) => s + "!")("ab") == "ab!2";
-    // node: fork((x, y) => [x, y], (a, b) => a + b, (a, b) => a * b)(2, 5)
+  // converge (fork until v0.4.1) applies both functions to the same
+  // argument, then combines them.
+  method {:test} ConvergeEdges() {
+    expect converge((a: int, b: int) => [a, b], (x: int) => x + 1, (x: int) => x * 2)(5) == [6, 10];
+    expect converge((n: int, t: string) => t + NumStr(n), (s: string) => |s|, (s: string) => s + "!")("ab") == "ab!2";
+    // node: converge((x, y) => [x, y], (a, b) => a + b, (a, b) => a * b)(2, 5)
     // is [7, 10]; the port's result is unary, so the arguments are a tuple.
-    expect fork((x: int, y: int) => [x, y], (t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1)((2, 5)) == [7, 10];
+    expect converge((x: int, y: int) => [x, y], (t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1)((2, 5)) == [7, 10];
   }
 
   // ---- documented deviations (not node behaviour) ----

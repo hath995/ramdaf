@@ -1,4 +1,4 @@
-// Ramda v0.4.1 test/test.always.js, test/test.compose.js and
+// Ramda v0.4.2 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
 // compose/pipe's "passes context to functions" (`this`, v0.2.3, which also
@@ -86,10 +86,10 @@ module RamdafTests.Ramda.Functions {
     expect pipe(e, pipe(a, pipe(b, c)))((1, 2, 3)) == "3EABC";
   }
 
-  // describe('fork')
-  // `fork(mult, add(1), add(3))(2)`: mult(add1(2), add3(2)) = mult(3, 5)
-  method {:test} ForkPassesTheResultsOfTwoFunctionsIntoAThird() {
-    expect fork((a: int, b: int) => a * b, (x: int) => add(1, x), (x: int) => add(3, x))(2) == 15;
+  // describe('converge') (describe('fork') until v0.4.1)
+  // `converge(mult, add(1), add(3))(2)`: mult(add1(2), add3(2)) = mult(3, 5)
+  method {:test} ConvergePassesTheResultsOfTwoFunctionsIntoAThird() {
+    expect converge((a: int, b: int) => a * b, (x: int) => add(1, x), (x: int) => add(3, x))(2) == 15;
   }
 
   // ---- test.functionBasics.js: describe('flip') ----

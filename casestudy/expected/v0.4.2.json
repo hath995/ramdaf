@@ -1,0 +1,11 @@
+{
+  "ramda": "v0.4.2",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Functions.fork", "kind": "removed", "why": "v0.4.2 renamed fork to converge; R.fork is gone"},
+    {"symbol": "Ramdaf.Functions.converge", "kind": "added", "why": "new name in v0.4.2 for fork, same code: converge(after, f1, f2)(x) == after(f1(x), f2(x))"},
+    {"symbol": "Ramdaf.List.findLast", "kind": "breaking", "why": "v0.4.2 loops while (idx--) instead of while (--idx): index 0 is tested (findLast(even, [2, 3, 5]) went from undefined to 2) and [] now gives undefined, so the |list| > 0 precondition is dropped"},
+    {"symbol": "Ramdaf.List.findLastIndex", "kind": "breaking", "why": "v0.4.2's loop fix: index 0 is tested (findLastIndex(even, [2, 3, 5]) went from -1 to 0) and [] now gives -1, so the |list| > 0 precondition is dropped"},
+    {"symbol": "Ramdaf.Math.mathMod", "kind": "breaking", "why": "v0.4.2 returns NaN for p < 1 instead of m < 1: mathMod(17, -5) went from -3 to NaN (requires p >= 1 replaces requires 1 <= m and p != 0), and mathMod(-17, 5) went from NaN to 3"}
+  ]
+}

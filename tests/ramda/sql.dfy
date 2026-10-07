@@ -1,4 +1,4 @@
-// Ramda v0.4.1 test/test.sql.js, transcribed. Not transcribed:
+// Ramda v0.4.2 test/test.sql.js, transcribed. Not transcribed:
 // - the three "does not work for non-primitives" cases (union/intersection/
 //   difference of distinct-but-equal objects): JS `===` compares references,
 //   Dafny `==` structure (README "Deviations"; pinned in tests/edge/data.dfy);
