@@ -1,90 +1,99 @@
-// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
-// the functions with `@category List` (`repeat`, `init`, `mapAccumL`,
-// `mapAccumR` and the renamed functions below). (v0.4.1 removed the aliases
-// `drop`, `nth`, `flatMap`, `flattenDeep` and `flattenShallow`, and renamed
-// `all`/`any` to their aliases `every`/`some`; v0.8.0 removed `xprodWith`.
-// v0.9.0 removed `reduce` and `reduceRight`, whose aliases `foldl` and
-// `foldr` hold their code now, and `indexOf.from`, `lastIndexOf.from` and
-// `slice.from`; it renamed the `.idx` properties to `*Indexed` functions,
-// `skip` to `drop`, `every`/`some` to `all`/`any` and `insert.all` to
-// `insertAll` (the name the port already used), and replaced `skipUntil`
-// with `dropWhile`.)
+// the functions with `@category List` (`repeat`, `init`, `mapAccum`,
+// `mapAccumRight`, `mergeAll` and the renamed functions below). (v0.4.1
+// removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
+// `flattenShallow`, and renamed `all`/`any` to their aliases `every`/`some`;
+// v0.8.0 removed `xprodWith`. v0.9.0 removed `reduce` and `reduceRight`,
+// whose aliases `foldl` and `foldr` held their code, and `indexOf.from`,
+// `lastIndexOf.from` and `slice.from`; it renamed the `.idx` properties to
+// `*Indexed` functions, `skip` to `drop`, `every`/`some` to `all`/`any` and
+// `insert.all` to `insertAll` (the name the port already used), and replaced
+// `skipUntil` with `dropWhile`. v0.10.0 renamed `foldl`, `foldr`,
+// `foldlIndexed`, `foldrIndexed`, `mapAccumL`, `mapAccumR`, `scanl` and
+// `unfoldr` to `reduce`, `reduceRight`, `reduceIndexed`,
+// `reduceRightIndexed`, `mapAccum`, `mapAccumRight`, `scan` and `unfold`,
+// with the same code.)
 
 module Ramdaf.List {
   import opened Prelude
 
   export
-    reveals foldl, foldlIndexed, foldr, foldrIndexed, unfoldr, mapSeq, mapIndexed,
+    reveals reduce, reduceIndexed, reduceRight, reduceRightIndexed, unfold, mapSeq, mapIndexed,
             mapObj, mapObjIndexed, filter, filterIndexed, reject, rejectIndexed,
             takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex,
             all, any, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten,
             zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice,
             remove, insert, insertAll, partition,
-            ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scanl,
-            createMapEntry, repeat, init, mapAccumL, mapAccumR
+            ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scan,
+            createMapEntry, repeat, init, mapAccum, mapAccumRight, mergeAll
     provides Prelude
 
-  // `_curry3(_foldl)` (`src/foldl.js`), `acc = fn(acc, list[idx])` for idx
-  // ascending. v0.9.0 removed `reduce`, which held the definition from v0.4.0
-  // to v0.8.0 with `foldl` its alias (until v0.3.0 `foldl` held it), so the
-  // body is the recursion again.
-  function foldl<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
+  // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
+  // ascending. v0.10.0 renamed `foldl`, `_curry3(_foldl)` with the same loop,
+  // to `reduce`. (`reduce` held the definition from v0.4.0 to v0.8.0, with
+  // `foldl` its alias, which held it until v0.3.0; v0.9.0 removed `reduce`
+  // and gave `foldl` the code.)
+  function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
-      foldl(fn, acc, list) == fn(foldl(fn, acc, list[..|list| - 1]), list[|list| - 1])
+      reduce(fn, acc, list) == fn(reduce(fn, acc, list[..|list| - 1]), list[|list| - 1])
   { if |list| == 0 then acc
     else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         foldl(fn, fn(acc, list[0]), list[1..]) }
+         reduce(fn, fn(acc, list[0]), list[1..]) }
 
-  // `R.foldlIndexed` (v0.9.0, which renamed `foldl.idx`, the alias of
-  // `reduce.idx` from v0.4.1 to v0.8.0, with the same code):
-  // `acc = fn(acc, list[idx], idx, list)` for idx ascending. The body folds
-  // over (element, index) pairs.
-  function foldlIndexed<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
-    ensures |list| == 0 ==> foldlIndexed(fn, acc, list) == acc
-  { foldl((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
+  // `R.reduceIndexed` (v0.10.0, which renamed `foldlIndexed` with the same
+  // code; v0.9.0 had renamed `foldl.idx`, the alias of `reduce.idx` from
+  // v0.4.1 to v0.8.0, to `foldlIndexed`): `acc = fn(acc, list[idx], idx,
+  // list)` for idx ascending. The body folds over (element, index) pairs.
+  function reduceIndexed<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> reduceIndexed(fn, acc, list) == acc
+  { reduce((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
 
   // `var idx = list.length; while (idx--) { acc = fn(acc, list[idx]); }`
-  // (`src/foldr.js`): `acc = fn(acc, list[idx])` for idx descending. Since
-  // v0.1.1 the accumulator comes first, as in foldl, and the fold runs from
-  // the right, so foldr(fn, acc, [x0, ..., xn]) is
-  // fn(... fn(fn(acc, xn), xn-1) ..., x0). v0.9.0 removed `reduceRight`, which
-  // held the definition from v0.4.1 to v0.8.0 with `foldr` its alias, so the
-  // body is the recursion again (and no longer dispatches to a
-  // `reduceRight` method).
-  function foldr<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
+  // (`src/reduceRight.js`): `acc = fn(acc, list[idx])` for idx descending.
+  // Since v0.1.1 the accumulator comes first, as in reduce, and the fold runs
+  // from the right, so reduceRight(fn, acc, [x0, ..., xn]) is
+  // fn(... fn(fn(acc, xn), xn-1) ..., x0). v0.10.0 renamed `foldr` to
+  // `reduceRight` with the same code. (`reduceRight` held the definition
+  // from v0.4.1 to v0.8.0, with `foldr` its alias; v0.9.0 removed it and gave
+  // `foldr` the code, which no longer dispatches to a `reduceRight` method.)
+  function reduceRight<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
-      foldr(fn, acc, list) == foldr(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
+      reduceRight(fn, acc, list) == reduceRight(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
   { if |list| == 0 then acc
     else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         fn(foldr(fn, acc, list[1..]), list[0]) }
+         fn(reduceRight(fn, acc, list[1..]), list[0]) }
 
-  // `R.foldrIndexed` (v0.9.0, which renamed `foldr.idx`, the alias of
-  // `reduceRight.idx` from v0.4.1 to v0.8.0, with the same code):
-  // `acc = fn(acc, list[idx], idx, list)` for idx descending. The body folds
-  // over (element, index) pairs.
-  function foldrIndexed<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
-    ensures |list| == 0 ==> foldrIndexed(fn, acc, list) == acc
-  { foldr((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
+  // `R.reduceRightIndexed` (v0.10.0, which renamed `foldrIndexed` with the
+  // same code; v0.9.0 had renamed `foldr.idx`, the alias of
+  // `reduceRight.idx` from v0.4.1 to v0.8.0, to `foldrIndexed`): `acc =
+  // fn(acc, list[idx], idx, list)` for idx descending. The body folds over
+  // (element, index) pairs.
+  function reduceRightIndexed<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> reduceRightIndexed(fn, acc, list) == acc
+  { reduceRight((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
 
-  // `R.scanl(fn, acc, list)` (v0.7.0): `result[0] = acc; while (++idx < len)
-  // { acc = fn(acc, list[idx - 1]); result[idx] = acc; }`, the accumulator
-  // followed by each successive `fn(acc, x)` (fn gets exactly those two).
-  function scanl<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): seq<A>
-    ensures |scanl(fn, acc, list)| == |list| + 1
-    ensures scanl(fn, acc, list)[0] == acc
-  { [acc] + (if |list| == 0 then [] else scanl(fn, fn(acc, list[0]), list[1..])) }
+  // `R.scan(fn, acc, list)` (v0.10.0, which renamed `scanl`, added in
+  // v0.7.0, with the same code): `result[0] = acc; while (++idx < len) { acc
+  // = fn(acc, list[idx - 1]); result[idx] = acc; }`, the accumulator followed
+  // by each successive `fn(acc, x)` (fn gets exactly those two).
+  function scan<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): seq<A>
+    ensures |scan(fn, acc, list)| == |list| + 1
+    ensures scan(fn, acc, list)[0] == acc
+  { [acc] + (if |list| == 0 then [] else scan(fn, fn(acc, list[0]), list[1..])) }
 
-  // JS loops until `fn` returns a falsy value (None here), possibly forever;
-  // Dafny functions must terminate, so at most `fuel` elements are produced.
-  function unfoldr<S, T>(fn: S -> Option<(T, S)>, seed: S, fuel: nat): seq<T>
+  // `R.unfold(fn, seed)` (v0.10.0, which renamed `unfoldr` with the same
+  // code): JS loops until `fn` returns a falsy value (None here), possibly
+  // forever; Dafny functions must terminate, so at most `fuel` elements are
+  // produced.
+  function unfold<S, T>(fn: S -> Option<(T, S)>, seed: S, fuel: nat): seq<T>
     decreases fuel
-    ensures |unfoldr(fn, seed, fuel)| <= fuel
+    ensures |unfold(fn, seed, fuel)| <= fuel
   { if fuel == 0 then []
     else match fn(seed)
       case None => []
-      case Some(pair) => [pair.0] + unfoldr(fn, pair.1, fuel - 1) }
+      case Some(pair) => [pair.0] + unfold(fn, pair.1, fuel - 1) }
 
   // `map` is a Dafny keyword, so Ramda's `map` is named mapSeq.
   function mapSeq<A, B>(fn: A -> B, list: seq<A>): seq<B>
@@ -99,8 +108,8 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |list| ==> mapIndexed(fn, list)[i] == fn(list[i], i, list)
   { seq(|list|, i requires 0 <= i < |list| => fn(list[i], i, list)) }
 
-  // `_foldl(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`
-  // (`foldl` until v0.8.0, the same function):
+  // `_reduce(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`
+  // (`foldl` until v0.8.0 and `_foldl` in v0.9.x, the same function):
   // fn applied to every own property. (In JS an own `__proto__` property is
   // dropped, as the assignment sets the prototype; README "Deviations".)
   function mapObj<V, W>(fn: V -> W, obj: map<string, V>): map<string, W>
@@ -117,18 +126,20 @@ module Ramdaf.List {
   { map k | k in obj :: fn(obj[k], k, obj) }
 
   // `R.ap(fns, vs)` (v0.3.0): `foldl(function(acc, fn) { return concat(acc,
-  // map(fn, vs)); }, [], fns)` (since v0.9.0 `_ap`, with `_foldl`), every
+  // map(fn, vs)); }, [], fns)` (since v0.9.0 `_ap`, with `_foldl`, which
+  // v0.10.0 renamed `_reduce`, as `foldl` became `reduce`), every
   // function applied to every value, the functions outermost
   // (`ap([f, g], [1, 2])` is `[f(1), f(2), g(1), g(2)]`). A non-array object with an `ap` method is dispatched to (Fantasy-land;
   // since v0.5.0 the first argument, `fns.ap(vs)`, before that `vs`); no
   // Dafny value has one.
   function ap<A, B>(fns: seq<A -> B>, vs: seq<A>): seq<B>
-  { foldl((acc: seq<B>, fn: A -> B) => acc + mapSeq(fn, vs), [], fns) }
+  { reduce((acc: seq<B>, fn: A -> B) => acc + mapSeq(fn, vs), [], fns) }
 
-  // `R.of(x, container)` (v0.3.0): `[x]`, unless container has an `of`
-  // method, which is then called (Fantasy-land); any other container is
-  // ignored (`of(1, [9])` is `[1]`). The port drops container (README
-  // "Deviations").
+  // `function of(x) { return [x]; }` (v0.10.0, "remove dispatch from
+  // R.of"): the singleton list. From v0.3.0 to v0.9.1 `R.of(x, container)`
+  // called `container.of(x)` for a container with an `of` method
+  // (Fantasy-land) and ignored any other container, a parameter the port
+  // never had.
   function of<T>(x: T): seq<T> { [x] }
 
   // `R.empty(x)` (v0.3.0): `[]`, unless x has an `empty` method, which is
@@ -141,14 +152,16 @@ module Ramdaf.List {
   // list and its results concatenated, one level deep. A non-array list with
   // a `chain` method is dispatched to. f returns a list here; JS keeps a
   // result that is not array-like (a number, a string) as one element
-  // (README "Deviations"). The body concatenates the mapped lists.
+  // (README "Deviations"). The body concatenates the mapped lists (with
+  // `reduce`, `foldl` until v0.9.1).
   function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
-  { foldl((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
+  { reduce((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
 
-  // `R.commuteMap(fn, of, list)` (v0.8.0): `_foldl(consF, of([]), list)`
-  // with `consF(acc, ftor) = _ap(_map(append, fn(ftor)), acc)` (v0.9.0;
-  // v0.8.0 folded with `reduce`, which v0.9.0 removed, and called `R.ap` and
-  // `R.map`), which turns a
+  // `R.commuteMap(fn, of, list)` (v0.8.0): `_reduce(consF, of([]), list)`
+  // with `consF(acc, ftor) = _ap(_map(append, fn(ftor)), acc)` (v0.10.0;
+  // v0.9.x folded with `_foldl`, which v0.10.0 renamed `_reduce`, and the
+  // body with `foldl`; v0.8.0 folded with `reduce`, which v0.9.0 removed, and
+  // called `R.ap` and `R.map`), which turns a
   // list of functors into a functor of lists, fn transforming each functor
   // first. For arrays: every way of picking one element of fn(ftor) for each
   // ftor, the first list's element varying fastest (`commuteMap(map(x => x +
@@ -158,7 +171,7 @@ module Ramdaf.List {
   // arrays (README "Deviations"). `R.append` (Core) is written out as
   // `l + [x]`.
   function commuteMap<A, B>(fn: seq<A> -> seq<B>, of: seq<B> -> seq<seq<B>>, list: seq<seq<A>>): seq<seq<B>>
-  { foldl((acc: seq<seq<B>>, ftor: seq<A>) => ap(mapSeq((x: B) => ((l: seq<B>) => l + [x]), fn(ftor)), acc),
+  { reduce((acc: seq<seq<B>>, ftor: seq<A>) => ap(mapSeq((x: B) => ((l: seq<B>) => l + [x]), fn(ftor)), acc),
            of([]), list) }
 
   // `R.commute = commuteMap(map(identity))` (v0.8.0): commuteMap with no
@@ -206,7 +219,9 @@ module Ramdaf.List {
     }
     r }
 
-  // `filter(notFn(fn), list)`
+  // `filter(not(fn), list)` (since v0.10.0 the exported `filter`, which
+  // dispatches to a `filter` method of a non-array object; v0.9.x called the
+  // private `_filter`; the same on lists)
   function reject<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |reject(fn, list)| ==> !fn(reject(fn, list)[i])
     ensures forall i :: 0 <= i < |reject(fn, list)| ==> reject(fn, list)[i] in list
@@ -658,8 +673,9 @@ module Ramdaf.List {
   { var i := if 0 <= index < |list| then index else |list|;
     list[..i] + elts + list[i..] }
 
-  // `foldl(function(acc, elt) { acc[pred(elt) ? 0 : 1].push(elt); return acc; }, [[], []], list)`
-  // (v0.3.0, "like its Haskell namesake"): the pair of the elements that
+  // `_reduce(function(acc, elt) { acc[pred(elt) ? 0 : 1].push(elt); return acc; }, [[], []], list)`
+  // (v0.3.0, "like its Haskell namesake"; `foldl` until v0.8.0, `_foldl` in
+  // v0.9.x): the pair of the elements that
   // satisfy pred and those that fail it, each in list order. From v0.1.4 to
   // v0.2.4 partition grouped the elements by the string key fn returned,
   // which groupBy (Data.dfy) now does.
@@ -683,24 +699,36 @@ module Ramdaf.List {
   // same seq.
   function init<T>(list: seq<T>): seq<T> { slice(0, -1, list) }
 
-  // `R.mapAccumL(fn, acc, list)` (v0.9.0): `tuple = [acc]; while (++idx <
-  // len) { tuple = fn(tuple[0], list[idx]); result[idx] = tuple[1]; }
-  // return [tuple[0], result];`, threading the accumulator left to right
-  // through fn, which returns the pair [accumulator, mapped element].
-  function mapAccumL<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
-    ensures |mapAccumL(fn, acc, list).1| == |list|
+  // `R.mapAccum(fn, acc, list)` (v0.10.0, which renamed `mapAccumL`, added
+  // in v0.9.0, with the same code): `tuple = [acc]; while (++idx < len) {
+  // tuple = fn(tuple[0], list[idx]); result[idx] = tuple[1]; } return
+  // [tuple[0], result];`, threading the accumulator left to right through
+  // fn, which returns the pair [accumulator, mapped element].
+  function mapAccum<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
+    ensures |mapAccum(fn, acc, list).1| == |list|
   { if |list| == 0 then (acc, [])
     else var t := fn(acc, list[0]);
-         var r := mapAccumL(fn, t.0, list[1..]);
+         var r := mapAccum(fn, t.0, list[1..]);
          (r.0, [t.1] + r.1) }
 
-  // `R.mapAccumR(fn, acc, list)` (v0.9.0): as mapAccumL with idx descending,
-  // `result[idx] = tuple[1]`, so each mapped element stays at its element's
-  // index while the accumulator runs right to left.
-  function mapAccumR<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
-    ensures |mapAccumR(fn, acc, list).1| == |list|
+  // `R.mapAccumRight(fn, acc, list)` (v0.10.0, which renamed `mapAccumR`
+  // with the same code): as mapAccum with idx descending, `result[idx] =
+  // tuple[1]`, so each mapped element stays at its element's index while the
+  // accumulator runs right to left.
+  function mapAccumRight<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
+    ensures |mapAccumRight(fn, acc, list).1| == |list|
   { if |list| == 0 then (acc, [])
     else var t := fn(acc, list[|list| - 1]);
-         var r := mapAccumR(fn, t.0, list[..|list| - 1]);
+         var r := mapAccumRight(fn, t.0, list[..|list| - 1]);
          (r.0, r.1 + [t.1]) }
+
+  // `R.mergeAll = reduce(merge, {})` (v0.10.0, `@category List`): the objects
+  // merged left to right, a later object's keys winning. `R.merge` is
+  // `Object.merge`, which List does not import, so `merge(acc, obj)` is
+  // written out as its body, `acc + obj`. (In JS the `{}` accumulator is
+  // shared across calls, so `mergeAll([])` is the same object every time;
+  // every other result is a fresh copy. An own `__proto__` property is
+  // dropped, README "Deviations".)
+  function mergeAll<V>(list: seq<map<string, V>>): map<string, V>
+  { reduce((acc: map<string, V>, obj: map<string, V>) => acc + obj, map[], list) }
 }

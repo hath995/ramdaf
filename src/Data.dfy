@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
@@ -120,7 +120,7 @@ module Ramdaf.Data {
     map k | k in keys :: |List.filter(x => fn(x) == k, list)| }
 
   // `foldl(function(acc, elt) { var key = fn(elt); acc[key] = append(elt, acc[key] || []); ... }, {}, list)`
-  // (v0.3.0, which makes groupBy its own function again with the body that
+  // (`_foldl` in v0.9.x, `_reduce` since v0.10.0; v0.3.0, which makes groupBy its own function again with the body that
   // partition, its original since v0.2.0, had; partition now splits by a
   // predicate): for each key fn produces, the elements that produce it, in
   // list order. The results are unchanged. As for countBy, a key that names

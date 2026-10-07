@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.9.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.10.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -115,11 +115,23 @@ module RamdafTests.Edge.Misc {
     expect pickBy((v: int, k: string, o: map<string, int>) => v > 1, none) == map[];
   }
 
-  method {:test} MixinEdges() {
+  // merge (mixin until v0.9.1): b's value wins.
+  method {:test} MergeEdges() {
     var none: map<string, int> := map[];
-    expect mixin(map["a" := 1, "b" := 2], map["b" := 3, "c" := 4]) == map["a" := 1, "b" := 3, "c" := 4];
-    expect mixin(none, map["b" := 3]) == map["b" := 3];
-    expect mixin(map["a" := 1], none) == map["a" := 1];
+    expect merge(map["a" := 1, "b" := 2], map["b" := 3, "c" := 4]) == map["a" := 1, "b" := 3, "c" := 4];
+    expect merge(none, map["b" := 3]) == map["b" := 3];
+    expect merge(map["a" := 1], none) == map["a" := 1];
+  }
+
+  // dissoc (v0.10.0) copies obj without the property (node: {a: 1, c: 3},
+  // {a: 1}, {}, {x: 2} and {a: 1} for `dissoc('toString', {a: 1})`).
+  method {:test} DissocEdges() {
+    var none: map<string, int> := map[];
+    expect dissoc("b", map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "c" := 3];
+    expect dissoc("d", map["a" := 1]) == map["a" := 1];
+    expect dissoc("a", none) == map[];
+    expect dissoc("hasOwnProperty", map["hasOwnProperty" := 1, "x" := 2]) == map["x" := 2];
+    expect dissoc("toString", map["a" := 1]) == map["a" := 1];
   }
 
   // clone copies every own property of an object (cloneObj until v0.8.0;
@@ -404,6 +416,23 @@ module RamdafTests.Edge.Misc {
     expect isNil(nth(5, [1])) == true;
   }
 
+  // defaultTo (v0.10.0) returns the value unless it is null or undefined
+  // (node: 42 for null and undefined, then 'x', '', 0 and false), and it
+  // composes with the "no value" results: `defaultTo(0, prop('a', {}))`,
+  // `defaultTo(0, nth(5, [1]))` and `defaultTo(0, prop('a', {a: 7}))` give
+  // 0, 0 and 7.
+  method {:test} DefaultToEdges() {
+    var none: Option<int> := None;
+    expect defaultTo(42, none) == 42;
+    expect defaultTo(42, Some(0)) == 0;
+    expect defaultTo("d", Some("x")) == "x";
+    expect defaultTo("d", Some("")) == "";
+    expect defaultTo(true, Some(false)) == false;
+    expect defaultTo(0, prop("a", map["b" := 1])) == 0;
+    expect defaultTo(0, nth(5, [1])) == 0;
+    expect defaultTo(0, prop("a", map["a" := 7])) == 7;
+  }
+
   // evolve (v0.9.0) sets each transformed key to fn(obj[key]), with
   // undefined (None) for a missing key (node: {a: 2, b: 2}, {a: 1, c: 'U'},
   // {a: 1}).
@@ -428,11 +457,21 @@ module RamdafTests.Edge.Misc {
     expect invertObj(none) == map[];
   }
 
+  // Since v0.10.0 invert ignores inherited properties of its result, so a
+  // value naming an `Object.prototype` member is an ordinary key (node:
+  // {toString: ['a'], x: ['b']}, {constructor: ['a', 'b']}; v0.9.x threw
+  // "TypeError: out[val].push is not a function").
+  method {:test} InvertOfPrototypeNamedValues() {
+    expect invert(map["a" := "toString", "b" := "x"]) == map["toString" := {"a"}, "x" := {"b"}];
+    expect invert(map["a" := "constructor", "b" := "constructor"]) == map["constructor" := {"a", "b"}];
+  }
+
   // ---- documented deviations (not node behaviour) ----
 
 
   // node: clone(JSON.parse('{"__proto__": 5, "a": 1}')) (cloneObj and
-  // cloneDeep until v0.8.0) and mixin(<the same>, {}) are {a: 1}: assigning
+  // cloneDeep until v0.8.0), merge(<the same>, {}) (mixin until v0.9.1) and
+  // dissoc('x', <the same>) (v0.10.0) are {a: 1}: assigning
   // `__proto__` sets the prototype instead of a property (the input's own
   // `__proto__` property can only come from JSON.parse or
   // Object.defineProperty). Likewise assoc (v0.8.0): the keys of
@@ -446,7 +485,8 @@ module RamdafTests.Edge.Misc {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
     expect clone(o) == o;
-    expect mixin(o, none) == o;
+    expect merge(o, none) == o;
+    expect dissoc("x", o) == o;
     expect invertObj(map["a" := "__proto__", "b" := "c"]) == map["__proto__" := "a", "c" := "b"];
     expect evolve(map["a" := (v: Option<int>) => if v.Some? then v.value else 0], o) == o;
     var kind := (v: Option<string>) => if v.None? then "undefined" else "string";
@@ -475,12 +515,13 @@ module RamdafTests.Edge.Misc {
     expect |"\U{1F600}"| == 1;
   }
 
-  // node: invert({a: 'toString'}), invert({a: '__proto__'}) and every other
-  // value naming an `Object.prototype` member throw "TypeError:
-  // out[val].push is not a function" (v0.9.0); here the value is an ordinary
-  // key.
+  // node: invert({a: '__proto__', b: 'x'}) is {x: ['b']} since v0.10.0:
+  // `out['__proto__'] = []` sets the result's prototype to the array ['a']
+  // instead of a property. (In v0.9.x it and every other value naming an
+  // `Object.prototype` member threw "TypeError: out[val].push is not a
+  // function"; the others now agree with the port, InvertOfPrototypeNamedValues
+  // above.) Here the value is an ordinary key.
   method {:test} DeviationInvertOfPrototypeNamedValues() {
-    expect invert(map["a" := "toString"]) == map["toString" := {"a"}];
     expect invert(map["a" := "__proto__", "b" := "x"]) == map["__proto__" := {"a"}, "x" := {"b"}];
   }
 

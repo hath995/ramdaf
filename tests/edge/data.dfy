@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.9.1 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.10.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -120,6 +120,18 @@ module RamdafTests.Edge.Data {
       [(0, "b"), (0, "d"), (1, "a"), (1, "c")];
   }
 
+  // Since v0.10.0 sortBy sorts a shallow copy, `_slice(list)`, so a JS
+  // string sorts again (node: ['a', 'b', 'c'] for `sortBy(c =>
+  // c.charCodeAt(0), 'cba')`; v0.9.1 threw "TypeError: clone(...).sort is not
+  // a function") and an element object keeps an own `__proto__` key (node:
+  // `Object.keys(sortBy(x => 0, [JSON.parse('{"__proto__": 5, "a":
+  // 1}')])[0])` is ['__proto__', 'a']; v0.9.1 gave ['a']).
+  method {:test} SortByOfAStringAndPrototypeKeys() {
+    expect sortBy((c: char) => c as int, "cba") == "abc";
+    var o := map["__proto__" := 5, "a" := 1];
+    expect sortBy((m: map<string, int>) => 0, [o]) == [o];
+  }
+
   // groupBy's cases from v0.1.4 to v0.2.4, when partition grouped by key
   // (v0.3.0 gave groupBy partition's body; the results are unchanged).
   method {:test} GroupByEdges() {
@@ -199,14 +211,6 @@ module RamdafTests.Edge.Data {
     expect eqDeep([M.negate(0)], [0]) == true;
   }
 
-  // node: sortBy(c => c.charCodeAt(0), 'cba') throws "TypeError:
-  // clone(...).sort is not a function" in v0.9.1 (it sorts `clone(list)`,
-  // and `clone` returns the string; v0.9.0 gave ['a', 'b', 'c']). Here a
-  // string is a seq of characters and sorts.
-  method {:test} DeviationSortByOfAString() {
-    expect sortBy((c: char) => c as int, "cba") == "abc";
-  }
-
   // node: `Array.prototype.sort` puts undefined elements last without
   // calling the comparator, so sortBy(x => x === undefined ? -1 : x, [1,
   // undefined, 0]) is [0, 1, undefined] since v0.9.1 (v0.9.0 sorted key/value
@@ -219,13 +223,13 @@ module RamdafTests.Edge.Data {
     expect sort((a: Js, b: Js) => key(a) - key(b), [Num(1), Undefined, Num(0)]) == [Undefined, Num(0), Num(1)];
   }
 
-  // node: Object.keys(sortBy(x => 0, [JSON.parse('{"__proto__": 5, "a":
-  // 1}')])[0]) is ['a'] in v0.9.1, and so is sort(() => 0, …) since v0.9.0:
-  // the deep copy of each element drops an own `__proto__` property. A
-  // map's keys are all ordinary.
+  // node: Object.keys(sort(() => 0, [JSON.parse('{"__proto__": 5, "a":
+  // 1}')])[0]) is ['a'] since v0.9.0: the deep copy of each element drops an
+  // own `__proto__` property (sortBy did so in v0.9.1 alone; since v0.10.0
+  // it agrees with the port, SortByOfAStringAndPrototypeKeys above). A map's
+  // keys are all ordinary.
   method {:test} DeviationPrototypeKeysAreOrdinaryInSortedCopies() {
     var o := map["__proto__" := 5, "a" := 1];
-    expect sortBy((m: map<string, int>) => 0, [o]) == [o];
     expect sort((m1: map<string, int>, m2: map<string, int>) => 0, [o]) == [o];
   }
 }

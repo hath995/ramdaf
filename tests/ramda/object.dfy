@@ -1,9 +1,10 @@
-// Ramda v0.9.1 test/prop.js, propOf.js, props.js, propOr.js, has.js,
+// Ramda v0.10.0 test/prop.js, propOf.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
-// where.js, mixin.js, assoc.js, keys.js, keysIn.js, values.js, valuesIn.js,
-// eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js and invertObj.js
-// (until v0.8.0 test.objectBasics.js, test.keysvals.js, test.tapeq.js and
-// test.zip.js's toPairs and toPairsIn describes), transcribed. Not
+// where.js, merge.js, assoc.js, keys.js, keysIn.js, values.js, valuesIn.js,
+// eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js, invertObj.js and
+// dissoc.js (v0.9.x mixin.js; until v0.8.0 test.objectBasics.js,
+// test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
+// describes), transcribed. Not
 // transcribed: keys's and values's "should work for primitives" cases (v0.2.4;
 // keys/values of null, 55, "" and the like: the argument is a map); where's
 // cases on prototypes ("matches inherited props", "doesnt match inherited
@@ -16,14 +17,16 @@
 // object's own properties", toPairsIn's "iterates properties on the object's
 // prototype chain", pick's "retrieves prototype properties", omit's
 // "includes prototype properties", pickBy's "retrieves prototype
-// properties", has's "does not check properties from the prototype chain"
+// properties", dissoc's "includes prototype properties", has's "does not check properties from the prototype chain"
 // and hasIn's "checks properties from the prototype chain"): a map has no
 // prototype; the no-argument cases ("throws if given no arguments" and the
 // like); pickBy's "creates a copy" (reference inequality); eq's `eq([], [])`
 // and "is curried", which rely on `[] !== []` (reference equality, README
 // "Deviations"), and its `eq(0, -0)` and `eq(NaN, NaN)` (no `-0` or NaN in
 // an int; README "Deviations", pinned in tests/edge/misc.dfy); invert's and
-// invertObj's "takes a list or object…" (`typeof` and throws on primitives);
+// invertObj's "takes a list or object…" (`typeof`, and until v0.9.1 throws
+// on primitives) and their "returns an empty object when applied to a
+// primitive" and "… to null/undefined" (v0.10.0; not maps);
 // invertObj's "prefers the last key found…" and "is not destructive",
 // whose inputs repeat a value (outside the domain, README); and assocPath.js,
 // func.js and tap.js (not portable, README). invert's and invertObj's array
@@ -33,7 +36,8 @@
 // values have no identity). (v0.8.0 renamed describe('props') to
 // describe('propOf') and describe('pickWith') to describe('pickBy') with the
 // functions, and added a describe('props') for the new function; v0.9.0
-// moved propOr's default to the first argument.)
+// moved propOr's default to the first argument; v0.10.0 renamed
+// describe('mixin') to describe('merge') with the function.)
 
 module RamdafTests.Ramda.Object {
   import opened Ramdaf.Prelude
@@ -43,7 +47,8 @@ module RamdafTests.Ramda.Object {
 
   function Fred(): map<string, Js> { map["name" := Str("Fred"), "age" := Num(23)] }
 
-  // ---- prop.js … mixin.js (test.objectBasics.js until v0.8.0) ----
+  // ---- prop.js … merge.js (mixin.js in v0.9.x; test.objectBasics.js until
+  // v0.8.0) ----
 
   // describe('prop')
   method {:test} PropFetchesTheProperty() {
@@ -269,38 +274,45 @@ module RamdafTests.Ramda.Object {
     expect where(map["a" := Pred((v: Option<int>, o: map<string, int>) => true)], map["x" := 1]) == false;
   }
 
-  // describe('mixin')
-  method {:test} MixinMergesOwnPropertiesIntoANewObject() {
-    expect mixin(map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  // describe('merge') (describe('mixin') until v0.9.1)
+  method {:test} MergeMergesOwnPropertiesIntoANewObject() {
+    expect merge(map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
   }
 
-  method {:test} MixinOverridesPropertiesOfTheFirstObject() {
-    expect mixin(map["w" := 1, "x" := 2], map["w" := 100, "y" := 3, "z" := 4]) ==
+  method {:test} MergeOverridesPropertiesOfTheFirstObject() {
+    expect merge(map["w" := 1, "x" := 2], map["w" := 100, "y" := 3, "z" := 4]) ==
       map["w" := 100, "x" := 2, "y" := 3, "z" := 4];
   }
 
   // v0.2.4: "should not be destructive" (its reference-inequality half has no
   // counterpart; the map a is a value)
-  method {:test} MixinShouldNotBeDestructive() {
+  method {:test} MergeShouldNotBeDestructive() {
     var a := map["w" := 1, "x" := 2];
-    var res := mixin(a, map["x" := 5]);
+    var res := merge(a, map["x" := 5]);
     expect res == map["w" := 1, "x" := 5];
     expect a == map["w" := 1, "x" := 2];
   }
 
   // v0.2.4: "only own properties". `new Cla` has no own property (its x is
   // on the prototype), so as a map it is empty.
-  method {:test} MixinOnlyOwnProperties() {
+  method {:test} MergeOnlyOwnProperties() {
     var a := map["w" := 1, "x" := 2];
     var cla: map<string, int> := map[];
-    expect mixin(cla, a) == map["w" := 1, "x" := 2];
-    expect mixin(a, cla) == map["w" := 1, "x" := 2];
+    expect merge(cla, a) == map["w" := 1, "x" := 2];
+    expect merge(a, cla) == map["w" := 1, "x" := 2];
   }
 
   // v0.2.4: "outta be curried"
-  method {:test} MixinOughtToBeCurried() {
-    var curried := (b: map<string, int>) => mixin(map["w" := 1, "x" := 2], b);
+  method {:test} MergeOughtToBeCurried() {
+    var curried := (b: map<string, int>) => merge(map["w" := 1, "x" := 2], b);
     expect curried(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  // v0.10.0: the second "is curried", `merge(R.__, {w: 1, x: 2})`, which
+  // fixes the second argument (`op` currying)
+  method {:test} MergeIsCurriedWithThePlaceholder() {
+    var curried := (a: map<string, int>) => merge(a, map["w" := 1, "x" := 2]);
+    expect curried(map["x" := 3, "y" := 4]) == map["w" := 1, "x" := 2, "y" := 4];
   }
 
   // ---- keys.js, values.js, keysIn.js, valuesIn.js (test.keysvals.js) ----
@@ -465,11 +477,28 @@ module RamdafTests.Ramda.Object {
     expect input == map["x" := "a", "y" := "b", "z" := "a", "_id" := "a"];
   }
 
+  // v0.10.0
+  method {:test} InvertIgnoresInheritedProperties() {
+    expect invert(map["x" := "hasOwnProperty"]) == map["hasOwnProperty" := {"x"}];
+  }
+
   // ---- invertObj.js (v0.9.0) ----
 
   method {:test} InvertObjReturnsTheInputsValuesAsKeysAndKeysAsValues() {
     // `invertObj(['a', 'b', 'c'])`
     expect invertObj(map["0" := "a", "1" := "b", "2" := "c"]) == map["a" := "0", "b" := "1", "c" := "2"];
     expect invertObj(map["x" := "a", "y" := "b", "z" := "c"]) == map["a" := "x", "b" := "y", "c" := "z"];
+  }
+
+  // ---- dissoc.js (v0.10.0) ----
+
+  method {:test} DissocCopiesAnObjectOmittingTheSpecifiedProperty() {
+    expect dissoc("b", map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "c" := 3];
+    expect dissoc("d", map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "b" := 2, "c" := 3];
+  }
+
+  method {:test} DissocIsCurried() {
+    var dissocB := (o: map<string, int>) => dissoc("b", o);
+    expect dissocB(map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "c" := 3];
   }
 }

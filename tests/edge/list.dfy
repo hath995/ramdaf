@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.9.1's own suite does not cover, each checked against
-// dist/ramda.js v0.9.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.10.0's own suite does not cover, each checked against
+// dist/ramda.js v0.10.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -32,25 +32,26 @@ module RamdafTests.Edge.List {
     expect times((i: nat) => i, 0) == [];
   }
 
-  // foldr runs from the right with the accumulator first (since v0.1.1).
-  method {:test} FoldrRunsFromTheRightAccumulatorFirst() {
+  // reduceRight (foldr until v0.9.1) runs from the right with the
+  // accumulator first (since v0.1.1).
+  method {:test} ReduceRightRunsFromTheRightAccumulatorFirst() {
     var empty: seq<int> := [];
-    expect foldr((acc: seq<int>, x: int) => [x] + acc, empty, [1, 2]) == [1, 2];
-    expect foldr((acc: string, a: string) => acc + a, "", ["x", "y", "z"]) == "zyx";
-    expect foldr((acc: int, a: int) => acc - a, 0, [1, 2, 3, 4]) == -10;
+    expect reduceRight((acc: seq<int>, x: int) => [x] + acc, empty, [1, 2]) == [1, 2];
+    expect reduceRight((acc: string, a: string) => acc + a, "", ["x", "y", "z"]) == "zyx";
+    expect reduceRight((acc: int, a: int) => acc - a, 0, [1, 2, 3, 4]) == -10;
   }
 
-  // The indexed folds (the `.idx` properties until v0.8.0) pass (acc,
-  // element, index, list).
+  // The indexed folds (the `.idx` properties until v0.8.0, foldlIndexed and
+  // foldrIndexed in v0.9.x) pass (acc, element, index, list).
   method {:test} IndexedFoldsPassTheIndexAndList() {
     var empty: seq<string> := [];
     var f := (acc: string, x: string, i: nat, l: seq<string>) => acc + x + NumStr(i) + NumStr(|l|);
-    expect foldlIndexed(f, "", ["a", "b"]) == "a02b12";
-    expect foldrIndexed(f, "", ["a", "b"]) == "b12a02";
-    expect foldlIndexed(f, "5", empty) == "5";
-    expect foldlIndexed((acc: int, x: int, i: nat, l: seq<int>) => acc + x * i, 0, [1, 2, 3]) == 8;
+    expect reduceIndexed(f, "", ["a", "b"]) == "a02b12";
+    expect reduceRightIndexed(f, "", ["a", "b"]) == "b12a02";
+    expect reduceIndexed(f, "5", empty) == "5";
+    expect reduceIndexed((acc: int, x: int, i: nat, l: seq<int>) => acc + x * i, 0, [1, 2, 3]) == 8;
     var none: seq<nat> := [];
-    expect foldrIndexed((acc: seq<nat>, x: int, i: nat, l: seq<int>) => acc + [i], none, [9, 9, 9]) == [2, 1, 0];
+    expect reduceRightIndexed((acc: seq<nat>, x: int, i: nat, l: seq<int>) => acc + [i], none, [9, 9, 9]) == [2, 1, 0];
   }
 
   method {:test} IndexedMapFilterRejectEdges() {
@@ -209,14 +210,15 @@ module RamdafTests.Edge.List {
     }
   }
 
-  // foldl folds from the left (from v0.4.0 to v0.8.0 `reduce` held the
-  // definition and foldl was its alias; v0.9.0 removed `reduce`).
-  method {:test} FoldlIsLeftAssociative() {
-    expect foldl((acc: int, x: int) => acc - x, 0, [1, 2, 3]) == -6;
-    expect foldl((acc: string, x: string) => acc + x, "", ["a", "b", "c"]) == "abc";
-    expect foldl((acc: int, x: int) => acc - x, 10, [1, 2, 3]) == 4;
-    // `foldl(cat, '')('abc')`: a string is a list of characters
-    expect foldl((acc: string, c: char) => acc + [c], "", "abc") == "abc";
+  // reduce folds from the left (from v0.4.0 to v0.8.0 `reduce` held the
+  // definition and foldl was its alias; v0.9.0 removed `reduce`, and v0.10.0
+  // renamed `foldl` back to `reduce`).
+  method {:test} ReduceIsLeftAssociative() {
+    expect reduce((acc: int, x: int) => acc - x, 0, [1, 2, 3]) == -6;
+    expect reduce((acc: string, x: string) => acc + x, "", ["a", "b", "c"]) == "abc";
+    expect reduce((acc: int, x: int) => acc - x, 10, [1, 2, 3]) == 4;
+    // `reduce(cat, '')('abc')`: a string is a list of characters
+    expect reduce((acc: string, c: char) => acc + [c], "", "abc") == "abc";
   }
 
   // Two strings concatenate by the first one's own `concat` method. Since
@@ -494,14 +496,40 @@ module RamdafTests.Edge.List {
     expect dropWhile((c: char) => c != 'b', "abc") == "bc";
   }
 
-  // scanl (v0.7.0): the accumulator, then each successive fn(acc, x).
-  method {:test} ScanlEdges() {
+  // scan (scanl from v0.7.0 to v0.9.1): the accumulator, then each
+  // successive fn(acc, x).
+  method {:test} ScanEdges() {
     var none: seq<int> := [];
-    expect scanl((a: int, b: int) => a - b, 10, [1, 2, 3]) == [10, 9, 7, 4];
-    expect scanl((a: seq<int>, x: int) => [x] + a, none, [1, 2, 3]) == [[], [1], [2, 1], [3, 2, 1]];
-    // `scanl(add, '', 'abc')`: a string is a list of characters
-    expect scanl((a: string, c: char) => a + [c], "", "abc") == ["", "a", "ab", "abc"];
-    expect scanl((a: int, b: int) => a + b, 0, none) == [0];
+    expect scan((a: int, b: int) => a - b, 10, [1, 2, 3]) == [10, 9, 7, 4];
+    expect scan((a: seq<int>, x: int) => [x] + a, none, [1, 2, 3]) == [[], [1], [2, 1], [3, 2, 1]];
+    // `scan(add, '', 'abc')`: a string is a list of characters
+    expect scan((a: string, c: char) => a + [c], "", "abc") == ["", "a", "ab", "abc"];
+    expect scan((a: int, b: int) => a + b, 0, none) == [0];
+  }
+
+  // mapAccum and mapAccumRight (mapAccumL and mapAccumR in v0.9.x): the
+  // JSDoc examples (node: ['01234', ['01', '012', '0123', '01234']] and
+  // ['04321', ['04321', '0432', '043', '04']]) and a string, a list of
+  // characters (node: ['abc', ['', 'a', 'ab']] and ['cba', ['cb', 'c',
+  // '']]).
+  method {:test} MapAccumEdges() {
+    var f := (a: string, b: string) => (a + b, a + b);
+    expect mapAccum(f, "0", ["1", "2", "3", "4"]) == ("01234", ["01", "012", "0123", "01234"]);
+    expect mapAccumRight(f, "0", ["1", "2", "3", "4"]) == ("04321", ["04321", "0432", "043", "04"]);
+    var g := (a: string, c: char) => (a + [c], a);
+    expect mapAccum(g, "", "abc") == ("abc", ["", "a", "ab"]);
+    expect mapAccumRight(g, "", "abc") == ("cba", ["cb", "c", ""]);
+  }
+
+  // mergeAll (v0.10.0) merges left to right, later keys winning (node: {},
+  // {a: 1}, {a: 3, b: 2, c: 3}, {}).
+  method {:test} MergeAllEdges() {
+    var none: seq<map<string, int>> := [];
+    var empty: map<string, int> := map[];
+    expect mergeAll(none) == map[];
+    expect mergeAll([map["a" := 1]]) == map["a" := 1];
+    expect mergeAll([map["a" := 1, "b" := 1], map["b" := 2], map["a" := 3, "c" := 3]]) == map["a" := 3, "b" := 2, "c" := 3];
+    expect mergeAll([empty, empty]) == map[];
   }
 
   // createMapEntry (v0.7.0)
@@ -520,8 +548,8 @@ module RamdafTests.Edge.List {
   }
 
   // A falsy result (or an empty pair) stops the unfold.
-  method {:test} UnfoldrStopsAtNone() {
-    expect unfoldr((n: int) => if n < 3 then Some((n, n + 1)) else None, 0, 100) == [0, 1, 2];
+  method {:test} UnfoldStopsAtNone() {
+    expect unfold((n: int) => if n < 3 then Some((n, n + 1)) else None, 0, 100) == [0, 1, 2];
   }
 
   method {:test} PluckMissingIsUndefined() {
@@ -549,9 +577,10 @@ module RamdafTests.Edge.List {
 
   // ---- documented deviations (not node behaviour) ----
 
-  // JS unfoldr would loop forever here; the fuel bound stops it.
-  method {:test} DeviationUnfoldrStopsAtFuel() {
-    expect unfoldr((n: int) => Some((n, n + 1)), 0, 3) == [0, 1, 2];
+  // JS unfold (unfoldr until v0.9.1) would loop forever here; the fuel bound
+  // stops it.
+  method {:test} DeviationUnfoldStopsAtFuel() {
+    expect unfold((n: int) => Some((n, n + 1)), 0, 3) == [0, 1, 2];
   }
 
   // node: flatten([{length: 0}]) is [], flatten([{length: 2, 0: 'a', 1: 'b'}])
@@ -581,10 +610,13 @@ module RamdafTests.Edge.List {
   // fromPairs([['__proto__', 5], ['a', 1]]) is {a: 1}, and since v0.7.0
   // createMapEntry('__proto__', 1) has no own key: assigning
   // `__proto__` sets the prototype (a primitive is ignored) instead of a
-  // property. A map's keys are all ordinary.
+  // property. Likewise the keys of mergeAll([JSON.parse('{"__proto__": 5,
+  // "a": 1}'), {b: 2}]) (v0.10.0) are ['a', 'b']. A map's keys are all
+  // ordinary.
   method {:test} DeviationPrototypeKeysAreOrdinaryInListBuilders() {
     expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
     expect createMapEntry("__proto__", 1) == map["__proto__" := 1];
+    expect mergeAll([map["__proto__" := 5, "a" := 1], map["b" := 2]]) == map["__proto__" := 5, "a" := 1, "b" := 2];
   }
 }

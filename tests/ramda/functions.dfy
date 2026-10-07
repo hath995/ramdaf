@@ -1,4 +1,4 @@
-// Ramda v0.9.1 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.10.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
@@ -14,7 +14,7 @@
 // the dispatch case calls `ap(obj, 10)`, on the first argument). The files
 // of functions that are not portable (README) are not transcribed: useWith,
 // once, memoize, construct, constructN, unary, binary, nAry, apply, unapply,
-// pCompose, pPipe, curry, curryN, op, lPartial, rPartial, wrap, forEach,
+// composeP, pipeP, curry, curryN, op, partial, partialRight, wrap, forEach,
 // forEachIndexed, installTo, path, pathOn, pathEq, is, isArrayLike, type,
 // functions, functionsIn, bind, invoker, lift, liftN, nthArg, and v0.9.0's
 // new arity.js and call.js; test.examplesRunner.js runs the JSDoc examples
@@ -22,7 +22,8 @@
 // out of test/, v0.4.1 removed test.always.js's "should be aliased by
 // `constant`" with `constant`, and v0.9.0 removed alwaysZero's describe with
 // the function and renamed the alwaysTrue and alwaysFalse describes to T and
-// F.)
+// F; v0.10.0 renamed the files of pCompose, pPipe, lPartial and rPartial to
+// composeP, pipeP, partial and partialRight with the functions.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.9.1 `src/comparator.js`, `src/sort.js` and
+// Ramdaf: Ramda v0.10.0 `src/comparator.js`, `src/sort.js` and
 // `src/sortBy.js`.
 //
 // `sort` is `clone(list).sort(comparator)`, i.e. JS Array.prototype.sort, which
@@ -42,13 +42,15 @@ module Ramdaf.Sort {
   { SortCorrect(cmp, list);
     insertionSort(cmp, list) }
 
-  // `clone(list).sort(function(a, b) { var aa = fn(a); var bb = fn(b); return
-  // aa < bb ? -1 : aa > bb ? 1 : 0; })` (v0.9.1; until v0.9.0 the list's
-  // `{key, val}` pairs were sorted by key and the values plucked): a stable
-  // sort by key. Since v0.9.1 node sorts a deep copy of the elements
-  // themselves, so a JS string throws, `undefined` elements go last, and an
-  // element object loses an own `__proto__` key (README "Deviations"). The
-  // keys are ints (see README "Deviations").
+  // `_slice(list).sort(function(a, b) { var aa = fn(a); var bb = fn(b);
+  // return aa < bb ? -1 : aa > bb ? 1 : 0; })` (v0.10.0, "preserve object
+  // identity in R.sortBy"; v0.9.1 sorted a deep `clone(list)`, so a JS
+  // string threw and an element object lost an own `__proto__` key, and
+  // until v0.9.0 the list's `{key, val}` pairs were sorted by key and the
+  // values plucked): a stable sort by key of a shallow copy, which keeps the
+  // elements themselves. `Array.prototype.sort` still puts `undefined`
+  // elements last (README "Deviations"). The keys are ints (see README
+  // "Deviations").
   function sortBy<T>(fn: T -> int, list: seq<T>): seq<T>
     ensures |sortBy(fn, list)| == |list|
     ensures multiset(sortBy(fn, list)) == multiset(list)

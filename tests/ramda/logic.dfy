@@ -1,6 +1,6 @@
-// Ramda v0.9.1 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
-// any.js, ifElse.js and cond.js (until v0.8.0 test.booleans.js,
-// test.allany.js and test.cond.js), transcribed.
+// Ramda v0.10.0 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
+// any.js, ifElse.js, cond.js and defaultTo.js (until v0.8.0
+// test.booleans.js, test.allany.js and test.cond.js), transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression", "short-circuits on first false value"), which detect a call by
 // its side effect, the "reports its arity" cases, and the "throws on zero
@@ -12,7 +12,9 @@
 // describe('cond') to describe('ifElse') and added a describe('cond') for
 // the new function; v0.9.0 renamed the allPredicates, anyPredicates, every
 // and some describes to allPass, anyPass, all and any, and removed ifElse's
-// "is aliased by `if`" with the alias.)
+// "is aliased by `if`" with the alias.) defaultTo's values are Js values
+// (the default 42 and the values differ in type), and its null and undefined
+// are both None (README "Deviations").
 
 module RamdafTests.Ramda.Logic {
   import opened Ramdaf.Prelude
@@ -251,5 +253,31 @@ module RamdafTests.Ramda.Logic {
   method {:test} CondForwardsAllArgumentsToPredicatesAndToTransformers() {
     var fn := cond([((t: (int, int, int)) => t.1 == 42, (t: (int, int, int)) => t)]);
     expect fn((21, 42, 84)) == Some((21, 42, 84));
+  }
+
+  // ---- defaultTo.js (v0.10.0) ----
+
+  // `defaultTo42 = defaultTo(42)`
+  function DefaultTo42(v: Option<Js>): Js { defaultTo(Num(42), v) }
+
+  // `defaultTo42(null)` and `defaultTo42(undefined)`
+  method {:test} DefaultToReturnsTheDefaultValueIfInputIsNullOrUndefined() {
+    expect DefaultTo42(None) == Num(42);
+  }
+
+  method {:test} DefaultToReturnsTheInputValueIfItIsNotNullOrUndefined() {
+    expect DefaultTo42(Some(Str("a real value"))) == Str("a real value");
+  }
+
+  method {:test} DefaultToReturnsTheInputValueEvenIfItIsConsideredFalsy() {
+    expect DefaultTo42(Some(Str(""))) == Str("");
+    expect DefaultTo42(Some(Num(0))) == Num(0);
+    expect DefaultTo42(Some(Bool(false))) == Bool(false);
+    expect DefaultTo42(Some(Arr([]))) == Arr([]);
+  }
+
+  method {:test} DefaultToCanBeCalledWithBothArgumentsDirectly() {
+    expect defaultTo(Num(42), None) == Num(42);
+    expect defaultTo(Num(42), Some(Str("a real value"))) == Str("a real value");
   }
 }

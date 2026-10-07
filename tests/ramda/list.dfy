@@ -1,16 +1,18 @@
-// Ramda v0.9.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.10.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js, find.js,
 // findIndex.js, findLast.js, findLastIndex.js, flatten.js, unnest.js,
-// range.js, reverse.js, unfoldr.js, zip.js, zipWith.js, zipObj.js,
+// range.js, reverse.js, unfold.js, zip.js, zipWith.js, zipObj.js,
 // fromPairs.js, xprod.js, partition.js, groupBy.js, createMapEntry.js,
-// scanl.js, mapAccumL.js, mapAccumR.js, commute.js, commuteMap.js and
-// lens.js (until v0.8.0 test.list.js, test.indexof.js, test.containsuniq.js,
-// test.map.js, test.find.js, test.flatten.js, test.range.js,
-// test.reverse.js, test.unfold.js, test.zip.js, test.product.js,
-// test.partition.js, test.groupBy.js, test.createMapEntry.js, test.scanl.js,
-// test.commute.js and test.lens.js), transcribed. Arity (`.length`) checks
+// scan.js, mapAccum.js, mapAccumRight.js, commute.js, commuteMap.js,
+// lens.js and mergeAll.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
+// test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
+// test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
+// test.product.js, test.partition.js, test.groupBy.js,
+// test.createMapEntry.js, test.scanl.js, test.commute.js and test.lens.js),
+// transcribed. Arity (`.length`) checks
 // have no Dafny counterpart and are omitted, and so are the "throws on zero
 // arguments" cases (no-argument calls) and the `typeof` checks of the "is
 // curried" cases, which hold by construction (as does lens's "returns a
@@ -36,7 +38,10 @@
 // describe('xprodWith'). v0.9.0 removed the slice.from, indexOf.from and
 // lastIndexOf.from describes and lastIndexOf's "from index" cases with the
 // functions, and renamed the repeatN, insert.all, map.idx and mapObj.idx
-// describes to repeat, insertAll, mapIndexed and mapObjIndexed.)
+// describes to repeat, insertAll, mapIndexed and mapObjIndexed. v0.10.0
+// renamed the unfoldr, scanl, mapAccumL and mapAccumR describes to unfold,
+// scan, mapAccum and mapAccumRight.) mergeAll's "ignores inherited
+// properties" builds an object with a prototype, which a map cannot have.
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -649,20 +654,21 @@ module RamdafTests.Ramda.List {
     expect reverse(empty) == [];
   }
 
-  // ---- unfoldr.js (test.unfold.js until v0.8.0; unfoldr takes a fuel
-  // bound, see README) ----
+  // ---- unfold.js (v0.10.0; unfoldr.js in v0.9.x, test.unfold.js until
+  // v0.8.0; unfold takes a fuel bound, see README) ----
 
-  method {:test} UnfoldrUnfoldsFromASeed() {
-    expect unfoldr((n: int) => if n > 0 then Some((n, n - 1)) else None, 10, 100) ==
+  // describe('unfold') (describe('unfoldr') until v0.9.1)
+  method {:test} UnfoldUnfoldsFromASeed() {
+    expect unfold((n: int) => if n > 0 then Some((n, n - 1)) else None, 10, 100) ==
       [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
   }
 
   // "should just be cool!": the JS generator counts its calls in a closure;
   // the count is threaded through the seed instead.
-  method {:test} UnfoldrFibonacci() {
+  method {:test} UnfoldFibonacci() {
     var fib := (s: (int, (int, int))) =>
       if s.0 < 10 then Some((s.1.0, (s.0 + 1, (s.1.1, s.1.0 + s.1.1)))) else None;
-    expect unfoldr(fib, (0, (0, 1)), 100) == [0, 1, 1, 2, 3, 5, 8, 13, 21, 34];
+    expect unfold(fib, (0, (0, 1)), 100) == [0, 1, 1, 2, 3, 5, 8, 13, 21, 34];
   }
 
   // ---- zip.js, zipWith.js, zipObj.js, fromPairs.js (test.zip.js) ----
@@ -722,30 +728,34 @@ module RamdafTests.Ramda.List {
     expect foo(42) == map["foo" := 42];
   }
 
-  // ---- scanl.js (v0.7.0). Not transcribed: "correctly reports the
-  // arity of curried versions" and the two no-argument cases. ----
+  // ---- scan.js (v0.10.0; scanl.js from v0.7.0 to v0.9.1). Not
+  // transcribed: "correctly reports the arity of curried versions" and the
+  // two no-argument cases. ----
 
-  method {:test} ScanlScansSimpleFunctionsWithTheSuppliedAccumulator() {
-    expect scanl((a: int, b: int) => a + b, 0, [1, 2, 3, 4]) == [0, 1, 3, 6, 10];
-    expect scanl((a: int, b: int) => a * b, 1, [1, 2, 3, 4]) == [1, 1, 2, 6, 24];
+  // describe('scan') (describe('scanl') until v0.9.1)
+
+  method {:test} ScanScansSimpleFunctionsWithTheSuppliedAccumulator() {
+    expect scan((a: int, b: int) => a + b, 0, [1, 2, 3, 4]) == [0, 1, 3, 6, 10];
+    expect scan((a: int, b: int) => a * b, 1, [1, 2, 3, 4]) == [1, 1, 2, 6, 24];
   }
 
-  method {:test} ScanlReturnsTheAccumulatorForAnEmptyArray() {
+  method {:test} ScanReturnsTheAccumulatorForAnEmptyArray() {
     var empty: seq<int> := [];
-    expect scanl((a: int, b: int) => a + b, 0, empty) == [0];
-    expect scanl((a: int, b: int) => a * b, 1, empty) == [1];
+    expect scan((a: int, b: int) => a + b, 0, empty) == [0];
+    expect scan((a: int, b: int) => a * b, 1, empty) == [1];
   }
 
-  // `scanl(add)` with JS `+`: numbers and strings
-  method {:test} ScanlIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => scanl((a: int, b: int) => a + b, 0, l);
+  // `scan(add)` with JS `+`: numbers and strings
+  method {:test} ScanIsAutomaticallyCurried() {
+    var sum := (l: seq<int>) => scan((a: int, b: int) => a + b, 0, l);
     expect sum([1, 2, 3, 4]) == [0, 1, 3, 6, 10];
-    var cat := (l: seq<string>) => scanl((a: string, b: string) => a + b, "", l);
+    var cat := (l: seq<string>) => scan((a: string, b: string) => a + b, "", l);
     expect cat(["1", "2", "3", "4"]) == ["", "1", "12", "123", "1234"];
   }
 
-  // ---- mapAccumL.js, mapAccumR.js (v0.9.0). Not transcribed: "correctly
-  // reports the arity of curried versions" and the no-argument cases. ----
+  // ---- mapAccum.js, mapAccumRight.js (v0.10.0; mapAccumL.js and
+  // mapAccumR.js in v0.9.x). Not transcribed: "correctly reports the arity
+  // of curried versions" and the no-argument cases. ----
 
   // `add(a, b) = [a + b, a + b]`, `mult(a, b) = [a * b, a * b]`, `concat(a,
   // b) = [a.concat(b), a.concat(b)]`: the two-element arrays are pairs.
@@ -753,50 +763,62 @@ module RamdafTests.Ramda.List {
   function AccMult(a: int, b: int): (int, int) { (a * b, a * b) }
   function AccCat(a: string, b: string): (string, string) { (a + b, a + b) }
 
-  method {:test} MapAccumLMapsAndAccumulatesSimpleFunctions() {
-    expect mapAccumL(AccAdd, 0, [1, 2, 3, 4]) == (10, [1, 3, 6, 10]);
-    expect mapAccumL(AccMult, 1, [1, 2, 3, 4]) == (24, [1, 2, 6, 24]);
+  // describe('mapAccum') (describe('mapAccumL') until v0.9.1)
+  method {:test} MapAccumMapsAndAccumulatesSimpleFunctions() {
+    expect mapAccum(AccAdd, 0, [1, 2, 3, 4]) == (10, [1, 3, 6, 10]);
+    expect mapAccum(AccMult, 1, [1, 2, 3, 4]) == (24, [1, 2, 6, 24]);
   }
 
-  method {:test} MapAccumLReturnsTheListAndAccumulatorForAnEmptyArray() {
+  method {:test} MapAccumReturnsTheListAndAccumulatorForAnEmptyArray() {
     var empty: seq<int> := [];
-    expect mapAccumL(AccAdd, 0, empty) == (0, []);
-    expect mapAccumL(AccMult, 1, empty) == (1, []);
+    expect mapAccum(AccAdd, 0, empty) == (0, []);
+    expect mapAccum(AccMult, 1, empty) == (1, []);
     var noLists: seq<seq<int>> := [];
     var none: seq<int> := [];
-    expect mapAccumL((a: seq<int>, b: seq<int>) => (a + b, a + b), none, noLists) == ([], []);
+    expect mapAccum((a: seq<int>, b: seq<int>) => (a + b, a + b), none, noLists) == ([], []);
   }
 
-  // `addOrConcat = mapAccumL(add)` applied to 0 and to '' (JS `+` on strings)
-  method {:test} MapAccumLIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => mapAccumL(AccAdd, 0, l);
-    var cat := (l: seq<string>) => mapAccumL(AccCat, "", l);
+  // `addOrConcat = mapAccum(add)` applied to 0 and to '' (JS `+` on strings)
+  method {:test} MapAccumIsAutomaticallyCurried() {
+    var sum := (l: seq<int>) => mapAccum(AccAdd, 0, l);
+    var cat := (l: seq<string>) => mapAccum(AccCat, "", l);
     expect sum([1, 2, 3, 4]) == (10, [1, 3, 6, 10]);
     expect cat(["1", "2", "3", "4"]) == ("1234", ["1", "12", "123", "1234"]);
   }
 
-  method {:test} MapAccumRMapsAndAccumulatesSimpleFunctions() {
-    expect mapAccumR(AccAdd, 0, [1, 2, 3, 4]) == (10, [10, 9, 7, 4]);
-    expect mapAccumR(AccMult, 1, [1, 2, 3, 4]) == (24, [24, 24, 12, 4]);
+  // describe('mapAccumRight') (describe('mapAccumR') until v0.9.1)
+  method {:test} MapAccumRightMapsAndAccumulatesSimpleFunctions() {
+    expect mapAccumRight(AccAdd, 0, [1, 2, 3, 4]) == (10, [10, 9, 7, 4]);
+    expect mapAccumRight(AccMult, 1, [1, 2, 3, 4]) == (24, [24, 24, 12, 4]);
   }
 
   // The third case folds with `R.concat`, which returns one list, not a pair;
   // on an empty list fn is never called, so the result is `[[], []]`, here
   // with a pair-returning concatenation.
-  method {:test} MapAccumRReturnsTheListAndAccumulatorForAnEmptyArray() {
+  method {:test} MapAccumRightReturnsTheListAndAccumulatorForAnEmptyArray() {
     var empty: seq<int> := [];
-    expect mapAccumR(AccAdd, 0, empty) == (0, []);
-    expect mapAccumR(AccMult, 1, empty) == (1, []);
+    expect mapAccumRight(AccAdd, 0, empty) == (0, []);
+    expect mapAccumRight(AccMult, 1, empty) == (1, []);
     var noLists: seq<seq<int>> := [];
     var none: seq<int> := [];
-    expect mapAccumR((a: seq<int>, b: seq<int>) => (a + b, a + b), none, noLists) == ([], []);
+    expect mapAccumRight((a: seq<int>, b: seq<int>) => (a + b, a + b), none, noLists) == ([], []);
   }
 
-  method {:test} MapAccumRIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => mapAccumR(AccAdd, 0, l);
-    var cat := (l: seq<string>) => mapAccumR(AccCat, "", l);
+  method {:test} MapAccumRightIsAutomaticallyCurried() {
+    var sum := (l: seq<int>) => mapAccumRight(AccAdd, 0, l);
+    var cat := (l: seq<string>) => mapAccumRight(AccCat, "", l);
     expect sum([1, 2, 3, 4]) == (10, [10, 9, 7, 4]);
     expect cat(["1", "2", "3", "4"]) == ("4321", ["4321", "432", "43", "4"]);
+  }
+
+  // ---- mergeAll.js (v0.10.0) ----
+
+  method {:test} MergeAllMergesAListOfObjectsTogetherIntoOneObject() {
+    expect mergeAll([map["foo" := 1], map["bar" := 2], map["baz" := 3]]) == map["foo" := 1, "bar" := 2, "baz" := 3];
+  }
+
+  method {:test} MergeAllGivesPrecedenceToLaterObjectsInTheList() {
+    expect mergeAll([map["foo" := 1], map["foo" := 2], map["bar" := 2]]) == map["foo" := 2, "bar" := 2];
   }
 
   // ---- xprod.js (test.product.js) ----

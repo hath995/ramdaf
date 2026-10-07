@@ -1,22 +1,23 @@
-// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
-// the functions with `@category Object` (`evolve`, `invert`, `invertObj`).
-// A JS object is a map<string, V>; a missing property is JS undefined, here
-// None. The functions that build an object by assigning properties (`pick`,
-// `pickAll`, `pickBy`, `omit`, `mixin`, `assoc`, `evolve`, `invertObj`) drop
-// an own `__proto__` property in JS, as the assignment sets the prototype
-// instead; a map's keys are all ordinary (README "Deviations"). (v0.8.0
-// renamed `pickWith` to `pickBy`, and `props` to `propOf`, reusing the name
-// `props` for a new function; v0.9.0 removed `cloneObj`, which `clone`
-// (Core.dfy) took over.)
+// the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
+// `merge`, `dissoc`). A JS object is a map<string, V>; a missing property is
+// JS undefined, here None. The functions that build an object by assigning
+// properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`, `assoc`,
+// `evolve`, `invertObj`, `dissoc`) drop an own `__proto__` property in JS,
+// as the assignment sets the prototype instead; a map's keys are all
+// ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to `pickBy`,
+// and `props` to `propOf`, reusing the name `props` for a new function;
+// v0.9.0 removed `cloneObj`, which `clone` (Core.dfy) took over; v0.10.0
+// renamed `mixin` to `merge`.)
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
     reveals eq, prop, get, propOf, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
-            values, valuesIn, pick, pickAll, omit, pickBy, mixin, eqProps, where,
-            assoc, propEq, evolve, invert, invertObj
+            values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
+            assoc, propEq, evolve, invert, invertObj, dissoc
     provides Prelude
 
   // `a === b` until v0.8.0; since v0.9.0 `Object.is`: `1 / a === 1 / b`
@@ -167,13 +168,17 @@ module Ramdaf.Object {
     ensures forall k :: k in pickBy(test, obj) ==> pickBy(test, obj)[k] == obj[k]
   { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
 
-  // `extend(extend({}, a), b)` (v0.2.4; before, `pickAll(keys(a), a)` with
-  // b's properties copied over it): b's value wins where both have the key
-  // (Dafny's right-biased map union).
-  function mixin<V>(a: map<string, V>, b: map<string, V>): map<string, V>
-    ensures mixin(a, b).Keys == a.Keys + b.Keys
-    ensures forall k :: k in b ==> mixin(a, b)[k] == b[k]
-    ensures forall k :: k in a && k !in b ==> mixin(a, b)[k] == a[k]
+  // `R.merge(a, b)` (v0.10.0, "rename R.mixin", with the same body):
+  // `_extend(_extend({}, a), b)` (`mixin` since v0.2.4; before, `pickAll(keys(a),
+  // a)` with b's properties copied over it), the own properties of a, then
+  // of b: b's value wins where both have the key (Dafny's right-biased map
+  // union). Since v0.10.0 it is `op`-curried, which only adds the
+  // placeholder form `merge(__, b)`. (Not the list `merge` that v0.2.4
+  // removed from Core.)
+  function merge<V>(a: map<string, V>, b: map<string, V>): map<string, V>
+    ensures merge(a, b).Keys == a.Keys + b.Keys
+    ensures forall k :: k in b ==> merge(a, b)[k] == b[k]
+    ensures forall k :: k in a && k !in b ==> merge(a, b)[k] == a[k]
   { a + b }
 
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal).
@@ -219,10 +224,14 @@ module Ramdaf.Object {
     ensures evolve(transformations, obj).Keys == obj.Keys + transformations.Keys
   { obj + map k | k in transformations :: transformations[k](prop(k, obj)) }
 
-  // `R.invert(obj)` (v0.9.0): `out[val] = out[val] || []; out[val].push(key)`
-  // over `keys(obj)`, each value mapped to the keys holding it. JS lists the
-  // keys in property order; a map has none, so they are a set, as for `keys`
-  // (README "Deviations"). The values become keys, so they are strings.
+  // `R.invert(obj)` (v0.9.0): `if (!has(val, out)) { out[val] = []; }
+  // out[val].push(key);` over `keys(obj)` (v0.10.0, "ignore inherited
+  // properties in R.invert"; v0.9.x's `out[val] = out[val] || []` found an
+  // inherited member, so a value such as 'toString' threw), each value
+  // mapped to the keys holding it. JS lists the keys in property order; a map
+  // has none, so they are a set, as for `keys` (README "Deviations"). The
+  // values become keys, so they are strings, and a `__proto__` value is not
+  // an ordinary key in JS.
   function invert(obj: map<string, string>): map<string, set<string>>
     ensures invert(obj).Keys == obj.Values
   { map v | v in obj.Values :: set k | k in obj && obj[k] == v }
@@ -236,4 +245,13 @@ module Ramdaf.Object {
     ensures invertObj(obj).Keys == obj.Values
     ensures forall k :: k in obj ==> invertObj(obj)[obj[k]] == k
   { map k | k in obj :: obj[k] := k }
+
+  // `R.dissoc(prop, obj)` (v0.10.0): `_pickBy(function(val, key) { return
+  // key !== prop; }, obj)`, a copy of obj without the property p (`R.pickBy`
+  // is `_curry2(_pickBy)`). JS compares the key with `!==`, so only a string
+  // `prop` can match, and `_pickBy` also copies inherited enumerable
+  // properties (a map has none).
+  function dissoc<V>(p: string, obj: map<string, V>): map<string, V>
+    ensures dissoc(p, obj) == obj - {p}
+  { pickBy((v: V, k: string, o: map<string, V>) => k != p, obj) }
 }

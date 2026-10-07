@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
 // functions with `@category Math` (`inc`, `dec`, `negate`). (v0.5.0 removed
 // `subtractN`, `divideBy` and `moduloBy`; v0.8.0 renamed `maxWith` and
@@ -54,12 +54,13 @@ module Ramdaf.Math {
     requires p >= 1
   { modulo(modulo(m, p) + p, p) }
 
-  // `foldl(add, 0)` (since v0.9.0 `foldl(_add, 0)`). (In v0.2.0 and v0.2.1 the partially applied foldl kept
+  // `foldl(add, 0)` (since v0.9.0 `foldl(_add, 0)`, since v0.10.0
+  // `reduce(_add, 0)`). (In v0.2.0 and v0.2.1 the partially applied foldl kept
   // its accumulator between calls; v0.2.2's curry3 starts each call afresh.)
   function sum(list: seq<int>): int
   { if |list| == 0 then 0 else list[0] + sum(list[1..]) }
 
-  // `foldl(multiply, 1)`
+  // `foldl(multiply, 1)` (since v0.10.0 `reduce(_multiply, 1)`)
   function product(list: seq<int>): int
   { if |list| == 0 then 1 else list[0] * product(list[1..]) }
 

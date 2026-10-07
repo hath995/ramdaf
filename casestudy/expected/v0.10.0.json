@@ -1,0 +1,31 @@
+{
+  "ramda": "v0.10.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.foldl", "kind": "removed", "why": "v0.10.0 renamed foldl to reduce with the same code (_curry3(_foldl) became _curry3(_reduce); commit 'use consistent names'); R.foldl is gone"},
+    {"symbol": "Ramdaf.List.foldr", "kind": "removed", "why": "v0.10.0 renamed foldr to reduceRight with the same code; R.foldr is gone"},
+    {"symbol": "Ramdaf.List.foldlIndexed", "kind": "removed", "why": "v0.10.0 renamed foldlIndexed to reduceIndexed with the same code"},
+    {"symbol": "Ramdaf.List.foldrIndexed", "kind": "removed", "why": "v0.10.0 renamed foldrIndexed to reduceRightIndexed with the same code"},
+    {"symbol": "Ramdaf.List.mapAccumL", "kind": "removed", "why": "v0.10.0 renamed mapAccumL to mapAccum with the same code"},
+    {"symbol": "Ramdaf.List.mapAccumR", "kind": "removed", "why": "v0.10.0 renamed mapAccumR to mapAccumRight with the same code"},
+    {"symbol": "Ramdaf.List.scanl", "kind": "removed", "why": "v0.10.0 renamed scanl to scan with the same code"},
+    {"symbol": "Ramdaf.List.unfoldr", "kind": "removed", "why": "v0.10.0 renamed unfoldr to unfold with the same code"},
+    {"symbol": "Ramdaf.Object.mixin", "kind": "removed", "why": "v0.10.0 renamed mixin to merge with the same body (commit 'rename R.mixin'); R.mixin is gone"},
+    {"symbol": "Ramdaf.List.ap", "kind": "compatible", "why": "knock-on of the foldl removal: the revealed body called foldl and now calls reduce (Ramda's _ap folds with _reduce, the renamed _foldl), same results"},
+    {"symbol": "Ramdaf.List.chain", "kind": "compatible", "why": "knock-on of the foldl removal: the revealed body called foldl and now calls reduce, same results"},
+    {"symbol": "Ramdaf.List.commuteMap", "kind": "compatible", "why": "v0.10.0's commuteMap folds with _reduce (the renamed _foldl) and foldl is gone: the revealed body calls reduce instead of foldl, same results"},
+    {"symbol": "Ramdaf.List.commute", "kind": "compatible", "why": "knock-on of commuteMap: its revealed body calls commuteMap, whose body changed; same results"},
+    {"symbol": "Ramdaf.List.reduce", "kind": "added", "why": "v0.10.0's new name for foldl, same code (v0.9.0 had removed reduce, which was foldl's primary from v0.4.0 to v0.8.0): acc = fn(acc, list[idx]) for idx ascending"},
+    {"symbol": "Ramdaf.List.reduceRight", "kind": "added", "why": "v0.10.0's new name for foldr, same code (v0.9.0 had removed reduceRight): acc = fn(acc, list[idx]) for idx descending"},
+    {"symbol": "Ramdaf.List.reduceIndexed", "kind": "added", "why": "v0.10.0's new name for foldlIndexed, same code: acc = fn(acc, list[idx], idx, list) for idx ascending"},
+    {"symbol": "Ramdaf.List.reduceRightIndexed", "kind": "added", "why": "v0.10.0's new name for foldrIndexed, same code: acc = fn(acc, list[idx], idx, list) for idx descending"},
+    {"symbol": "Ramdaf.List.mapAccum", "kind": "added", "why": "v0.10.0's new name for mapAccumL, same code"},
+    {"symbol": "Ramdaf.List.mapAccumRight", "kind": "added", "why": "v0.10.0's new name for mapAccumR, same code"},
+    {"symbol": "Ramdaf.List.scan", "kind": "added", "why": "v0.10.0's new name for scanl, same code"},
+    {"symbol": "Ramdaf.List.unfold", "kind": "added", "why": "v0.10.0's new name for unfoldr, same code (with the port's fuel bound)"},
+    {"symbol": "Ramdaf.List.mergeAll", "kind": "added", "why": "new in v0.10.0 (@category List): R.mergeAll = reduce(merge, {}), the objects merged left to right, later keys winning"},
+    {"symbol": "Ramdaf.Object.merge", "kind": "added", "why": "v0.10.0's new name for mixin, same body (_extend(_extend({}, a), b), b's keys winning), now op-curried; not the list merge removed from Core in v0.2.4"},
+    {"symbol": "Ramdaf.Object.dissoc", "kind": "added", "why": "new in v0.10.0: R.dissoc(prop, obj), a copy of obj without the property prop (_pickBy(key !== prop))"},
+    {"symbol": "Ramdaf.Logic.defaultTo", "kind": "added", "why": "new in v0.10.0 (@category Logic): R.defaultTo(d, v) is v unless v is null or undefined (None here), then d"}
+  ]
+}

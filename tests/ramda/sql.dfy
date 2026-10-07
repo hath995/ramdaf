@@ -1,4 +1,4 @@
-// Ramda v0.9.1 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.10.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js and sortBy.js (until v0.8.0 test.sql.js, whose copy of the
 // groupBy describe v0.9.0 dropped), transcribed. Not transcribed:
@@ -6,7 +6,9 @@
 //   difference of distinct-but-equal objects): JS `===` compares references,
 //   Dafny `==` structure (README "Deviations"; pinned in tests/edge/data.dfy);
 // - describe('sortBy'), which sorts by a string title: sortBy keys are ints
-//   (README "Deviations");
+//   (README "Deviations"); its v0.10.0 "preserves object identity" (reference
+//   identity, by a string key) and "sorts array-like object" (`arguments`,
+//   by a string key) likewise;
 // - eqDeep.js's (v0.9.0) "handles regex", "handles dates", "handles typed
 //   arrays" (no such values), the cyclic `c`/`d` and `e`/`f` lines of
 //   "handles recursive data structures" (a Dafny value cannot contain

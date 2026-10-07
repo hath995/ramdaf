@@ -1,4 +1,4 @@
-// Ramdaf: a Dafny port of Ramda v0.9.1 (2015-01-27).
+// Ramdaf: a Dafny port of Ramda v0.10.0 (2015-02-15).
 // Support datatypes shared by the area modules. These are not Ramda exports;
 // they are the encodings the README's "JS -> Dafny mapping" names.
 
@@ -11,7 +11,8 @@ module Ramdaf.Prelude {
   // `maxBy([])` -> undefined, `nth` out of range -> undefined (until v0.4.1
   // removed it, and again since v0.8.0), and since v0.8.0 `cond` when no
   // predicate matches -> undefined) becomes None. (Since v0.9.0 `isNil`, in
-  // Core, tests an Option for None: README "Deviations".)
+  // Core, tests an Option for None, and since v0.10.0 `defaultTo`, in Logic,
+  // replaces None with a default: README "Deviations".)
   datatype Option<T> = None | Some(value: T)
 
   // JS nested heterogeneous arrays (the input of `flatten` and `unnest`)

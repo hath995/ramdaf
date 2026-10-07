@@ -1,6 +1,6 @@
-// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
-// with `@category Logic`. (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with
+// with `@category Logic` (`defaultTo`). (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with
 // the alias `if`, and reused the name `cond` for a new function; v0.9.0
 // renamed `allPredicates` and `anyPredicates` to `allPass` and `anyPass`
 // and removed `if`.)
@@ -9,7 +9,7 @@ module Ramdaf.Logic {
   import opened Prelude
 
   export
-    reveals and, or, not, allPass, anyPass, ifElse, cond
+    reveals and, or, not, allPass, anyPass, ifElse, cond, defaultTo
     provides Prelude
 
   // v0.1.4 deleted the boolean operators `and`, `or` and `not` and renamed
@@ -64,4 +64,14 @@ module Ramdaf.Logic {
   { x => if |pairs| == 0 then None
          else if pairs[0].0(x) then Some(pairs[0].1(x))
          else cond(pairs[1..])(x) }
+
+  // `R.defaultTo(d, v)` (v0.10.0, `@category Logic`): `v == null ? d : v`,
+  // the value unless it is null or undefined, then the default. The port's
+  // None stands for both (an absent property, a "no value" result), so the
+  // value is an Option; JS lets the default and the value differ in type
+  // (README "Deviations", with `isNil`).
+  function defaultTo<T>(d: T, v: Option<T>): T
+  { match v
+      case Some(x) => x
+      case None => d }
 }
