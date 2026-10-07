@@ -1,8 +1,8 @@
-// Ramdaf: Ramda v0.5.0 "Logic Functions" (ramda.js lines 3986-4142).
+// Ramdaf: Ramda v0.6.0 "Logic Functions" (ramda.js lines 4072-4253).
 
 module Ramdaf.Logic {
   export
-    reveals and, or, not, allPredicates, anyPredicates
+    reveals and, or, not, allPredicates, anyPredicates, cond
 
   // v0.1.4 deleted the boolean operators `and`, `or` and `not` and renamed
   // `andFn`, `orFn` and `notFn` to those names. JS forwards any number of
@@ -26,4 +26,12 @@ module Ramdaf.Logic {
 
   function anyPredicates<T>(preds: seq<T -> bool>): T -> bool
   { x => exists i :: 0 <= i < |preds| && preds[i](x) }
+
+  // `R.cond(condition, onTrue, onFalse)` (v0.6.0): a function that applies
+  // onTrue to its arguments when condition holds for them (truthy), and
+  // onFalse otherwise; only the chosen branch is called. JS forwards any
+  // number of arguments; the port's result is unary (tuple the arguments for
+  // more).
+  function cond<A, B>(condition: A -> bool, onTrue: A -> B, onFalse: A -> B): A -> B
+  { x => if condition(x) then onTrue(x) else onFalse(x) }
 }

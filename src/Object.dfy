@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.5.0 "Object Functions" (ramda.js lines 3198-3879) and `propEq`
-// (line 4875). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.6.0 "Object Functions" (ramda.js lines 3263-3965) and `propEq`
+// (line 5031). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
 // properties (`pick`, `pickAll`, `pickWith`, `omit`, `mixin`, `cloneObj`)
 // drop an own `__proto__` property in JS, as the assignment sets the
@@ -9,7 +9,7 @@ module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, get, props, propOrDefault, keys, keysIn, toPairs, toPairsIn,
+    reveals eq, prop, get, props, propOr, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickWith, mixin, cloneObj, eqProps, where,
             propEq
     provides Prelude
@@ -27,10 +27,11 @@ module Ramdaf.Object {
   // prop with the arguments the other way round.
   function props<V>(obj: map<string, V>, p: string): Option<V> { prop(p, obj) }
 
-  // `R.propOrDefault(p, val, obj)` (v0.4.0): `hasOwnProperty.call(obj, p) ?
-  // obj[p] : val`, obj's own property p, or val when obj lacks it. Every
+  // `R.propOr(p, val, obj)`: `hasOwnProperty.call(obj, p) ? obj[p] : val`,
+  // obj's own property p, or val when obj lacks it (v0.6.0 renamed
+  // `propOrDefault`, added in v0.4.0, to `propOr`, with the same code). Every
   // property of a map is its own.
-  function propOrDefault<V>(p: string, val: V, obj: map<string, V>): V
+  function propOr<V>(p: string, val: V, obj: map<string, V>): V
   { if p in obj then obj[p] else val }
 
   // The own enumerable property names. JS returns them in insertion order;

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.5.0 "String Functions" (ramda.js lines 4550-4823): the
+// Ramdaf: Ramda v0.6.0 "String Functions" (ramda.js lines 4675-4979): the
 // String.prototype methods, with JS's index clamping. A Dafny `string` is a
 // sequence of Unicode scalar values where JS counts UTF-16 code units, and
 // case conversion is ASCII-only (see README "Deviations").
@@ -6,7 +6,7 @@
 module Ramdaf.String {
   export
     reveals substring, substringFrom, substringTo, charAt, charCodeAt,
-            strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split
+            strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, trim, split
 
   // `String.prototype.substring(start, end)`: each index is clamped to
   // [0, |s|], and the two are swapped when start > end.
@@ -68,6 +68,20 @@ module Ramdaf.String {
     ensures |toLowerCase(s)| == |s|
   { if |s| == 0 then ""
     else [if 'A' <= s[0] <= 'Z' then (s[0] as int + 32) as char else s[0]] + toLowerCase(s[1..]) }
+
+  // `R.trim(str)` (v0.6.0): `str.replace(/^[ws][ws]*/, '').replace(/[ws][ws]*$/, '')`
+  // for the 26 characters of `ws` below, the leading and then the trailing
+  // run removed. Ramda uses `String.prototype.trim` only when it strips all
+  // of them; node's does not strip U+180E (a format character since Unicode
+  // 6.3), so node runs this fallback, which does. U+200B, the zero-width
+  // space, is kept. All 26 are in the BMP, so code points and UTF-16 code
+  // units agree here.
+  function trim(s: string): string
+    decreases |s|
+  { var ws := "\t\n\U{000B}\U{000C}\r \U{00A0}\U{1680}\U{180E}\U{2000}\U{2001}\U{2002}\U{2003}\U{2004}\U{2005}\U{2006}\U{2007}\U{2008}\U{2009}\U{200A}\U{202F}\U{205F}\U{3000}\U{2028}\U{2029}\U{FEFF}";
+    if |s| > 0 && s[0] in ws then trim(s[1..])
+    else if |s| > 0 && s[|s| - 1] in ws then trim(s[..|s| - 1])
+    else s }
 
   // `String.prototype.split(sep)`: the pieces between occurrences of sep;
   // an empty separator splits into single characters (and "" into []).

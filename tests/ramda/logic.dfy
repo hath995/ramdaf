@@ -1,4 +1,5 @@
-// Ramda v0.5.0 test/test.booleans.js and test/test.allany.js, transcribed.
+// Ramda v0.6.0 test/test.booleans.js, test/test.allany.js and
+// test/test.cond.js, transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression"), which detect a call by its side effect, the "reports its
 // arity" cases, and v0.5.0's "throws on zero arguments" cases (no-argument
@@ -162,5 +163,50 @@ module RamdafTests.Ramda.Logic {
   method {:test} SomeFalseForTheEmptyList() {
     var empty: seq<int> := [];
     expect some((x: int) => true, empty) == false;
+  }
+
+  // ---- test.cond.js (v0.6.0) ----
+
+  // `t = a + 1` (it only meets numbers), `identity`, and the validator
+  // `typeof a === 'number'`
+  function CondT(a: Js): Js { match a case Num(n) => Num(n + 1) case _ => a }
+  function CondId(a: Js): Js { a }
+  function IsNumber(a: Js): bool { a.Num? }
+
+  method {:test} CondCallsTheTruthCaseWhenTheValidatorReturnsTruthy() {
+    expect cond(IsNumber, CondT, CondId)(Num(10)) == Num(11);
+  }
+
+  method {:test} CondCallsTheFalseCaseWhenTheValidatorReturnsFalsey() {
+    expect cond(IsNumber, CondT, CondId)(Str("hello")) == Str("hello");
+  }
+
+  // `map(cond(isArray, prop('length'), identity))`: the port's `prop` takes a
+  // map, so the array's length is a local lambda.
+  method {:test} CondCallsTheTrueCaseOnArraysAndTheFalseCaseOnOthers() {
+    var len := (a: Js) => if a.Arr? then Num(|a.items|) else a;
+    var list := [Arr([Num(1), Num(2), Num(3), Num(4), Num(5)]), Num(10), Arr([Num(0), Num(1)]), Num(15)];
+    var arrayToLength := (l: seq<Js>) => mapSeq(cond((a: Js) => a.Arr?, len, CondId), l);
+    expect arrayToLength(list) == [Num(5), Num(10), Num(2), Num(15)];
+  }
+
+  // The two arguments are a tuple; Ramda's asserts inside the callback become
+  // a check of what the callback receives (returned here).
+  method {:test} CondPassesTheArgumentsToTheTrueCase() {
+    var identity := (p: (int, string)) => p;
+    var onTrue := (p: (int, string)) => p;
+    expect cond((p: (int, string)) => true, onTrue, identity)((123, "abc")) == (123, "abc");
+  }
+
+  method {:test} CondPassesTheArgumentsToTheFalseCase() {
+    var identity := (p: (int, string)) => p;
+    var onFalse := (p: (int, string)) => p;
+    expect cond((p: (int, string)) => false, identity, onFalse)((123, "abc")) == (123, "abc");
+  }
+
+  method {:test} CondReturnsACurriedFunction() {
+    var ifIsNumber := (tt: Js -> Js, ff: Js -> Js) => cond(IsNumber, tt, ff);
+    expect ifIsNumber(CondT, CondId)(Num(15)) == Num(16);
+    expect ifIsNumber(CondT, CondId)(Str("hello")) == Str("hello");
   }
 }

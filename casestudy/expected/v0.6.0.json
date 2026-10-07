@@ -1,0 +1,10 @@
+{
+  "ramda": "v0.6.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Object.propOrDefault", "kind": "removed", "why": "v0.6.0 renamed propOrDefault to propOr; R.propOrDefault is gone"},
+    {"symbol": "Ramdaf.Object.propOr", "kind": "added", "why": "new name in v0.6.0 for propOrDefault, same code: hasOwnProperty.call(obj, p) ? obj[p] : val"},
+    {"symbol": "Ramdaf.Logic.cond", "kind": "added", "why": "new in v0.6.0: R.cond(condition, onTrue, onFalse) returns a function that applies onTrue or onFalse to its arguments according to condition"},
+    {"symbol": "Ramdaf.String.trim", "kind": "added", "why": "new in v0.6.0: R.trim(str) removes the leading and trailing runs of its 26 whitespace characters (U+180E included, the fallback node runs)"}
+  ]
+}

@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.5.0's own suite does not cover, each checked against
-// ramda.js v0.5.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.6.0's own suite does not cover, each checked against
+// ramda.js v0.6.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -220,13 +220,13 @@ module RamdafTests.Edge.List {
     expect reduce((acc: string, c: char) => acc + [c], "", "abc") == "abc";
   }
 
-  // Since v0.4.0 a String first argument concatenates as a string even when
-  // it is empty (node: concat('', 'bar') is 'bar'; v0.2.4 to v0.3.0 gave the
-  // array ['b', 'a', 'r'], and concat('', '') gave []).
+  // Two strings concatenate when the first is not empty (its own `concat`
+  // method); the empty first string is a deviation since v0.6.0 (below).
   method {:test} ConcatOfStrings() {
-    expect concat("", "bar") == "bar";
-    expect concat("", "") == "";
     expect concat("foo", "") == "foo";
+    expect concat("ab", "cd") == "abcd";
+    var empty: seq<int> := [];
+    expect concat(empty, [1]) == [1];
   }
 
   // Since v0.4.0 a function element is a leaf again (v0.3.0 expanded it into
@@ -427,6 +427,17 @@ module RamdafTests.Edge.List {
     var node := map["nodeType" := 1, "length" := -1];
     expect flatten([Leaf(node)]) == [node];
     expect unnest([Leaf(node)]) == [Leaf(node)];
+  }
+
+  // node: concat('', 'bar') and concat('', '') throw "TypeError: can't concat
+  // string" (since v0.6.0 a non-array second argument needs a truthy first
+  // argument with a `concat` method; v0.4.0 and v0.5.0 gave 'bar' and '',
+  // v0.2.4 to v0.3.0 ['b', 'a', 'r'] and []). Here a string is a seq, and
+  // `concat("", "bar")` is the same call as `concat([], ['b', 'a', 'r'])`,
+  // which node still allows.
+  method {:test} DeviationConcatOfAnEmptyFirstString() {
+    expect concat("", "bar") == "bar";
+    expect concat("", "") == "";
   }
 
   // node: chain(x => 'ab', [1, 2]) is ['ab', 'ab'] (a string is not

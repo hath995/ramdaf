@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.5.0 "Core Functions" (ramda.js lines 744-1021), `clone`
-// (lines 740-742), and `size` with its alias `length` (lines 1933-1943).
+// Ramdaf: Ramda v0.6.0 "Core Functions" (ramda.js lines 789-1069), `clone`
+// (lines 785-787), and `size` with its alias `length` (lines 1990-2000).
 // (v0.2.0 removed `cloneDeep`, and v0.4.1 the `first` alias of `head`.)
 
 module Ramdaf.Core {
@@ -41,12 +41,12 @@ module Ramdaf.Core {
   function push<T>(el: T, list: seq<T>): seq<T> { append(el, list) }
 
   // `R.concat` (v0.2.4; until v0.2.3 it was an alias of `merge`, which v0.2.4
-  // removed): the elements of list1 followed by those of list2. Since v0.4.0
-  // a second argument that is not an array makes a String first argument
-  // concatenate as a string (`concat("foo", "bar")` is `"foobar"`), and
-  // otherwise calls the second argument's `concat` method with the first
-  // (`set2.concat(set1)`) or throws TypeError; until v0.3.0 a non-array first
-  // argument with a `concat` method was dispatched to. A Dafny string is a
+  // removed): the elements of list1 followed by those of list2. When the
+  // second argument is not an array, v0.6.0 calls the first argument's
+  // `concat` method if it is truthy and has one (`concat("foo", "bar")` is
+  // `"foobar"`) and otherwise throws TypeError, so `concat("", "bar")`
+  // throws (README "Deviations"; v0.4.0 and v0.5.0 tested for a String first
+  // argument and then the second argument's method). A Dafny string is a
   // seq, so the same function covers strings.
   function concat<T>(list1: seq<T>, list2: seq<T>): seq<T> { list1 + list2 }
 

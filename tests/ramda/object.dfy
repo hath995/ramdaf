@@ -1,4 +1,4 @@
-// Ramda v0.5.0 test/test.objectBasics.js, test/test.keysvals.js,
+// Ramda v0.6.0 test/test.objectBasics.js, test/test.keysvals.js,
 // test/test.tapeq.js and test/test.zip.js's toPairs and toPairsIn describes,
 // transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument
@@ -10,12 +10,12 @@
 // README "Deviations"; pinned in tests/edge/object.dfy); and
 // test.keysvals.js's cases on an object built by a
 // constructor whose prototype has properties ("does not include"/"includes
-// the given object's prototype properties"), and v0.4.0's propOrDefault
-// "should not return properties from the prototype chain", toPairs "only
+// the given object's prototype properties"), and propOr's (propOrDefault's
+// until v0.5.0) "should not return properties from the prototype chain", toPairs "only
 // iterates the object's own properties" and toPairsIn "iterates properties
 // on the object's prototype chain": a map has no prototype. Also skipped:
 // the no-argument cases, prop's "should throw when called with no
-// arguments" (v0.4.0) and propOrDefault's, where's and eq's "throws if given
+// arguments" (v0.4.0) and propOr's, where's and eq's "throws if given
 // no arguments" (v0.4.1); and eq's "is curried" (v0.4.1), which relies on
 // `[] !== []`, reference inequality (README "Deviations"). toPairs and toPairsIn return a set (a map has no key order, README
 // "Deviations").
@@ -57,15 +57,16 @@ module RamdafTests.Ramda.Object {
     expect p("feet") == Some(Str("large"));
   }
 
-  // describe('propOrDefault') (v0.4.0): `nm = propOrDefault('name', 'Unknown')`
-  // (its `typeof nm == 'function'` holds by construction)
-  method {:test} PropOrDefaultReturnsAFunctionThatFetchesTheAppropriateProperty() {
-    var nm := (o: map<string, Js>) => propOrDefault("name", Str("Unknown"), o);
+  // describe('propOr') (describe('propOrDefault') from v0.4.0 to v0.5.0):
+  // `nm = propOr('name', 'Unknown')` (its `typeof nm == 'function'` holds by
+  // construction)
+  method {:test} PropOrReturnsAFunctionThatFetchesTheAppropriateProperty() {
+    var nm := (o: map<string, Js>) => propOr("name", Str("Unknown"), o);
     expect nm(Fred()) == Str("Fred");
   }
 
-  method {:test} PropOrDefaultReturnsTheDefaultValueWhenThePropertyDoesNotExist() {
-    var nm := (o: map<string, Js>) => propOrDefault("name", Str("Unknown"), o);
+  method {:test} PropOrReturnsTheDefaultValueWhenThePropertyDoesNotExist() {
+    var nm := (o: map<string, Js>) => propOr("name", Str("Unknown"), o);
     expect nm(map["age" := Num(99)]) == Str("Unknown");
   }
 

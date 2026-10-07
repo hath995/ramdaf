@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.5.0 "List Functions" (ramda.js lines 1456-3197), except
+// Ramdaf: Ramda v0.6.0 "List Functions" (ramda.js lines 1505-3262), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
 // (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
 // `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
@@ -568,7 +568,9 @@ module Ramdaf.List {
     else if |list| == 1 then list[0]
     else list[0] + sep + join(sep, list[1..]) }
 
-  // `Array.prototype.slice(from, to)` (an invoker since v0.1.4): a negative
+  // `Array.prototype.slice(from, to)` (an invoker since v0.1.4; since v0.6.0
+  // `invoker(Array.prototype.slice)`, which also works on a JS string, as
+  // the port does): a negative
   // index counts from the end, both are clamped into the list, and the result
   // is empty when `to` falls at or before `from`.
   function slice<T>(from: int, to: int, list: seq<T>): seq<T>

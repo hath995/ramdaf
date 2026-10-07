@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.5.0 under node; the methods named Deviation* pin documented
+// ramda.js v0.6.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -47,22 +47,23 @@ module RamdafTests.Edge.Misc {
     expect valuesIn(map["a" := 1, "b" := 1]) == multiset{1, 1};
   }
 
-  // propOrDefault (v0.4.0) returns obj's own property p, or the default.
-  method {:test} PropOrDefaultEdges() {
+  // propOr (propOrDefault from v0.4.0 to v0.5.0) returns obj's own property
+  // p, or the default.
+  method {:test} PropOrEdges() {
     var none: map<string, int> := map[];
-    expect propOrDefault("a", 5, map["a" := 1]) == 1;
-    expect propOrDefault("z", 5, map["a" := 1]) == 5;
+    expect propOr("a", 5, map["a" := 1]) == 1;
+    expect propOr("z", 5, map["a" := 1]) == 5;
     // a falsy own value is kept
-    expect propOrDefault("a", 5, map["a" := 0]) == 0;
+    expect propOr("a", 5, map["a" := 0]) == 0;
     // node: `{}` inherits `toString`, which is not an own property
-    expect propOrDefault("toString", 5, none) == 5;
-    expect propOrDefault("hasOwnProperty", 5, map["hasOwnProperty" := 1]) == 1;
+    expect propOr("toString", 5, none) == 5;
+    expect propOr("hasOwnProperty", 5, map["hasOwnProperty" := 1]) == 1;
     // an own property whose value is null or undefined is returned (node:
     // null, undefined)
-    expect propOrDefault("a", Num(5), map["a" := Null]) == Null;
-    expect propOrDefault("a", Num(5), map["a" := Undefined]) == Undefined;
-    // `propOrDefault('a')(5)({})`
-    var aOr5 := (o: map<string, int>) => propOrDefault("a", 5, o);
+    expect propOr("a", Num(5), map["a" := Null]) == Null;
+    expect propOr("a", Num(5), map["a" := Undefined]) == Undefined;
+    // `propOr('a')(5)({})`
+    var aOr5 := (o: map<string, int>) => propOr("a", 5, o);
     expect aOr5(none) == 5;
   }
 
@@ -238,6 +239,29 @@ module RamdafTests.Edge.Misc {
   method {:test} CaseConversionOfAscii() {
     expect toUpperCase("aBc-1") == "ABC-1";
     expect toLowerCase("AbC-1") == "abc-1";
+  }
+
+  // cond (v0.6.0) applies onTrue or onFalse to its argument; JS forwards
+  // every argument (a tuple here).
+  method {:test} CondEdges() {
+    var big := cond((x: int) => x > 2, (x: int) => "big", (x: int) => "small");
+    expect big(3) == "big";
+    expect big(1) == "small";
+    // `cond((a, b) => a < b, (a, b) => b - a, (a, b) => a - b)(2, 5)`
+    expect cond((p: (int, int)) => p.0 < p.1, (p: (int, int)) => p.1 - p.0, (p: (int, int)) => p.0 - p.1)((2, 5)) == 3;
+  }
+
+  // trim (v0.6.0) strips the leading and trailing runs of its 26 whitespace
+  // characters: node strips U+180E (Ramda's fallback) and keeps U+200B and
+  // U+0085, and inner whitespace stays.
+  method {:test} TrimEdges() {
+    expect trim("\U{180E} x \U{180E}") == "x";
+    expect trim("\U{200B} x \U{200B}") == "\U{200B} x \U{200B}";
+    expect trim("\U{0085} x \U{0085}") == "\U{0085} x \U{0085}";
+    expect trim("") == "";
+    expect trim("   ") == "";
+    expect trim("a  b") == "a  b";
+    expect trim(" \U{1F600} ") == "\U{1F600}";
   }
 
   // and/or/not combine predicates (v0.1.4 renamed andFn/orFn/notFn).

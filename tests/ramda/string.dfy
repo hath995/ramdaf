@@ -1,5 +1,8 @@
-// Ramda v0.5.0 test/test.stringBasics.js, transcribed. Not transcribed:
-// describe('match') (regular expressions are not portable, README).
+// Ramda v0.6.0 test/test.stringBasics.js, transcribed. Not transcribed:
+// describe('match') (regular expressions are not portable, README), and
+// trim's "falls back to a shim if String.prototype.trim is not present"
+// (v0.6.0), which is only registered when that method is missing, so not
+// under node (its asserts repeat the other three).
 
 module RamdafTests.Ramda.String {
   import opened Ramdaf.String
@@ -70,6 +73,23 @@ module RamdafTests.Ramda.String {
   // describe('toUpperCase'), describe('toLowerCase')
   method {:test} ToUpperCaseUppercases() { expect toUpperCase("abc") == "ABC"; }
   method {:test} ToLowerCaseLowercases() { expect toLowerCase("XYZ") == "xyz"; }
+
+  // describe('trim') (v0.6.0): the 26 characters before and after
+  // "Hello, World!" are ES5 whitespace plus U+180E, U+2028, U+2029 and U+FEFF.
+  function TrimWs(): string { "\t\n\U{000B}\U{000C}\r \U{00A0}\U{1680}\U{180E}\U{2000}\U{2001}\U{2002}\U{2003}\U{2004}\U{2005}\U{2006}\U{2007}\U{2008}\U{2009}\U{200A}\U{202F}\U{205F}\U{3000}\U{2028}\U{2029}\U{FEFF}" }
+
+  method {:test} TrimTrimsAString() {
+    expect trim("   xyz  ") == "xyz";
+  }
+  method {:test} TrimTrimsAllEs5Whitespace() {
+    var test := TrimWs() + "Hello, World!" + TrimWs();
+    expect trim(test) == "Hello, World!";
+    expect |trim(test)| == 13;
+  }
+  method {:test} TrimDoesNotTrimTheZeroWidthSpace() {
+    expect trim("\U{200B}") == "\U{200B}";
+    expect |trim("\U{200B}")| == 1;
+  }
 
   // describe('split')
   method {:test} SplitSplitsIntoAnArray() {
