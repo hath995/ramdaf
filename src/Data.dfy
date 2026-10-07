@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
@@ -61,11 +61,24 @@ module Ramdaf.Data {
          if x !in second && x !in out then out + [x] else out }
 
   // `if (!containsPred(first[idx], second) && !containsPred(first[idx], out))
-  // out.push(first[idx])` with `containsPred = R.containsWith(pred)` (v0.7.0;
-  // before, it was `uniqWith(pred)(reject(flip(containsWith(pred))(second),
-  // first))`, with the same results): x is kept unless `pred(x, y)` holds for
-  // some y in second or for some element already kept.
+  // out[idx] = first[idx]` with `containsPred = R.containsWith(pred)`
+  // (v0.11.0; `out.push(first[idx])` from v0.7.0 to v0.10.0; before, it was
+  // `uniqWith(pred)(reject(flip(containsWith(pred))(second), first))`, with
+  // the same results): x is kept unless `pred(x, y)` holds for some y in
+  // second or for some element already kept. Since v0.11.0 (commit b7a8f67b,
+  // a mechanical edit) a kept element is written at its own index, so every
+  // dropped index below the last kept one is a hole
+  // (`differenceWith(eq, [1, 2, 3, 4], [2])` is `[1, <hole>, 3, 4]`), which a
+  // seq cannot hold: the domain is the inputs whose kept elements are a
+  // prefix of first. If d is the first dropped index, every later element
+  // must be dropped too, against `out = first[..d]` (README "Outside the
+  // modeled domain"). There node's result is the one computed before.
   function differenceWith<T>(pred: (T, T) -> bool, first: seq<T>, second: seq<T>): seq<T>
+    requires forall d, j | 0 <= d < j < |first| ::
+      ((forall i :: 0 <= i < d ==>
+          !List.containsWith(pred, first[i], second) && !List.containsWith(pred, first[i], first[..i])) &&
+       (List.containsWith(pred, first[d], second) || List.containsWith(pred, first[d], first[..d])))
+      ==> (List.containsWith(pred, first[j], second) || List.containsWith(pred, first[j], first[..d]))
     ensures forall i :: 0 <= i < |differenceWith(pred, first, second)| ==>
       differenceWith(pred, first, second)[i] in first &&
       forall j :: 0 <= j < |second| ==> !pred(differenceWith(pred, first, second)[i], second[j])
@@ -74,6 +87,8 @@ module Ramdaf.Data {
   { if |first| == 0 then []
     else var init := first[..|first| - 1];
          var x := first[|first| - 1];
+         assert forall i :: 0 <= i < |init| ==> init[i] == first[i];
+         assert forall i :: 0 <= i <= |init| ==> init[..i] == first[..i];
          var out := differenceWith(pred, init, second);
          assert forall y | y in init :: y in first;
          if !List.containsWith(pred, x, second) && !List.containsWith(pred, x, out) then

@@ -1,0 +1,11 @@
+{
+  "ramda": "v0.11.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Data.differenceWith", "kind": "breaking", "why": "v0.11.0 writes each kept element at its own index (out[idx] = first[idx], was out[out.length]; commit b7a8f67b), so a dropped element before a kept one leaves a hole (differenceWith(eq, [1, 2, 3, 4], [2]) went from [1, 3, 4] to [1, <hole>, 3, 4]); holes cannot be represented, so a new precondition requires the kept elements to be a prefix of first, with every result inside it unchanged"},
+    {"symbol": "Ramdaf.Math.negate", "kind": "compatible", "why": "v0.11.0 defines negate as function(n) { return -n; } instead of multiply(-1): the revealed body is -n instead of multiply(-1, n), same results"},
+    {"symbol": "Ramdaf.Object.dissoc", "kind": "compatible", "why": "v0.11.0's dissoc is _dissoc, a copy loop that skips prop, instead of _pickBy(key !== prop): the revealed body is obj - {p} instead of pickBy(...), same results"},
+    {"symbol": "Ramdaf.Prelude.LensOn", "kind": "added", "why": "encodes the result of R.lensOn (new in v0.11.0), a function of no arguments carrying set and map properties: get, set_ and map_ (set and map are Dafny keywords)"},
+    {"symbol": "Ramdaf.Object.lensOn", "kind": "added", "why": "new in v0.11.0 (@category Object): R.lensOn(get, set, obj) returns lns() = get(obj) with the properties lns.set = set and lns.map(fn) = set(fn(get(obj)))"}
+  ]
+}

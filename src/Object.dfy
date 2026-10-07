@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
-// `merge`, `dissoc`). A JS object is a map<string, V>; a missing property is
+// `merge`, `dissoc`, `lensOn`). A JS object is a map<string, V>; a missing property is
 // JS undefined, here None. The functions that build an object by assigning
 // properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`, `assoc`,
 // `evolve`, `invertObj`, `dissoc`) drop an own `__proto__` property in JS,
@@ -17,7 +17,7 @@ module Ramdaf.Object {
   export
     reveals eq, prop, get, propOf, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
-            assoc, propEq, evolve, invert, invertObj, dissoc
+            assoc, propEq, evolve, invert, invertObj, dissoc, lensOn
     provides Prelude
 
   // `a === b` until v0.8.0; since v0.9.0 `Object.is`: `1 / a === 1 / b`
@@ -31,12 +31,15 @@ module Ramdaf.Object {
   // `obj[p]`
   function prop<V>(p: string, obj: map<string, V>): Option<V>
   { if p in obj then Some(obj[p]) else None }
+  // `R.get = prop`, an alias (`@deprecated since v0.11.0`, still exported
+  // with the same code).
   function get<V>(p: string, obj: map<string, V>): Option<V> { prop(p, obj) }
 
   // `R.propOf = flip(prop)` (v0.8.0, which renamed `props` to `propOf` with
   // the same code; `props` was `flip(R.prop)` since v0.4.0, `obj &&
   // obj[prop]` before, the same on a map): prop with the arguments the other
-  // way round.
+  // way round. (`@deprecated since v0.11.0`, still exported with the same
+  // code.)
   function propOf<V>(obj: map<string, V>, p: string): Option<V> { prop(p, obj) }
 
   // `R.props(ps, obj)` (v0.8.0, "multiple `get`"): `out[idx] = obj[ps[idx]]`
@@ -57,8 +60,9 @@ module Ramdaf.Object {
   function propOr<V>(val: V, p: string, obj: map<string, V>): V
   { if has(p, obj) then obj[p] else val }
 
-  // `R.has(prop, obj)` (v0.7.0): `hasOwnProperty.call(obj, prop)`. Every
-  // property of a map is its own.
+  // `R.has(prop, obj)` (v0.7.0): `hasOwnProperty.call(obj, prop)` (since
+  // v0.11.0 `_curry2(_has)`, which also takes the placeholder, `has(__,
+  // obj)`). Every property of a map is its own.
   function has<V>(p: string, obj: map<string, V>): bool { p in obj }
 
   // `R.hasIn(prop, obj)` (v0.7.0): `prop in obj`, an own property or one on
@@ -143,8 +147,9 @@ module Ramdaf.Object {
   }
 
   // The listed properties that exist on obj. (Since v0.7.0 pick, omit and
-  // pickBy, `pickWith` until v0.7.2, iterate `keysIn(obj)`, so inherited
-  // enumerable properties count too; a map has none.)
+  // pickBy, `pickWith` until v0.7.2, iterate `keysIn(obj)`, since v0.11.0
+  // with their own `for (var prop in obj)` loops, so inherited enumerable
+  // properties count too; a map has none.)
   function pick<V>(names: seq<string>, obj: map<string, V>): map<string, V>
     ensures pick(names, obj).Keys == obj.Keys * set n | n in names
   { map k | k in obj && k in names :: obj[k] }
@@ -172,9 +177,9 @@ module Ramdaf.Object {
   // `_extend(_extend({}, a), b)` (`mixin` since v0.2.4; before, `pickAll(keys(a),
   // a)` with b's properties copied over it), the own properties of a, then
   // of b: b's value wins where both have the key (Dafny's right-biased map
-  // union). Since v0.10.0 it is `op`-curried, which only adds the
-  // placeholder form `merge(__, b)`. (Not the list `merge` that v0.2.4
-  // removed from Core.)
+  // union). It was `op`-curried in v0.10.0 and is `_curry2` since v0.11.0,
+  // which only add the placeholder form `merge(__, b)`. (Not the list
+  // `merge` that v0.2.4 removed from Core.)
   function merge<V>(a: map<string, V>, b: map<string, V>): map<string, V>
     ensures merge(a, b).Keys == a.Keys + b.Keys
     ensures forall k :: k in b ==> merge(a, b)[k] == b[k]
@@ -200,8 +205,10 @@ module Ramdaf.Object {
         case Pred(fn) => k in test && fn(Some(test[k]), test)
         case Val(v) => k in test && test[k] == v }
 
-  // `R.assoc(prop, val, obj)` (v0.8.0): `_extend(fromPairs(map(key => [key,
-  // obj[key]], keysIn(obj))), createMapEntry(prop, val))`, a shallow copy of
+  // `R.assoc(prop, val, obj)` (v0.8.0): `_assoc`, `for (var p in obj)
+  // result[p] = obj[p]; result[prop] = val;` (v0.11.0; until v0.10.0
+  // `_extend(fromPairs(map(key => [key, obj[key]], keysIn(obj))),
+  // createMapEntry(prop, val))`, the same keys and values), a shallow copy of
   // obj with the property set to val (added if obj lacks it). On a map that
   // is the map update. In JS the key is converted to a string, and a
   // `__proto__` key (or an own `__proto__` property of obj) is not an
@@ -246,12 +253,28 @@ module Ramdaf.Object {
     ensures forall k :: k in obj ==> invertObj(obj)[obj[k]] == k
   { map k | k in obj :: obj[k] := k }
 
-  // `R.dissoc(prop, obj)` (v0.10.0): `_pickBy(function(val, key) { return
-  // key !== prop; }, obj)`, a copy of obj without the property p (`R.pickBy`
-  // is `_curry2(_pickBy)`). JS compares the key with `!==`, so only a string
-  // `prop` can match, and `_pickBy` also copies inherited enumerable
+  // `R.dissoc(prop, obj)` (v0.10.0): `_dissoc`, `for (var p in obj) { if (p
+  // !== prop) { result[p] = obj[p]; } }` (v0.11.0; v0.10.0's
+  // `_pickBy(function(val, key) { return key !== prop; }, obj)`, the body of
+  // `R.pickBy`, gave the same results), a copy of obj without the property p:
+  // the map without the key. JS compares the key with `!==`, so only a
+  // string `prop` can match, and the loop also copies inherited enumerable
   // properties (a map has none).
   function dissoc<V>(p: string, obj: map<string, V>): map<string, V>
     ensures dissoc(p, obj) == obj - {p}
-  { pickBy((v: V, k: string, o: map<string, V>) => k != p, obj) }
+  { obj - {p} }
+
+  // `R.lensOn(get, set, obj)` (v0.11.0, `@category Object`): `var lns =
+  // function() { return get(obj); }; lns.set = set; lns.map = function(fn) {
+  // return set(fn(get(obj))); }; return lns;`, a lens bound to obj, here the
+  // record `Prelude.LensOn` (README "Deviations"; `set` is a Dafny keyword).
+  // JS calls get on each use, so a later mutation of obj shows; a Dafny value
+  // does not change. The JSDoc's `@sig` and example put obj first
+  // (`R.lensOn(xo, get, set)`, which throws in node: "get is not a
+  // function"); the code and Ramda's tests take it last, as here.
+  // As for `lens`, get and set_ are partial arrows: the bound get requires
+  // get's precondition on obj, and map_ that and set_'s on the mapped value.
+  function lensOn<A, V, B>(get: A --> V, set_: V --> B, obj: A): LensOn<V, B>
+  { LensOn(() requires get.requires(obj) => get(obj), set_,
+           (fn: V -> V) requires get.requires(obj) && set_.requires(fn(get(obj))) => set_(fn(get(obj)))) }
 }

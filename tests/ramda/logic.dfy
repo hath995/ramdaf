@@ -1,10 +1,10 @@
-// Ramda v0.10.0 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
+// Ramda v0.11.0 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
 // any.js, ifElse.js, cond.js and defaultTo.js (until v0.8.0
 // test.booleans.js, test.allany.js and test.cond.js), transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression", "short-circuits on first false value"), which detect a call by
 // its side effect, the "reports its arity" cases, and the "throws on zero
-// arguments" cases (no-argument calls; the `typeof` checks of "is curried"
+// arguments" cases (no-argument calls, until v0.10.0; the `typeof` checks of "is curried"
 // hold by construction, and so does cond's "returns a function"). The
 // multi-parameter predicates take their arguments as a tuple. cond's
 // "forwards all arguments" case checks `arguments.length`, here the tuple

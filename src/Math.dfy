@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
 // functions with `@category Math` (`inc`, `dec`, `negate`). (v0.5.0 removed
 // `subtractN`, `divideBy` and `moduloBy`; v0.8.0 renamed `maxWith` and
@@ -147,7 +147,8 @@ module Ramdaf.Math {
   // `R.dec = add(-1)` (v0.9.0).
   function dec(n: int): int { add(-1, n) }
 
-  // `R.negate = multiply(-1)` (v0.9.0). JS `negate(0)` is `-0`, which int
-  // does not have (README "Deviations", under `eq`).
-  function negate(n: int): int { multiply(-1, n) }
+  // `_curry1(function negate(n) { return -n; })` (v0.11.0; `R.negate =
+  // multiply(-1)` in v0.9.0 and v0.10.0, the same results). JS `negate(0)` is
+  // `-0`, which int does not have (README "Deviations", under `eq`).
+  function negate(n: int): int { -n }
 }

@@ -1,4 +1,4 @@
-// Ramda v0.10.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.11.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js, find.js,
@@ -14,7 +14,8 @@
 // test.createMapEntry.js, test.scanl.js, test.commute.js and test.lens.js),
 // transcribed. Arity (`.length`) checks
 // have no Dafny counterpart and are omitted, and so are the "throws on zero
-// arguments" cases (no-argument calls) and the `typeof` checks of the "is
+// arguments" cases (no-argument calls; v0.11.0 removed them) and the
+// `typeof` checks of the "is
 // curried" cases, which hold by construction (as does lens's "returns a
 // function with `set` and `map` properties": a `Lens` always has its three
 // fields; the lens is applied with `.get`, `.set_` and `.map_`, README
@@ -296,14 +297,15 @@ module RamdafTests.Ramda.List {
   }
 
   // v0.9.0: "is curried like a binary operator, that accepts an inital
-  // placeholder": `contains(__)(fbb)('bar')`, `contains(__, fbb)('bar')` and
-  // `contains(__)(fbb, 'bar')` are each `contains('bar', fbb)`.
+  // placeholder": since v0.11.0 `isDigit = contains(__, ['0', …, '9'])`
+  // (v0.9.x: `contains(__)(fbb)('bar')`, `contains(__, fbb)('bar')` and
+  // `contains(__)(fbb, 'bar')`, with `fbb = ['foo', 'bar', 'baz']`).
   method {:test} ContainsIsCurriedLikeABinaryOperator() {
-    var fbb := ["foo", "bar", "baz"];
-    var inList := (l: seq<string>) => ((x: string) => contains(x, l));
-    expect inList(fbb)("bar") == true;
-    var flipped := (l: seq<string>, x: string) => contains(x, l);
-    expect flipped(fbb, "bar") == true;
+    var digits := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+    var isDigit := (x: string) => contains(x, digits);
+    expect isDigit("0") == true;
+    expect isDigit("1") == true;
+    expect isDigit("x") == false;
   }
 
   // describe('containsWith') (v0.9.0's its; the function is older): `eqA`

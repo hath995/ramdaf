@@ -1,11 +1,12 @@
-// Ramda v0.10.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.11.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js and negate.js (until v0.8.0
 // test.math.js), transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). `subtract`,
-// `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` are
-// `op`-curried: since v0.6.0 one argument fixes the first parameter again
+// `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` were
+// `op`-curried until v0.10.0 and are `_curry2` since v0.11.0, with the same
+// sections: since v0.6.0 one argument fixes the first parameter again
 // (`subtract(9)` is `x => 9 - x`), and `f(__, b)` with the placeholder `__`
 // (undefined until v0.8.0; since v0.9.0 the object `R.__`) fixes the second
 // (in v0.5.0 alone, one argument fixed the second and `f(a, _)` the first,
@@ -16,7 +17,8 @@
 // `mathMod(17, -5)` is NaN: a modulus below 1 is outside the domain, README)
 // and the four NaN asserts of v0.4.2's "computes the true modulo function"
 // (`mathMod(17, -5)`, `mathMod(17, 0)` and fractional arguments); v0.4.0's 13
-// "throws if given no arguments" cases (no-argument calls). (v0.5.0
+// "throws if given no arguments" cases (no-argument calls; v0.11.0 removed
+// them). (v0.5.0
 // removed subtractN, divideBy and moduloBy with their describes; v0.8.0
 // renamed the maxWith and minWith describes to maxBy and minBy.)
 

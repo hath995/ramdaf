@@ -1,4 +1,4 @@
-// Ramda v0.10.0 test/isEmpty.js, prepend.js, prependTo.js, append.js,
+// Ramda v0.11.0 test/isEmpty.js, prepend.js, prependTo.js, append.js,
 // appendTo.js, concat.js, nth.js, head.js, last.js, tail.js, length.js,
 // sort.js, comparator.js, clone.js, identity.js and isNil.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
@@ -10,7 +10,7 @@
 // non-String object with a concat method, as second param" (method dispatch
 // on a non-array object) and "throws if not an array, String, or object with
 // a concat method" (object operands); the "throws on zero arguments" cases
-// (no-argument calls); isEmpty's cases on values that are not lists
+// (no-argument calls; v0.11.0 removed them); isEmpty's cases on values that are not lists
 // ("returns false for null" and "for undefined", "returns true for empty
 // arguments object", the two objects with a `length` property, and of
 // "returns false for every other value" all but `isEmpty([''])`); length's
@@ -145,13 +145,13 @@ module RamdafTests.Ramda.Core {
   }
 
   // v0.9.0: "is curried like a binary operator, that accepts an inital
-  // placeholder": `concat(__)('bar')('foo')`, `concat(__, 'bar')('foo')` and
-  // `concat(__)('bar', 'foo')` are each `concat('foo', 'bar')`.
+  // placeholder": since v0.11.0 only `appendBar = concat(__, 'bar')`,
+  // `appendBar('foo')` → 'foobar' (v0.9.x also had `concat(__)('bar')('foo')`
+  // and `concat(__)('bar', 'foo')`, which the `op` currying flipped; since
+  // v0.11.0 `concat(__)` is concat itself, and the first gives 'barfoo').
   method {:test} ConcatIsCurriedLikeABinaryOperator() {
-    var withSecond := (b: string) => ((a: string) => concat(a, b));
-    expect withSecond("bar")("foo") == "foobar";
-    var flipped := (b: string, a: string) => concat(a, b);
-    expect flipped("bar", "foo") == "foobar";
+    var appendBar := (a: string) => concat(a, "bar");
+    expect appendBar("foo") == "foobar";
   }
 
   // v0.4.0: "is curried" (its mixed list is a list of Js values)
@@ -312,8 +312,8 @@ module RamdafTests.Ramda.Core {
     expect c[1]["b"] == map["a" := 1];
   }
 
-  // describe('deep clone edge cases'): `clone()` is
-  // `clone(undefined)`
+  // describe('deep clone edge cases') (until v0.10.0 it also asserted
+  // `clone()`, the same as `clone(undefined)`)
   method {:test} CloneNullsUndefinedsAndEmptyObjectsAndArrays() {
     expect clone(Null) == Null;
     expect clone(Undefined) == Undefined;
@@ -326,7 +326,8 @@ module RamdafTests.Ramda.Core {
 
   // ---- identity.js ----
 
-  // "returns its first argument": `identity()` is `identity(undefined)`
+  // "returns its first argument": `identity(undefined)` (`identity()` until
+  // v0.10.0)
   method {:test} IdentityReturnsItsFirstArgument() {
     expect identity(Undefined) == Undefined;
     expect identity("foo") == "foo";

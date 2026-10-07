@@ -1,8 +1,8 @@
-// Ramda v0.10.0 test/prop.js, propOf.js, props.js, propOr.js, has.js,
+// Ramda v0.11.0 test/prop.js, propOf.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, merge.js, assoc.js, keys.js, keysIn.js, values.js, valuesIn.js,
-// eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js, invertObj.js and
-// dissoc.js (v0.9.x mixin.js; until v0.8.0 test.objectBasics.js,
+// eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js, invertObj.js,
+// dissoc.js and lensOn.js (v0.9.x mixin.js; until v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
 // describes), transcribed. Not
 // transcribed: keys's and values's "should work for primitives" cases (v0.2.4;
@@ -17,10 +17,10 @@
 // object's own properties", toPairsIn's "iterates properties on the object's
 // prototype chain", pick's "retrieves prototype properties", omit's
 // "includes prototype properties", pickBy's "retrieves prototype
-// properties", dissoc's "includes prototype properties", has's "does not check properties from the prototype chain"
-// and hasIn's "checks properties from the prototype chain"): a map has no
-// prototype; the no-argument cases ("throws if given no arguments" and the
-// like); pickBy's "creates a copy" (reference inequality); eq's `eq([], [])`
+// properties", dissoc's "includes prototype properties", has's "does not
+// check properties from the prototype chain" and hasIn's "checks properties
+// from the prototype chain"): a map has no prototype; the no-argument cases
+// ("throws if given no arguments" and the like, until v0.10.0); pickBy's "creates a copy" (reference inequality); eq's `eq([], [])`
 // and "is curried", which rely on `[] !== []` (reference equality, README
 // "Deviations"), and its `eq(0, -0)` and `eq(NaN, NaN)` (no `-0` or NaN in
 // an int; README "Deviations", pinned in tests/edge/misc.dfy); invert's and
@@ -37,7 +37,13 @@
 // describe('propOf') and describe('pickWith') to describe('pickBy') with the
 // functions, and added a describe('props') for the new function; v0.9.0
 // moved propOr's default to the first argument; v0.10.0 renamed
-// describe('mixin') to describe('merge') with the function.)
+// describe('mixin') to describe('merge') with the function; v0.11.0 split
+// has's two-argument `it` in two and replaced its "returns a function that
+// checks the appropriate property" with "is curried, op-style".) lensOn.js's
+// "returns a function with `set` and `map` properties" and the `typeof`
+// checks of its "is curried" hold by construction: a `LensOn` always has its
+// three fields, applied as `.get()`, `.set_(v)` and `.map_(fn)` (README
+// "Deviations").
 
 module RamdafTests.Ramda.Object {
   import opened Ramdaf.Prelude
@@ -121,16 +127,28 @@ module RamdafTests.Ramda.Object {
     expect nm(map["age" := Num(99)]) == Str("Unknown");
   }
 
-  // describe('has') (v0.7.0); `anon` is `{age: 99}`
-  method {:test} HasReturnsAFunctionThatChecksTheAppropriateProperty() {
-    var nm := (o: map<string, Js>) => has("name", o);
-    expect nm(Fred()) == true;
-    expect nm(map["age" := Num(99)]) == false;
+  // describe('has') (v0.7.0); `anon` is `{age: 99}`. v0.11.0 splits "works
+  // properly when called with two arguments" into these two.
+  method {:test} HasReturnsTrueIfTheSpecifiedPropertyIsPresent() {
+    expect has("name", Fred()) == true;
   }
 
-  method {:test} HasWorksProperlyWhenCalledWithTwoArguments() {
-    expect has("name", Fred()) == true;
+  method {:test} HasReturnsFalseIfTheSpecifiedPropertyIsAbsent() {
     expect has("name", map["age" := Num(99)]) == false;
+  }
+
+  // v0.11.0, in place of "returns a function that checks the appropriate
+  // property": `has('name')` and `has(R.__, point)`, the placeholder fixing
+  // the object
+  method {:test} HasIsCurriedOpStyle() {
+    var hasName := (o: map<string, Js>) => has("name", o);
+    expect hasName(Fred()) == true;
+    expect hasName(map["age" := Num(99)]) == false;
+    var point := map["x" := 0, "y" := 0];
+    var pointHas := (k: string) => has(k, point);
+    expect pointHas("x") == true;
+    expect pointHas("y") == true;
+    expect pointHas("z") == false;
   }
 
   // describe('hasIn') (v0.7.0)
@@ -500,5 +518,33 @@ module RamdafTests.Ramda.Object {
   method {:test} DissocIsCurried() {
     var dissocB := (o: map<string, int>) => dissoc("b", o);
     expect dissocB(map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "c" := 3];
+  }
+
+  // ---- lensOn.js (v0.11.0) ----
+
+  // `xoLens = lensOn(o => o.x, v => ({x: v}), {x: 1})`
+  function GetX(o: map<string, Js>): Js { if "x" in o then o["x"] else Undefined }
+  function SetX(v: Js): map<string, Js> { map["x" := v] }
+  function XoLens(): LensOn<Js, map<string, Js>> { lensOn(GetX, SetX, map["x" := Num(1)]) }
+
+  method {:test} LensOnCanGetAValue() {
+    expect XoLens().get() == Num(1);
+  }
+
+  method {:test} LensOnCanSetAValue() {
+    expect XoLens().set_(Str("moocow")) == map["x" := Str("moocow")];
+  }
+
+  method {:test} LensOnMapsToANewObject() {
+    var plus10 := (x: Js) => if x.Num? then Num(x.n + 10) else x;
+    expect XoLens().map_(plus10) == map["x" := Num(11)];
+  }
+
+  // `partial2 = lensOn(getX)(setX)`
+  method {:test} LensOnIsCurried() {
+    var partial2 := (o: map<string, Js>) => lensOn(GetX, SetX, o);
+    expect partial2(map["x" := Str("cow")]).set_(Str("moo")) == map["x" := Str("moo")];
+    var x2 := (x: Js) => if x.Num? then Num(x.n * 2) else x;
+    expect partial2(map["x" := Num(100)]).map_(x2) == map["x" := Num(200)];
   }
 }

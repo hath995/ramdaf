@@ -1,4 +1,4 @@
-// Ramda v0.10.0 test/filter.js, filterIndexed.js, reject.js,
+// Ramda v0.11.0 test/filter.js, filterIndexed.js, reject.js,
 // rejectIndexed.js, takeWhile.js, take.js, dropWhile.js and drop.js (until
 // v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
 // the partially applied function in full). The "should start at the
@@ -7,7 +7,8 @@
 // `undefined` elements are Js values. Not transcribed: v0.5.0's filter
 // "dispatches to passed-in non-Array object with a `filter` method" (method
 // dispatch), v0.10.0's reject "dispatches to `filter` method" (likewise)
-// and the "throws on zero arguments" cases (no-argument calls).
+// and the "throws on zero arguments" cases (no-argument calls; v0.11.0
+// removed them).
 // (v0.4.1 removed skip's "should be aliased by `drop`" with `drop`; v0.9.0
 // renamed the filter.idx, reject.idx and skip describes to filterIndexed,
 // rejectIndexed and drop, and replaced skipUntil's with dropWhile's, whose

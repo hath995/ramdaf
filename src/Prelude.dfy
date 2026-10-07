@@ -1,10 +1,10 @@
-// Ramdaf: a Dafny port of Ramda v0.10.0 (2015-02-15).
+// Ramdaf: a Dafny port of Ramda v0.11.0 (2015-03-08).
 // Support datatypes shared by the area modules. These are not Ramda exports;
 // they are the encodings the README's "JS -> Dafny mapping" names.
 
 module Ramdaf.Prelude {
   export
-    reveals Option, Tree, SpecVal, Lens
+    reveals Option, Tree, SpecVal, Lens, LensOn
 
   // A Ramda result that is a documented "no value" sentinel instead of an
   // element (`find` miss -> undefined, a missing property -> undefined,
@@ -38,4 +38,14 @@ module Ramdaf.Prelude {
   // port states as a precondition, and only a partial arrow can carry one.
   // `lens` (List.dfy) builds map_ from get and set_, requiring both.
   datatype Lens<!A, !V> = Lens(get: A --> V, set_: (V, A) --> A, map_: (V -> V, A) --> A)
+
+  // The result of `R.lensOn(get, set, obj)` (v0.11.0), a lens bound to obj:
+  // JS returns the function `lns() = get(obj)`, which ignores its arguments,
+  // carrying two properties, `lns.set = set` (the given function itself) and
+  // `lns.map(fn) = set(fn(get(obj)))`. As for Lens, it is a record of the
+  // three: `l.get()` for the call `l()`, `l.set_(v)` for `l.set(v)` and
+  // `l.map_(fn)` for `l.map(fn)`; set may return a value of any type B.
+  // The fields are partial arrows, as Lens's are. `lensOn` (Object.dfy)
+  // builds it, map_ requiring get's and then set_'s preconditions.
+  datatype LensOn<!V, B> = LensOn(get: () --> V, set_: V --> B, map_: (V -> V) --> B)
 }

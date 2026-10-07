@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`,
 // `prependTo`, `nth`, `head`, `last`, `tail`, `append`, `appendTo`,
 // `concat`, `identity`, `I`, `times`), `clone` and `length`; and, from
@@ -39,7 +39,7 @@ module Ramdaf.Core {
 
   // `R.prependTo = flip(_prepend)` (v0.8.0), where `_prepend` is the
   // function behind `R.prepend`: prepend with the arguments the other way
-  // round.
+  // round. (`@deprecated since v0.11.0`, still exported with the same code.)
   function prependTo<T>(list: seq<T>, el: T): seq<T> { prepend(el, list) }
 
   // `R.nth(n, list)` (v0.8.0): `n < 0 ? list[list.length + n] : list[n]`,
@@ -73,7 +73,8 @@ module Ramdaf.Core {
   function append<T>(el: T, list: seq<T>): seq<T> { list + [el] }
 
   // `R.appendTo = flip(_append)` (v0.8.0): append with the arguments the
-  // other way round.
+  // other way round. (`@deprecated since v0.11.0`, still exported with the
+  // same code.)
   function appendTo<T>(list: seq<T>, el: T): seq<T> { append(el, list) }
 
   // `R.concat` (v0.2.4; until v0.2.3 it was an alias of `merge`, which v0.2.4
@@ -85,11 +86,14 @@ module Ramdaf.Core {
   // `_hasMethod` tests `obj != null`, so it is `"bar"`, as here. (v0.4.0 and
   // v0.5.0 tested for a String first argument and then the second argument's
   // method.) A Dafny string is a seq, so the same function covers strings.
-  // (Since v0.9.0 `concat` is `op`-curried, which only adds the placeholder
-  // form `concat(__, b)`.)
+  // (From v0.9.0 to v0.10.0 `concat` was `op`-curried, and since v0.11.0 it
+  // is `_curry2`, which takes the placeholder in either position,
+  // `concat(__, b)`; neither changes the two-argument result.)
   function concat<T>(list1: seq<T>, list2: seq<T>): seq<T> { list1 + list2 }
 
   function identity<T>(x: T): T { x }
+  // `R.I = identity`, an alias (`@deprecated since v0.11.0`, still exported
+  // with the same code).
   function I<T>(x: T): T { identity(x) }
 
   // `var arr = new Array(n); while (++i < n) { arr[i] = fn(i); }` (v0.2.3;
@@ -109,6 +113,7 @@ module Ramdaf.Core {
   // `R.isNil(x)` (v0.9.0, `@category Type`): `x == null`, true for null and
   // undefined. The port's `None` is JS undefined (an absent property, a "no
   // value" result) and stands for null too, so isNil tests an Option
-  // (README "Deviations").
+  // (README "Deviations"). (Since v0.11.0 it is `_curry1`, so a call with
+  // no argument returns isNil itself, which the port has no form for.)
   function isNil<T>(x: Option<T>): bool { x.None? }
 }

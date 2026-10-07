@@ -1,4 +1,4 @@
-// Ramda v0.10.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.11.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
@@ -7,8 +7,10 @@
 // a function with arity == rightmost argument" (v0.3.0; arity), and
 // compose's (v0.3.0) and pipe's (v0.4.0) "throws if given no arguments" and
 // "returns argument if given exactly one argument" (compose and pipe are
-// binary here, and the latter checks function identity); flip's "produces a
-// function that throws if given no arguments" (v0.4.0; no-argument call);
+// binary here, and the latter checks function identity; v0.11.0 replaces it
+// with "can be applied to one argument", a one-function compose or pipe and
+// its arity); flip's "produces a function that throws if given no arguments"
+// (v0.4.0 to v0.10.0; no-argument call);
 // ap's "dispatches to the passed object's ap method" (method dispatch on a
 // non-array object) and the `typeof` check of its "is curried" (since v0.5.0
 // the dispatch case calls `ap(obj, 10)`, on the first argument). The files
@@ -23,7 +25,10 @@
 // `constant`" with `constant`, and v0.9.0 removed alwaysZero's describe with
 // the function and renamed the alwaysTrue and alwaysFalse describes to T and
 // F; v0.10.0 renamed the files of pCompose, pPipe, lPartial and rPartial to
-// composeP, pipeP, partial and partialRight with the functions.)
+// composeP, pipeP, partial and partialRight with the functions; v0.11.0
+// removed op.js and pathOn.js with the functions and added the unportable
+// dissocPath.js, invariants.js (arity under partial application) and
+// internal/_curry2.js and internal/_curry3.js.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions
@@ -34,7 +39,8 @@ module RamdafTests.Ramda.Functions {
   // ---- always.js, T.js, F.js ----
 
   // describe('always')
-  // (v0.5.0 adds `always()()`, whose omitted value is undefined)
+  // (v0.5.0 adds `always()()`, whose omitted value is undefined; since
+  // v0.11.0 Ramda writes `always(undefined)()`)
   method {:test} AlwaysReturnsTheValueInitiallySupplied() {
     expect always(42)(()) == 42;
     expect always(42)(10) == 42;

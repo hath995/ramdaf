@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -369,8 +369,9 @@ module Ramdaf.List {
   function any<T>(fn: T -> bool, list: seq<T>): bool
   { exists i :: 0 <= i < |list| && fn(list[i]) }
 
-  // `list.indexOf(a) > -1` (JS `===`; see README on equality; since v0.9.0
-  // `op`-curried, which only adds the placeholder form `contains(__, list)`).
+  // `list.indexOf(a) > -1` (JS `===`; see README on equality; `op`-curried
+  // from v0.9.0 to v0.10.0 and `_curry2` since v0.11.0, which only add the
+  // placeholder form `contains(__, list)`).
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
 
   // `pred(x, list[idx])` for some idx (exported since v0.1.5).
@@ -614,7 +615,9 @@ module Ramdaf.List {
   // `invoker(Array.prototype.slice)`, which also works on a JS string; since
   // v0.8.0 `invokerN(2, 'slice')`, v0.9.0 `invoker`, the target's own method, so
   // `slice(1, 2, "abc")` is the string "b" where it was ["b"]; both are the
-  // Dafny "b"): a negative
+  // Dafny "b"; since v0.11.0 `_checkForMethod('slice', …)` over
+  // `Array.prototype.slice.call(xs, from, to)`, which also takes an
+  // `arguments` object and still calls a non-array's own `slice`): a negative
   // index counts from the end, both are clamped into the list, and the result
   // is empty when `to` falls at or before `from`.
   function slice<T>(from: int, to: int, list: seq<T>): seq<T>
@@ -722,13 +725,13 @@ module Ramdaf.List {
          var r := mapAccumRight(fn, t.0, list[..|list| - 1]);
          (r.0, r.1 + [t.1]) }
 
-  // `R.mergeAll = reduce(merge, {})` (v0.10.0, `@category List`): the objects
-  // merged left to right, a later object's keys winning. `R.merge` is
-  // `Object.merge`, which List does not import, so `merge(acc, obj)` is
-  // written out as its body, `acc + obj`. (In JS the `{}` accumulator is
-  // shared across calls, so `mergeAll([])` is the same object every time;
-  // every other result is a fresh copy. An own `__proto__` property is
-  // dropped, README "Deviations".)
+  // `_curry1(function mergeAll(list) { return reduce(merge, {}, list); })`
+  // (v0.11.0; v0.10.0's `R.mergeAll = reduce(merge, {})` shared its `{}`
+  // accumulator across calls, so `mergeAll([])` was the same object every
+  // time), `@category List`: the objects merged left to right, a later
+  // object's keys winning. `R.merge` is `Object.merge`, which List does not
+  // import, so `merge(acc, obj)` is written out as its body, `acc + obj`. (An
+  // own `__proto__` property is dropped in JS, README "Deviations".)
   function mergeAll<V>(list: seq<map<string, V>>): map<string, V>
   { reduce((acc: map<string, V>, obj: map<string, V>) => acc + obj, map[], list) }
 }

@@ -1,9 +1,9 @@
-// Ramda v0.10.0 test/reduce.js, reduceRight.js, reduceIndexed.js and
+// Ramda v0.11.0 test/reduce.js, reduceRight.js, reduceIndexed.js and
 // reduceRightIndexed.js (v0.9.x foldl.js, foldr.js, foldlIndexed.js and
 // foldrIndexed.js; until v0.8.0 test.fold.js), transcribed. Not transcribed:
 // the "should correctly report the arity of curried versions" cases (Dafny
-// functions have no arity) and the "throws on zero arguments" cases (v0.5.0;
-// no-argument calls). The alias `it`s assert `strictEqual` on the function
+// functions have no arity) and the "throws on zero arguments" cases (v0.5.0
+// to v0.10.0; no-argument calls). The alias `it`s assert `strictEqual` on the function
 // objects, which has no counterpart; the aliases are compared by their
 // results. The callbacks Ramda declares with fewer parameters take all four
 // here (README "Deviations"), and Ramda's `add` on strings (JS `+`) is

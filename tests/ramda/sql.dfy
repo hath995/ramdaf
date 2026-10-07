@@ -1,4 +1,4 @@
-// Ramda v0.10.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.11.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js and sortBy.js (until v0.8.0 test.sql.js, whose copy of the
 // groupBy describe v0.9.0 dropped), transcribed. Not transcribed:
@@ -12,7 +12,8 @@
 // - eqDeep.js's (v0.9.0) "handles regex", "handles dates", "handles typed
 //   arrays" (no such values), the cyclic `c`/`d` and `e`/`f` lines of
 //   "handles recursive data structures" (a Dafny value cannot contain
-//   itself) and "throws if given no arguments". Its mixed values are Js.
+//   itself) and "throws if given no arguments" (until v0.10.0). Its mixed
+//   values are Js.
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -141,13 +142,20 @@ module RamdafTests.Ramda.Sql {
     expect diff123([1, 3]) == [2];
   }
 
-  // describe('differenceWith')
+  // describe('differenceWith'). Since v0.11.0 differenceWith requires the
+  // kept elements to be a prefix of the first list (README "Outside the
+  // modeled domain"); both inputs keep a prefix, and the asserts name the
+  // element of the second list that drops each later one.
   method {:test} DifferenceWithUsesThePredicate() {
+    assert EqA(Ro()[2], So()[0]) && EqA(Ro()[3], So()[1]);
     expect differenceWith(EqA, Ro(), So()) == [A(1), A(2)];
   }
 
   method {:test} DifferenceWithHasNoDuplicates() {
-    expect differenceWith(EqA, Ro() + Ro(), So() + So()) == [A(1), A(2)];
+    var first, second := Ro() + Ro(), So() + So();
+    assert EqA(first[2], second[0]) && EqA(first[3], second[1]) && EqA(first[6], second[0]) && EqA(first[7], second[1]);
+    assert EqA(first[4], first[..2][0]) && EqA(first[5], first[..2][1]);
+    expect differenceWith(EqA, first, second) == [A(1), A(2)];
   }
 
   function Album(title: string, artist: string, genre: string): map<string, string>

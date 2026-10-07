@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.10.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.11.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -62,15 +62,42 @@ module RamdafTests.Edge.Data {
   }
 
   // Since v0.7.0 difference and differenceWith are loops (same results).
+  // Since v0.11.0 differenceWith requires the kept elements to be a prefix of
+  // the first list (node leaves a hole at every dropped index before a kept
+  // one: `differenceWith((a, b) => a < b, [3, 1, 2, 5, 4], [2])` is `[3,
+  // <2 empty items>, 5]`, `[3, 5]` until v0.10.0); the asserts name what
+  // drops each later element (node: [5], [1, 2]).
   method {:test} DifferenceEdges() {
     expect difference([1, 2, 1, 3], [2]) == [1, 3];
     // `difference('abcab', 'b')`: strings are lists of characters
     expect difference("abcab", "b") == "ac";
-    expect differenceWith((a: int, b: int) => a < b, [3, 1, 2, 5, 4], [2]) == [3, 5];
-    expect differenceWith((a: int, b: int) => a < b, [5, 4, 3, 2, 1], [0]) == [5];
-    expect differenceWith((a: int, b: int) => a % 3 == b % 3, [1, 2, 3, 4, 5, 6], [3]) == [1, 2];
+    var f1 := [5, 4, 3, 2, 1];
+    assert lt(f1[1], f1[..1][0]) && lt(f1[2], f1[..1][0]) && lt(f1[3], f1[..1][0]) && lt(f1[4], f1[..1][0]);
+    expect differenceWith(lt, f1, [0]) == [5];
+    var f2, s2 := [1, 2, 3, 4, 5, 6], [3];
+    assert mod3(f2[2], s2[0]) && mod3(f2[3], f2[..2][0]) && mod3(f2[4], f2[..2][1]) && mod3(f2[5], s2[0]);
+    expect differenceWith(mod3, f2, s2) == [1, 2];
   }
 
+  // differenceWith (v0.11.0) inside its domain, where node keeps a prefix
+  // (node: [1, 2, 3], [1], [1, 2], [], [1, 2, 3]).
+  method {:test} DifferenceWithKeepsAPrefix() {
+    var none: seq<int> := [];
+    var f1, s1 := [1, 2, 3, 4], [4];
+    assert eqInt(f1[3], s1[0]);
+    expect differenceWith(eqInt, f1, s1) == [1, 2, 3];
+    var f2, s2 := [1, 2], [2];
+    assert eqInt(f2[1], s2[0]);
+    expect differenceWith(eqInt, f2, s2) == [1];
+    var f3 := [1, 2, 1, 1];
+    assert eqInt(f3[2], f3[..2][0]) && eqInt(f3[3], f3[..2][0]);
+    expect differenceWith(eqInt, f3, none) == [1, 2];
+    expect differenceWith(eqInt, none, [1]) == [];
+    expect differenceWith(eqInt, [1, 2, 3], [9]) == [1, 2, 3];
+  }
+
+  function lt(a: int, b: int): bool { a < b }
+  function eqInt(a: int, b: int): bool { a == b }
   function mod3(a: int, b: int): bool { a % 3 == b % 3 }
   function par(a: int, b: int): bool { a % 2 == b % 2 }
 
@@ -82,8 +109,12 @@ module RamdafTests.Edge.Data {
     expect unionWith(mod3, [1, 2], [4, 5, 6]) == [1, 2, 6];
     expect unionWith(mod3, [1, 2, 3, 4], empty) == [1, 2, 3];
     expect unionWith((a: int, b: int) => a < b, [3, 1, 2], empty) == [3];
-    expect differenceWith(par, [1, 2, 3], [4]) == [1];
-    expect differenceWith((a: int, b: int) => a == b, [1, 2, 1], [3]) == [1, 2];
+    var f1, s1 := [1, 2, 3], [4];
+    assert par(f1[1], s1[0]) && par(f1[2], f1[..1][0]);
+    expect differenceWith(par, f1, s1) == [1];
+    var f2 := [1, 2, 1];
+    assert eqInt(f2[2], f2[..2][0]);
+    expect differenceWith(eqInt, f2, [3]) == [1, 2];
     expect intersectionWith(par, [1, 2, 3], [4, 5]) == [1, 2];
     expect intersectionWith((a: int, b: int) => a == b, [2, 1, 2], [2]) == [2];
   }

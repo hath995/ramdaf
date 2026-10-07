@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.10.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
 // the functions with `@category Function`. (v0.4.1 removed the aliases
@@ -12,13 +12,15 @@ module Ramdaf.Functions {
     reveals compose, pipe, flip, converge, always, T, F
 
   // `compose(f, g)(x) == f(g(x))`
-  // (v0.1.1 dropped the `fog` alias. Since v0.3.0 JS `compose(f)` returns f
-  // itself and `compose()` throws; with two or more functions only the
-  // result's reported arity changed.)
+  // (v0.1.1 dropped the `fog` alias. From v0.3.0 to v0.10.0 JS `compose(f)`
+  // returned f itself, and since v0.11.0 a wrapper with f's arity and
+  // results; `compose()` throws; with two or more functions only the result's
+  // reported arity changed.)
   function compose<A, B, C>(f: B -> C, g: A -> B): A -> C { x => f(g(x)) }
 
-  // `pipe(f, g)(x) == g(f(x))` (since v0.4.0 JS `pipe(f)` is f itself, as
-  // `compose(f)` is)
+  // `pipe(f, g)(x) == g(f(x))` (from v0.4.0 to v0.10.0 JS `pipe(f)` was f
+  // itself, as `compose(f)` was, and since v0.11.0 it is a wrapper with f's
+  // results)
   function pipe<A, B, C>(f: A -> B, g: B -> C): A -> C { x => g(f(x)) }
 
   // `flip(fn)(a, b) == fn(b, a)`
@@ -27,9 +29,10 @@ module Ramdaf.Functions {
   // `converge(after, f1, ..., fn)(...args) == after(f1(...args), ..., fn(...args))`
   // (v0.4.2 renamed `fork`, added in v0.1.2, to `converge` with the same
   // code; v0.1.4 had moved `after` first and allowed any number of
-  // functions, though v0.4.2's documentation names three). The port takes
-  // exactly two functions, and its result is unary (tuple the arguments for
-  // more).
+  // functions, though v0.4.2's documentation names three; since v0.11.0 it
+  // is `curryN(3, …)`, so `converge(after, f)` waits for another function).
+  // The port takes exactly two functions, and its result is unary (tuple the
+  // arguments for more).
   function converge<A, B, C, D>(after: (B, C) -> D, f1: A -> B, f2: A -> C): A -> D
   { x => after(f1(x), f2(x)) }
 

@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.10.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.11.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -391,7 +391,8 @@ module RamdafTests.Edge.Misc {
     expect converge((x: int, y: int) => [x, y], (t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1)((2, 5)) == [7, 10];
   }
 
-  // inc, dec and negate (v0.9.0) are add(1), add(-1) and multiply(-1)
+  // inc and dec (v0.9.0) are add(1) and add(-1), and negate is -n (v0.11.0;
+  // multiply(-1) in v0.9.x and v0.10.0)
   // (node: 0, -1, 1, -5, 5).
   method {:test} IncDecNegateEdges() {
     expect inc(-1) == 0;
@@ -464,6 +465,23 @@ module RamdafTests.Edge.Misc {
   method {:test} InvertOfPrototypeNamedValues() {
     expect invert(map["a" := "toString", "b" := "x"]) == map["toString" := {"a"}, "x" := {"b"}];
     expect invert(map["a" := "constructor", "b" := "constructor"]) == map["constructor" := {"a", "b"}];
+  }
+
+  // lensOn (v0.11.0) binds get and set to obj (node: 1, {x: 'moocow'},
+  // {x: 11}, 10 for `lensOn(o => o[0], v => [v], [10, 20])()`, and 9 for
+  // `lensOn(o => o.x, v => v * 3, {x: 2}).map(x => x + 1)`, a set that
+  // returns a number). The getters are partial arrows: with `{}` bound,
+  // node's `l()` is undefined and `l.map(x => x + 1)` is `{x: NaN}`, so they
+  // require the key (the index).
+  method {:test} LensOnEdges() {
+    var l := lensOn((o: map<string, int>) requires "x" in o => o["x"], (v: int) => map["x" := v], map["x" := 1]);
+    expect l.get() == 1;
+    expect l.set_(5) == map["x" := 5];
+    expect l.map_((x: int) => x + 10) == map["x" := 11];
+    var first := lensOn((a: seq<int>) requires |a| > 0 => a[0], (v: int) => [v], [10, 20]);
+    expect first.get() == 10;
+    var triple := lensOn((o: map<string, int>) requires "x" in o => o["x"], (v: int) => v * 3, map["x" := 2]);
+    expect triple.map_((x: int) => x + 1) == 9;
   }
 
   // ---- documented deviations (not node behaviour) ----
