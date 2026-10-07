@@ -1,4 +1,4 @@
-// Ramda v0.11.0 test/prop.js, propOf.js, props.js, propOr.js, has.js,
+// Ramda v0.12.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, merge.js, assoc.js, keys.js, keysIn.js, values.js, valuesIn.js,
 // eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js, invertObj.js,
@@ -39,7 +39,8 @@
 // moved propOr's default to the first argument; v0.10.0 renamed
 // describe('mixin') to describe('merge') with the function; v0.11.0 split
 // has's two-argument `it` in two and replaced its "returns a function that
-// checks the appropriate property" with "is curried, op-style".) lensOn.js's
+// checks the appropriate property" with "is curried, op-style"; v0.12.0
+// removed propOf.js and prop's "is aliased by `get`" with the functions.) lensOn.js's
 // "returns a function with `set` and `map` properties" and the `typeof`
 // checks of its "is curried" hold by construction: a `LensOn` always has its
 // three fields, applied as `.get()`, `.set_(v)` and `.map_(fn)` (README
@@ -62,29 +63,12 @@ module RamdafTests.Ramda.Object {
     expect nm(Fred()) == Some(Str("Fred"));
   }
 
-  // (since v0.7.0 only `strictEqual(R.get, R.prop)`; compared by results)
-  method {:test} PropIsAliasedByGet() {
-    expect get("age", Fred()) == Some(Num(23));
-    expect get("age", Fred()) == prop("age", Fred());
-  }
-
   // describe('pluck')
   method {:test} PluckMapsThePropertyOverAnArray() {
     var people := [map["name" := Str("Fred"), "age" := Num(23)], map["name" := Str("Wilma"), "age" := Num(21)],
                    map["name" := Str("Pebbles"), "age" := Num(2)]];
     var nm := (l: seq<map<string, Js>>) => pluck("name", l);
     expect nm(people) == [Some(Str("Fred")), Some(Str("Wilma")), Some(Str("Pebbles"))];
-  }
-
-  // describe('propOf') (describe('props') until v0.7.2; v0.8.0 adds the
-  // nonexistent property)
-  method {:test} PropOfFetchesFromTheInitiallySuppliedObject() {
-    var fred := map["name" := Str("Fred"), "age" := Num(23), "feet" := Str("large")];
-    var p := (k: string) => propOf(fred, k);
-    expect p("name") == Some(Str("Fred"));
-    expect p("age") == Some(Num(23));
-    expect p("feet") == Some(Str("large"));
-    expect p("nonexistent") == None;
   }
 
   // describe('props') (v0.8.0): undefined is None

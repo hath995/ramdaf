@@ -1,4 +1,4 @@
-// Ramda v0.11.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.12.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js, find.js,
@@ -6,7 +6,7 @@
 // range.js, reverse.js, unfold.js, zip.js, zipWith.js, zipObj.js,
 // fromPairs.js, xprod.js, partition.js, groupBy.js, createMapEntry.js,
 // scan.js, mapAccum.js, mapAccumRight.js, commute.js, commuteMap.js,
-// lens.js and mergeAll.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// lens.js, mergeAll.js, aperture.js and none.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -43,6 +43,13 @@
 // renamed the unfoldr, scanl, mapAccumL and mapAccumR describes to unfold,
 // scan, mapAccum and mapAccumRight.) mergeAll's "ignores inherited
 // properties" builds an object with a prototype, which a map cannot have.
+// v0.12.0's transducer `it`s (map's "maps simple functions into arrays" and
+// "can compose transducer-style", find's, findIndex's, findLast's and
+// findLastIndex's `into` cases, groupBy's "dispatches on transformer
+// objects") and the dispatch `it`s of map and reduce are not transcribed
+// (`into`, transformers and method dispatch, README "Not portable"); nor are
+// commute's and commuteMap's "works on Algebraic Data Types such as
+// "Maybe"" (a Fantasy-land functor, README "Deviations").
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -395,6 +402,14 @@ module RamdafTests.Ramda.List {
   method {:test} MapIsAutomaticallyCurried() {
     var inc := (l: seq<int>) => mapSeq((x: int) => x + 1, l);
     expect inc([1, 2, 3]) == [2, 3, 4];
+  }
+
+  // v0.12.0: `mdec(mdouble([10, 20, 30]))` with `mdouble = map(times2)`,
+  // `mdec = map(dec)`
+  method {:test} MapComposes() {
+    var mdouble := (l: seq<int>) => mapSeq((x: int) => x * 2, l);
+    var mdec := (l: seq<int>) => mapSeq((x: int) => x - 1, l);
+    expect mdec(mdouble([10, 20, 30])) == [19, 39, 59];
   }
 
   // describe('mapObj')
@@ -821,6 +836,59 @@ module RamdafTests.Ramda.List {
 
   method {:test} MergeAllGivesPrecedenceToLaterObjectsInTheList() {
     expect mergeAll([map["foo" := 1], map["foo" := 2], map["bar" := 2]]) == map["foo" := 2, "bar" := 2];
+  }
+
+  // ---- aperture.js (v0.12.0) ----
+
+  function SevenLs(): seq<int> { [1, 2, 3, 4, 5, 6, 7] }
+
+  method {:test} ApertureCreatesAListOfNTuplesFromAList() {
+    expect aperture(1, SevenLs()) == [[1], [2], [3], [4], [5], [6], [7]];
+    expect aperture(2, SevenLs()) == [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]];
+    expect aperture(3, SevenLs()) == [[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6], [5, 6, 7]];
+    expect aperture(4, [1, 2, 3, 4]) == [[1, 2, 3, 4]];
+  }
+
+  method {:test} ApertureReturnsAnEmptyListWhenNExceedsTheLength() {
+    var empty: seq<int> := [];
+    expect aperture(6, [1, 2, 3]) == [];
+    expect aperture(1, empty) == [];
+  }
+
+  method {:test} ApertureIsAutomaticallyCurried() {
+    var pairwise := (l: seq<int>) => aperture(2, l);
+    expect pairwise(SevenLs()) == [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]];
+  }
+
+  // ---- none.js (v0.12.0) ----
+
+  function even(n: int): bool { n % 2 == 0 }
+
+  method {:test} NoneReturnsTrueIfNoElementsSatisfyThePredicate() {
+    expect none(even, [1, 3, 5, 7, 9, 11]) == true;
+  }
+
+  method {:test} NoneReturnsFalseIfAnyElementSatisfiesThePredicate() {
+    expect none(even, [1, 3, 5, 7, 8, 11]) == false;
+  }
+
+  method {:test} NoneReturnsTrueForAnEmptyList() {
+    var empty: seq<int> := [];
+    expect none((x: int) => true, empty) == true;
+  }
+
+  // `{x: 'abcd'}` and the like; `o.x.indexOf('a') >= 0` is `'a' in o.x`
+  method {:test} NoneWorksWithMoreComplexObjects() {
+    var xs := [map["x" := "abcd"], map["x" := "adef"], map["x" := "fghiajk"]];
+    var len3 := (o: map<string, string>) => "x" in o && |o["x"]| == 3;
+    var hasA := (o: map<string, string>) => "x" in o && 'a' in o["x"];
+    expect none(len3, xs) == true;
+    expect none(hasA, xs) == false;
+  }
+
+  method {:test} NoneIsAutomaticallyCurried() {
+    var noneEven := (l: seq<int>) => none(even, l);
+    expect noneEven([1, 3, 5, 6, 7, 9]) == false;
   }
 
   // ---- xprod.js (test.product.js) ----

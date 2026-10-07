@@ -1,21 +1,22 @@
-// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.12.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
-// `merge`, `dissoc`, `lensOn`). A JS object is a map<string, V>; a missing property is
-// JS undefined, here None. The functions that build an object by assigning
-// properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`, `assoc`,
-// `evolve`, `invertObj`, `dissoc`) drop an own `__proto__` property in JS,
-// as the assignment sets the prototype instead; a map's keys are all
-// ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to `pickBy`,
-// and `props` to `propOf`, reusing the name `props` for a new function;
-// v0.9.0 removed `cloneObj`, which `clone` (Core.dfy) took over; v0.10.0
-// renamed `mixin` to `merge`.)
+// `merge`, `dissoc`, `lensOn`). A JS object is a map<string, V>; a missing
+// property is JS undefined, here None. The functions that build an object by
+// assigning properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`,
+// `assoc`, `evolve`, `invertObj`, `dissoc`) drop an own `__proto__`
+// property in JS, as the assignment sets the prototype instead; a map's keys
+// are all ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to
+// `pickBy`, and `props` to `propOf`, reusing the name `props` for a new
+// function; v0.9.0 removed `cloneObj`, which `clone` (Core.dfy) took over;
+// v0.10.0 renamed `mixin` to `merge`; v0.12.0 removed `propOf` and the `get`
+// alias of `prop`, deprecated in v0.11.0.)
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, get, propOf, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
+    reveals eq, prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
             assoc, propEq, evolve, invert, invertObj, dissoc, lensOn
     provides Prelude
@@ -31,21 +32,11 @@ module Ramdaf.Object {
   // `obj[p]`
   function prop<V>(p: string, obj: map<string, V>): Option<V>
   { if p in obj then Some(obj[p]) else None }
-  // `R.get = prop`, an alias (`@deprecated since v0.11.0`, still exported
-  // with the same code).
-  function get<V>(p: string, obj: map<string, V>): Option<V> { prop(p, obj) }
-
-  // `R.propOf = flip(prop)` (v0.8.0, which renamed `props` to `propOf` with
-  // the same code; `props` was `flip(R.prop)` since v0.4.0, `obj &&
-  // obj[prop]` before, the same on a map): prop with the arguments the other
-  // way round. (`@deprecated since v0.11.0`, still exported with the same
-  // code.)
-  function propOf<V>(obj: map<string, V>, p: string): Option<V> { prop(p, obj) }
 
   // `R.props(ps, obj)` (v0.8.0, "multiple `get`"): `out[idx] = obj[ps[idx]]`
   // for each name in ps, so the values in the order of ps, undefined (None)
-  // where obj lacks the property. (Until v0.7.2 `props` was today's
-  // `propOf`.)
+  // where obj lacks the property. (Until v0.7.2 `props` was the function
+  // that v0.8.0 renamed `propOf` and v0.12.0 removed.)
   function props<V>(ps: seq<string>, obj: map<string, V>): seq<Option<V>>
     ensures |props(ps, obj)| == |ps|
   { seq(|ps|, i requires 0 <= i < |ps| => prop(ps[i], obj)) }
@@ -226,7 +217,8 @@ module Ramdaf.Object {
   // function applied to `object[key]`, which is undefined (None) when object
   // lacks the key (Ramda's test "invokes function with undefined if object
   // does not contain the key"). JS lets a transformation change the value's
-  // type (README "Deviations").
+  // type, and since v0.12.0 a `__transducers_reduced__` transformation with
+  // a truthy result ends `mapObjIndexed`'s fold (README "Deviations").
   function evolve<V>(transformations: map<string, Option<V> -> V>, obj: map<string, V>): map<string, V>
     ensures evolve(transformations, obj).Keys == obj.Keys + transformations.Keys
   { obj + map k | k in transformations :: transformations[k](prop(k, obj)) }

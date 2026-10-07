@@ -1,38 +1,67 @@
-// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.12.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "String Functions" section; from v0.9.0 on, the functions
-// with `@category String` (v0.9.0 renamed `toUpperCase` and `toLowerCase` to
-// `toUpper` and `toLower`). The String.prototype methods, with JS's index clamping. A Dafny `string` is a
+// with `@category String` (`nthChar`, `nthCharCode`; v0.9.0 renamed
+// `toUpperCase` and `toLowerCase` to `toUpper` and `toLower`). The
+// String.prototype methods, with JS's index clamping. A Dafny `string` is a
 // sequence of Unicode scalar values where JS counts UTF-16 code units, and
 // case conversion is ASCII-only (see README "Deviations").
 
 module Ramdaf.String {
   export
-    reveals substring, substringFrom, substringTo, charAt, charCodeAt,
+    reveals substring, substringFrom, substringTo, charAt, charCodeAt, nthChar, nthCharCode,
             strIndexOf, strLastIndexOf, toUpper, toLower, trim, replace, split
 
-  // `String.prototype.substring(start, end)`: each index is clamped to
-  // [0, |s|], and the two are swapped when start > end.
+  // `R.substring = slice` (v0.12.0; until v0.11.0 `invoker(2, 'substring')`,
+  // `String.prototype.substring`, which clamped both indices into the string
+  // and swapped them when start > end): on a string `str.slice(start, end)`,
+  // so a negative index counts from the end (`substring(-4, -2, 'Ramda')` is
+  // 'am'), both are clamped into the string, and the result is empty when
+  // end falls at or before start. `List.slice` is written out, as String
+  // does not import List.
   function substring(start: int, end: int, s: string): string
     ensures |substring(start, end, s)| <= |s|
-  { var a := if start < 0 then 0 else if start > |s| then |s| else start;
-    var b := if end < 0 then 0 else if end > |s| then |s| else end;
-    if a <= b then s[a..b] else s[b..a] }
+  { var n := |s|;
+    var a := if start < 0 then (if n + start < 0 then 0 else n + start) else if start > n then n else start;
+    var b := if end < 0 then (if n + end < 0 then 0 else n + end) else if end > n then n else end;
+    if a < b then s[a..b] else "" }
 
-  // `flip(substring)(undefined)`: `substringFrom(n, s) == s.substring(n)`
+  // `substring(__, Infinity)` (v0.12.0; `flip(substring)(undefined)` until
+  // v0.11.0): `substringFrom(n, s) == s.slice(n)`, so a negative n counts from
+  // the end (`substringFrom(-2, 'Ramda')` is 'da'; it was 'Ramda'). The
+  // length is the end that Infinity is clamped to.
   function substringFrom(n: int, s: string): string { substring(n, |s|, s) }
 
-  // `substring(0)`: `substringTo(n, s) == s.substring(0, n)`
+  // `substring(0)`: `substringTo(n, s) == s.slice(0, n)` (since v0.12.0; a
+  // negative n counts from the end, `substringTo(-2, 'Ramda')` is 'Ram',
+  // where `s.substring(0, n)` gave '').
   function substringTo(n: int, s: string): string { substring(0, n, s) }
 
   // `String.prototype.charAt(n)`: the empty string when n is out of range.
+  // (`@deprecated since v0.12.0` in favour of `nthChar`, still exported with
+  // the same code.)
   function charAt(n: int, s: string): string
   { if 0 <= n < |s| then [s[n]] else "" }
 
   // `String.prototype.charCodeAt(n)`: NaN when n is out of range, which int
-  // cannot hold, so out-of-range indices are excluded.
+  // cannot hold, so out-of-range indices are excluded. (`@deprecated since
+  // v0.12.0` in favour of `nthCharCode`, still exported with the same code.)
   function charCodeAt(n: int, s: string): int
     requires 0 <= n < |s|
   { s[n] as int }
+
+  // `R.nthChar(n, str)` (v0.12.0): `str.charAt(n < 0 ? str.length + n : n)`,
+  // the character at n, a negative n counting from the end; out of range
+  // the empty string (`nthChar(-2, 'Ramda')` is 'd').
+  function nthChar(n: int, s: string): string
+  { var i := if n < 0 then |s| + n else n;
+    if 0 <= i < |s| then [s[i]] else "" }
+
+  // `R.nthCharCode(n, str)` (v0.12.0): `str.charCodeAt(n < 0 ? str.length + n
+  // : n)`; out of range NaN, which int cannot hold, so the index must fall in
+  // the string (README "Outside the modeled domain").
+  function nthCharCode(n: int, s: string): int
+    requires 0 <= (if n < 0 then |s| + n else n) < |s|
+  { s[if n < 0 then |s| + n else n] as int }
 
   // `String.prototype.indexOf(sub)` (`str.indexOf(c)` since v0.5.0, an
   // invoker before): the first index where sub occurs, or -1.

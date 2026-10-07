@@ -1,8 +1,9 @@
-// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.12.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
-// `mapAccumRight`, `mergeAll` and the renamed functions below). (v0.4.1
+// `mapAccumRight`, `mergeAll`, `aperture`, `none` and the renamed functions
+// below). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
 // `flattenShallow`, and renamed `all`/`any` to their aliases `every`/`some`;
 // v0.8.0 removed `xprodWith`. v0.9.0 removed `reduce` and `reduceRight`,
@@ -27,14 +28,18 @@ module Ramdaf.List {
             zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice,
             remove, insert, insertAll, partition,
             ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scan,
-            createMapEntry, repeat, init, mapAccum, mapAccumRight, mergeAll
+            createMapEntry, repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
   // ascending. v0.10.0 renamed `foldl`, `_curry3(_foldl)` with the same loop,
   // to `reduce`. (`reduce` held the definition from v0.4.0 to v0.8.0, with
   // `foldl` its alias, which held it until v0.3.0; v0.9.0 removed `reduce`
-  // and gave `foldl` the code.)
+  // and gave `foldl` the code.) Since v0.12.0 `_reduce` speaks the
+  // transducer protocol: it stops when the accumulator has a truthy
+  // `__transducers_reduced__` property and returns its `value`, which a
+  // generic A cannot single out (README "Deviations"); it also dispatches to
+  // a `reduce` method of a non-list and walks iterators.
   function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
       reduce(fn, acc, list) == fn(reduce(fn, acc, list[..|list| - 1]), list[|list| - 1])
@@ -111,7 +116,9 @@ module Ramdaf.List {
   // `_reduce(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`
   // (`foldl` until v0.8.0 and `_foldl` in v0.9.x, the same function):
   // fn applied to every own property. (In JS an own `__proto__` property is
-  // dropped, as the assignment sets the prototype; README "Deviations".)
+  // dropped, as the assignment sets the prototype, and since v0.12.0 a
+  // `__transducers_reduced__` key with a truthy result ends the fold;
+  // README "Deviations".)
   function mapObj<V, W>(fn: V -> W, obj: map<string, V>): map<string, W>
     ensures mapObj(fn, obj).Keys == obj.Keys
     ensures forall k :: k in obj ==> mapObj(fn, obj)[k] == fn(obj[k])
@@ -119,7 +126,8 @@ module Ramdaf.List {
 
   // `R.mapObjIndexed` (v0.9.0, which renamed `mapObj.idx`, added in v0.2.2,
   // with the same code): `fn(obj[key], key, obj)` for every own property
-  // (an own `__proto__` dropped in JS, as for mapObj).
+  // (an own `__proto__` dropped in JS, and `__transducers_reduced__` ending
+  // the fold since v0.12.0, as for mapObj).
   function mapObjIndexed<V, W>(fn: (V, string, map<string, V>) -> W, obj: map<string, V>): map<string, W>
     ensures mapObjIndexed(fn, obj).Keys == obj.Keys
     ensures forall k :: k in obj ==> mapObjIndexed(fn, obj)[k] == fn(obj[k], k, obj)
@@ -734,4 +742,20 @@ module Ramdaf.List {
   // own `__proto__` property is dropped in JS, README "Deviations".)
   function mergeAll<V>(list: seq<map<string, V>>): map<string, V>
   { reduce((acc: map<string, V>, obj: map<string, V>) => acc + obj, map[], list) }
+
+  // `R.aperture(n, list)` (v0.12.0, `@category List`): `limit = list.length -
+  // (n - 1)`, and for idx below limit `acc[idx] = _slice(list, idx, idx +
+  // n)`: every window of n consecutive elements. For n <= 0 the windows are
+  // empty and there are `|list| - n + 1` of them (`aperture(0, [1, 2])` is
+  // `[[], [], []]`); for n past the length there are none.
+  function aperture<T>(n: int, list: seq<T>): seq<seq<T>>
+    ensures |aperture(n, list)| == if |list| - (n - 1) >= 0 then |list| - (n - 1) else 0
+  { var limit := |list| - (n - 1);
+    var count := if limit >= 0 then limit else 0;
+    seq(count, idx requires 0 <= idx < count => if n <= 0 then [] else list[idx..idx + n]) }
+
+  // `R.none = _curry2(_complement(_dispatchable('any', _xany, _any)))`
+  // (v0.12.0, `@category List`): the negation of `any`, true when no element
+  // satisfies fn.
+  function none<T>(fn: T -> bool, list: seq<T>): bool { !any(fn, list) }
 }

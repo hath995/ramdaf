@@ -1,6 +1,6 @@
-// Ramda v0.11.0 test/isEmpty.js, prepend.js, prependTo.js, append.js,
-// appendTo.js, concat.js, nth.js, head.js, last.js, tail.js, length.js,
-// sort.js, comparator.js, clone.js, identity.js and isNil.js, transcribed
+// Ramda v0.12.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
+// identity.js and isNil.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
 // were test.core.js, test.clone.js, test.cloneDeep.js and test.identity.js).
 // Not transcribed: head's and last's "returns undefined for an empty list"
@@ -20,12 +20,14 @@
 // of "clone shallow object", the mutations of the original after cloning (a
 // Dafny value cannot be mutated, so the clone equals the input) and the
 // `!==`, `===` and `notStrictEqual` halves (reference identity); identity's
-// two-argument call (fixed arity) and "has length 1" (arity); and nthArg.js
+// two-argument call (fixed arity) and "has length 1" (arity); clone's
+// "clones RegExp object" (v0.12.0; no RegExp value); and nthArg.js
 // (not portable, README). The `typeof` checks of the "is curried" cases hold
 // by construction. (v0.9.0 removed size's describe with `size`, whose
 // "counts the elements" length.js replaces, clone's two shallow-copy `it`s
 // and cloneObj's describe with `cloneObj`; v0.5.0 removed test.core.js's
-// describe('isAtom').) The lists that mix strings and arrays are lists of Js
+// describe('isAtom'); v0.12.0 removed prependTo.js, appendTo.js and
+// identity's "is aliased by `I`" with the functions.) The lists that mix strings and arrays are lists of Js
 // values, and so are the values clone.js clones.
 
 module RamdafTests.Ramda.Core {
@@ -70,24 +72,6 @@ module RamdafTests.Ramda.Core {
     expect prepend4([3, 2, 1]) == [4, 3, 2, 1];
   }
 
-  // describe('prependTo') (v0.8.0); the mixed list is a list of Js values
-  method {:test} PrependToAddsToTheBeginning() {
-    expect prependTo([4, 5, 6], 3) == [3, 4, 5, 6];
-    var a123 := Arr([Num(1), Num(2), Num(3)]);
-    expect prependTo([Num(4), Num(5), Num(6)], a123) == [a123, Num(4), Num(5), Num(6)];
-  }
-
-  method {:test} PrependToWorksOnEmptyList() {
-    var empty: seq<int> := [];
-    expect prependTo(empty, 1) == [1];
-  }
-
-  // its `typeof` check holds by construction
-  method {:test} PrependToIsCurried() {
-    var prependTo321 := (el: int) => prependTo([3, 2, 1], el);
-    expect prependTo321(4) == [4, 3, 2, 1];
-  }
-
   // describe('append')
   method {:test} AppendAddsToTheEnd() {
     expect append("z", ["x", "y"]) == ["x", "y", "z"];
@@ -106,24 +90,6 @@ module RamdafTests.Ramda.Core {
   method {:test} AppendIsCurried() {
     var append1 := (l: seq<int>) => append(1, l);
     expect append1([4, 3, 2]) == [4, 3, 2, 1];
-  }
-
-  // describe('appendTo') (v0.8.0); the mixed list is a list of Js values
-  method {:test} AppendToAddsToTheEnd() {
-    expect appendTo([1, 2, 3], 4) == [1, 2, 3, 4];
-    var a456 := Arr([Num(4), Num(5), Num(6)]);
-    expect appendTo([Num(1), Num(2), Num(3)], a456) == [Num(1), Num(2), Num(3), a456];
-  }
-
-  method {:test} AppendToWorksOnEmptyList() {
-    var empty: seq<int> := [];
-    expect appendTo(empty, 1) == [1];
-  }
-
-  // its `typeof` check holds by construction
-  method {:test} AppendToIsCurried() {
-    var appendTo432 := (el: int) => appendTo([4, 3, 2], el);
-    expect appendTo432(1) == [4, 3, 2, 1];
   }
 
   // describe('concat') (v0.2.4; it was describe('merge')). Its first `it`
@@ -331,12 +297,6 @@ module RamdafTests.Ramda.Core {
   method {:test} IdentityReturnsItsFirstArgument() {
     expect identity(Undefined) == Undefined;
     expect identity("foo") == "foo";
-  }
-
-  // "is aliased by `I`" (`strictEqual(R.I, R.identity)`; compared by results)
-  method {:test} IdentityIsAliasedByI() {
-    expect I("foo") == identity("foo");
-    expect I(Num(3)) == Num(3);
   }
 
   // ---- isNil.js (v0.9.0) ----

@@ -1,4 +1,4 @@
-// Ramda v0.11.0 test/reduce.js, reduceRight.js, reduceIndexed.js and
+// Ramda v0.12.0 test/reduce.js, reduceRight.js, reduceIndexed.js and
 // reduceRightIndexed.js (v0.9.x foldl.js, foldr.js, foldlIndexed.js and
 // foldrIndexed.js; until v0.8.0 test.fold.js), transcribed. Not transcribed:
 // the "should correctly report the arity of curried versions" cases (Dafny
@@ -14,7 +14,9 @@
 // describes to foldlIndexed and foldrIndexed (and `timesIndexed` to
 // `timesIndexed`). v0.10.0 renamed the four describes and files to reduce,
 // reduceRight, reduceIndexed and reduceRightIndexed, with the same `it`s
-// ("works just like normal foldl" became "… normal reduce").
+// ("works just like normal foldl" became "… normal reduce"). v0.12.0's
+// reduce "dispatches to objects that implement `reduce`" (method dispatch on
+// a non-array object) is not transcribed.
 
 module RamdafTests.Ramda.Fold {
   import opened Ramdaf.List

@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.11.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.12.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -262,5 +262,13 @@ module RamdafTests.Edge.Data {
   method {:test} DeviationPrototypeKeysAreOrdinaryInSortedCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     expect sort((m1: map<string, int>, m2: map<string, int>) => 0, [o]) == [o];
+  }
+
+  // node: groupBy(x => '__transducers_reduced__', [1, 2]) is undefined since
+  // v0.12.0: the group array is truthy, so `_reduce` takes the accumulator for
+  // the transducer protocol's "reduced" marker and returns its `value`. Here
+  // the key is ordinary.
+  method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
+    expect groupBy((x: int) => "__transducers_reduced__", [1, 2]) == map["__transducers_reduced__" := [1, 2]];
   }
 }

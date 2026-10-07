@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.11.0's own suite does not cover, each checked against
-// dist/ramda.js v0.11.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.12.0's own suite does not cover, each checked against
+// dist/ramda.js v0.12.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -252,18 +252,6 @@ module RamdafTests.Edge.List {
     expect nth(1, "abc") == Some('b');
     expect nth(-1, "abc") == Some('c');
     expect nth(5, "abc") == None;
-  }
-
-  // prependTo and appendTo (v0.8.0) take the list first (node: [1],
-  // [[2], [1]], [[1], [2], [4, 5, 6]], and on the string 'ab' the characters
-  // plus the element, ['a', 'b', 'c'] and ['c', 'a', 'b']).
-  method {:test} PrependToAppendToEdges() {
-    var empty: seq<int> := [];
-    expect prependTo(empty, 1) == [1];
-    expect prependTo([[1]], [2]) == [[2], [1]];
-    expect appendTo([[1], [2]], [4, 5, 6]) == [[1], [2], [4, 5, 6]];
-    expect appendTo("ab", 'c') == "abc";
-    expect prependTo("ab", 'c') == "cab";
   }
 
   // clone (cloneDeep in v0.8.0) keeps undefined properties (v0.1.1's JSON
@@ -575,6 +563,28 @@ module RamdafTests.Edge.List {
     expect mapSeq((x: int) => x * x, empty) == [];
   }
 
+  // aperture (v0.12.0): the windows of n consecutive elements, none past
+  // the length, and for n <= 0 `|list| - n + 1` empty ones (node: [[1, 2],
+  // [2, 3]], [], [[], [], []], four [], [[]], ['ab', 'bc'] as arrays of
+  // characters).
+  method {:test} ApertureEdges() {
+    var empty: seq<int> := [];
+    expect aperture(2, [1, 2, 3]) == [[1, 2], [2, 3]];
+    expect aperture(7, [1, 2]) == [];
+    expect aperture(0, [1, 2]) == [[], [], []];
+    expect aperture(-1, [1, 2]) == [[], [], [], []];
+    expect aperture(0, empty) == [[]];
+    expect aperture(2, "abc") == ["ab", "bc"];
+  }
+
+  // none (v0.12.0) is the negation of any (node: true, false, true).
+  method {:test} NoneEdges() {
+    var empty: seq<int> := [];
+    expect none((x: int) => x > 2, [1, 2]) == true;
+    expect none((x: int) => x > 1, [1, 2]) == false;
+    expect none((x: int) => true, empty) == true;
+  }
+
   // ---- documented deviations (not node behaviour) ----
 
   // JS unfold (unfoldr until v0.9.1) would loop forever here; the fuel bound
@@ -618,5 +628,22 @@ module RamdafTests.Edge.List {
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
     expect createMapEntry("__proto__", 1) == map["__proto__" := 1];
     expect mergeAll([map["__proto__" := 5, "a" := 1], map["b" := 2]]) == map["__proto__" := 5, "a" := 1, "b" := 2];
+  }
+
+  // node: since v0.12.0 `_reduce` stops when the accumulator has a truthy
+  // `__transducers_reduced__` property and returns its `value` (the
+  // transducer protocol's "reduced" marker): `reduce((acc, x) => assoc('x', x,
+  // acc), {__transducers_reduced__: 1, value: 9}, [1, 2, 3])` is 9,
+  // `mergeAll([{__transducers_reduced__: 1, value: 7}, {a: 2}])` is 7, and
+  // `mapObj(x => x, {__transducers_reduced__: 1, value: 5, z: 3})` and
+  // `mapObjIndexed` of it are undefined. Here the key is ordinary.
+  method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
+    var marked := map["__transducers_reduced__" := 1, "value" := 9];
+    expect reduce((acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2, 3]) == marked["x" := 3];
+    var m7 := map["__transducers_reduced__" := 1, "value" := 7];
+    expect mergeAll([m7, map["a" := 2]]) == m7["a" := 2];
+    var o := map["__transducers_reduced__" := 1, "value" := 5, "z" := 3];
+    expect mapObj((x: int) => x, o) == o;
+    expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
   }
 }

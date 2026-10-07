@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.11.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.12.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -27,8 +27,6 @@ module RamdafTests.Edge.Misc {
     expect eqProps("x", map["x" := 1], none) == false;
     expect propEq("nope", 1, map["foo" := 1]) == false;
     expect prop("nope", map["a" := 1]) == None;
-    expect propOf(map["a" := 1], "a") == Some(1);
-    expect propOf(map["a" := 1], "b") == None;
     expect eq(1, 1) == true;
     expect keys(none) == {};
   }
@@ -241,17 +239,33 @@ module RamdafTests.Edge.Misc {
     expect minBy((x: int) => x, empty) == None;
   }
 
-  // String.prototype.substring clamps both indices and swaps them if needed.
-  method {:test} SubstringClampsAndSwaps() {
-    expect substring(5, 2, "abcdefg") == "cde";
+  // Since v0.12.0 substring is slice: a negative index counts from the end,
+  // both are clamped, and nothing is swapped (node: '', 'c', 'b', '', '', '',
+  // 'cd', 'abc', 'ab', 'ab'; until v0.11.0 String.prototype.substring
+  // clamped negatives to 0 and swapped, giving 'cde', 'c', 'ab', 'abc', '',
+  // '', 'abcd', 'abc', '', 'ab').
+  method {:test} SubstringIsSlice() {
+    expect substring(5, 2, "abcdefg") == "";
     expect substring(2, 100, "abc") == "c";
-    expect substring(-3, 2, "abcd") == "ab";
-    expect substring(3, -1, "abcd") == "abc";
+    expect substring(-3, 2, "abcd") == "b";
+    expect substring(3, -1, "abcd") == "";
     expect substring(2, 2, "abcd") == "";
     expect substringFrom(10, "abc") == "";
-    expect substringFrom(-2, "abcd") == "abcd";
+    expect substringFrom(-2, "abcd") == "cd";
     expect substringTo(10, "abc") == "abc";
-    expect substringTo(-2, "abcd") == "";
+    expect substringTo(-2, "abcd") == "ab";
+    expect substring(-10, 2, "abcd") == "ab";
+  }
+
+  // nthChar and nthCharCode (v0.12.0) count a negative n from the end; out
+  // of range nthChar is '' (node: 'a', 'c', '', '', 97, 99).
+  method {:test} NthCharEdges() {
+    expect nthChar(0, "abc") == "a";
+    expect nthChar(-1, "abc") == "c";
+    expect nthChar(5, "abc") == "";
+    expect nthChar(-5, "abc") == "";
+    expect nthCharCode(0, "abc") == 97;
+    expect nthCharCode(-1, "abc") == 99;
   }
 
   method {:test} CharAtOutOfRangeIsEmpty() {
@@ -360,14 +374,26 @@ module RamdafTests.Edge.Misc {
     expect trim(" \U{1F600} ") == "\U{1F600}";
   }
 
-  // and/or/not combine predicates (v0.1.4 renamed andFn/orFn/notFn).
+  // both/either/complement combine predicates (v0.12.0 renamed and/or/not,
+  // which v0.1.4 had renamed from andFn/orFn/notFn).
   method {:test} PredicateCombinators() {
-    expect and((x: int) => x > 0, (x: int) => x < 10)(5) == true;
-    expect and((x: int) => x > 0, (x: int) => x < 10)(15) == false;
-    expect or((x: int) => x < 0, (x: int) => x > 10)(15) == true;
-    expect or((x: int) => x < 0, (x: int) => x > 10)(5) == false;
-    expect not((x: int) => x > 0)(5) == false;
-    expect not((x: int) => x > 0)(-1) == true;
+    expect both((x: int) => x > 0, (x: int) => x < 10)(5) == true;
+    expect both((x: int) => x > 0, (x: int) => x < 10)(15) == false;
+    expect either((x: int) => x < 0, (x: int) => x > 10)(15) == true;
+    expect either((x: int) => x < 0, (x: int) => x > 10)(5) == false;
+    expect complement((x: int) => x > 0)(5) == false;
+    expect complement((x: int) => x > 0)(-1) == true;
+  }
+
+  // and/or/not (v0.12.0) are `a && b`, `a || b` and `!a` (node: false,
+  // false, true, true, false, true on booleans).
+  method {:test} BooleanOperators() {
+    expect and(false, true) == false;
+    expect and(true, true) == true;
+    expect or(true, false) == true;
+    expect or(false, false) == false;
+    expect not(true) == false;
+    expect not(false) == true;
   }
 
   method {:test} LogicAndFunctionEdges() {
@@ -560,5 +586,14 @@ module RamdafTests.Edge.Misc {
     var none: seq<int -> bool> := [];
     expect allPass(none)(5) == true;
     expect anyPass(none)(5) == false;
+  }
+
+  // node: evolve({__transducers_reduced__: x => 1}, {a: 1}) is {a: 1} since
+  // v0.12.0: mapObjIndexed's fold over the transformations meets a truthy
+  // `__transducers_reduced__` and returns its `value`, undefined, so no
+  // transformed key is added. Here the key is ordinary.
+  method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
+    expect evolve(map["__transducers_reduced__" := (v: Option<int>) => 1], map["a" := 1]) ==
+      map["a" := 1, "__transducers_reduced__" := 1];
   }
 }

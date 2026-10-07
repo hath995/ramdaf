@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.12.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
@@ -139,8 +139,9 @@ module Ramdaf.Data {
   // partition, its original since v0.2.0, had; partition now splits by a
   // predicate): for each key fn produces, the elements that produce it, in
   // list order. The results are unchanged. As for countBy, a key that names
-  // an `Object.prototype` member is an ordinary key here (README
-  // "Deviations").
+  // an `Object.prototype` member is an ordinary key here, and so is
+  // `__transducers_reduced__`, which since v0.12.0 ends `_reduce`'s fold in
+  // JS (README "Deviations").
   function groupBy<T>(fn: T -> string, list: seq<T>): map<string, seq<T>>
     ensures groupBy(fn, list).Keys == set i | 0 <= i < |list| :: fn(list[i])
     ensures forall k :: k in groupBy(fn, list) ==> groupBy(fn, list)[k] == List.filter(x => fn(x) == k, list)

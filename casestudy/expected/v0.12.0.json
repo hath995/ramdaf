@@ -1,0 +1,24 @@
+{
+  "ramda": "v0.12.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Core.I", "kind": "removed", "why": "v0.12.0 removed R.I, the identity alias deprecated in v0.11.0"},
+    {"symbol": "Ramdaf.Core.appendTo", "kind": "removed", "why": "v0.12.0 removed R.appendTo, deprecated in v0.11.0"},
+    {"symbol": "Ramdaf.Core.prependTo", "kind": "removed", "why": "v0.12.0 removed R.prependTo, deprecated in v0.11.0"},
+    {"symbol": "Ramdaf.Object.get", "kind": "removed", "why": "v0.12.0 removed R.get, the prop alias deprecated in v0.11.0"},
+    {"symbol": "Ramdaf.Object.propOf", "kind": "removed", "why": "v0.12.0 removed R.propOf, deprecated in v0.11.0"},
+    {"symbol": "Ramdaf.Logic.and", "kind": "breaking", "why": "v0.12.0's and(a, b) is the value operator a && b; the predicate combinator it was moved to both: the signature changed from (T -> bool, T -> bool) -> (T -> bool) to (bool, bool) -> bool"},
+    {"symbol": "Ramdaf.Logic.or", "kind": "breaking", "why": "v0.12.0's or(a, b) is the value operator a || b; the predicate combinator moved to either: signature changed"},
+    {"symbol": "Ramdaf.Logic.not", "kind": "breaking", "why": "v0.12.0's not(a) is the value operator !a; the predicate combinator moved to complement: signature changed"},
+    {"symbol": "Ramdaf.String.substring", "kind": "breaking", "why": "v0.12.0's substring is slice (String.prototype.slice instead of substring): a negative index counts from the end and the indices are not swapped (substring(3, 1, 'abcde') went from 'bc' to '', substring(-2, 5, 'abcde') from 'abcde' to 'de')"},
+    {"symbol": "Ramdaf.String.substringFrom", "kind": "breaking", "why": "knock-on of substring (v0.12.0 substring(__, Infinity)): a negative n counts from the end (substringFrom(-2, 'Ramda') went from 'Ramda' to 'da')"},
+    {"symbol": "Ramdaf.String.substringTo", "kind": "breaking", "why": "knock-on of substring (v0.12.0 substring(0)): a negative n counts from the end (substringTo(-2, 'Ramda') went from '' to 'Ram')"},
+    {"symbol": "Ramdaf.Logic.both", "kind": "added", "why": "new in v0.12.0: the predicate combinator f(...) && g(...) that and was until v0.11.0"},
+    {"symbol": "Ramdaf.Logic.either", "kind": "added", "why": "new in v0.12.0: the predicate combinator f(...) || g(...) that or was until v0.11.0"},
+    {"symbol": "Ramdaf.Logic.complement", "kind": "added", "why": "new in v0.12.0: the predicate combinator !f(...) that not was until v0.11.0"},
+    {"symbol": "Ramdaf.List.aperture", "kind": "added", "why": "new in v0.12.0 (@category List): aperture(n, list), the windows of n consecutive elements"},
+    {"symbol": "Ramdaf.List.none", "kind": "added", "why": "new in v0.12.0 (@category List): none(fn, list), the complement of any"},
+    {"symbol": "Ramdaf.String.nthChar", "kind": "added", "why": "new in v0.12.0 (@category String): str.charAt(n), a negative n counting from the end"},
+    {"symbol": "Ramdaf.String.nthCharCode", "kind": "added", "why": "new in v0.12.0 (@category String): str.charCodeAt(n), a negative n counting from the end; NaN out of range, so the index must fall in the string"}
+  ]
+}

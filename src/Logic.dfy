@@ -1,33 +1,49 @@
-// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.12.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
-// with `@category Logic` (`defaultTo`). (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with
-// the alias `if`, and reused the name `cond` for a new function; v0.9.0
-// renamed `allPredicates` and `anyPredicates` to `allPass` and `anyPass`
-// and removed `if`.)
+// with `@category Logic` (`defaultTo`, `both`, `either`, `complement`).
+// (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
+// reused the name `cond` for a new function; v0.9.0 renamed `allPredicates`
+// and `anyPredicates` to `allPass` and `anyPass` and removed `if`; v0.12.0
+// moved the predicate combinators `and`, `or` and `not` to `both`, `either`
+// and `complement` and reused the old names for value operators.)
 
 module Ramdaf.Logic {
   import opened Prelude
 
   export
-    reveals and, or, not, allPass, anyPass, ifElse, cond, defaultTo
+    reveals and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo
     provides Prelude
 
-  // v0.1.4 deleted the boolean operators `and`, `or` and `not` and renamed
-  // `andFn`, `orFn` and `notFn` to those names. JS forwards any number of
-  // arguments to the predicates; the port's predicates are unary (tuple the
-  // arguments for more).
+  // `R.and(a, b)` (v0.12.0): `a && b`. From v0.1.4 to v0.11.0 `and` was the
+  // predicate combinator that v0.12.0 renamed `both` (v0.1.0 to v0.1.3 had
+  // the operator `!!(a && b)`). JS takes any values and returns the deciding
+  // one (`and(1, 0)` is 0); the operands here are bool (README
+  // "Deviations").
+  function and(a: bool, b: bool): bool { a && b }
 
-  // `f(...) && g(...)`, short-circuited (v0.7.0; before, `!!(...)`). JS now
-  // returns the deciding operand, not a boolean; with boolean predicates
-  // that is the same bool (README "Deviations").
-  function and<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) && g(x) }
+  // `R.or(a, b)` (v0.12.0): `a || b`, as for and (`either` until v0.11.0).
+  function or(a: bool, b: bool): bool { a || b }
 
-  // `f(...) || g(...)`, short-circuited (v0.7.0; before, `!!(...)`), as for
-  // and.
-  function or<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) || g(x) }
+  // `R.not(a)` (v0.12.0): `!a`, as for and (`complement` until v0.11.0).
+  function not(a: bool): bool { !a }
 
-  // `!f(...)`
-  function not<T>(f: T -> bool): T -> bool { x => !f(x) }
+  // v0.1.4 renamed `andFn`, `orFn` and `notFn` to `and`, `or` and `not`, and
+  // v0.12.0 renamed those to `both`, `either` and `complement`, with the same
+  // code. JS forwards any number of arguments to the predicates; the port's
+  // predicates are unary (tuple the arguments for more).
+
+  // `R.both(f, g)` (v0.12.0, `and` until v0.11.0): `f(...) && g(...)`,
+  // short-circuited (v0.7.0; before, `!!(...)`). JS returns the deciding
+  // operand, not a boolean; with boolean predicates that is the same bool
+  // (README "Deviations").
+  function both<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) && g(x) }
+
+  // `R.either(f, g)` (v0.12.0, `or` until v0.11.0): `f(...) || g(...)`,
+  // short-circuited, as for both.
+  function either<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) || g(x) }
+
+  // `R.complement(f)` (v0.12.0, `not` until v0.11.0): `!f(...)`.
+  function complement<T>(f: T -> bool): T -> bool { x => !f(x) }
 
   // `R.allPass = _predicateWrap(_all)` (v0.9.0, which renamed
   // `allPredicates`): `allPass(preds)` is a predicate true exactly when every

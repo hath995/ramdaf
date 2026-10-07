@@ -1,6 +1,7 @@
-// Ramda v0.11.0 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
-// any.js, ifElse.js, cond.js and defaultTo.js (until v0.8.0
-// test.booleans.js, test.allany.js and test.cond.js), transcribed.
+// Ramda v0.12.0 test/both.js, either.js, complement.js, and.js, or.js,
+// not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js and
+// defaultTo.js (until v0.8.0 test.booleans.js, test.allany.js and
+// test.cond.js), transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression", "short-circuits on first false value"), which detect a call by
 // its side effect, the "reports its arity" cases, and the "throws on zero
@@ -12,7 +13,13 @@
 // describe('cond') to describe('ifElse') and added a describe('cond') for
 // the new function; v0.9.0 renamed the allPredicates, anyPredicates, every
 // and some describes to allPass, anyPass, all and any, and removed ifElse's
-// "is aliased by `if`" with the alias.) defaultTo's values are Js values
+// "is aliased by `if`" with the alias; v0.12.0 moved the and, or and not
+// describes to both, either and complement with the functions and gave the
+// value operators and, or and not new describes, whose number, string and
+// array operands are not bool (README "Deviations"); all.js's and any.js's
+// new `into` and transformer `it`s (transducers, not portable) and ifElse.js's
+// arity and curried `it`s (`R.gt`, `R.subtract` on two arguments) are not
+// transcribed.) defaultTo's values are Js values
 // (the default 42 and the values differ in type), and its null and undefined
 // are both None (README "Deviations").
 
@@ -29,58 +36,79 @@ module RamdafTests.Ramda.Logic {
   function between(t: (int, int, int)): bool { t.0 < t.1 && t.1 < t.2 }
   function total20(t: (int, int, int)): bool { t.0 + t.1 + t.2 == 20 }
 
-  // describe('or')
-  method {:test} OrCombinesTwoPredicates() {
-    var f := or(even, gt10);
-    expect f(8) == true;
-    expect f(13) == true;
-    expect f(7) == false;
-  }
-  method {:test} OrAcceptsMultiParameterFunctions() {
-    var f := or(between, total20);
-    expect f((4, 5, 8)) == true;
-    expect f((12, 2, 6)) == true;
-    expect f((7, 5, 1)) == false;
-  }
-
-  // v0.5.0: `or(even)(gt10)`
-  method {:test} OrIsCurried() {
-    var evenOr := (g: int -> bool) => or(even, g);
-    expect evenOr(gt10)(11) == true;
-    expect evenOr(gt10)(9) == false;
-  }
-
-  // describe('and')
-  method {:test} AndCombinesTwoPredicates() {
-    var f := and(even, gt10);
+  // describe('both') (v0.12.0; describe('and') until v0.11.0)
+  method {:test} BothCombinesTwoPredicates() {
+    var f := both(even, gt10);
     expect f(8) == false;
     expect f(13) == false;
     expect f(14) == true;
   }
-  method {:test} AndAcceptsMultiParameterFunctions() {
-    var f := and(between, total20);
+  method {:test} BothAcceptsMultiParameterFunctions() {
+    var f := both(between, total20);
     expect f((4, 5, 11)) == true;
     expect f((12, 2, 6)) == false;
     expect f((5, 6, 15)) == false;
   }
 
-  // v0.5.0: `and(even)(gt10)`
-  method {:test} AndIsCurried() {
-    var evenAnd := (g: int -> bool) => and(even, g);
+  // `both(even)(gt10)`
+  method {:test} BothIsCurried() {
+    var evenAnd := (g: int -> bool) => both(even, g);
     expect evenAnd(gt10)(11) == false;
     expect evenAnd(gt10)(12) == true;
   }
 
-  // describe('not')
-  method {:test} NotReversesAPredicate() {
-    var f := not(even);
+  // describe('either') (v0.12.0; describe('or') until v0.11.0)
+  method {:test} EitherCombinesTwoPredicates() {
+    var f := either(even, gt10);
+    expect f(8) == true;
+    expect f(13) == true;
+    expect f(7) == false;
+  }
+  method {:test} EitherAcceptsMultiParameterFunctions() {
+    var f := either(between, total20);
+    expect f((4, 5, 8)) == true;
+    expect f((12, 2, 6)) == true;
+    expect f((7, 5, 1)) == false;
+  }
+
+  // `either(even)(gt10)`
+  method {:test} EitherIsCurried() {
+    var evenOr := (g: int -> bool) => either(even, g);
+    expect evenOr(gt10)(11) == true;
+    expect evenOr(gt10)(9) == false;
+  }
+
+  // describe('complement') (v0.12.0; describe('not') until v0.11.0)
+  method {:test} ComplementReversesAPredicate() {
+    var f := complement(even);
     expect f(8) == false;
     expect f(13) == true;
   }
-  method {:test} NotAcceptsAMultiParameterFunction() {
-    var f := not(between);
+  method {:test} ComplementAcceptsAMultiParameterFunction() {
+    var f := complement(between);
     expect f((4, 5, 11)) == false;
     expect f((12, 2, 6)) == true;
+  }
+
+  // describe('and') (v0.12.0, the value operator): "compares two values with
+  // js &&" uses numbers and an array (`and(1, 0)` → 0), which are not bool
+  // operands; its curried case `halfTruth = and(true)` with `false`
+  method {:test} AndIsCurried() {
+    var halfTruth := (b: bool) => and(true, b);
+    expect halfTruth(false) == false;
+  }
+
+  // describe('or') (v0.12.0): the bool lines of "is curried"
+  // (`or(false)(true)`; `or('lie')(false)` and `or('')(0)` are not bool)
+  method {:test} OrIsCurried() {
+    var orFalse := (b: bool) => or(false, b);
+    expect orFalse(true) == true;
+  }
+
+  // describe('not') (v0.12.0): "reverses argument", its bool line
+  // (`not(1)` and `not('')` are not bool)
+  method {:test} NotReversesArgument() {
+    expect not(false) == true;
   }
 
   // `!!(n % 2)`

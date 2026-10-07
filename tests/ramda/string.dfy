@@ -1,8 +1,8 @@
-// Ramda v0.11.0 test/substring.js, substringFrom.js, substringTo.js,
-// charAt.js, charCodeAt.js, strIndexOf.js, strLastIndexOf.js, toUpper.js,
+// Ramda v0.12.0 test/substring.js, substringFrom.js, substringTo.js,
+// charAt.js, charCodeAt.js, nthChar.js, nthCharCode.js, strIndexOf.js, strLastIndexOf.js, toUpper.js,
 // toLower.js, trim.js, split.js and replace.js (until v0.8.0
 // test.stringBasics.js and test.replace.js), transcribed. Not transcribed:
-// match.js (regular expressions are not portable, README), and
+// match.js and test.js (regular expressions are not portable, README), and
 // trim's "falls back to a shim if String.prototype.trim is not present"
 // (v0.6.0), which is only registered when that method is missing, so not
 // under node (its asserts repeat the other three).
@@ -13,6 +13,12 @@ module RamdafTests.Ramda.String {
   // describe('substring')
   method {:test} SubstringReturnsTheSubstring() {
     expect substring(2, 5, "abcdefghijklm") == "cde";
+  }
+  // v0.12.0 (substring is slice)
+  method {:test} SubstringAcceptsNegativeOffsets() {
+    expect substring(0, -2, "Ramda") == "Ram";
+    expect substring(-4, 3, "Ramda") == "am";
+    expect substring(-4, -2, "Ramda") == "am";
   }
   method {:test} SubstringIsAutomaticallyCurried() {
     var from2 := (e: int, s: string) => substring(2, e, s);
@@ -25,6 +31,10 @@ module RamdafTests.Ramda.String {
   method {:test} SubstringFromReturnsTheTrailingSubstring() {
     expect substringFrom(8, "abcdefghijklm") == "ijklm";
   }
+  // v0.12.0
+  method {:test} SubstringFromAcceptsNegativeOffsets() {
+    expect substringFrom(-2, "Ramda") == "da";
+  }
   method {:test} SubstringFromIsAutomaticallyCurried() {
     var after8 := (s: string) => substringFrom(8, s);
     expect after8("abcdefghijklm") == "ijklm";
@@ -33,6 +43,10 @@ module RamdafTests.Ramda.String {
   // describe('substringTo')
   method {:test} SubstringToReturnsTheLeadingSubstring() {
     expect substringTo(8, "abcdefghijklm") == "abcdefgh";
+  }
+  // v0.12.0
+  method {:test} SubstringToAcceptsNegativeOffsets() {
+    expect substringTo(-2, "Ramda") == "Ram";
   }
   method {:test} SubstringToIsAutomaticallyCurried() {
     var through8 := (s: string) => substringTo(8, s);
@@ -55,6 +69,31 @@ module RamdafTests.Ramda.String {
   method {:test} CharCodeAtIsAutomaticallyCurried() {
     var at8 := (s: string) requires |s| > 8 => charCodeAt(8, s);
     expect at8("abcdefghijklm") == 105;
+  }
+
+  // describe('nthChar') (v0.12.0)
+  method {:test} NthCharReturnsTheNthCharacter() {
+    expect nthChar(2, "Ramda") == "m";
+  }
+  method {:test} NthCharAcceptsNegativeOffsets() {
+    expect nthChar(-2, "Ramda") == "d";
+  }
+  method {:test} NthCharIsCurried() {
+    var at2 := (s: string) => nthChar(2, s);
+    expect at2("Ramda") == "m";
+  }
+
+  // describe('nthCharCode') (v0.12.0): `'m'.charCodeAt(0)` and
+  // `'d'.charCodeAt(0)`
+  method {:test} NthCharCodeReturnsTheCodeOfTheNthCharacter() {
+    expect nthCharCode(2, "Ramda") == 'm' as int;
+  }
+  method {:test} NthCharCodeAcceptsNegativeOffsets() {
+    expect nthCharCode(-2, "Ramda") == 'd' as int;
+  }
+  method {:test} NthCharCodeIsCurried() {
+    var at2 := (s: string) requires |s| > 2 => nthCharCode(2, s);
+    expect at2("Ramda") == 'm' as int;
   }
 
   // describe('strIndexOf')

@@ -1,20 +1,20 @@
-// Ramdaf: Ramda v0.11.0 `src/<fn>.js` for the functions ported up to v0.8.0
-// from ramda.js's "Core Functions" section (`isEmpty`, `prepend`,
-// `prependTo`, `nth`, `head`, `last`, `tail`, `append`, `appendTo`,
-// `concat`, `identity`, `I`, `times`), `clone` and `length`; and, from
-// v0.9.0 on, the functions with `@category Type` (`isNil`). (v0.2.0 removed
-// `cloneDeep`, which v0.8.0 brought back; v0.4.1 removed the `first` alias of
-// `head`; v0.9.0 removed the aliases `car`, `cdr`, `cons` and `push`,
-// `size`, whose alias `length` holds its code now, and `cloneDeep`, which
-// `clone` became, and renamed `repeatN` to `repeat`, which `@category List`
-// puts in List.)
+// Ramdaf: Ramda v0.12.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
+// `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
+// and `length`; and, from v0.9.0 on, the functions with `@category Type`
+// (`isNil`). (v0.2.0 removed `cloneDeep`, which v0.8.0 brought back; v0.4.1
+// removed the `first` alias of `head`; v0.9.0 removed the aliases `car`,
+// `cdr`, `cons` and `push`, `size`, whose alias `length` holds its code now,
+// and `cloneDeep`, which `clone` became, and renamed `repeatN` to `repeat`,
+// which `@category List` puts in List; v0.12.0 removed `prependTo`,
+// `appendTo` and the `I` alias of `identity`, deprecated in v0.11.0.)
 
 module Ramdaf.Core {
   import opened Prelude
 
   export
-    reveals clone, isEmpty, prepend, prependTo, nth, head, last, tail, append,
-            appendTo, concat, identity, I, times, length, isNil
+    reveals clone, isEmpty, prepend, nth, head, last, tail, append,
+            concat, identity, times, length, isNil
     provides Prelude
 
   // `R.clone(value)` (`src/clone.js`): `_baseCopy(value, [], [])`, a deep
@@ -37,10 +37,6 @@ module Ramdaf.Core {
 
   function prepend<T>(el: T, list: seq<T>): seq<T> { [el] + list }
 
-  // `R.prependTo = flip(_prepend)` (v0.8.0), where `_prepend` is the
-  // function behind `R.prepend`: prepend with the arguments the other way
-  // round. (`@deprecated since v0.11.0`, still exported with the same code.)
-  function prependTo<T>(list: seq<T>, el: T): seq<T> { prepend(el, list) }
 
   // `R.nth(n, list)` (v0.8.0): `n < 0 ? list[list.length + n] : list[n]`,
   // the element at n, a negative n counting from the end; out of range it is
@@ -72,10 +68,6 @@ module Ramdaf.Core {
 
   function append<T>(el: T, list: seq<T>): seq<T> { list + [el] }
 
-  // `R.appendTo = flip(_append)` (v0.8.0): append with the arguments the
-  // other way round. (`@deprecated since v0.11.0`, still exported with the
-  // same code.)
-  function appendTo<T>(list: seq<T>, el: T): seq<T> { append(el, list) }
 
   // `R.concat` (v0.2.4; until v0.2.3 it was an alias of `merge`, which v0.2.4
   // removed): the elements of list1 followed by those of list2. When the
@@ -92,9 +84,7 @@ module Ramdaf.Core {
   function concat<T>(list1: seq<T>, list2: seq<T>): seq<T> { list1 + list2 }
 
   function identity<T>(x: T): T { x }
-  // `R.I = identity`, an alias (`@deprecated since v0.11.0`, still exported
-  // with the same code).
-  function I<T>(x: T): T { identity(x) }
+
 
   // `var arr = new Array(n); while (++i < n) { arr[i] = fn(i); }` (v0.2.3;
   // since v0.9.0 `new Array(Number(n))`, which only changes non-numbers):

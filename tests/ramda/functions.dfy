@@ -1,4 +1,4 @@
-// Ramda v0.11.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.12.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
@@ -17,7 +17,7 @@
 // of functions that are not portable (README) are not transcribed: useWith,
 // once, memoize, construct, constructN, unary, binary, nAry, apply, unapply,
 // composeP, pipeP, curry, curryN, op, partial, partialRight, wrap, forEach,
-// forEachIndexed, installTo, path, pathOn, pathEq, is, isArrayLike, type,
+// forEachIndexed, installTo (until v0.11.0), path, pathOn, pathEq, is, isArrayLike, type,
 // functions, functionsIn, bind, invoker, lift, liftN, nthArg, and v0.9.0's
 // new arity.js and call.js; test.examplesRunner.js runs the JSDoc examples
 // through `dox` and is not a hand-written suite. (v0.1.3 moved test.lazy.js
@@ -28,7 +28,9 @@
 // composeP, pipeP, partial and partialRight with the functions; v0.11.0
 // removed op.js and pathOn.js with the functions and added the unportable
 // dissocPath.js, invariants.js (arity under partial application) and
-// internal/_curry2.js and internal/_curry3.js.)
+// internal/_curry2.js and internal/_curry3.js; v0.12.0 removed installTo.js
+// with the function and added the unportable invoke.js, into.js and
+// transduce.js.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions
