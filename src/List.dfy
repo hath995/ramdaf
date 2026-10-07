@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.25.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.26.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -7,7 +7,7 @@
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
 // `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
 // `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith`, `reduceWhile`,
-// `startsWith`, `endsWith` and the renamed functions below; since v0.16.0 the
+// `startsWith`, `endsWith`, `includes` and the renamed functions below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
@@ -46,7 +46,7 @@ module Ramdaf.List {
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
-            without, reduceBy, groupWith, reduceWhile, startsWith, endsWith
+            without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -324,7 +324,11 @@ module Ramdaf.List {
   // `_indexOf(list, a) >= 0` (`===` until v0.13.0, `_eq`, `Object.is`, in
   // v0.14.0, and since v0.15.0 `R.equals`, deep equality, which on Dafny
   // values is `==`; see README on `-0`; `op`-curried from v0.9.0 to v0.10.0 and `_curry2` since v0.11.0,
-  // which only add the placeholder form `contains(__, list)`).
+  // which only add the placeholder form `contains(__, list)`). Deprecated
+  // since v0.26.0 for `includes`, which is the same `_curry2(_includes)`
+  // (the private `_contains` renamed). On a JS string the string's own
+  // `indexOf` finds a substring (`contains('ba', 'banana')` is true since
+  // v0.19.0); here a string's element is a character (README "Deviations").
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
 
   // `var result = []; ... if (!contains(item, result)) result.push(item);`
@@ -709,21 +713,21 @@ module Ramdaf.List {
          (r.0, [t.1] + r.1) }
 
   // `R.mapAccumRight(fn, acc, list)` (v0.10.0, which renamed `mapAccumR`
-  // with the same code): `tuple = fn(list[idx], tuple[0]); result[idx] =
-  // tuple[1];` for idx descending, `return [result, tuple[0]];` (v0.23.0):
-  // the accumulator runs right to left, each mapped element stays at its
-  // element's index, and fn takes the element first and returns the pair
-  // [accumulator, mapped element]; the result is [mapped list, accumulator]
-  // (`mapAccumRight((x, acc) => [acc + x, 'm' + x], '', ['1', '2', '3'])` is
-  // `[['m1', 'm2', 'm3'], '321']`). Until v0.22.1 fn took the accumulator
-  // first, `fn(tuple[0], list[idx])`, and the result was [accumulator,
-  // mapped list], as mapAccum's.
-  function mapAccumRight<A, B, C>(fn: (B, A) -> (A, C), acc: A, list: seq<B>): (seq<C>, A)
-    ensures |mapAccumRight(fn, acc, list).0| == |list|
-  { if |list| == 0 then ([], acc)
-    else var t := fn(list[|list| - 1], acc);
+  // with the same code): `tuple = fn(tuple[0], list[idx]); result[idx] =
+  // tuple[1];` for idx descending, `return [tuple[0], result];`: as mapAccum
+  // with idx descending, so each mapped element stays at its element's index
+  // while the accumulator runs right to left (`mapAccumRight((a, b) => [a +
+  // b, a + b], '0', ['1', '2', '3'])` is `['0321', ['0321', '032', '03']]`).
+  // In v0.23.0 to v0.25.0 fn took the element first, `fn(list[idx],
+  // tuple[0])`, and the result was [mapped list, accumulator]; v0.26.0
+  // reverts to the earlier order (`@sig ((acc, x) -> (acc, y)) -> acc -> [x]
+  // -> (acc, [y])`).
+  function mapAccumRight<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
+    ensures |mapAccumRight(fn, acc, list).1| == |list|
+  { if |list| == 0 then (acc, [])
+    else var t := fn(acc, list[|list| - 1]);
          var r := mapAccumRight(fn, t.0, list[..|list| - 1]);
-         (r.0 + [t.1], r.1) }
+         (r.0, r.1 + [t.1]) }
 
   // `R.mergeAll(list)` (v0.10.0, `@category List`): since v0.20.0
   // `_objectAssign.apply(null, [{}].concat(list))`, the private
@@ -763,30 +767,34 @@ module Ramdaf.List {
     var count := if limit >= 0 then limit else 0;
     seq(count, idx requires 0 <= idx < count => slice(idx, idx + n, list)) }
 
-  // `R.none = _curry2(_complement(_dispatchable('any', _xany, _any)))`
-  // (v0.12.0, `@category List`): the negation of `any`, true when no element
-  // satisfies fn.
-  function none<T>(fn: T -> bool, list: seq<T>): bool { !any(fn, list) }
+  // `R.none(fn, input)` (v0.12.0, `@category List`): since v0.26.0
+  // `all(_complement(fn), input)`, every element fails fn (`_complement(fn)`
+  // is `x => !fn(x)`), so true when no element satisfies fn; until v0.25.0
+  // `_complement(_dispatchable('any', _xany, _any))`, the negation of `any`,
+  // with the same results (and the body was `!any(fn, list)`).
+  function none<T>(fn: T -> bool, list: seq<T>): bool { all((x: T) => !fn(x), list) }
 
-  // `R.adjust(fn, idx, list)` (v0.14.0, `@category List`): `if (idx >=
+  // `R.adjust(idx, fn, list)` (v0.14.0, `@category List`; since v0.26.0 the
+  // index first, where it was `adjust(fn, idx, list)`): `if (idx >=
   // list.length || idx < -list.length) { return list; }`, and otherwise a
   // copy (`_concat(list)`) with `_list[_idx] = fn(list[_idx])`, where `_idx`
   // is idx plus the length for a negative idx: fn applied to the element at
-  // idx, a negative idx counting from the end (`adjust(add(10), -1, [1, 2,
+  // idx, a negative idx counting from the end (`adjust(-1, add(10), [1, 2,
   // 3])` is `[1, 2, 13]`); out of range the list itself. JS lets fn return a
   // value of another type (README "Deviations").
-  function adjust<T>(fn: T -> T, idx: int, list: seq<T>): seq<T>
-    ensures |adjust(fn, idx, list)| == |list|
+  function adjust<T>(idx: int, fn: T -> T, list: seq<T>): seq<T>
+    ensures |adjust(idx, fn, list)| == |list|
   { if idx >= |list| || idx < -|list| then list
     else var i := (if idx < 0 then |list| else 0) + idx;
          list[i := fn(list[i])] }
 
-  // `R.update(idx, x, list)` (v0.14.0): `adjust(always(x), idx, list)`, the
-  // element at idx replaced by x (out of range, the list itself).
+  // `R.update(idx, x, list)` (v0.14.0): `adjust(idx, always(x), list)` (since
+  // v0.26.0 moved the index first; `adjust(always(x), idx, list)` before),
+  // the element at idx replaced by x (out of range, the list itself).
   // `R.always` is Functions', which List does not import, so it is written
   // out as `_ => x`. JS lets x be of another type (README "Deviations").
   function update<T>(idx: int, x: T, list: seq<T>): seq<T>
-  { adjust((_: T) => x, idx, list) }
+  { adjust(idx, (_: T) => x, list) }
 
   // `R.intersperse(separator, list)` (v0.14.0): pushes each element and,
   // after every element but the last, the separator (`intersperse('n',
@@ -1072,4 +1080,12 @@ module Ramdaf.List {
   // startsWith.
   function endsWith<T(==)>(suffix: seq<T>, list: seq<T>): bool
   { takeLast(|suffix|, list) == suffix }
+
+  // `R.includes(a, list)` (v0.26.0, `@category List`): `_curry2(_includes)`,
+  // `_indexOf(list, a, 0) >= 0`, whether a is an element of list (`R.equals`,
+  // `==` here, except that JS tells `-0` from `0`: README "Deviations"); the
+  // same function as contains, which it deprecates. On a JS string the
+  // string's own `indexOf` finds a substring (`includes('ba', 'banana')` is
+  // true); here a string's element is a character (README "Deviations").
+  function includes<T(==)>(a: T, list: seq<T>): bool { a in list }
 }

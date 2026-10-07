@@ -1,0 +1,19 @@
+{
+  "ramda": "v0.26.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.adjust", "kind": "breaking", "why": "v0.26.0 moves the index first: adjust(idx, fn, list), was adjust(fn, idx, list); the signature changed"},
+    {"symbol": "Ramdaf.List.mapAccumRight", "kind": "breaking", "why": "v0.26.0 reverts v0.23.0: fn takes (acc, x) and the result is [acc, list] again; the signature changed"},
+    {"symbol": "Ramdaf.List.update", "kind": "compatible", "why": "v0.26.0's update is adjust(idx, always(x), list) in adjust's new order: the revealed body is rewritten with the same results"},
+    {"symbol": "Ramdaf.List.lensIndex", "kind": "compatible", "why": "knock-on: the revealed body's setter calls update, whose revealed body was rewritten with the same results"},
+    {"symbol": "Ramdaf.List.none", "kind": "compatible", "why": "v0.26.0's none is all(complement(fn), input): the revealed body is rewritten with the same results"},
+    {"symbol": "Ramdaf.Functions.T", "kind": "compatible", "why": "v0.26.0's T is function() { return true; }, no longer always(true): the revealed body is rewritten with the same results"},
+    {"symbol": "Ramdaf.Functions.F", "kind": "compatible", "why": "v0.26.0's F is function() { return false; }, no longer always(false): the revealed body is rewritten with the same results"},
+    {"symbol": "Ramdaf.List.includes", "kind": "added", "why": "new in v0.26.0 (@category List): _curry2(_includes), contains' code"},
+    {"symbol": "Ramdaf.Object.mergeLeft", "kind": "added", "why": "new in v0.26.0 (@category Object): _objectAssign({}, r, l)"},
+    {"symbol": "Ramdaf.Object.mergeRight", "kind": "added", "why": "new in v0.26.0 (@category Object): _objectAssign({}, l, r)"},
+    {"symbol": "Ramdaf.Functions.thunkify", "kind": "added", "why": "new in v0.26.0 (@category Function): a function of fn's arguments returning a thunk that calls fn"},
+    {"symbol": "Ramdaf.Functions.pipeWith", "kind": "added", "why": "new in v0.26.0 (@category Function): the functions piped with xf combining each with the result so far"},
+    {"symbol": "Ramdaf.Functions.composeWith", "kind": "added", "why": "new in v0.26.0 (@category Function): pipeWith of the reversed functions"}
+  ]
+}

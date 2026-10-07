@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.25.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.26.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
@@ -57,7 +57,9 @@ module Ramdaf.Data {
   { List.uniqWith(pred, list1 + list2) }
 
   // `if (indexOf(second, first[idx]) === -1 && indexOf(out, first[idx]) ===
-  // -1) out.push(first[idx])` for idx ascending (v0.7.0; before, it was
+  // -1) out.push(first[idx])` for idx ascending (v0.7.0; since v0.26.0 a
+  // private `_Set` holding second's elements, `if (toFilterOut.add(first[idx]))
+  // out.push(first[idx])`, the same membership test; before v0.7.0 it was
   // `uniq(reject(flip(contains)(second), first))`, with the same results):
   // the elements of first not in second, each kept at its first occurrence.
   // The body recurses on all but the last element, as the loop does.
@@ -225,7 +227,8 @@ module Ramdaf.Data {
   { if value < min then min else if value > max then max else value }
 
   // `R.innerJoin(pred, xs, ys)` (v0.24.0, `@category Relation`):
-  // `_filter(function(x) { return _containsWith(pred, x, ys); }, xs)`, the
+  // `_filter(function(x) { return _includesWith(pred, x, ys); }, xs)` (the
+  // private `_containsWith` until v0.25.0), the
   // elements x of xs for which `pred(x, y)` holds for some y in ys, in xs's
   // order and with xs's duplicates (`innerJoin((r, id) => r.id === id,
   // [a, b, c], [1, 2])` is `[a, b]`). The private `_filter` is `filter` on a

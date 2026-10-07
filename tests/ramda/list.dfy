@@ -1,6 +1,6 @@
-// Ramda v0.25.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.26.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
-// lastIndexOf.js, contains.js, uniq.js, uniqWith.js, map.js,
+// lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
 // flatten.js, unnest.js, range.js, reverse.js, unfold.js, zip.js,
 // zipWith.js, zipObj.js, fromPairs.js, xprod.js, partition.js, groupBy.js,
@@ -104,6 +104,9 @@
 // startsWith.js and endsWith.js (v0.24.0; endsWith.js's describe is named
 // 'startsWith' upstream) test strings as Dafny strings and arrays of
 // strings as seqs of strings.
+// (v0.26.0 removed the per-function "is curried" `it`s and adjust's "curries
+// the arguments", with their transcriptions here, and renamed contains.js
+// includes.js, contains being deprecated.)
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -178,11 +181,6 @@ module RamdafTests.Ramda.List {
     expect remove(13, 3, Letters()) == Letters();
   }
 
-  method {:test} RemoveShouldBeCurried() {
-    var r := (l: seq<string>) => remove(13, 3, l);
-    expect r(Letters()) == Letters();
-  }
-
   // describe('insert') (v0.2.2)
   method {:test} InsertInsertsAnElement() {
     expect insert(2, "x", ["a", "b", "c", "d", "e"]) == ["a", "b", "x", "c", "d", "e"];
@@ -198,11 +196,6 @@ module RamdafTests.Ramda.List {
     expect insert(8, "z", ["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "z"];
   }
 
-  method {:test} InsertShouldBeCurried() {
-    var ins := (l: seq<string>) => insert(8, "z", l);
-    expect ins(["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "z"];
-  }
-
   // describe('insertAll') (describe('insert.all') from v0.2.2 to v0.8.0)
   method {:test} InsertAllInsertsAListOfElements() {
     expect insertAll(2, ["x", "y", "z"], ["a", "b", "c", "d", "e"]) == ["a", "b", "x", "y", "z", "c", "d", "e"];
@@ -212,20 +205,10 @@ module RamdafTests.Ramda.List {
     expect insertAll(8, ["p", "q", "r"], ["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "p", "q", "r"];
   }
 
-  method {:test} InsertAllShouldBeCurried() {
-    var ins := (elts: seq<string>, l: seq<string>) => insertAll(8, elts, l);
-    expect ins(["p", "q", "r"], ["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "p", "q", "r"];
-  }
-
   // describe('times') (v0.2.3)
   method {:test} TimesTakesAMapFunc() {
     expect times((i: nat) => i, 5) == [0, 1, 2, 3, 4];
     expect times((x: nat) => x * 2, 5) == [0, 2, 4, 6, 8];
-  }
-
-  method {:test} TimesIsCurried() {
-    var mapid := (n: nat) => times((i: nat) => i, n);
-    expect mapid(5) == [0, 1, 2, 3, 4];
   }
 
   // describe('repeat') (describe('repeatN') until v0.8.0)
@@ -235,14 +218,6 @@ module RamdafTests.Ramda.List {
 
   method {:test} RepeatCanAcceptAnyValueIncludingNull() {
     expect repeat(Null, 3) == [Null, Null, Null];
-  }
-
-  // v0.9.0's `makeFoos = R.repeat('foo')` (until v0.8.0 `nTrues =
-  // R.repeatN(true)`)
-  method {:test} RepeatIsAutomaticallyCurried() {
-    var makeFoos := (n: nat) => repeat("foo", n);
-    expect makeFoos(0) == [];
-    expect makeFoos(3) == ["foo", "foo", "foo"];
   }
 
   // describe('of') (v0.3.0)
@@ -290,12 +265,6 @@ module RamdafTests.Ramda.List {
     var mdouble := (l: seq<int>) => chain(Times2, l);
     var mdec := (l: seq<int>) => chain((x: int) => [x - 1], l);
     expect mdec(mdouble([10, 20, 30])) == [19, 39, 59];
-  }
-
-  // v0.15.0: `flatInc = R.chain(add1)`
-  method {:test} ChainIsCurried() {
-    var flatInc := (l: seq<int>) => chain((x: int) => [x + 1], l);
-    expect flatInc([1, 2, 3, 4, 5, 6]) == [2, 3, 4, 5, 6, 7];
   }
 
   // describe('init') (v0.9.0): v0.16.0's "returns all but the last element
@@ -355,11 +324,6 @@ module RamdafTests.Ramda.List {
     expect indexOf("x", empty) == -1;
   }
 
-  method {:test} IndexOfShouldBeCurried() {
-    var curried := (l: seq<Js>) => indexOf(Num(3), l);
-    expect curried(Arr123()) == 2;
-  }
-
   // describe('lastIndexOf')
   method {:test} LastIndexOfReturnsTheLastPosition() {
     expect lastIndexOf(30, [0, 10, 20, 30, 0, 10, 20, 30, 0, 10]) == 7;
@@ -406,45 +370,25 @@ module RamdafTests.Ramda.List {
     expect lastIndexOf("x", empty) == -1;
   }
 
-  method {:test} LastIndexOfShouldBeCurried() {
-    var curried := (l: seq<Js>) => lastIndexOf(Str("a"), l);
-    expect curried(Ana()) == 2;
+  // ---- includes.js (v0.26.0; contains.js until v0.25.0), containsWith.js,
+  // isSet.js, uniq.js, uniqWith.js (test.containsuniq.js until v0.8.0) ----
+
+  // describe('includes') (describe('contains') until v0.25.0, whose `it`s
+  // includes.js keeps; contains, deprecated, has no tests since v0.26.0).
+  // Its "has R.equals semantics" (`-0`, NaN, `Just` objects) and "returns
+  // true if substring is part of string" (a string's element is a
+  // character here, README "Deviations") are not transcribed.
+  method {:test} IncludesTrueWhenPresent() {
+    expect includes(7, [1, 2, 3, 9, 8, 7, 100, 200, 300]) == true;
   }
 
-  // ---- contains.js, containsWith.js, isSet.js, uniq.js, uniqWith.js
-  // (test.containsuniq.js until v0.8.0) ----
-
-  // describe('contains')
-  method {:test} ContainsTrueWhenPresent() {
-    expect contains(7, [1, 2, 3, 9, 8, 7, 100, 200, 300]) == true;
+  method {:test} IncludesFalseWhenAbsent() {
+    expect includes(99, [1, 2, 3, 9, 8, 7, 100, 200, 300]) == false;
   }
 
-  method {:test} ContainsFalseWhenAbsent() {
-    expect contains(99, [1, 2, 3, 9, 8, 7, 100, 200, 300]) == false;
-  }
-
-  method {:test} ContainsFalseForTheEmptyList() {
+  method {:test} IncludesFalseForTheEmptyList() {
     var empty: seq<int> := [];
-    expect contains(1, empty) == false;
-  }
-
-  // v0.5.0
-  method {:test} ContainsIsCurried() {
-    var has7 := (l: seq<int>) => contains(7, l);
-    expect has7([1, 2, 3]) == false;
-    expect has7([1, 2, 7, 3]) == true;
-  }
-
-  // v0.9.0: "is curried like a binary operator, that accepts an inital
-  // placeholder": since v0.11.0 `isDigit = contains(__, ['0', …, '9'])`
-  // (v0.9.x: `contains(__)(fbb)('bar')`, `contains(__, fbb)('bar')` and
-  // `contains(__)(fbb, 'bar')`, with `fbb = ['foo', 'bar', 'baz']`).
-  method {:test} ContainsIsCurriedLikeABinaryOperator() {
-    var digits := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-    var isDigit := (x: string) => contains(x, digits);
-    expect isDigit("0") == true;
-    expect isDigit("1") == true;
-    expect isDigit("x") == false;
+    expect includes(1, empty) == false;
   }
 
   // describe('uniq')
@@ -499,25 +443,11 @@ module RamdafTests.Ramda.List {
     expect uniqWith(eqI, empty) == [];
   }
 
-  // v0.5.0
-  method {:test} UniqWithIsCurried() {
-    var objs := [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3), Ox("F", 4), Ox("F", 5), Ox("T", 6), Ox("F", 7)];
-    var objs2 := [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3), Ox("F", 0), Ox("T", 1), Ox("F", 2), Ox("F", 3)];
-    var uniqByI := (l: seq<map<string, Js>>) => uniqWith(eqI, l);
-    expect uniqByI(objs) == objs;
-    expect uniqByI(objs2) == [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3)];
-  }
-
   // ---- map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js (test.map.js
   // until v0.8.0) ----
 
   method {:test} MapMapsSimpleFunctions() {
     expect mapSeq((x: int) => x * 2, [1, 2, 3, 4]) == [2, 4, 6, 8];
-  }
-
-  method {:test} MapIsAutomaticallyCurried() {
-    var inc := (l: seq<int>) => mapSeq((x: int) => x + 1, l);
-    expect inc([1, 2, 3]) == [2, 3, 4];
   }
 
   // v0.12.0: `mdec(mdouble([10, 20, 30]))` with `mdouble = map(times2)`,
@@ -547,11 +477,6 @@ module RamdafTests.Ramda.List {
   method {:test} MapObjIndexedPassesTheEntireObjectAsAThirdParameter() {
     expect mapObjIndexed(squareVowels, Vowelly()) ==
       map["a" := 64, "b" := 6, "c" := 7, "d" := 5, "e" := 9, "f" := 0, "g" := 9];
-  }
-
-  method {:test} MapObjIndexedIsAutomaticallyCurried() {
-    var makeSquareVowels := (o: map<string, int>) => mapObjIndexed(squareVowels, o);
-    expect makeSquareVowels(Vowelly()) == map["a" := 64, "b" := 6, "c" := 7, "d" := 5, "e" := 9, "f" := 0, "g" := 9];
   }
 
   // ---- find.js, findIndex.js, findLast.js, findLastIndex.js (test.find.js)
@@ -589,12 +514,6 @@ module RamdafTests.Ramda.List {
     expect find(Even, none) == None;
   }
 
-  // v0.5.0
-  method {:test} FindIsCurried() {
-    var findEven := (l: seq<Js>) => find(Even, l);
-    expect findEven(A()) == Some(Num(10));
-  }
-
   // describe('findIndex')
   method {:test} FindIndexReturnsTheIndexOfTheFirstElementThatSatisfiesThePredicate() {
     expect findIndex(Even, A()) == 1;
@@ -608,12 +527,6 @@ module RamdafTests.Ramda.List {
     var none: seq<Js> := [];
     expect findIndex(Even, [Str("zing")]) == -1;
     expect findIndex(Even, none) == -1;
-  }
-
-  // v0.5.0
-  method {:test} FindIndexIsCurried() {
-    var findIndexEven := (l: seq<Js>) => findIndex(Even, l);
-    expect findIndexEven(A()) == 1;
   }
 
   // describe('findLast') (new in the v0.2.0 suite; "returns the index of the
@@ -640,12 +553,6 @@ module RamdafTests.Ramda.List {
     expect findLast(Even, none) == None;
   }
 
-  // v0.5.0
-  method {:test} FindLastIsCurried() {
-    var findLastEven := (l: seq<Js>) => findLast(Even, l);
-    expect findLastEven(A()) == Some(Num(0));
-  }
-
   // describe('findLastIndex') (the v0.1.5 suite tested it under
   // describe('findLast'))
   method {:test} FindLastIndexReturnsTheIndexOfTheLastElementThatSatisfiesThePredicate() {
@@ -668,12 +575,6 @@ module RamdafTests.Ramda.List {
   method {:test} FindLastIndexDoesNotGoIntoAnInfiniteLoopOnAnEmptyArray() {
     var none: seq<Js> := [];
     expect findLastIndex(Even, none) == -1;
-  }
-
-  // v0.5.0
-  method {:test} FindLastIndexIsCurried() {
-    var findLastIndexEven := (l: seq<Js>) => findLastIndex(Even, l);
-    expect findLastIndexEven(A()) == 15;
   }
 
   // ---- flatten.js, unnest.js (test.flatten.js) ----
@@ -741,11 +642,6 @@ module RamdafTests.Ramda.List {
   method {:test} RangeReturnsAnEmptyArrayIfFromIsAboveTo() {
     expect range(10, 5) == [];
     expect range(10, 5) == [];
-  }
-
-  method {:test} RangeIsAutomaticallyCurried() {
-    var from10 := (to: int) => range(10, to);
-    expect from10(15) == [10, 11, 12, 13, 14];
   }
 
   // ---- reverse.js ----
@@ -857,14 +753,6 @@ module RamdafTests.Ramda.List {
     expect scan((a: int, b: int) => a * b, 1, empty) == [1];
   }
 
-  // `scan(add)` with JS `+`: numbers and strings
-  method {:test} ScanIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => scan((a: int, b: int) => a + b, 0, l);
-    expect sum([1, 2, 3, 4]) == [0, 1, 3, 6, 10];
-    var cat := (l: seq<string>) => scan((a: string, b: string) => a + b, "", l);
-    expect cat(["1", "2", "3", "4"]) == ["", "1", "12", "123", "1234"];
-  }
-
   // ---- mapAccum.js, mapAccumRight.js (v0.10.0; mapAccumL.js and
   // mapAccumR.js in v0.9.x). Not transcribed: "correctly reports the arity
   // of curried versions" and the no-argument cases. ----
@@ -873,7 +761,6 @@ module RamdafTests.Ramda.List {
   // b) = [a.concat(b), a.concat(b)]`: the two-element arrays are pairs.
   function AccAdd(a: int, b: int): (int, int) { (a + b, a + b) }
   function AccMult(a: int, b: int): (int, int) { (a * b, a * b) }
-  function AccCat(a: string, b: string): (string, string) { (a + b, a + b) }
 
   // describe('mapAccum') (describe('mapAccumL') until v0.9.1)
   method {:test} MapAccumMapsAndAccumulatesSimpleFunctions() {
@@ -890,21 +777,13 @@ module RamdafTests.Ramda.List {
     expect mapAccum((a: seq<int>, b: seq<int>) => (a + b, a + b), none, noLists) == ([], []);
   }
 
-  // `addOrConcat = mapAccum(add)` applied to 0 and to '' (JS `+` on strings)
-  method {:test} MapAccumIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => mapAccum(AccAdd, 0, l);
-    var cat := (l: seq<string>) => mapAccum(AccCat, "", l);
-    expect sum([1, 2, 3, 4]) == (10, [1, 3, 6, 10]);
-    expect cat(["1", "2", "3", "4"]) == ("1234", ["1", "12", "123", "1234"]);
-  }
-
-  // describe('mapAccumRight') (describe('mapAccumR') until v0.9.1); since
-  // v0.23.0 fn gets the element first and the result is [list,
-  // accumulator] (until v0.22.1 [accumulator, list]: `(10, [10, 9, 7, 4])`,
-  // and the cat line `("4321", ["4321", "432", "43", "4"])`)
+  // describe('mapAccumRight') (describe('mapAccumR') until v0.9.1); fn gets
+  // the accumulator first and the result is [accumulator, list], as until
+  // v0.22.1 (from v0.23.0 to v0.25.0 fn got the element first and the
+  // result was [list, accumulator]: `([10, 9, 7, 4], 10)`)
   method {:test} MapAccumRightMapsAndAccumulatesSimpleFunctions() {
-    expect mapAccumRight(AccAdd, 0, [1, 2, 3, 4]) == ([10, 9, 7, 4], 10);
-    expect mapAccumRight(AccMult, 1, [1, 2, 3, 4]) == ([24, 24, 12, 4], 24);
+    expect mapAccumRight(AccAdd, 0, [1, 2, 3, 4]) == (10, [10, 9, 7, 4]);
+    expect mapAccumRight(AccMult, 1, [1, 2, 3, 4]) == (24, [24, 24, 12, 4]);
   }
 
   // The third case folds with `R.concat`, which returns one list, not a pair;
@@ -912,18 +791,11 @@ module RamdafTests.Ramda.List {
   // with a pair-returning concatenation.
   method {:test} MapAccumRightReturnsTheListAndAccumulatorForAnEmptyArray() {
     var empty: seq<int> := [];
-    expect mapAccumRight(AccAdd, 0, empty) == ([], 0);
-    expect mapAccumRight(AccMult, 1, empty) == ([], 1);
+    expect mapAccumRight(AccAdd, 0, empty) == (0, []);
+    expect mapAccumRight(AccMult, 1, empty) == (1, []);
     var noLists: seq<seq<int>> := [];
     var none: seq<int> := [];
     expect mapAccumRight((a: seq<int>, b: seq<int>) => (a + b, a + b), none, noLists) == ([], []);
-  }
-
-  method {:test} MapAccumRightIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => mapAccumRight(AccAdd, 0, l);
-    var cat := (l: seq<string>) => mapAccumRight(AccCat, "", l);
-    expect sum([1, 2, 3, 4]) == ([10, 9, 7, 4], 10);
-    expect cat(["1", "2", "3", "4"]) == (["1234", "234", "34", "4"], "1234");
   }
 
   // ---- mergeAll.js (v0.10.0) ----
@@ -953,11 +825,6 @@ module RamdafTests.Ramda.List {
     expect aperture(1, empty) == [];
   }
 
-  method {:test} ApertureIsAutomaticallyCurried() {
-    var pairwise := (l: seq<int>) => aperture(2, l);
-    expect pairwise(SevenLs()) == [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]];
-  }
-
   // ---- none.js (v0.12.0) ----
 
   function even(n: int): bool { n % 2 == 0 }
@@ -984,11 +851,6 @@ module RamdafTests.Ramda.List {
     expect none(hasA, xs) == false;
   }
 
-  method {:test} NoneIsAutomaticallyCurried() {
-    var noneEven := (l: seq<int>) => none(even, l);
-    expect noneEven([1, 3, 5, 6, 7, 9]) == false;
-  }
-
   // ---- xprod.js (test.product.js) ----
 
   method {:test} XprodReturnsAnEmptyListIfEitherInputListIsEmpty() {
@@ -999,11 +861,6 @@ module RamdafTests.Ramda.List {
 
   method {:test} XprodCreatesAllCrossProductPairs() {
     expect xprod([1, 2], ["a", "b", "c"]) == [(1, "a"), (1, "b"), (1, "c"), (2, "a"), (2, "b"), (2, "c")];
-  }
-
-  method {:test} XprodIsAutomaticallyCurried() {
-    var something := (l: seq<int>) => xprod(["a", "b", "c"], l);
-    expect something([1, 2]) == [("a", 1), ("a", 2), ("b", 1), ("b", 2), ("c", 1), ("c", 2)];
   }
 
   // ---- partition.js (v0.3.0: partition splits a list by a predicate; its
@@ -1018,12 +875,6 @@ module RamdafTests.Ramda.List {
     expect partition(pred, [0, 2, 4, 6]) == ([], [0, 2, 4, 6]);
     expect partition(pred, [1, 3, 5, 7]) == ([1, 3, 5, 7], []);
     expect partition(pred, [0, 1, 2, 3]) == ([1, 3], [0, 2]);
-  }
-
-  // `partition(Boolean)`: JS truthiness (Support.Truthy) of mixed values.
-  method {:test} PartitionIsCurried() {
-    var polarize := (l: seq<Js>) => partition(Truthy, l);
-    expect polarize([Bool(true), Num(0), Num(1), Null]) == ([Bool(true), Num(1)], [Num(0), Null]);
   }
 
   // ---- groupBy.js (v0.3.0; test.partition.js's tests until v0.2.4) ----
@@ -1051,14 +902,6 @@ module RamdafTests.Ramda.List {
   // `prop("type")`; every record here has a string type.
   function TypeOf(o: map<string, Js>): string { if "type" in o && o["type"].Str? then o["type"].s else "undefined" }
 
-  method {:test} GroupByIsAutomaticallyCurried() {
-    var splitByType := (l: seq<map<string, Js>>) => groupBy(TypeOf, l);
-    expect splitByType([Typed("A", 10), Typed("B", 20), Typed("A", 30), Typed("A", 40), Typed("C", 50), Typed("B", 60)]) ==
-      map["A" := [Typed("A", 10), Typed("A", 30), Typed("A", 40)],
-          "B" := [Typed("B", 20), Typed("B", 60)],
-          "C" := [Typed("C", 50)]];
-  }
-
   // v0.5.0: `groupBy(prop('x'), [])`
   method {:test} GroupByReturnsAnEmptyObjectIfGivenAnEmptyArray() {
     var none: seq<map<string, Js>> := [];
@@ -1070,30 +913,24 @@ module RamdafTests.Ramda.List {
 
   // `R.add(1)` is `x => x + 1`.
   method {:test} AdjustAppliesTheGivenFunctionToTheValueAtTheGivenIndex() {
-    expect adjust((x: int) => x + 1, 2, [0, 1, 2, 3]) == [0, 1, 3, 3];
+    expect adjust(2, (x: int) => x + 1, [0, 1, 2, 3]) == [0, 1, 3, 3];
   }
 
   method {:test} AdjustOffsetsNegativeIndexesFromTheEndOfTheArray() {
-    expect adjust((x: int) => x + 1, -3, [0, 1, 2, 3]) == [0, 2, 2, 3];
+    expect adjust(-3, (x: int) => x + 1, [0, 1, 2, 3]) == [0, 2, 2, 3];
   }
 
   method {:test} AdjustReturnsTheOriginalArrayIfTheSuppliedIndexIsOutOfBounds() {
     var list := [0, 1, 2, 3];
-    expect adjust((x: int) => x + 1, 4, list) == list;
-    expect adjust((x: int) => x + 1, -5, list) == list;
+    expect adjust(4, (x: int) => x + 1, list) == list;
+    expect adjust(-5, (x: int) => x + 1, list) == list;
   }
 
   // The second assertion holds trivially: list is a value.
   method {:test} AdjustDoesNotMutateTheOriginalArray() {
     var list := [0, 1, 2, 3];
-    expect adjust((x: int) => x + 1, 2, list) == [0, 1, 3, 3];
+    expect adjust(2, (x: int) => x + 1, list) == [0, 1, 3, 3];
     expect list == [0, 1, 2, 3];
-  }
-
-  // `R.adjust(R.add(1))(2)([0, 1, 2, 3])`
-  method {:test} AdjustCurriesTheArguments() {
-    var f := (idx: int) => (l: seq<int>) => adjust((x: int) => x + 1, idx, l);
-    expect f(2)([0, 1, 2, 3]) == [0, 1, 3, 3];
   }
 
   method {:test} UpdateUpdatesTheValueAtTheGivenIndexOfTheSuppliedArray() {
@@ -1129,11 +966,6 @@ module RamdafTests.Ramda.List {
     expect intersperse("bar", none) == [];
   }
 
-  method {:test} IntersperseIsCurried() {
-    var withN := (l: seq<string>) => intersperse("n", l);
-    expect withN(["ba", "a", "a"]) == ["ba", "n", "a", "n", "a"];
-  }
-
   function DrObjs(): seq<int> { [1, 2, 3, 4, 5, 3, 2] }
   function DrObjs2(): seq<int> { [1, 2, 2, 2, 3, 4, 4, 5, 5, 3, 2, 2] }
 
@@ -1166,12 +998,6 @@ module RamdafTests.Ramda.List {
   method {:test} DropRepeatsWithReturnsAnEmptyArrayForAnEmptyArray() {
     var none: seq<map<string, int>> := [];
     expect dropRepeatsWith(EqI, none) == [];
-  }
-
-  method {:test} DropRepeatsWithIsCurried() {
-    var byI := (l: seq<map<string, int>>) => dropRepeatsWith(EqI, l);
-    expect byI(DrwObjs()) == DrwObjs();
-    expect byI(DrwObjs2()) == DrwObjs();
   }
 
   // ---- splitEvery.js and uniqBy.js (v0.16.0). Not transcribed:
@@ -1238,12 +1064,6 @@ module RamdafTests.Ramda.List {
       map["ABC" := map["id" := "abc", "title" := "B"], "XYZ" := map["id" := "xyz", "title" := "A"]];
   }
 
-  method {:test} IndexByIsCurried() {
-    var byId := (l: seq<map<string, string>>) => indexBy(Id, l);
-    expect byId(IdList()) ==
-      map["abc" := map["id" := "abc", "title" := "B"], "xyz" := map["id" := "xyz", "title" := "A"]];
-  }
-
   // ---- sequence.js, traverse.js (v0.19.0): their list `it`s; `R.of` is
   // List.of ----
 
@@ -1282,12 +1102,6 @@ module RamdafTests.Ramda.List {
     expect splitAt(5, "hello world") == ("hello", " world");
   }
 
-  // `splitAtThree = splitAt(3)`
-  method {:test} SplitAtIsCurried() {
-    var splitAtThree := (s: string) => splitAt(3, s);
-    expect splitAtThree("foobar") == ("foo", "bar");
-  }
-
   method {:test} SplitAtCanHandleIndexGreaterThanArrayLength() {
     var empty: seq<int> := [];
     expect splitAt(4, [1, 2]) == ([1, 2], empty);
@@ -1305,12 +1119,6 @@ module RamdafTests.Ramda.List {
   method {:test} SplitWhenRetainsAllOriginalElements() {
     var empty: seq<int> := [];
     expect splitWhen((x: int) => Funcs.T(x), [1, 1, 1]) == (empty, [1, 1, 1]);
-  }
-
-  method {:test} SplitWhenIsCurried() {
-    var splitWhenFoo := (l: seq<string>) => splitWhen((x: string) => x == "foo", l);
-    var empty: seq<string> := [];
-    expect splitWhenFoo(["foo", "bar", "baz"]) == (empty, ["foo", "bar", "baz"]);
   }
 
   method {:test} SplitWhenOnlySplitsOnce() {
@@ -1343,12 +1151,6 @@ module RamdafTests.Ramda.List {
 
   method {:test} WithoutReturnsAnArrayNotContainingValuesInTheFirstArgument() {
     expect without([1, 2], [1, 2, 1, 4, 5]) == [4, 5];
-  }
-
-  // `withoutOnes = without([1])`
-  method {:test} WithoutIsCurried() {
-    var withoutOnes := (l: seq<int>) => without([1], l);
-    expect withoutOnes([1, 2, 3, 5, 1]) == [2, 3, 5];
   }
 
   // "has R.equals semantics": its `[[1]]` line
@@ -1422,16 +1224,6 @@ module RamdafTests.Ramda.List {
     expect reduceBy(SumValues, 0, TypeOf, none) == map[];
   }
 
-  // `reduceToSumsBy = R.reduceBy(sumValues, 0)`, `sumByType =
-  // reduceToSumsBy(byType)` (v0.21.0; in v0.20.x `splitByType =
-  // R.reduceBy(byType)`, `sumByType = splitByType(sumValues, 0)`)
-  method {:test} ReduceByIsCurried() {
-    var reduceToSumsBy := (keyFn: map<string, Js> -> string) => ((l: seq<map<string, Js>>) => reduceBy(SumValues, 0, keyFn, l));
-    var sumByType := reduceToSumsBy(TypeOf);
-    expect sumByType([Typed("A", 10), Typed("B", 20), Typed("A", 30), Typed("A", 40), Typed("C", 50), Typed("B", 60)]) ==
-      map["A" := 80, "B" := 80, "C" := 50];
-  }
-
   // ---- groupWith.js (v0.21.0) ----
 
   method {:test} GroupWithSplitsTheListIntoGroupsAccordingToTheGroupingFunction() {
@@ -1481,14 +1273,6 @@ module RamdafTests.Ramda.List {
   method {:test} ReduceWhileReturnsItsAccumulatorWhenGivenAnEmptyArray() {
     var empty: seq<int> := [];
     expect reduceWhile(IsOddX, (a: int, b: int) => a + b, 101, empty) == 101;
-  }
-
-  // `reduceWhileOdd = R.reduceWhile(isOdd)`
-  method {:test} ReduceWhileIsCurried() {
-    var reduceWhileOdd := (fn: (int, int) -> int, a: int, l: seq<int>) => reduceWhile(IsOddX, fn, a, l);
-    var empty: seq<int> := [];
-    expect reduceWhileOdd((a: int, b: int) => a + b, 101, empty) == 101;
-    expect reduceWhileOdd((a: int, b: int) => a + b, 0, [1, 2, 3, 4]) == 1;
   }
 
   // ---- startsWith.js (v0.24.0) ----

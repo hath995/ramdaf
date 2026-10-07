@@ -1,4 +1,4 @@
-// Ramda v0.25.0 test/filter.js, reject.js, takeWhile.js, take.js,
+// Ramda v0.26.0 test/filter.js, reject.js, takeWhile.js, take.js,
 // dropWhile.js, drop.js, dropLast.js, takeLast.js, dropLastWhile.js and
 // takeLastWhile.js (until v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
 // the partially applied function in full). The "should start at the
@@ -20,6 +20,8 @@
 // renamed the filter.idx, reject.idx and skip describes to filterIndexed,
 // rejectIndexed and drop, and replaced skipUntil's with dropWhile's, whose
 // predicates are negated.)
+// (v0.26.0 removed the per-function "is curried" `it`s, with their
+// transcriptions here.)
 
 module RamdafTests.Ramda.Filter {
   import opened Ramdaf.List
@@ -43,11 +45,6 @@ module RamdafTests.Ramda.Filter {
     expect filter((x: int) => x > 100, empty) == [];
   }
 
-  method {:test} FilterIsAutomaticallyCurried() {
-    var onlyEven := (l: seq<int>) => filter(even, l);
-    expect onlyEven([1, 2, 3, 4, 5, 6, 7]) == [2, 4, 6];
-  }
-
   // describe('reject')
   method {:test} RejectReducesToNonMatchingElements() {
     expect reject(even, [1, 2, 3, 4, 5]) == [1, 3, 5];
@@ -64,20 +61,9 @@ module RamdafTests.Ramda.Filter {
     expect reject((x: int) => x > 100, empty) == [];
   }
 
-  method {:test} RejectIsAutomaticallyCurried() {
-    var odd := (l: seq<int>) => reject(even, l);
-    expect odd([1, 2, 3, 4, 5, 6, 7]) == [1, 3, 5, 7];
-  }
-
   // describe('takeWhile')
   method {:test} TakeWhileTakesWhileTrue() {
     expect takeWhile((x: int) => x != 5, [1, 3, 5, 7, 9]) == [1, 3];
-  }
-
-  method {:test} TakeWhileIsAutomaticallyCurried() {
-    var takeUntil7 := (l: seq<int>) => takeWhile((x: int) => x != 7, l);
-    expect takeUntil7([1, 3, 5, 7, 9]) == [1, 3, 5];
-    expect takeUntil7([2, 4, 6, 8, 10]) == [2, 4, 6, 8, 10];
   }
 
   // v0.2.0
@@ -138,12 +124,6 @@ module RamdafTests.Ramda.Filter {
     expect sublist[2] == Num(7);
   }
 
-  method {:test} DropWhileIsAutomaticallyCurried() {
-    var dropLt7 := (l: seq<int>) => dropWhile((x: int) => x < 7, l);
-    expect dropLt7([1, 3, 5, 7, 9]) == [7, 9];
-    expect dropLt7([2, 4, 6, 8, 10]) == [8, 10];
-  }
-
   // v0.25.0
   method {:test} DropWhileCanOperateOnStrings() {
     expect dropWhile((x: char) => x != 'd', "Ramda") == "da";
@@ -194,12 +174,6 @@ module RamdafTests.Ramda.Filter {
     expect dropLast(3, "Ramda") == "Ra";
   }
 
-  method {:test} DropLastIsCurried() {
-    var dropLast2 := (l: seq<string>) => dropLast(2, l);
-    expect dropLast2(["a", "b", "c", "d", "e"]) == ["a", "b", "c"];
-    expect dropLast2(["x", "y", "z"]) == ["x"];
-  }
-
   // describe('takeLast') (v0.16.0). Not transcribed: the `-Infinity` line
   // and "never returns the input array", as for dropLast.
   method {:test} TakeLastTakesOnlyTheLastNElements() {
@@ -224,12 +198,6 @@ module RamdafTests.Ramda.Filter {
     expect takeLast(0, [1, 2, 3]) == [];
   }
 
-  method {:test} TakeLastIsCurried() {
-    var takeLast3 := (l: seq<string>) => takeLast(3, l);
-    expect takeLast3(["a", "b", "c", "d", "e", "f", "g"]) == ["e", "f", "g"];
-    expect takeLast3(["w", "x", "y", "z"]) == ["x", "y", "z"];
-  }
-
   // describe('dropLastWhile') (v0.16.0)
   method {:test} DropLastWhileSkipsElementsWhileTheFunctionReportsTrue() {
     expect dropLastWhile((x: int) => x >= 5, [1, 3, 5, 7, 9]) == [1, 3];
@@ -249,12 +217,6 @@ module RamdafTests.Ramda.Filter {
     expect sublist[2] == Undefined;
   }
 
-  method {:test} DropLastWhileIsCurried() {
-    var dropGt7 := (l: seq<int>) => dropLastWhile((x: int) => x > 7, l);
-    expect dropGt7([1, 3, 5, 7, 9]) == [1, 3, 5, 7];
-    expect dropGt7([1, 3, 5]) == [1, 3, 5];
-  }
-
   // v0.25.0
   method {:test} DropLastWhileCanOperateOnStrings() {
     expect dropLastWhile((x: char) => x != 'd', "Ramda") == "Ramd";
@@ -270,12 +232,6 @@ module RamdafTests.Ramda.Filter {
     var empty: seq<Js> := [];
     expect takeLastWhile((x: Js) => false, empty) == [];
     expect takeLastWhile((x: Js) => !x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]) == [Num(5), Num(7)];
-  }
-
-  method {:test} TakeLastWhileIsCurried() {
-    var takeLastUntil7 := (l: seq<int>) => takeLastWhile((x: int) => x != 7, l);
-    expect takeLastUntil7([1, 3, 5, 7, 9]) == [9];
-    expect takeLastUntil7([2, 4, 6, 8, 10]) == [2, 4, 6, 8, 10];
   }
 
   // v0.25.0

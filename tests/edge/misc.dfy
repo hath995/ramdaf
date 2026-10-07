@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.25.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.26.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -79,13 +79,11 @@ module RamdafTests.Edge.Misc {
     expect propOr(5, "z", map["a" := 1]) == 5;
     // a falsy own value is kept
     expect propOr(5, "a", map["a" := 0]) == 0;
-    // node: `{}` inherits `toString`, which is not an own property
-    expect propOr(5, "toString", none) == 5;
+    // (until v0.25.0 `{}`'s inherited `toString` was not an own property, so
+    // `propOr(5, 'toString', {})` was 5, and an own null or undefined value
+    // was returned; since v0.26.0 the pins DeviationInheritedMembersAreAbsent
+    // and DeviationPropOrOfNilValues hold those lines)
     expect propOr(5, "hasOwnProperty", map["hasOwnProperty" := 1]) == 1;
-    // an own property whose value is null or undefined is returned (node:
-    // null, undefined)
-    expect propOr(Num(5), "a", map["a" := Null]) == Null;
-    expect propOr(Num(5), "a", map["a" := Undefined]) == Undefined;
     // `propOr(5)('a')({})`
     var aOr5 := (o: map<string, int>) => propOr(5, "a", o);
     expect aOr5(none) == 5;
@@ -636,8 +634,9 @@ module RamdafTests.Edge.Misc {
   // false, as the predicate gets it (since v0.14.0; until v0.13.0 a function
   // entry was called for an inherited property, so `where({toString: () =>
   // true}, {})` was true, except in v0.2.3), and so is
-  // `propSatisfies(x => x === undefined, 'toString', {})` (v0.16.0). A map
-  // has no prototype: the reads give None.
+  // `propSatisfies(x => x === undefined, 'toString', {})` (v0.16.0), and
+  // since v0.26.0 `propOr(0, 'toString', {})` is the function (`pathOr`; it
+  // was 0). A map has no prototype: the reads give None (propOr's default).
   method {:test} DeviationInheritedMembersAreAbsent() {
     var none: map<string, int> := map[];
     expect prop("toString", none) == None;
@@ -647,6 +646,21 @@ module RamdafTests.Edge.Misc {
     expect D.project(["toString"], [none]) == [map["toString" := None]];
     expect where(map["toString" := (x: Option<int>) => x.None?], none) == true;
     expect propSatisfies((x: Option<int>) => x.None?, "toString", none) == true;
+    expect propOr(0, "toString", none) == 0;
+  }
+
+  // node: since v0.26.0 `propOr(val, p, obj)` is `pathOr(val, [p], obj)`,
+  // which gives val for a null, undefined or NaN property as well as for an
+  // absent one: `propOr('d', 'x', {x: null})` and `propOr('d', 'x', {x:
+  // undefined})` are 'd' (null and undefined until v0.25.0), while `{x: 0}`
+  // and `{x: false}` keep their values. The port's generic V cannot be
+  // tested for nil, so a Js Null or Undefined value is returned (README
+  // "Deviations").
+  method {:test} DeviationPropOrOfNilValues() {
+    expect propOr(Str("d"), "x", map["x" := Null]) == Null;
+    expect propOr(Str("d"), "x", map["x" := Undefined]) == Undefined;
+    expect propOr(Str("d"), "x", map["x" := Num(0)]) == Num(0);
+    expect propOr(Str("d"), "x", map["x" := Bool(false)]) == Bool(false);
   }
 
   // node: 'STRASSE' and 'Ä'; case conversion is ASCII-only here.
@@ -718,14 +732,20 @@ module RamdafTests.Edge.Misc {
       map["@@transducer/reduced" := 1];
   }
 
-  // node: applySpec (v0.20.0) copies its spec with `R.map`, whose `_reduce`
-  // ends at a reduced marker: the copy of `{'@@transducer/reduced': x => 1,
-  // a: x => 2}` is undefined (the function's `@@transducer/value`), so
-  // `applySpec` of it throws TypeError ("Cannot read properties of
-  // undefined"). Here the key is ordinary.
-  method {:test} DeviationApplySpecReducedMarkerIsAnOrdinaryKey() {
+  // applySpec (v0.20.0): since v0.26.0 it copies its spec with its own
+  // `keys` loop, so a reduced marker key and a key `map` are ordinary, as
+  // here (node: {'@@transducer/reduced': 1, a: 2}, {map: 3},
+  // {'fantasy-land/map': 4}). From v0.20.0 to v0.25.0 the copy was `R.map`,
+  // whose `_reduce` ended at the marker (the copy was undefined, so applySpec
+  // threw TypeError) and which dispatched to a spec's own `map` method (and
+  // since v0.24.0 `fantasy-land/map`), so those specs threw too; this was
+  // the pin DeviationApplySpecReducedMarkerIsAnOrdinaryKey from v0.20.0 to
+  // v0.25.0.
+  method {:test} ApplySpecReducedMarkerAndMapKeysAreOrdinary() {
     expect applySpec(map["@@transducer/reduced" := (x: int) => 1, "a" := (x: int) => 2])(0) ==
       map["@@transducer/reduced" := 1, "a" := 2];
+    expect applySpec(map["map" := (x: int) => 3])(0) == map["map" := 3];
+    expect applySpec(map["fantasy-land/map" := (x: int) => 4])(0) == map["fantasy-land/map" := 4];
   }
 
   // applySpec (v0.20.0): every key's function on the one argument, a
@@ -773,5 +793,23 @@ module RamdafTests.Edge.Misc {
     expect omit(["hasOwnProperty"], empty) == map[];
     expect omit(["toString", "constructor"], map["toString" := 1, "b" := 2]) == map["b" := 2];
     expect omit(["a", "a"], map["a" := 1, "b" := 2]) == map["b" := 2];
+  }
+
+  // mergeLeft and mergeRight (v0.26.0): the left's or the right's value wins
+  // (node: {a: 1, b: 2, c: 4}, {a: 1, b: 3, c: 4}, {}, {a: 1}).
+  method {:test} MergeLeftRightEdges() {
+    var empty: map<string, int> := map[];
+    expect mergeLeft(map["a" := 1, "b" := 2], map["b" := 3, "c" := 4]) == map["a" := 1, "b" := 2, "c" := 4];
+    expect mergeRight(map["a" := 1, "b" := 2], map["b" := 3, "c" := 4]) == map["a" := 1, "b" := 3, "c" := 4];
+    expect mergeLeft(empty, empty) == map[];
+    expect mergeRight(empty, map["a" := 1]) == map["a" := 1];
+  }
+
+  // thunkify, pipeWith and composeWith (v0.26.0) (node: 3, 8, 7).
+  method {:test} ThunkifyPipeWithComposeWithEdges() {
+    expect thunkify((t: (int, int)) => t.0 + t.1)((1, 2))() == 3;
+    var ap := (f: int -> int, r: int) => f(r);
+    expect pipeWith(ap, ((x: int) => x + 1, (x: int) => x * 2))(3) == 8;
+    expect composeWith(ap, ((x: int) => x + 1, (x: int) => x * 2))(3) == 7;
   }
 }

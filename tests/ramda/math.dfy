@@ -1,4 +1,4 @@
-// Ramda v0.25.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.26.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
 // median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real
@@ -25,6 +25,9 @@
 // (v0.5.0
 // removed subtractN, divideBy and moduloBy with their describes; v0.8.0
 // renamed the maxWith and minWith describes to maxBy and minBy.)
+// (v0.26.0 removed the per-function "is curried" and "behaves right curried
+// when passed `R.__` for its first argument" `it`s, with their transcriptions
+// here, and retitled the first `it`s of gt, gte and lte.)
 
 module RamdafTests.Ramda.Math {
   import opened Ramdaf.Prelude
@@ -33,53 +36,21 @@ module RamdafTests.Ramda.Math {
 
   // describe('add')
   method {:test} AddAddsTwoNumbers() { expect add(3, 7) == 10; }
-  method {:test} AddIsAutomaticallyCurried() { var incr := (x: int) => add(1, x); expect incr(42) == 43; }
 
   // describe('multiply')
   method {:test} MultiplyMultipliesTwoNumbers() { expect multiply(6, 7) == 42; }
-  method {:test} MultiplyIsAutomaticallyCurried() { var dbl := (x: int) => multiply(2, x); expect dbl(15) == 30; }
 
   // describe('subtract')
   method {:test} SubtractSubtractsTwoNumbers() { expect subtract(22, 7) == 15; }
-  // "is curried": `subtract(9)`
-  method {:test} SubtractIsCurried() { var ninesCompl := (x: int) => subtract(9, x); expect ninesCompl(6) == 3; }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0): `subtract(R.__, 5)`
-  method {:test} SubtractBehavesRightCurriedWithPlaceholderFirst() { var minus5 := (x: int) => subtract(x, 5); expect minus5(17) == 12; }
 
   // describe('divide')
   method {:test} DivideDividesTwoNumbers() { expect divide(28.0, 7.0) == 4.0; }
-  // "is curried": `divide(28)`
-  method {:test} DivideIsCurried() {
-    var into28 := (x: real) requires x != 0.0 => divide(28.0, x);
-    expect into28(7.0) == 4.0;
-  }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0): `divide(R.__, 2)`
-  method {:test} DivideBehavesRightCurriedWithPlaceholderFirst() {
-    var half := (x: real) => divide(x, 2.0);
-    expect half(40.0) == 20.0;
-  }
 
   // describe('modulo')
   method {:test} ModuloDividesAndReturnsTheRemainder() {
     expect modulo(100, 2) == 0;
     expect modulo(100, 3) == 1;
     expect modulo(100, 17) == 15;
-  }
-  // "is curried": `modulo(100)`
-  method {:test} ModuloIsCurried() {
-    var hundredMod := (x: int) requires x != 0 => modulo(100, x);
-    expect hundredMod(2) == 0;
-    expect hundredMod(3) == 1;
-    expect hundredMod(17) == 15;
-  }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0): `modulo(R.__, 2)`
-  method {:test} ModuloBehavesRightCurriedWithPlaceholderFirst() {
-    var isOdd := (x: int) => modulo(x, 2);
-    expect isOdd(3) == 1;
-    expect isOdd(198) == 0;
   }
   method {:test} ModuloPreservesJsModuloForNegativeNumbers() {
     expect modulo(-5, 4) == -1;
@@ -95,19 +66,6 @@ module RamdafTests.Ramda.Math {
   // v0.4.2: the first assert of "computes the true modulo function"
   method {:test} MathModComputesTheTrueModuloFunction() {
     expect mathMod(-17, 5) == 3;
-  }
-  // "is curried": `mathMod(29)`
-  method {:test} MathModIsCurried() {
-    var f := (p: int) requires p >= 1 => mathMod(29, p);
-    expect f(6) == 5;
-  }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0), which calls
-  // `modulo(R.__, 5)`, not mathMod
-  method {:test} MathModBehavesRightCurriedWithPlaceholderFirst() {
-    var mod5 := (x: int) => modulo(x, 5);
-    expect mod5(12) == 2;
-    expect mod5(8) == 3;
   }
 
   // describe('sum'), describe('product')
@@ -126,80 +84,20 @@ module RamdafTests.Ramda.Math {
     expect !lt(6, 4);
     expect !lt(7, 7);
   }
-  // "is curried": `lt(5)`
-  method {:test} LtIsCurried() {
-    var gt5 := (x: int) => lt(5, x);
-    expect gt5(10);
-    expect !gt5(5);
-    expect !gt5(3);
-  }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0): `lt(__, 5)`
-  method {:test} LtBehavesRightCurriedWithPlaceholderFirst() {
-    var lt5 := (x: int) => lt(x, 5);
-    expect !lt5(10);
-    expect !lt5(5);
-    expect lt5(3);
-  }
   method {:test} LteReportsLessOrEqual() {
     expect lte(3, 5);
     expect !lte(6, 4);
     expect lte(7, 7);
-  }
-  // "is curried": `lte(20)`
-  method {:test} LteIsCurried() {
-    var gte20 := (x: int) => lte(20, x);
-    expect !gte20(10);
-    expect gte20(20);
-    expect gte20(25);
-  }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0): `lte(__, 20)`
-  method {:test} LteBehavesRightCurriedWithPlaceholderFirst() {
-    var upTo20 := (x: int) => lte(x, 20);
-    expect upTo20(10);
-    expect upTo20(20);
-    expect !upTo20(25);
   }
   method {:test} GtReportsGreaterThan() {
     expect !gt(3, 5);
     expect gt(6, 4);
     expect !gt(7, 7);
   }
-  // "is curried": `gt(20)`
-  method {:test} GtIsCurried() {
-    var lt20 := (x: int) => gt(20, x);
-    expect lt20(10);
-    expect !lt20(20);
-    expect !lt20(25);
-  }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0): `gt(__, 20)`
-  method {:test} GtBehavesRightCurriedWithPlaceholderFirst() {
-    var gt20 := (x: int) => gt(x, 20);
-    expect !gt20(10);
-    expect !gt20(20);
-    expect gt20(25);
-  }
   method {:test} GteReportsGreaterOrEqual() {
     expect !gte(3, 5);
     expect gte(6, 4);
     expect gte(7, 7);
-  }
-  // "is curried": `gte(20)`
-  method {:test} GteIsCurried() {
-    var lte20 := (x: int) => gte(20, x);
-    expect lte20(10);
-    expect lte20(20);
-    expect !lte20(25);
-  }
-  // v0.6.0: "behaves right curried when passed `R.__` for its first
-  // argument" ("… `undefined` …" until v0.8.0): `gte(__, 20)`
-  method {:test} GteBehavesRightCurriedWithPlaceholderFirst() {
-    var gte20 := (x: int) => gte(x, 20);
-    expect !gte20(10);
-    expect gte20(20);
-    expect gte20(25);
   }
 
   // describe('max'), describe('min'): rewritten in v0.16.0 for the binary

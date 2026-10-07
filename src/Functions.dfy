@@ -1,8 +1,8 @@
-// Ramdaf: Ramda v0.25.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.26.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
 // the functions with `@category Function` (`composeK`, `pipeK`, `juxt`,
-// `applySpec`, `o`, `applyTo`). (v0.4.1
+// `applySpec`, `o`, `applyTo`, `thunkify`, `pipeWith`, `composeWith`). (v0.4.1
 // removed the aliases `sequence`, `distributeTo`, `constant` and `K`;
 // v0.4.2 renamed `fork` to `converge`; v0.9.0 renamed `alwaysTrue` and
 // `alwaysFalse` to `T` and `F` and removed `alwaysZero`; v0.16.0 removed
@@ -15,7 +15,8 @@ module Ramdaf.Functions {
   import List
 
   export
-    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec, o, applyTo
+    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec, o, applyTo,
+            thunkify, pipeWith, composeWith
     provides List
 
   // `compose(f, g)(x) == f(g(x))`
@@ -62,14 +63,17 @@ module Ramdaf.Functions {
   // takes one argument of any type.
   function always<T, U>(val: T): U -> T { _ => val }
 
-  // `R.T = always(true)` and `R.F = always(false)` (v0.9.0, which renamed
-  // `alwaysTrue` and `alwaysFalse` with the same code; `alwaysZero`, removed
-  // in v0.9.0, was `always(0)`): the functions themselves, applied to one
-  // argument of any type.
-  function T<U>(x: U): bool { always(true)(x) }
-  function F<U>(x: U): bool { always(false)(x) }
+  // `R.T = function() { return true; }` and `R.F = function() { return
+  // false; }` (v0.26.0; from v0.9.0, which renamed `alwaysTrue` and
+  // `alwaysFalse` with the same code, to v0.25.0 `always(true)` and
+  // `always(false)`, the same results, and the bodies called `always`;
+  // `alwaysZero`, removed in v0.9.0, was `always(0)`): the functions
+  // themselves, applied to one argument of any type, which they ignore.
+  function T<U>(x: U): bool { true }
+  function F<U>(x: U): bool { false }
 
-  // `R.composeK(…fns)` (v0.16.0, `@category Function`): since v0.23.0
+  // `R.composeK(…fns)` (v0.16.0, `@category Function`; deprecated since
+  // v0.26.0, for `composeWith(chain)`): since v0.23.0
   // `compose(compose.apply(this, map(chain, init)), last)`, where `last` is
   // the last function and `init` the others, right-to-left Kleisli
   // composition of functions to a monad: the last function is applied to
@@ -86,7 +90,8 @@ module Ramdaf.Functions {
   function composeK<A, B, C>(f: B -> seq<C>, g: A -> seq<B>): A -> seq<C>
   { compose((xs: seq<B>) => List.chain(f, xs), g) }
 
-  // `R.pipeK(…fns)` (v0.16.0): `composeK.apply(this, reverse(arguments))`,
+  // `R.pipeK(…fns)` (v0.16.0; deprecated since v0.26.0, for
+  // `pipeWith(chain)`): `composeK.apply(this, reverse(arguments))`,
   // left-to-right Kleisli composition (`pipeK(f, g)` is `composeK(g, f)`,
   // since v0.23.0 a function of a value, `chain(g, f(x))`, and `pipeK()`
   // throws Error; until v0.22.1 of a monadic value, `chain(g, chain(f,
@@ -123,6 +128,11 @@ module Ramdaf.Functions {
   // (tuple the arguments for more, `()` for none; README "Deviations"). The
   // spec is copied with R.map, so in JS an own `__proto__` spec function is
   // dropped and a reduced marker key ends the copy (README "Deviations").
+  // Since v0.26.0 the spec is copied with a local `mapValues(fn, obj)`,
+  // `keys(obj).reduce(function(acc, key) { acc[key] = fn(obj[key]); return
+  // acc; }, {})`, in place of `R.map`, so a reduced marker key is an ordinary
+  // key again and a spec key `map` (or `fantasy-land/map`) is no longer
+  // dispatched to (README "Deviations"); an own `__proto__` is still dropped.
   function applySpec<A, B>(spec: map<string, A -> B>): A -> map<string, B>
   { x => map k | k in spec :: spec[k](x) }
 
@@ -137,4 +147,35 @@ module Ramdaf.Functions {
   // applyTo(x, f) { return f(x); })`, the thrush combinator, x passed to f
   // (`applyTo(21, R.multiply(2))` is 42).
   function applyTo<A, B>(x: A, f: A -> B): B { f(x) }
+
+  // `R.thunkify(fn)` (v0.26.0, `@category Function`): `curryN(fn.length,
+  // function createThunk() { var fnArgs = arguments; return function
+  // invokeThunk() { return fn.apply(this, fnArgs); }; })`, a function that
+  // takes fn's arguments and returns a thunk, a function of no arguments
+  // that calls fn with them (`thunkify(add(2))(40)()` is 42). JS curries it
+  // to fn's arity; the port's is unary (tuple the arguments for more;
+  // README "Deviations"), and the thunk is a zero-argument arrow.
+  function thunkify<A, B>(fn: A -> B): A -> (() -> B) { x => () => fn(x) }
+
+  // `R.pipeWith(xf, list)` (v0.26.0, `@category Function`): `if (list.length
+  // <= 0) { return identity; }`, and otherwise `_arity(head(list).length,
+  // function() { return _reduce(function(result, f) { return xf.call(this, f,
+  // result); }, head(list).apply(this, arguments), tail(list)); })`: the
+  // first function applied to the arguments and each later one combined with
+  // the result so far by xf (`pipeWith((f, res) => f(res), [f, g])` is
+  // `pipe(f, g)`; with `chain` it is pipeK, with `then` pipeP). JS takes a
+  // list of any number of functions; here exactly two, as a pair (README
+  // "JS -> Dafny mapping"; nest for more), so xf gets the second function
+  // and the first one's result: `pipeWith(xf, (f, g))(x)` is `xf(g, f(x))`.
+  // The result is unary (tuple the arguments for more; README
+  // "Deviations").
+  function pipeWith<A, B, G, C>(xf: (G, B) -> C, fns: (A -> B, G)): A -> C
+  { x => xf(fns.1, fns.0(x)) }
+
+  // `R.composeWith(xf, list)` (v0.26.0, `@category Function`):
+  // `pipeWith.apply(this, [xf, reverse(list)])`, pipeWith with the
+  // functions right to left (`composeWith(xf, (g, f))(x)` is `xf(g, f(x))`);
+  // the pair reversed is its swap.
+  function composeWith<A, B, G, C>(xf: (G, B) -> C, fns: (G, A -> B)): A -> C
+  { pipeWith(xf, (fns.1, fns.0)) }
 }

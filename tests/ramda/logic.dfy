@@ -1,4 +1,4 @@
-// Ramda v0.25.0 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.26.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
 // defaultTo.js, propSatisfies.js, when.js, unless.js and until.js (until v0.8.0
 // test.booleans.js, test.allany.js and test.cond.js), transcribed. (v0.16.0
@@ -42,6 +42,8 @@
 // not transcribed. until.js's calls pass a fuel of 100 (README
 // "Deviations"), and "works with lists" runs over `Tree<int>`, where
 // `R.isArrayLike` of an element is `Node?`.
+// (v0.26.0 removed the per-function "is curried" `it`s of both, either, and,
+// or, all and any, with their transcriptions here.)
 
 module RamdafTests.Ramda.Logic {
   import opened Ramdaf.Prelude
@@ -70,13 +72,6 @@ module RamdafTests.Ramda.Logic {
     expect f((5, 6, 15)) == false;
   }
 
-  // `both(even)(gt10)`
-  method {:test} BothIsCurried() {
-    var evenAnd := (g: int -> bool) => both(even, g);
-    expect evenAnd(gt10)(11) == false;
-    expect evenAnd(gt10)(12) == true;
-  }
-
   // describe('either') (v0.12.0; describe('or') until v0.11.0)
   method {:test} EitherCombinesTwoPredicates() {
     var f := either(even, gt10);
@@ -89,13 +84,6 @@ module RamdafTests.Ramda.Logic {
     expect f((4, 5, 8)) == true;
     expect f((12, 2, 6)) == true;
     expect f((7, 5, 1)) == false;
-  }
-
-  // `either(even)(gt10)`
-  method {:test} EitherIsCurried() {
-    var evenOr := (g: int -> bool) => either(even, g);
-    expect evenOr(gt10)(11) == true;
-    expect evenOr(gt10)(9) == false;
   }
 
   // describe('complement') (v0.12.0; describe('not') until v0.11.0)
@@ -120,13 +108,6 @@ module RamdafTests.Ramda.Logic {
     expect and(false, false) == false;
   }
 
-  // `halfTruth = and(true)`
-  method {:test} AndIsCurried() {
-    var halfTruth := (b: bool) => and(true, b);
-    expect halfTruth(false) == false;
-    expect halfTruth(true) == true;
-  }
-
   // describe('or') (v0.12.0; v0.18.0's "compares two values with js &&", so
   // titled, is or's truth table; until v0.17.1 its operands were numbers,
   // strings and an array)
@@ -135,14 +116,6 @@ module RamdafTests.Ramda.Logic {
     expect or(true, false) == true;
     expect or(false, true) == true;
     expect or(false, false) == false;
-  }
-
-  // `or(false)(false)`, `or(false)(true)` (`or('lie')(false)` and
-  // `or('')(0)` until v0.17.1)
-  method {:test} OrIsCurried() {
-    var orFalse := (b: bool) => or(false, b);
-    expect orFalse(false) == false;
-    expect orFalse(true) == true;
   }
 
   // describe('not') (v0.12.0): "reverses argument", its bool line
@@ -216,23 +189,12 @@ module RamdafTests.Ramda.Logic {
     expect all((o: map<string, string>) => "x" in o && 'a' in o["x"], xs) == true;
   }
 
-  // v0.2.2 (the call count is not asserted)
-  method {:test} AllIsAutomaticallyCurried() {
-    var allEven := (l: seq<int>) => all(even, l);
-    expect allEven([2, 4, 6, 7, 8, 10]) == false;
-  }
-
   // describe('any') (describe('some') from v0.4.1 to v0.8.0; v0.4.1 had
   // renamed `any` to `some` and dropped "should be aliased by `some`") (`n % 2 === 1`)
   function oddJs(n: int): bool { n % 2 == 1 }
 
   method {:test} AnyTrueWhenOneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 11, 12]) == true; }
   method {:test} AnyFalseWhenNoneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 12]) == false; }
-  // v0.2.2 (the call count is not asserted)
-  method {:test} AnyIsAutomaticallyCurried() {
-    var anyOdd := (l: seq<int>) => any(oddJs, l);
-    expect anyOdd([2, 4, 6, 7, 8, 10]) == true;
-  }
 
   function Person(first: string, last: string): map<string, string> { map["first" := first, "last" := last] }
   // `person.first.charAt(0) === person.last.charAt(0)`

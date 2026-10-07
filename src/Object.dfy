@@ -1,8 +1,8 @@
-// Ramdaf: Ramda v0.25.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.26.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
-// `objOf`, `mergeWith`, `mergeWithKey`). A JS object is a map<string, V>; a missing property is JS
+// `objOf`, `mergeWith`, `mergeWithKey`, `mergeLeft`, `mergeRight`). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
 // properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`, `assoc`,
 // `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter, `objOf`,
@@ -24,7 +24,7 @@ module Ramdaf.Object {
     reveals prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
             assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq,
-            view, over, set_, objOf, mergeWith, mergeWithKey
+            view, over, set_, objOf, mergeWith, mergeWithKey, mergeLeft, mergeRight
     provides Prelude
 
   // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
@@ -51,13 +51,19 @@ module Ramdaf.Object {
   // R.propOr"); until v0.8.0 it was `propOr(p, val, obj)`, with
   // `hasOwnProperty.call(obj, p)`. (v0.6.0 renamed `propOrDefault`, added in
   // v0.4.0, to `propOr`, with the same code.) Every property of a map is
-  // its own.
+  // its own. Since v0.26.0 it is `pathOr(val, [p], obj)`, which also gives
+  // val for a property whose value is null, undefined or NaN (`propOr('d',
+  // 'x', {x: null})` is 'd', where it was null) and reads an inherited
+  // member (`propOr('d', 'toString', {})` is the inherited function); the
+  // port's V has no nil value to test and a map no prototype, and `pathOr`
+  // is not portable, so the body stays (README "Deviations").
   function propOr<V>(val: V, p: string, obj: map<string, V>): V
   { if has(p, obj) then obj[p] else val }
 
   // `R.has(prop, obj)` (v0.7.0): `hasOwnProperty.call(obj, prop)` (since
   // v0.11.0 `_curry2(_has)`, which also takes the placeholder, `has(__,
-  // obj)`). Every property of a map is its own.
+  // obj)`; since v0.26.0 `hasPath([prop], obj)`, which is `_has` for one
+  // name). Every property of a map is its own.
   function has<V>(p: string, obj: map<string, V>): bool { p in obj }
 
   // `R.hasIn(prop, obj)` (v0.7.0): `prop in obj`, an own property or one on
@@ -197,7 +203,8 @@ module Ramdaf.Object {
   // copied over it), all with the same results. It was `op`-curried in
   // v0.10.0 and is `_curry2` since v0.11.0, which only add the placeholder
   // form `merge(__, b)`. (Not the list `merge` that v0.2.4 removed from
-  // Core.)
+  // Core.) Deprecated since v0.26.0, for `mergeRight`, which has its
+  // code.
   function merge<V>(a: map<string, V>, b: map<string, V>): map<string, V>
     ensures merge(a, b).Keys == a.Keys + b.Keys
     ensures forall k :: k in b ==> merge(a, b)[k] == b[k]
@@ -393,4 +400,19 @@ module Ramdaf.Object {
   function mergeWith<V>(fn: (V, V) -> V, l: map<string, V>, r: map<string, V>): map<string, V>
     ensures mergeWith(fn, l, r).Keys == l.Keys + r.Keys
   { mergeWithKey((_: string, x: V, y: V) => fn(x, y), l, r) }
+
+  // `R.mergeLeft(l, r)` (v0.26.0, `@category Object`): `_objectAssign({}, r,
+  // l)`, the own properties of r, then of l: l's value wins where both have
+  // the key (`mergeLeft({a: 1, b: 2}, {b: 3, c: 4})` is `{a: 1, b: 2, c:
+  // 4}`). The body is Dafny's right-biased map union, `r + l`. In JS an own
+  // `__proto__` property is dropped (README "Deviations").
+  function mergeLeft<V>(l: map<string, V>, r: map<string, V>): map<string, V>
+  { r + l }
+
+  // `R.mergeRight(l, r)` (v0.26.0, `@category Object`): `_objectAssign({},
+  // l, r)`, merge's code, r's value winning where both have the key
+  // (`mergeRight({a: 1, b: 2}, {b: 3, c: 4})` is `{a: 1, b: 3, c: 4}`): `l +
+  // r`.
+  function mergeRight<V>(l: map<string, V>, r: map<string, V>): map<string, V>
+  { l + r }
 }

@@ -1,4 +1,4 @@
-// Ramda v0.25.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.26.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
 // identity.js, isNil.js, ascend.js and descend.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
@@ -35,6 +35,8 @@
 // describe('isAtom'); v0.12.0 removed prependTo.js, appendTo.js and
 // identity's "is aliased by `I`" with the functions.) The lists that mix strings and arrays are lists of Js
 // values, and so are the values clone.js clones.
+// (v0.26.0 removed the per-function "is curried" `it`s (concat's placeholder
+// one too), with their transcriptions here.)
 
 module RamdafTests.Ramda.Core {
   import opened Ramdaf.Prelude
@@ -76,12 +78,6 @@ module RamdafTests.Ramda.Core {
     expect prepend(1, empty) == [1];
   }
 
-  // v0.5.0
-  method {:test} PrependIsCurried() {
-    var prepend4 := (l: seq<int>) => prepend(4, l);
-    expect prepend4([3, 2, 1]) == [4, 3, 2, 1];
-  }
-
   // describe('append')
   method {:test} AppendAddsToTheEnd() {
     expect append("z", ["x", "y"]) == ["x", "y", "z"];
@@ -94,12 +90,6 @@ module RamdafTests.Ramda.Core {
   method {:test} AppendWorksOnEmptyList() {
     var empty: seq<int> := [];
     expect append(1, empty) == [1];
-  }
-
-  // v0.5.0
-  method {:test} AppendIsCurried() {
-    var append1 := (l: seq<int>) => append(1, l);
-    expect append1([4, 3, 2]) == [4, 3, 2, 1];
   }
 
   // describe('concat') (v0.2.4; it was describe('merge')). Its first `it`
@@ -118,24 +108,6 @@ module RamdafTests.Ramda.Core {
     expect concat("x", "") == "x";
     expect concat("", "x") == "x";
     expect concat("", "") == "";
-  }
-
-  // v0.9.0: "is curried like a binary operator, that accepts an inital
-  // placeholder": since v0.11.0 only `appendBar = concat(__, 'bar')`,
-  // `appendBar('foo')` → 'foobar' (v0.9.x also had `concat(__)('bar')('foo')`
-  // and `concat(__)('bar', 'foo')`, which the `op` currying flipped; since
-  // v0.11.0 `concat(__)` is concat itself, and the first gives 'barfoo').
-  method {:test} ConcatIsCurriedLikeABinaryOperator() {
-    var appendBar := (a: string) => concat(a, "bar");
-    expect appendBar("foo") == "foobar";
-  }
-
-  // v0.4.0: "is curried" (its mixed list is a list of Js values)
-  method {:test} ConcatIsCurried() {
-    var conc123 := (l: seq<int>) => concat([1, 2, 3], l);
-    expect conc123([4, 5, 6]) == [1, 2, 3, 4, 5, 6];
-    var conc123Js := (l: seq<Js>) => concat([Num(1), Num(2), Num(3)], l);
-    expect conc123Js([Str("a"), Str("b"), Str("c")]) == [Num(1), Num(2), Num(3), Str("a"), Str("b"), Str("c")];
   }
 
   // describe('nth') (v0.8.0): undefined is None. v0.16.0 adds string lines:
@@ -240,14 +212,6 @@ module RamdafTests.Ramda.Core {
     var list := [3, 1, 8, 1, 2, 5];
     expect sort((a: int, b: int) => a - b, list) == [1, 1, 2, 3, 5, 8];
     expect list == [3, 1, 8, 1, 2, 5];
-  }
-
-  // "is automatically curried": `sort(cmp)` applied to the list. The expected
-  // order relies on a stable sort.
-  method {:test} SortIsAutomaticallyCurried() {
-    var sortByLength := (l: seq<string>) => sort((a: string, b: string) => |a| - |b|, l);
-    expect sortByLength(["one", "two", "three", "four", "five", "six"]) ==
-      ["one", "two", "six", "four", "five", "three"];
   }
 
   // describe('comparator')

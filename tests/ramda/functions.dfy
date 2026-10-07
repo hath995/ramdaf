@@ -1,5 +1,6 @@
-// Ramda v0.25.0 test/always.js, T.js, F.js, compose.js, pipe.js,
-// converge.js, flip.js, ap.js, juxt.js, applySpec.js, o.js and applyTo.js (until v0.8.0 test.always.js,
+// Ramda v0.26.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// converge.js, flip.js, ap.js, juxt.js, applySpec.js, o.js, applyTo.js,
+// thunkify.js, pipeWith.js and composeWith.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -66,7 +67,13 @@
 // jsverify "o properties" are not transcribed. applyTo.js's (v0.25.0)
 // curried and placeholder calls are lambdas, and its "has length 2" (arity)
 // and flip.js's v0.25.0 "returns a function with the correct arity" are not
-// transcribed.
+// transcribed. v0.26.0 removed the "is curried" `it`s (ap's, applyTo's),
+// and the files of the unportable memoize, then and otherwise went or are
+// not transcribed; thunkify.js's arity `it` is not, and its "returns a
+// function that expects arguments and returns a new invoker function" is a
+// `typeof` check that holds by construction. pipeWith.js and composeWith.js
+// compose three functions as nested pairs (README "JS -> Dafny mapping"),
+// with ParseInt below; their promise `it`s are not transcribed.
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -183,11 +190,6 @@ module RamdafTests.Ramda.Functions {
     expect ap([mult2, plus3], [1, 2, 3]) == [2, 4, 6, 4, 5, 6];
   }
 
-  method {:test} ApIsCurried() {
-    var val := (vs: seq<int>) => ap([mult2, plus3], vs);
-    expect val([1, 2, 3]) == [2, 4, 6, 4, 5, 6];
-  }
-
   // ---- juxt.js (v0.19.0): `hello() = 'hello'`, `bye() = 'bye'` ----
   function Hello(u: ()): string { "hello" }
   function Bye(u: ()): string { "bye" }
@@ -272,12 +274,66 @@ module RamdafTests.Ramda.Functions {
     expect applyTo(21, (x: int) => multiply(2, x)) == 42;
   }
 
-  // `R.applyTo(42)(R.identity)` and `R.applyTo(R.__, R.identity)(42)`
-  method {:test} ApplyToIsCurried() {
-    var to42 := (f: int -> int) => applyTo(42, f);
-    var withIdentity := (x: int) => applyTo(x, (y: int) => C.identity(y));
-    expect applyTo(42, (y: int) => C.identity(y)) == 42;
-    expect to42((y: int) => C.identity(y)) == 42;
-    expect withIdentity(42) == 42;
+
+  // ---- applySpec.js (v0.26.0) ----
+
+  // `R.prop('a')` on `{a: 1}`: here the spec maps to the property, None
+  // when absent.
+  method {:test} ApplySpecWorksWithASpecDefiningAMapKey() {
+    var r := applySpec(map["map" := (o: map<string, int>) => O.prop("a", o)])(map["a" := 1]);
+    expect r == map["map" := Some(1)];
+  }
+
+  // ---- thunkify.js (v0.26.0) ----
+
+  // `thunk = R.thunkify(R.add(2))`, `thunk(40)()`
+  method {:test} ThunkifyCallsTheOriginalFunctionWithTheProvidedArgumentsWhenAllWereSupplied() {
+    var thunk := thunkify((x: int) => add(2, x));
+    expect thunk(40)() == 42;
+  }
+
+  // ---- pipeWith.js, composeWith.js (v0.26.0) ----
+
+  // `(f, res) => f(res)`, at the types of each nesting level
+  function Applying<B, C>(f: B -> C, res: B): C { f(res) }
+
+  // `pipeWith(applying)([parseInt, R.multiply, R.map])`, here
+  // `pipeWith(applying, (pipeWith(applying, (ParseInt, MultiplyBy)), MapWith))`
+  method {:test} PipeWithPerformsLeftToRightFunctionCompositionWithFunctionApplying() {
+    var inner := pipeWith((f: int -> (int -> int), res: int) => Applying(f, res), (ParseInt, MultiplyBy));
+    var f := pipeWith((g: (int -> int) -> (seq<int> -> seq<int>), res: int -> int) => Applying(g, res), (inner, MapWith));
+    expect f(("10", None))([1, 2, 3]) == [10, 20, 30];
+    expect f(("10", Some(2)))([1, 2, 3]) == [2, 4, 6];
+  }
+
+  // `isOdd = R.flip(R.modulo)(2)`; `(f, res) => R.isNil(res) ? null : f(res)`
+  // over `[parseInt, R.ifElse(isOdd, R.identity, R.always(null)), R.inc]`:
+  // null is None, and each function returns an Option
+  function WhenNotNil(f: int -> Option<int>, res: Option<int>): Option<int>
+  { if C.isNil(res) then None else f(res.value) }
+  function OddOrNull(x: int): Option<int> { if modulo(x, 2) != 0 then Some(x) else None }
+
+  method {:test} PipeWithPerformsLeftToRightFunctionWhileNotNilResult() {
+    var parse := (s: string) => Some(ParseInt((s, None)));
+    var inner := pipeWith(WhenNotNil, (parse, OddOrNull));
+    var f := pipeWith(WhenNotNil, (inner, (x: int) => Some(inc(x))));
+    expect f("1") == Some(2);
+    expect f("2") == None;
+  }
+
+  // `composeWith(applying)([R.map, R.multiply, parseInt])`
+  method {:test} ComposeWithPerformsRightToLeftFunctionCompositionWithFunctionApplying() {
+    var inner := composeWith((f: int -> (int -> int), res: int) => Applying(f, res), (MultiplyBy, ParseInt));
+    var f := composeWith((g: (int -> int) -> (seq<int> -> seq<int>), res: int -> int) => Applying(g, res), (MapWith, inner));
+    expect f(("10", None))([1, 2, 3]) == [10, 20, 30];
+    expect f(("10", Some(2)))([1, 2, 3]) == [2, 4, 6];
+  }
+
+  method {:test} ComposeWithPerformsRightToLeftFunctionWhileNotNilResult() {
+    var parse := (s: string) => Some(ParseInt((s, None)));
+    var inner := composeWith(WhenNotNil, (OddOrNull, parse));
+    var f := composeWith(WhenNotNil, ((x: int) => Some(inc(x)), inner));
+    expect f("1") == Some(2);
+    expect f("2") == None;
   }
 }

@@ -1,4 +1,4 @@
-// Ramda v0.25.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.26.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, difference.js, differenceWith.js,
 // countBy.js, sortBy.js, equals.js, identical.js, eqBy.js,
 // symmetricDifference.js, symmetricDifferenceWith.js, clamp.js and
@@ -41,6 +41,8 @@
 // (v0.25.0 removed intersectionWith.js with the function.)
 // innerJoin.js's (v0.24.0) records `{id, name}` are the local datatype Rec,
 // and its `f = R.innerJoin((r, id) => r.id === id)` a lambda.
+// (v0.26.0 removed the per-function "is curried" `it`s, with their
+// transcriptions here.)
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -75,15 +77,6 @@ module RamdafTests.Ramda.Sql {
       map["name" := Some(Str("Alois")), "hair" := None]];
   }
 
-  method {:test} ProjectIsAutomaticallyCurried() {
-    var myFields := (l: seq<map<string, Js>>) => project(["name", "age"], l);
-    expect myFields(Kids()) == [
-      map["name" := Some(Str("Abby")), "age" := Some(Num(7))],
-      map["name" := Some(Str("Fred")), "age" := Some(Num(12))],
-      map["name" := Some(Str("Rusty")), "age" := Some(Num(10))],
-      map["name" := Some(Str("Alois")), "age" := Some(Num(15))]];
-  }
-
   // describe('propEq'): v0.17.0 restores `propEq(name, val, obj)` and the
   // v0.15.1 `it`s over the four kids (v0.16.0 alone moved the value first,
   // over `abby` and `fred`); "is curried" filters with `R.propEq('hair')`
@@ -93,14 +86,6 @@ module RamdafTests.Ramda.Sql {
     expect propEq("name", Str("Abby"), kids[0]) == true;
     expect propEq("hair", Str("brown"), kids[1]) == true;
     expect propEq("hair", Str("blond"), kids[1]) == false;
-  }
-
-  method {:test} PropEqIsCurried() {
-    var kids := Kids();
-    var hairMatch := (v: Js) => (o: map<string, Js>) => propEq("hair", v, o);
-    var brunette := hairMatch(Str("brown"));
-    expect filter(brunette, kids) == [kids[1], kids[2]];
-    expect filter((o: map<string, Js>) => propEq("hair", Str("brown"), o), kids) == [kids[1], kids[2]];
   }
 
   function R(): seq<int> { [1, 2, 3, 4] }
@@ -117,12 +102,6 @@ module RamdafTests.Ramda.Sql {
   // describe('union')
   method {:test} UnionCombinesIntoTheSetOfAllElements() {
     expect union(R(), S()) == [1, 2, 3, 4, 5, 6];
-  }
-
-  // v0.9.0 (its `typeof` check holds by construction)
-  method {:test} UnionIsCurried() {
-    var withR := (l: seq<int>) => union(R(), l);
-    expect withR(S()) == [1, 2, 3, 4, 5, 6];
   }
 
   // describe('unionWith')
@@ -165,12 +144,6 @@ module RamdafTests.Ramda.Sql {
   // v0.14.0: `difference(M2, [3]).length` is 3
   method {:test} DifferenceWillNotCreateASparseArray() {
     expect |difference(R2(), [3])| == 3;
-  }
-
-  // v0.7.0 (its `typeof` check holds by construction)
-  method {:test} DifferenceIsCurried() {
-    var diff123 := (l: seq<int>) => difference([1, 2, 3], l);
-    expect diff123([1, 3]) == [2];
   }
 
   // describe('differenceWith')
@@ -226,12 +199,6 @@ module RamdafTests.Ramda.Sql {
       map["Classical" := 5, "Rock" := 3, "Jazz" := 2, "Broadway" := 1, "Folk" := 1];
   }
 
-  method {:test} CountByIsAutomaticallyCurried() {
-    var counter := (l: seq<map<string, string>>) => countBy(Genre, l);
-    expect counter(Albums()) == map["Baroque" := 2, "Rock" := 2, "Jazz" := 2, "Romantic" := 1,
-      "Metal" := 1, "Modern" := 1, "Broadway" := 1, "Folk" := 1, "Classical" := 1];
-  }
-
   // v0.9.1: "ignores inherited properties" (`countBy(R.identity, ['abc',
   // 'toString'])`; until v0.9.0 node counted on from the inherited
   // `toString`)
@@ -258,11 +225,6 @@ module RamdafTests.Ramda.Sql {
     expect groupBy(DerivedGenre, a) ==
       map["Classical" := [a[0], a[4], a[5], a[8], a[11]], "Rock" := [a[1], a[3], a[7]],
           "Jazz" := [a[2], a[6]], "Broadway" := [a[9]], "Folk" := [a[10]]];
-  }
-
-  method {:test} GroupByIsAutomaticallyCurried() {
-    var grouper := (l: seq<map<string, string>>) => groupBy(Genre, l);
-    expect grouper(Albums()) == GroupedByGenre();
   }
 
   // ---- equals.js (v0.15.0; eqDeep.js, describe('eqDeep'), from v0.9.0 to
@@ -325,12 +287,6 @@ module RamdafTests.Ramda.Sql {
     expect equals(nestA, nestC) == false;
   }
 
-  method {:test} EqualsIsCurried() {
-    var a: seq<int> := [];
-    var isA := (x: seq<int>) => equals(a, x);
-    expect isA([]) == true;
-  }
-
   // "has Object.is semantics": its `identical([], [])` (two array objects),
   // `-0`, NaN and `new Number(0)` lines cannot be written (README
   // "Deviations"); `null` and `undefined` are the Js values Null and
@@ -388,11 +344,6 @@ module RamdafTests.Ramda.Sql {
   method {:test} SymmetricDifferenceReturnsAnEmptyArrayIfThereAreNoDifferentElements() {
     expect symmetricDifference(SdM2(), SdM()) == [];
     expect symmetricDifference(SdM(), SdM2()) == [];
-  }
-
-  method {:test} SymmetricDifferenceIsCurried() {
-    var sd123 := (l: seq<int>) => symmetricDifference([1, 2, 3], l);
-    expect sd123([1, 3]) == [2];
   }
 
   // `Ro2`/`So2` are Ro/So twice; `eqA` compares the `a` properties

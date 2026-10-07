@@ -1,12 +1,17 @@
-// Ramda v0.25.0 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.26.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
 // valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
 // invertObj.js, dissoc.js, lenses.js, objOf.js, mergeWith.js,
-// mergeWithKey.js and lensProp.js (v0.9.x mixin.js; until
+// mergeWithKey.js, lensProp.js, mergeLeft.js and mergeRight.js (v0.9.x mixin.js; until
 // v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
-// describes), transcribed. Not
+// describes), transcribed. (v0.26.0 removed the "is curried" `it`s of the
+// per-function files, with their transcriptions here, and propOr.js's
+// "does not return properties from the prototype chain"; its new "uses the
+// default when supplied an object with a nil value" is a Deviations pin in
+// tests/edge/, as the port returns the nil value. hasPath.js is not
+// portable.) Not
 // transcribed: keys's and values's "should work for primitives" cases (v0.2.4;
 // keys/values of null, 55, "" and the like: the argument is a map); where's
 // and whereEq's cases on prototypes (where's "matches inherited properties"
@@ -125,11 +130,6 @@ module RamdafTests.Ramda.Object {
     expect ps[1] == None;
   }
 
-  method {:test} PropsIsAutomaticallyCurried() {
-    var ab := (o: map<string, int>) => props(["a", "b"], o);
-    expect ab(Abc()) == [Some(1), Some(2)];
-  }
-
   // describe('propOr') (describe('propOrDefault') from v0.4.0 to v0.5.0):
   // `nm = propOr('Unknown', 'name')` (`propOr('name', 'Unknown')` until
   // v0.8.0; its `typeof nm == 'function'` holds by
@@ -152,20 +152,6 @@ module RamdafTests.Ramda.Object {
 
   method {:test} HasReturnsFalseIfTheSpecifiedPropertyIsAbsent() {
     expect has("name", map["age" := Num(99)]) == false;
-  }
-
-  // v0.11.0, in place of "returns a function that checks the appropriate
-  // property": `has('name')` and `has(R.__, point)`, the placeholder fixing
-  // the object
-  method {:test} HasIsCurriedOpStyle() {
-    var hasName := (o: map<string, Js>) => has("name", o);
-    expect hasName(Fred()) == true;
-    expect hasName(map["age" := Num(99)]) == false;
-    var point := map["x" := 0, "y" := 0];
-    var pointHas := (k: string) => has(k, point);
-    expect pointHas("x") == true;
-    expect pointHas("y") == true;
-    expect pointHas("z") == false;
   }
 
   // describe('hasIn') (v0.7.0)
@@ -198,11 +184,6 @@ module RamdafTests.Ramda.Object {
     expect pick(["1"], Abc()["1" := 7]) == map["1" := 7];
   }
 
-  method {:test} PickIsAutomaticallyCurried() {
-    var copyAB := (o: map<string, int>) => pick(["a", "b"], o);
-    expect copyAB(Abc()) == map["a" := 1, "b" := 2];
-  }
-
   // describe('pickAll')
   method {:test} PickAllCopiesTheNamedProperties() {
     expect pickAll(["a", "c", "f"], Abc()) == map["a" := Some(1), "c" := Some(3), "f" := Some(6)];
@@ -212,19 +193,9 @@ module RamdafTests.Ramda.Object {
     expect pickAll(["a", "c", "g"], Abc()) == map["a" := Some(1), "c" := Some(3), "g" := None];
   }
 
-  method {:test} PickAllIsAutomaticallyCurried() {
-    var copyAB := (o: map<string, int>) => pickAll(["a", "b"], o);
-    expect copyAB(Abc()) == map["a" := Some(1), "b" := Some(2)];
-  }
-
   // describe('omit')
   method {:test} OmitOmitsTheListedProperties() {
     expect omit(["a", "c", "f"], Abc()) == map["b" := 2, "d" := 4, "e" := 5];
-  }
-
-  method {:test} OmitIsAutomaticallyCurried() {
-    var skipAB := (o: map<string, int>) => omit(["a", "b"], o);
-    expect skipAB(Abc()) == map["c" := 3, "d" := 4, "e" := 5, "f" := 6];
   }
 
   // describe('pickBy') (describe('pickWith') from v0.2.3 to v0.7.2). "creates
@@ -245,20 +216,10 @@ module RamdafTests.Ramda.Object {
     expect pickBy((v: int, k: string, o: map<string, int>) => o == Abc() && k == "d" && v == 4, Abc()) == map["d" := 4];
   }
 
-  method {:test} PickByShouldBeAutomaticallyCurried() {
-    var copier := (o: map<string, int>) => pickBy((v: int, k: string, o': map<string, int>) => true, o);
-    expect copier(Abc()) == Abc();
-  }
-
   // describe('eqProps')
   method {:test} EqPropsComparesAProperty() {
     expect eqProps("name", map["name" := Str("fred"), "age" := Num(10)], map["name" := Str("fred"), "age" := Num(12)]) == true;
     expect eqProps("name", map["name" := Str("fred"), "age" := Num(10)], map["name" := Str("franny"), "age" := Num(10)]) == false;
-  }
-
-  method {:test} EqPropsIsAutomaticallyCurried() {
-    var sameName := (o1: map<string, Js>, o2: map<string, Js>) => eqProps("name", o1, o2);
-    expect sameName(map["name" := Str("fred"), "age" := Num(10)], map["name" := Str("fred"), "age" := Num(12)]) == true;
   }
 
   // describe('where') (v0.14.0 rewrote where.js: every spec value is a
@@ -294,12 +255,6 @@ module RamdafTests.Ramda.Object {
     expect where(spec, map["x" := Num(1)]) == false;
   }
 
-  method {:test} WhereIsAutomaticallyCurried() {
-    var pred := (o: map<string, int>) => where(map["x" := EqP(1), "y" := EqP(2)], o);
-    expect pred(map["x" := 1, "y" := 2, "z" := 3]) == true;
-    expect pred(map["x" := 3, "y" := 2, "z" := 1]) == false;
-  }
-
   // "is true for an empty spec" (its `where(null, {a: 1})` case cannot be
   // written: the spec is a map)
   method {:test} WhereEmptySpecIsTrue() {
@@ -320,12 +275,6 @@ module RamdafTests.Ramda.Object {
     var spec := map["x" := 100];
     expect whereEq(spec, map["x" := 20, "y" := 100, "z" := 100]) == false;
     expect whereEq(spec, map["w" := 1, "x" := 100, "y" := 100, "z" := 100]) == true;
-  }
-
-  method {:test} WhereEqIsCurried() {
-    var pred := (o: map<string, int>) => whereEq(map["x" := 1, "y" := 2], o);
-    expect pred(map["x" := 1, "y" := 2, "z" := 3]) == true;
-    expect pred(map["x" := 3, "y" := 2, "z" := 1]) == false;
   }
 
   // (its `whereEq(null, {a: 1})` case cannot be written)
@@ -360,19 +309,6 @@ module RamdafTests.Ramda.Object {
     var cla: map<string, int> := map[];
     expect merge(cla, a) == map["w" := 1, "x" := 2];
     expect merge(a, cla) == map["w" := 1, "x" := 2];
-  }
-
-  // v0.2.4: "outta be curried"
-  method {:test} MergeOughtToBeCurried() {
-    var curried := (b: map<string, int>) => merge(map["w" := 1, "x" := 2], b);
-    expect curried(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
-  }
-
-  // v0.10.0: the second "is curried", `merge(R.__, {w: 1, x: 2})`, which
-  // fixes the second argument (`op` currying)
-  method {:test} MergeIsCurriedWithThePlaceholder() {
-    var curried := (a: map<string, int>) => merge(a, map["w" := 1, "x" := 2]);
-    expect curried(map["x" := 3, "y" := 4]) == map["w" := 1, "x" := 2, "y" := 4];
   }
 
   // ---- keys.js, values.js, keysIn.js, valuesIn.js (test.keysvals.js) ----
@@ -450,17 +386,6 @@ module RamdafTests.Ramda.Object {
     expect obj2["f"] == obj1["f"];
   }
 
-  // `f = assoc('e')`, `g = f({x: 42})`
-  method {:test} AssocIsProperlyCurried() {
-    var obj1 := AssocObj1();
-    var expected := map["a" := Num(1), "b" := Obj(map["c" := Num(2), "d" := Num(3)]),
-                        "e" := Obj(map["x" := Num(42)]), "f" := Num(5)];
-    var f := (v: Js, o: map<string, Js>) => assoc("e", v, o);
-    var g := (o: map<string, Js>) => f(Obj(map["x" := Num(42)]), o);
-    expect f(Obj(map["x" := Num(42)]), obj1) == expected;
-    expect g(obj1) == expected;
-  }
-
   // ---- evolve.js (v0.9.0) ----
 
   // `R.add(k)` over the Js numbers it meets here (`add(1)(undefined)` would
@@ -490,11 +415,6 @@ module RamdafTests.Ramda.Object {
     var obj := Tomato(100, 1400);
     var _ := evolve(transf, obj);
     expect obj == Tomato(100, 1400);
-  }
-
-  method {:test} EvolveIsCurried() {
-    var tick := (o: map<string, Js>) => evolve(map["elapsed" := AddJs(1), "remaining" := AddJs(-1)], o);
-    expect tick(Tomato(100, 1400)) == Tomato(101, 1399);
   }
 
   // ---- invert.js (v0.9.0) ----
@@ -541,11 +461,6 @@ module RamdafTests.Ramda.Object {
   method {:test} DissocCopiesAnObjectOmittingTheSpecifiedProperty() {
     expect dissoc("b", map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "c" := 3];
     expect dissoc("d", map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "b" := 2, "c" := 3];
-  }
-
-  method {:test} DissocIsCurried() {
-    var dissocB := (o: map<string, int>) => dissoc("b", o);
-    expect dissocB(map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "c" := 3];
   }
 
   // ---- lenses.js (v0.16.0, describe('view, over, and set'), which
@@ -626,12 +541,6 @@ module RamdafTests.Ramda.Object {
     expect mergeWith((x: int, y: int) => y, map["w" := 1, "x" := 2], map["x" := 5]) == map["w" := 1, "x" := 5];
   }
 
-  // `mergeWith(last)({w: 1, x: 2})({y: 3, z: 4})`
-  method {:test} MergeWithIsCurried() {
-    var m := (l: map<string, int>) => ((r: map<string, int>) => mergeWith((x: int, y: int) => y, l, r));
-    expect m(map["w" := 1, "x" := 2])(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
-  }
-
   method {:test} MergeWithKeyTakesTwoObjectsAndMergesTheirOwnProperties() {
     expect mergeWithKey((k: string, x: int, y: int) => y, map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) ==
       map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
@@ -644,11 +553,6 @@ module RamdafTests.Ramda.Object {
 
   method {:test} MergeWithKeyIsNotDestructive() {
     expect mergeWithKey((k: string, x: int, y: int) => y, map["w" := 1, "x" := 2], map["x" := 5]) == map["w" := 1, "x" := 5];
-  }
-
-  method {:test} MergeWithKeyIsCurried() {
-    var m := (l: map<string, int>) => ((r: map<string, int>) => mergeWithKey((k: string, x: int, y: int) => y, l, r));
-    expect m(map["w" := 1, "x" := 2])(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
   }
 
   // ---- lensProp.js (v0.19.0, again): `testObj = {a: 1, b: 2, c: 3}` ----
@@ -685,5 +589,68 @@ module RamdafTests.Ramda.Object {
 
   method {:test} LensPropGetOfSetOfSetIsTheLastValue() {
     expect view(lensProp<int, int>("a"), set_(lensProp<int, int>("a"), 11, set_(lensProp<int, int>("a"), 10, TestObj()))) == 11;
+  }
+
+  // ---- mergeLeft.js, mergeRight.js (v0.26.0) ----
+
+  method {:test} MergeLeftTakesTwoObjectsMergesTheirOwnPropertiesAndReturnsANewObject() {
+    expect mergeLeft(map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  method {:test} MergeLeftOverridesPropertiesInTheSecondObjectWithPropertiesInTheFirstObject() {
+    expect mergeLeft(map["w" := 1, "x" := 2], map["w" := 100, "y" := 3, "z" := 4]) ==
+      map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  // its reference-inequality half has no counterpart (the map a is a value)
+  method {:test} MergeLeftIsNotDestructive() {
+    var a := map["w" := 1, "x" := 2];
+    expect mergeLeft(a, map["x" := 3, "y" := 4]) == map["w" := 1, "x" := 2, "y" := 4];
+    expect a == map["w" := 1, "x" := 2];
+  }
+
+  // `new Cla` has no own property (its x is on the prototype), so as a map
+  // it is empty.
+  method {:test} MergeLeftReportsOnlyOwnProperties() {
+    var a := map["w" := 1, "x" := 2];
+    var cla: map<string, int> := map[];
+    expect mergeLeft(cla, a) == map["w" := 1, "x" := 2];
+    expect mergeLeft(a, cla) == map["w" := 1, "x" := 2];
+  }
+
+  // The values mix objects and numbers (Js); its `strictEqual(a.x, res.x)`
+  // (reference identity) has no counterpart.
+  method {:test} MergeLeftIsShallow() {
+    var a := map["x" := Obj(map["u" := Num(1), "v" := Num(2)]), "y" := Num(0)];
+    var b := map["x" := Obj(map["u" := Num(3), "w" := Num(4)]), "z" := Num(0)];
+    expect mergeLeft(a, b) == map["x" := Obj(map["u" := Num(1), "v" := Num(2)]), "y" := Num(0), "z" := Num(0)];
+  }
+
+  method {:test} MergeRightTakesTwoObjectsMergesTheirOwnPropertiesAndReturnsANewObject() {
+    expect mergeRight(map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  method {:test} MergeRightOverridesPropertiesInTheFirstObjectWithPropertiesInTheSecondObject() {
+    expect mergeRight(map["w" := 1, "x" := 2], map["w" := 100, "y" := 3, "z" := 4]) ==
+      map["w" := 100, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  method {:test} MergeRightIsNotDestructive() {
+    var a := map["w" := 1, "x" := 2];
+    expect mergeRight(a, map["x" := 5]) == map["w" := 1, "x" := 5];
+    expect a == map["w" := 1, "x" := 2];
+  }
+
+  method {:test} MergeRightReportsOnlyOwnProperties() {
+    var a := map["w" := 1, "x" := 2];
+    var cla: map<string, int> := map[];
+    expect mergeRight(cla, a) == map["w" := 1, "x" := 2];
+    expect mergeRight(a, cla) == map["w" := 1, "x" := 2];
+  }
+
+  method {:test} MergeRightIsShallow() {
+    var a := map["x" := Obj(map["u" := Num(1), "v" := Num(2)]), "y" := Num(0)];
+    var b := map["x" := Obj(map["u" := Num(3), "w" := Num(4)]), "z" := Num(0)];
+    expect mergeRight(a, b) == map["x" := Obj(map["u" := Num(3), "w" := Num(4)]), "y" := Num(0), "z" := Num(0)];
   }
 }

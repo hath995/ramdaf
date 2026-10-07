@@ -1,4 +1,4 @@
-// Ramda v0.25.0 test/toUpper.js, toLower.js, trim.js, split.js and
+// Ramda v0.26.0 test/toUpper.js, toLower.js, trim.js, split.js and
 // replace.js (until v0.8.0 test.stringBasics.js and test.replace.js),
 // transcribed. (v0.14.0 removed charAt.js and charCodeAt.js, v0.16.0
 // substring.js, substringFrom.js, substringTo.js, strIndexOf.js and
@@ -8,6 +8,8 @@
 // trim's "falls back to a shim if String.prototype.trim is not present"
 // (v0.6.0), which is only registered when that method is missing, so not
 // under node (its asserts repeat the other three).
+// (v0.26.0 removed the per-function "is curried up to 3 arguments" of replace,
+// with their transcriptions here.)
 
 module RamdafTests.Ramda.String {
   import opened Ramdaf.String
@@ -41,10 +43,6 @@ module RamdafTests.Ramda.String {
 
   method {:test} ReplaceReplacesSubstringsOfTheInputString() {
     expect replace("1", "one", "1 two three") == "one two three";
-  }
-  method {:test} ReplaceIsCurriedUpTo3Arguments() {
-    var removeSemicolon := (s: string) => replace(";", "", s);
-    expect removeSemicolon("return 42;") == "return 42";
   }
 
   // describe('split')

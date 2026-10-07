@@ -1,4 +1,4 @@
-// Ramda v0.25.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
+// Ramda v0.26.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
 // foldr.js; until v0.8.0 test.fold.js), transcribed (reduceIndexed.js and
 // reduceRightIndexed.js, foldlIndexed.js and foldrIndexed.js in v0.9.x, went
 // with the functions in v0.16.0). Not transcribed:
@@ -20,6 +20,8 @@
 // a non-array object) is not transcribed. v0.23.0 passes reduceRight's
 // callback the element first, so its string folds now concatenate in list
 // order and `avg`, symmetric, is unchanged.
+// (v0.26.0 removed the per-function "is curried" and "correctly reports the
+// arity of curried versions" `it`s, with their transcriptions here.)
 
 module RamdafTests.Ramda.Fold {
   import opened Ramdaf.List
@@ -44,14 +46,6 @@ module RamdafTests.Ramda.Fold {
     expect reduce((a: seq<int>, b: seq<int>) => a + b, [], noLists) == [];
   }
 
-  // (v0.5.0 adds the string half, `foldl(add)('')`)
-  method {:test} ReduceIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => reduce(add, 0, l);
-    expect sum([1, 2, 3, 4]) == 10;
-    var catAll := (l: seq<string>) => reduce(cat, "", l);
-    expect catAll(["1", "2", "3", "4"]) == "1234";
-  }
-
   // describe('reduceRight') (describe('foldr') until v0.9.1)
   // (`'dcba'` until v0.22.1, when the accumulator came first)
   method {:test} ReduceRightFoldsListsInTheRightOrder() {
@@ -72,12 +66,4 @@ module RamdafTests.Ramda.Fold {
     expect reduceRight(avg, 0.0, empty) == 0.0;
   }
 
-  // (v0.5.0 adds `foldr(R.add, '')` on strings; since v0.19.0
-  // `reduceRight(R.concat, '')`, the same here)
-  method {:test} ReduceRightIsAutomaticallyCurried() {
-    var something := (l: seq<real>) => reduceRight(avg, 54.0, l);
-    expect something([12.0, 4.0, 10.0, 6.0]) == 12.0;
-    var rcat := (l: seq<string>) => reduceRight(cat, "", l);
-    expect rcat(["1", "2", "3", "4"]) == "1234";
-  }
 }

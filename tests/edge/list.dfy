@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.25.0's own suite does not cover, each checked against
-// dist/ramda.js v0.25.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.26.0's own suite does not cover, each checked against
+// dist/ramda.js v0.26.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -309,21 +309,21 @@ module RamdafTests.Edge.List {
   // negative n gives [] (it threw RangeError); since v0.5.0 drop (skip until
   // v0.8.0) gives [] for n >= |list| (from v0.2.0 to v0.4.3 it threw
   // RangeError for n > |list|).
-  // adjust and update (v0.14.0). Node: `adjust(x => x + 10, 1, [1, 2, 3])`
-  // [1, 12, 3], with -1 [1, 2, 13], with -3 [11, 2, 3], with 3 and -4 the
-  // list, `adjust(f, 0, [])` [], `adjust(x => 'X', 0, 'abc')` ['X', 'b',
-  // 'c']; `update(1, 9, [1, 2, 3])` [1, 9, 3], with -1 [1, 2, 9], with 3 the
+  // adjust and update (v0.14.0; since v0.26.0 adjust takes the index
+  // first). Node: `adjust(1, x => x + 10, [1, 2, 3])` [1, 12, 3], with -1
+  // [1, 2, 13], with -3 [11, 2, 3], with 3 and -4 the list, `adjust(0, f,
+  // [])` [], `adjust(0, x => 'X', 'abc')` ['X', 'b', 'c']; `update(1, 9, [1, 2, 3])` [1, 9, 3], with -1 [1, 2, 9], with 3 the
   // list.
   method {:test} AdjustUpdateEdges() {
     var add10 := (x: int) => x + 10;
     var none: seq<int> := [];
-    expect adjust(add10, 1, [1, 2, 3]) == [1, 12, 3];
-    expect adjust(add10, -1, [1, 2, 3]) == [1, 2, 13];
-    expect adjust(add10, -3, [1, 2, 3]) == [11, 2, 3];
-    expect adjust(add10, 3, [1, 2, 3]) == [1, 2, 3];
-    expect adjust(add10, -4, [1, 2, 3]) == [1, 2, 3];
-    expect adjust(add10, 0, none) == [];
-    expect adjust((c: char) => 'X', 0, "abc") == "Xbc";
+    expect adjust(1, add10, [1, 2, 3]) == [1, 12, 3];
+    expect adjust(-1, add10, [1, 2, 3]) == [1, 2, 13];
+    expect adjust(-3, add10, [1, 2, 3]) == [11, 2, 3];
+    expect adjust(3, add10, [1, 2, 3]) == [1, 2, 3];
+    expect adjust(-4, add10, [1, 2, 3]) == [1, 2, 3];
+    expect adjust(0, add10, none) == [];
+    expect adjust(0, (c: char) => 'X', "abc") == "Xbc";
     expect update(1, 9, [1, 2, 3]) == [1, 9, 3];
     expect update(-1, 9, [1, 2, 3]) == [1, 2, 9];
     expect update(3, 9, [1, 2, 3]) == [1, 2, 3];
@@ -514,20 +514,19 @@ module RamdafTests.Edge.List {
   }
 
   // mapAccum and mapAccumRight (mapAccumL and mapAccumR in v0.9.x): the
-  // JSDoc examples (node: ['01234', ['01', '012', '0123', '01234']] and,
-  // since v0.23.0, when mapAccumRight's fn gets the element first and its
-  // result is [list, accumulator], [['12340', '2340', '340', '40'],
-  // '12340'], until v0.22.1 ['04321', ['04321', '0432', '043', '04']]) and
-  // a string, a list of characters (node: ['abc', ['', 'a', 'ab']] and
-  // [['cb', 'c', ''], 'cba']).
+  // JSDoc examples (node: ['01234', ['01', '012', '0123', '01234']] and
+  // ['04321', ['04321', '0432', '043', '04']]; from v0.23.0 to v0.25.0, when
+  // mapAccumRight's fn got the element first and its result was [list,
+  // accumulator], [['12340', '2340', '340', '40'], '12340']) and a string, a
+  // list of characters (node: ['abc', ['', 'a', 'ab']] and ['cba', ['cb',
+  // 'c', '']]; [['cb', 'c', ''], 'cba'] from v0.23.0 to v0.25.0).
   method {:test} MapAccumEdges() {
     var f := (a: string, b: string) => (a + b, a + b);
     expect mapAccum(f, "0", ["1", "2", "3", "4"]) == ("01234", ["01", "012", "0123", "01234"]);
-    expect mapAccumRight(f, "0", ["1", "2", "3", "4"]) == (["12340", "2340", "340", "40"], "12340");
+    expect mapAccumRight(f, "0", ["1", "2", "3", "4"]) == ("04321", ["04321", "0432", "043", "04"]);
     var g := (a: string, c: char) => (a + [c], a);
     expect mapAccum(g, "", "abc") == ("abc", ["", "a", "ab"]);
-    var h := (c: char, a: string) => (a + [c], a);
-    expect mapAccumRight(h, "", "abc") == (["cb", "c", ""], "cba");
+    expect mapAccumRight(g, "", "abc") == ("cba", ["cb", "c", ""]);
   }
 
   // mergeAll (v0.10.0) merges left to right, later keys winning (node: {},
@@ -751,7 +750,8 @@ module RamdafTests.Edge.List {
   // [-0] (from v0.19.0 to v0.21.0 its `Set` kept a repeated -0, [-0, -0];
   // UniqByOfRepeatedSignedZeroKeys below), and `without([0], [negate(0)])`
   // (v0.19.0) is [-0], and since v0.24.0 `startsWith([0], [negate(0)])` and
-  // `endsWith([negate(0)], [1, 0])` are false (`R.equals`). An int has no -0.
+  // `endsWith([negate(0)], [1, 0])` are false (`R.equals`), as is
+  // `includes(negate(0), [0])` (v0.26.0). An int has no -0.
   method {:test} DeviationListSearchesSignedZero() {
     var z := M.negate(0);
     expect contains(z, [0]) == true;
@@ -764,6 +764,7 @@ module RamdafTests.Edge.List {
     expect uniqBy((x: int) => x, [z, 0]) == [z];
     expect startsWith([0], [z]) == true;
     expect endsWith([z], [1, 0]) == true;
+    expect includes(z, [0]) == true;
   }
 
   // node: since v0.22.0 uniqBy's `_Set` flags every -0, so a repeated -0
@@ -884,5 +885,15 @@ module RamdafTests.Edge.List {
     expect endsWith([1, 2, 3], [1, 2, 3]) == true;
     expect endsWith("c", "") == false;
     expect startsWith([[1]], [[1], [2]]) == true;
+  }
+
+  // includes (v0.26.0): membership, as contains (node: true, false, false,
+  // true).
+  method {:test} IncludesEdges() {
+    var none: seq<int> := [];
+    expect includes(1, [3, 1]) == true;
+    expect includes(2, [3, 1]) == false;
+    expect includes(1, none) == false;
+    expect includes([1], [[2], [1]]) == true;
   }
 }
