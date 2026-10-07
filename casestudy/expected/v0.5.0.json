@@ -1,0 +1,11 @@
+{
+  "ramda": "v0.5.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Math.subtractN", "kind": "removed", "why": "v0.5.0 deleted R.subtractN (flip(subtract)); only its curried use survives, as the one-argument section of the op-curried subtract"},
+    {"symbol": "Ramdaf.Math.divideBy", "kind": "removed", "why": "v0.5.0 deleted R.divideBy (flip(divide)); only its curried use survives, as the one-argument section of the op-curried divide"},
+    {"symbol": "Ramdaf.Math.moduloBy", "kind": "removed", "why": "v0.5.0 deleted R.moduloBy (flip(modulo)); only its curried use survives, as the one-argument section of the op-curried modulo"},
+    {"symbol": "Ramdaf.List.skip", "kind": "compatible", "why": "v0.5.0 returns [] when n >= list.length instead of reaching _slice's new Array(length - n): skip(5, [1, 2]) went from RangeError to [], so requires n <= |list| is dropped; every previous result is unchanged"},
+    {"symbol": "Ramdaf.Object.cloneObj", "kind": "added", "why": "new in v0.5.0: R.cloneObj(obj) = extend({}, obj), a shallow copy of the own properties"}
+  ]
+}

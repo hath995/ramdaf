@@ -1,5 +1,5 @@
-// Ramda v0.4.2 test/test.core.js and test/test.clone.js, transcribed. Not
-// transcribed: describe('isAtom') (not portable, README); head's and last's
+// Ramda v0.5.0 test/test.core.js and test/test.clone.js, transcribed. Not
+// transcribed: head's and last's
 // "returns undefined for an empty list" and "for no arguments" (the empty list
 // is outside their domain, README "Outside the modeled domain"); tail's
 // "returns an empty list for no arguments" (no-argument call of a list
@@ -7,11 +7,17 @@
 // concat method, as second param" (method dispatch on a non-array object) and
 // "throws if not an array, String, or object with a concat method" (object
 // operands); and the `notStrictEqual` half of clone's "returns a copy of an
-// array" (v0.4.0; reference identity). (v0.2.0 removed test.clone.js's describe('cloneDeep') with the
-// function.) The lists that mix strings and arrays are lists of Js values.
+// array" (v0.4.0; reference identity); v0.5.0's "throws on zero arguments"
+// cases (no-argument calls), the non-list arguments of isEmpty's "returns
+// `true` for falsy arguments" (only `isEmpty('')` is a list), and the
+// `notStrictEqual` half of cloneObj's "returns a copy of an object". (v0.2.0
+// removed test.clone.js's describe('cloneDeep') with the function, and
+// v0.5.0 test.core.js's describe('isAtom').) The lists that mix strings and
+// arrays are lists of Js values.
 
 module RamdafTests.Ramda.Core {
   import opened Ramdaf.Core
+  import opened Ramdaf.Object
   import opened Ramdaf.Sort
   import opened Support
 
@@ -25,6 +31,12 @@ module RamdafTests.Ramda.Core {
     expect isEmpty([""]) == false;
   }
 
+  // v0.5.0: "returns `true` for falsy arguments", its string case (a string
+  // is a seq here)
+  method {:test} IsEmptyTrueForFalsyArguments() {
+    expect isEmpty("") == true;
+  }
+
   // describe('prepend')
   method {:test} PrependAddsToTheBeginning() {
     expect prepend("x", ["y", "z"]) == ["x", "y", "z"];
@@ -33,12 +45,36 @@ module RamdafTests.Ramda.Core {
     expect prepend(az, [Str("x"), Str("y")]) == [az, Str("x"), Str("y")];
   }
 
+  // v0.5.0
+  method {:test} PrependWorksOnEmptyList() {
+    var empty: seq<int> := [];
+    expect prepend(1, empty) == [1];
+  }
+
+  // v0.5.0
+  method {:test} PrependIsCurried() {
+    var prepend4 := (l: seq<int>) => prepend(4, l);
+    expect prepend4([3, 2, 1]) == [4, 3, 2, 1];
+  }
+
   // describe('append')
   method {:test} AppendAddsToTheEnd() {
     expect append("z", ["x", "y"]) == ["x", "y", "z"];
     // v0.2.0: an array element is appended as one element
     var az := Arr([Str("a"), Str("z")]);
     expect append(az, [Str("x"), Str("y")]) == [Str("x"), Str("y"), az];
+  }
+
+  // v0.5.0
+  method {:test} AppendWorksOnEmptyList() {
+    var empty: seq<int> := [];
+    expect append(1, empty) == [1];
+  }
+
+  // v0.5.0
+  method {:test} AppendIsCurried() {
+    var append1 := (l: seq<int>) => append(1, l);
+    expect append1([4, 3, 2]) == [4, 3, 2, 1];
   }
 
   // describe('concat') (v0.2.4; it was describe('merge')). Its first `it`
@@ -133,5 +169,18 @@ module RamdafTests.Ramda.Core {
     var o1, o2, o3 := map["x" := 1], map["x" := 2], map["x" := 3];
     var c := clone([o1, o2, o3]);
     expect c[0] == o1;
+  }
+
+  // describe('cloneiObj') (sic; v0.5.0): "returns a copy of an object"
+  method {:test} CloneObjReturnsACopyOfAnObject() {
+    var input := map["a" := 1, "b" := 2, "c" := 3, "z" := 100];
+    expect cloneObj(input) == input;
+  }
+
+  // "copies objects in the array by reference": `c.a` equals `o1` (by value)
+  method {:test} CloneObjCopiesObjectsByReference() {
+    var o1, o2, o3 := map["x" := 1], map["x" := 2], map["x" := 3];
+    var c := cloneObj(map["a" := o1, "b" := o2, "c" := o3]);
+    expect c["a"] == o1;
   }
 }

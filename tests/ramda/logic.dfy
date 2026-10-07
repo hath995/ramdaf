@@ -1,7 +1,8 @@
-// Ramda v0.4.2 test/test.booleans.js and test/test.allany.js, transcribed.
+// Ramda v0.5.0 test/test.booleans.js and test/test.allany.js, transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
-// expression"), which detect a call by its side effect, and the "reports its
-// arity" cases. The multi-parameter predicates take their arguments as a
+// expression"), which detect a call by its side effect, the "reports its
+// arity" cases, and v0.5.0's "throws on zero arguments" cases (no-argument
+// calls; the `typeof` checks of "is curried" hold by construction). The multi-parameter predicates take their arguments as a
 // tuple.
 
 module RamdafTests.Ramda.Logic {
@@ -30,6 +31,13 @@ module RamdafTests.Ramda.Logic {
     expect f((7, 5, 1)) == false;
   }
 
+  // v0.5.0: `or(even)(gt10)`
+  method {:test} OrIsCurried() {
+    var evenOr := (g: int -> bool) => or(even, g);
+    expect evenOr(gt10)(11) == true;
+    expect evenOr(gt10)(9) == false;
+  }
+
   // describe('and')
   method {:test} AndCombinesTwoPredicates() {
     var f := and(even, gt10);
@@ -42,6 +50,13 @@ module RamdafTests.Ramda.Logic {
     expect f((4, 5, 11)) == true;
     expect f((12, 2, 6)) == false;
     expect f((5, 6, 15)) == false;
+  }
+
+  // v0.5.0: `and(even)(gt10)`
+  method {:test} AndIsCurried() {
+    var evenAnd := (g: int -> bool) => and(even, g);
+    expect evenAnd(gt10)(11) == false;
+    expect evenAnd(gt10)(12) == true;
   }
 
   // describe('not')
@@ -98,6 +113,13 @@ module RamdafTests.Ramda.Logic {
     var empty: seq<int> := [];
     expect every((x: int) => true, empty) == true;
   }
+  // v0.5.0: `o.x.length === 3`, `o.x.indexOf('a') > -1`
+  method {:test} EveryWorksWithMoreComplexObjects() {
+    var xs := [map["x" := "abc"], map["x" := "ade"], map["x" := "fghiajk"]];
+    expect every((o: map<string, string>) => "x" in o && |o["x"]| == 3, xs) == false;
+    expect every((o: map<string, string>) => "x" in o && 'a' in o["x"], xs) == true;
+  }
+
   // v0.2.2 (the call count is not asserted)
   method {:test} EveryIsAutomaticallyCurried() {
     var allEven := (l: seq<int>) => every(even, l);

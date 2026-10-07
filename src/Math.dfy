@@ -1,4 +1,5 @@
-// Ramdaf: Ramda v0.4.2 "Arithmetic Functions" (ramda.js lines 4114-4561).
+// Ramdaf: Ramda v0.5.0 "Arithmetic Functions" (ramda.js lines 4143-4549).
+// (v0.5.0 removed `subtractN`, `divideBy` and `moduloBy`.)
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 
@@ -6,7 +7,7 @@ module Ramdaf.Math {
   import opened Prelude
 
   export
-    reveals add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy,
+    reveals add, multiply, subtract, divide, modulo,
             sum, product, lt, lte, gt, gte, max, maxWith, minWith, min, mathMod
     provides Prelude
 
@@ -16,18 +17,10 @@ module Ramdaf.Math {
 
   function subtract(a: int, b: int): int { a - b }
 
-  // `subtractN = flip(subtract)`: `subtractN(a, b) == b - a`
-  function subtractN(a: int, b: int): int { b - a }
-
   // JS `a / 0` is +-Infinity or NaN, which `real` cannot hold.
   function divide(a: real, b: real): real
     requires b != 0.0
   { a / b }
-
-  // `divideBy = flip(divide)`: `divideBy(a, b) == b / a`
-  function divideBy(a: real, b: real): real
-    requires a != 0.0
-  { b / a }
 
   // JS `a % b`: the remainder of the division truncated toward zero, so it
   // takes the dividend's sign (`modulo(-5, 4) == -1`, `modulo(7, -3) == 1`).
@@ -47,11 +40,6 @@ module Ramdaf.Math {
     assert aa == bb * (aa / bb) + r;
     assert a == b * m + res;
     res }
-
-  // `moduloBy = flip(modulo)`: `moduloBy(a, b) == b % a`
-  function moduloBy(a: int, b: int): int
-    requires a != 0
-  { modulo(b, a) }
 
   // `if (!isInteger(m)) return NaN; if (!isInteger(p) || p < 1) return NaN;
   // return ((m % p) + p) % p;` (v0.4.2, "Fix a critical bug in R.mathMod"),

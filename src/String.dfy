@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.4.2 "String Functions" (ramda.js lines 4562-4833): the
+// Ramdaf: Ramda v0.5.0 "String Functions" (ramda.js lines 4550-4823): the
 // String.prototype methods, with JS's index clamping. A Dafny `string` is a
 // sequence of Unicode scalar values where JS counts UTF-16 code units, and
 // case conversion is ASCII-only (see README "Deviations").
@@ -32,7 +32,8 @@ module Ramdaf.String {
     requires 0 <= n < |s|
   { s[n] as int }
 
-  // `String.prototype.indexOf(sub)`: the first index where sub occurs, or -1.
+  // `String.prototype.indexOf(sub)` (`str.indexOf(c)` since v0.5.0, an
+  // invoker before): the first index where sub occurs, or -1.
   // (`sub <= t` is Dafny's prefix test: sub occurs at i iff `sub <= s[i..]`.)
   function strIndexOf(sub: string, s: string): int
     ensures strIndexOf(sub, s) == -1 ||
@@ -44,8 +45,8 @@ module Ramdaf.String {
          assert forall i :: 1 <= i <= |s| ==> s[i..] == s[1..][i - 1..];
          if r < 0 then -1 else r + 1 }
 
-  // `String.prototype.lastIndexOf(sub)`: the last index where sub occurs, or
-  // -1 (so `strLastIndexOf("", s) == |s|`).
+  // `String.prototype.lastIndexOf(sub)` (`str.lastIndexOf(c)` since v0.5.0):
+  // the last index where sub occurs, or -1 (so `strLastIndexOf("", s) == |s|`).
   function strLastIndexOf(sub: string, s: string): int
     ensures strLastIndexOf(sub, s) == -1 ||
       (0 <= strLastIndexOf(sub, s) <= |s| && sub <= s[strLastIndexOf(sub, s)..])

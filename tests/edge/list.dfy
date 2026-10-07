@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.4.2's own suite does not cover, each checked against
-// ramda.js v0.4.2 under node (the expected values are node's output). The
+// Edge cases Ramda v0.5.0's own suite does not cover, each checked against
+// ramda.js v0.5.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -257,8 +257,9 @@ module RamdafTests.Edge.List {
     expect uniqWith((a: int, b: int) => a == b, empty) == [];
   }
 
-  // Since v0.1.5 take clamps n to the list's length; since v0.2.0 skip
-  // throws for n > |list| (outside the domain).
+  // Since v0.1.5 take clamps n to the list's length; since v0.5.0 skip gives
+  // [] for n >= |list| (from v0.2.0 to v0.4.3 it threw RangeError for
+  // n > |list|).
   method {:test} TakeSkipEdges() {
     var empty: seq<int> := [];
     expect take(0, [1, 2]) == [];
@@ -269,6 +270,13 @@ module RamdafTests.Edge.List {
     expect skip(0, [1, 2]) == [1, 2];
     expect skip(2, [1, 2]) == [];
     expect skip(1, [1, 2]) == [2];
+    expect skip(5, [1, 2]) == [];
+    expect skip(3, empty) == [];
+    expect skip(3, [1, 2, 3]) == [];
+    // `skip(5, "abc")` and `skip(5)([1, 2, 3])`
+    expect skip(5, "abc") == "";
+    var skip5 := (l: seq<int>) => skip(5, l);
+    expect skip5([1, 2, 3]) == [];
   }
 
   // Since v0.2.0 zip and zipWith stop at the shorter list.

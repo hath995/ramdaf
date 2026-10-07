@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.4.2 "Core Functions" (ramda.js lines 754-1057), `clone`
-// (lines 750-752), and `size` with its alias `length` (lines 1958-1968).
+// Ramdaf: Ramda v0.5.0 "Core Functions" (ramda.js lines 744-1021), `clone`
+// (lines 740-742), and `size` with its alias `length` (lines 1933-1943).
 // (v0.2.0 removed `cloneDeep`, and v0.4.1 the `first` alias of `head`.)
 
 module Ramdaf.Core {

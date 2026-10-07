@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.4.2 "List Functions" (ramda.js lines 1480-3206), except
+// Ramdaf: Ramda v0.5.0 "List Functions" (ramda.js lines 1456-3197), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
 // (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
 // `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
@@ -95,13 +95,15 @@ module Ramdaf.List {
   { seq(|list|, i requires 0 <= i < |list| => fn(list[i], i, list)) }
 
   // `foldl(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`:
-  // fn applied to every own property.
+  // fn applied to every own property. (In JS an own `__proto__` property is
+  // dropped, as the assignment sets the prototype; README "Deviations".)
   function mapObj<V, W>(fn: V -> W, obj: map<string, V>): map<string, W>
     ensures mapObj(fn, obj).Keys == obj.Keys
     ensures forall k :: k in obj ==> mapObj(fn, obj)[k] == fn(obj[k])
   { map k | k in obj :: fn(obj[k]) }
 
-  // `mapObj.idx` (v0.2.2): `fn(obj[key], key, obj)` for every own property.
+  // `mapObj.idx` (v0.2.2): `fn(obj[key], key, obj)` for every own property
+  // (an own `__proto__` dropped in JS, as for mapObj).
   function mapObjIdx<V, W>(fn: (V, string, map<string, V>) -> W, obj: map<string, V>): map<string, W>
     ensures mapObjIdx(fn, obj).Keys == obj.Keys
     ensures forall k :: k in obj ==> mapObjIdx(fn, obj)[k] == fn(obj[k], k, obj)
@@ -110,7 +112,8 @@ module Ramdaf.List {
   // `R.ap(fns, vs)` (v0.3.0): `foldl(function(acc, fn) { return concat(acc,
   // map(fn, vs)); }, [], fns)`, every function applied to every value, the
   // functions outermost (`ap([f, g], [1, 2])` is `[f(1), f(2), g(1), g(2)]`).
-  // A non-array vs with an `ap` method is dispatched to (Fantasy-land); no
+  // A non-array object with an `ap` method is dispatched to (Fantasy-land;
+  // since v0.5.0 the first argument, `fns.ap(vs)`, before that `vs`); no
   // Dafny value has one.
   function ap<A, B>(fns: seq<A -> B>, vs: seq<A>): seq<B>
   { foldl((acc: seq<B>, fn: A -> B) => acc + mapSeq(fn, vs), [], fns) }
@@ -238,15 +241,17 @@ module Ramdaf.List {
     ensures |skipUntil(fn, list)| > 0 ==> fn(skipUntil(fn, list)[0])
   { if |list| == 0 || fn(list[0]) then list else skipUntil(fn, list[1..]) }
 
-  // `_slice(list, n)`: all but the first n elements. Since v0.2.0 `_slice`
-  // allocates `new Array(list.length - n)`, which throws RangeError when
-  // n > |list| (`skip(5, [1, 2])`; it was [] before), so n is at most |list|.
+  // `if (n < list.length) { return _slice(list, n); } else { return []; }`
+  // (v0.5.0, "Fix a bug in R.skip"): all but the first n elements, or [] when
+  // n is at least the length. From v0.2.0 to v0.4.3 `_slice` allocated
+  // `new Array(list.length - n)`, which threw RangeError for n > |list|
+  // (`skip(5, [1, 2])`), so n was at most |list|; before v0.2.0 it was [].
   // A negative n gives JS garbage (`skip(-1, [1, 2])` is
   // `[undefined, 1, 2]`), so n is a nat.
   function skip<T>(n: nat, list: seq<T>): seq<T>
-    requires n <= |list|
-    ensures skip(n, list) == list[n..]
-  { list[n..] }
+    ensures n <= |list| ==> skip(n, list) == list[n..]
+    ensures n >= |list| ==> skip(n, list) == []
+  { if n < |list| then list[n..] else [] }
 
   // The first element satisfying fn; JS returns undefined when none does.
   function find<T>(fn: T -> bool, list: seq<T>): Option<T>
@@ -576,8 +581,9 @@ module Ramdaf.List {
     var b := if to < 0 then (if n + to < 0 then 0 else n + to) else if to > n then n else to;
     if a < b then list[a..b] else [] }
 
-  // `slice.from = flip(slice)(undefined)`: `sliceFrom(from, list)` is
-  // `list.slice(from)`, everything from `from` (clamped, negative from the end).
+  // `curry2(function(a, xs) { return xs.slice(a, xs.length); })` (v0.5.0;
+  // it was `flip(slice)(undefined)`, which returned undefined for a JS
+  // string): everything from `from` (clamped, negative from the end).
   function sliceFrom<T>(from: int, list: seq<T>): seq<T>
     ensures sliceFrom(from, list) == slice(from, |list|, list)
   { slice(from, |list|, list) }

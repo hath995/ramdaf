@@ -1,13 +1,17 @@
-// Ramdaf: Ramda v0.4.2 "Object Functions" (ramda.js lines 3207-3850) and `propEq`
-// (line 4885). A JS object is a map<string, V>; a missing property is JS
-// undefined, here None.
+// Ramdaf: Ramda v0.5.0 "Object Functions" (ramda.js lines 3198-3879) and `propEq`
+// (line 4875). A JS object is a map<string, V>; a missing property is JS
+// undefined, here None. The functions that build an object by assigning
+// properties (`pick`, `pickAll`, `pickWith`, `omit`, `mixin`, `cloneObj`)
+// drop an own `__proto__` property in JS, as the assignment sets the
+// prototype instead; a map's keys are all ordinary (README "Deviations").
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
     reveals eq, prop, get, props, propOrDefault, keys, keysIn, toPairs, toPairsIn,
-            values, valuesIn, pick, pickAll, omit, pickWith, mixin, eqProps, where, propEq
+            values, valuesIn, pick, pickAll, omit, pickWith, mixin, cloneObj, eqProps, where,
+            propEq
     provides Prelude
 
   // `a === b`. Dafny equality is structural where JS compares objects and
@@ -129,6 +133,12 @@ module Ramdaf.Object {
     ensures forall k :: k in b ==> mixin(a, b)[k] == b[k]
     ensures forall k :: k in a && k !in b ==> mixin(a, b)[k] == a[k]
   { a + b }
+
+  // `R.cloneObj(obj)` (v0.5.0): `extend({}, obj)`, a shallow copy of obj's
+  // own properties. Dafny maps are values, so the copy is obj itself (as for
+  // `clone`). In JS an own `__proto__` property is not copied (README
+  // "Deviations").
+  function cloneObj<V>(obj: map<string, V>): map<string, V> { obj }
 
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal).
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool

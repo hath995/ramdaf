@@ -1,11 +1,13 @@
-// Ramda v0.4.2 test/test.list.js, test/test.indexof.js,
+// Ramda v0.5.0 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js,
 // test/test.partition.js and test/test.groupBy.js, transcribed. Arity
-// (`.length`) checks have no Dafny counterpart and are omitted.
-// `find(even, 'zing')` searches the string's characters: here a list of Js
-// strings. test.indexof.js also sets a non-index property (`arr[-2] = 4`) on
+// (`.length`) checks have no Dafny counterpart and are omitted, and so are
+// the "throws on zero arguments" cases (v0.5.0; no-argument calls).
+// findLast's and findLastIndex's `(even, 'zing')` search the string's
+// characters: here a list of Js strings (since v0.5.0 find and findIndex
+// search `['zing']`). test.indexof.js also sets a non-index property (`arr[-2] = 4`) on
 // its arrays, which a seq cannot carry and which indexOf ignores. Not
 // transcribed: test.flatten.js's "is not destructive" (reference inequality;
 // flatten's, and v0.3.0's unnest's), "handles ridiculously large inputs" (its
@@ -187,6 +189,12 @@ module RamdafTests.Ramda.List {
     expect indexOf(Str("1"), Arr123()) == -1;
   }
 
+  // v0.5.0
+  method {:test} IndexOfReturnsMinusOneForAnEmptyArray() {
+    var empty: seq<string> := [];
+    expect indexOf("x", empty) == -1;
+  }
+
   method {:test} IndexOfShouldBeCurried() {
     var curried := (l: seq<Js>) => indexOf(Num(3), l);
     expect curried(Arr123()) == 2;
@@ -201,6 +209,13 @@ module RamdafTests.Ramda.List {
   method {:test} IndexOfFromIndexMinus2() { expect indexOfFrom(Num(3), -2, Arr123()) == 2; }
   method {:test} IndexOfFromIndexMinus3() { expect indexOfFrom(Num(3), -3, Arr123()) == 2; }
   method {:test} IndexOfFromIndexMinus4() { expect indexOfFrom(Num(3), -4, Arr123()) == 2; }
+
+  // v0.5.0
+  method {:test} IndexOfFromReturnsMinusOneForAnEmptyArray() {
+    var empty: seq<string> := [];
+    expect indexOfFrom("x", 3, empty) == -1;
+    expect indexOfFrom("x", -3, empty) == -1;
+  }
 
   method {:test} IndexOfFromShouldBeCurried() {
     var curried := (from: int, l: seq<Js>) => indexOfFrom(Num(3), from, l);
@@ -244,6 +259,15 @@ module RamdafTests.Ramda.List {
     expect lastIndexOfFrom(Str("a"), -4, Ana()) == -1;
   }
 
+  // v0.5.0: "returns -1 for an empty array" calls `lastIndexOf('x', 2, [])`
+  // and `lastIndexOf('x', -5, [])`, three arguments to the binary curried
+  // function, so JS searches the number 2 (or -5) as the list and gets -1;
+  // the evident intent, the empty list, gives the same -1.
+  method {:test} LastIndexOfReturnsMinusOneForAnEmptyArray() {
+    var empty: seq<string> := [];
+    expect lastIndexOf("x", empty) == -1;
+  }
+
   method {:test} LastIndexOfShouldBeCurried() {
     var curried := (l: seq<Js>) => lastIndexOf(Str("a"), l);
     expect curried(Ana()) == 2;
@@ -259,6 +283,13 @@ module RamdafTests.Ramda.List {
   method {:test} LastIndexOfFromIndexMinus2() { expect lastIndexOfFrom(Str("a"), -2, Ana()) == 0; }
   method {:test} LastIndexOfFromIndexMinus3() { expect lastIndexOfFrom(Str("a"), -3, Ana()) == 0; }
   method {:test} LastIndexOfFromIndexMinus4() { expect lastIndexOfFrom(Str("a"), -4, Ana()) == -1; }
+
+  // v0.5.0
+  method {:test} LastIndexOfFromReturnsMinusOneForAnEmptyArray() {
+    var empty: seq<string> := [];
+    expect lastIndexOfFrom("x", 2, empty) == -1;
+    expect lastIndexOfFrom("x", -5, empty) == -1;
+  }
 
   method {:test} LastIndexOfFromShouldBeCurried() {
     var curried := (from: int, l: seq<Js>) => lastIndexOfFrom(Str("a"), from, l);
@@ -279,6 +310,13 @@ module RamdafTests.Ramda.List {
   method {:test} ContainsFalseForTheEmptyList() {
     var empty: seq<int> := [];
     expect contains(1, empty) == false;
+  }
+
+  // v0.5.0
+  method {:test} ContainsIsCurried() {
+    var has7 := (l: seq<int>) => contains(7, l);
+    expect has7([1, 2, 3]) == false;
+    expect has7([1, 2, 7, 3]) == true;
   }
 
   // describe('isSet')
@@ -329,6 +367,15 @@ module RamdafTests.Ramda.List {
   method {:test} UniqWithOfTheEmptyArray() {
     var empty: seq<map<string, Js>> := [];
     expect uniqWith(eqI, empty) == [];
+  }
+
+  // v0.5.0
+  method {:test} UniqWithIsCurried() {
+    var objs := [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3), Ox("F", 4), Ox("F", 5), Ox("T", 6), Ox("F", 7)];
+    var objs2 := [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3), Ox("F", 0), Ox("T", 1), Ox("F", 2), Ox("F", 3)];
+    var uniqByI := (l: seq<map<string, Js>>) => uniqWith(eqI, l);
+    expect uniqByI(objs) == objs;
+    expect uniqByI(objs2) == [Ox("T", 0), Ox("F", 1), Ox("T", 2), Ox("T", 3)];
   }
 
   // ---- test.map.js ----
@@ -418,8 +465,21 @@ module RamdafTests.Ramda.List {
     expect find(XGt100, A()) == Some(Obj2());
   }
 
+  // (`['zing']` since v0.5.0; `'zing'`, its characters, before)
   method {:test} FindReturnsUndefinedWhenNoElementSatisfiesThePredicate() {
-    expect find(Even, Zing()) == None;
+    expect find(Even, [Str("zing")]) == None;
+  }
+
+  // v0.5.0
+  method {:test} FindReturnsUndefinedWhenGivenAnEmptyList() {
+    var none: seq<Js> := [];
+    expect find(Even, none) == None;
+  }
+
+  // v0.5.0
+  method {:test} FindIsCurried() {
+    var findEven := (l: seq<Js>) => find(Even, l);
+    expect findEven(A()) == Some(Num(10));
   }
 
   // describe('findIndex')
@@ -430,8 +490,17 @@ module RamdafTests.Ramda.List {
     expect findIndex(XGt100, A()) == 10;
   }
 
+  // (`['zing']` since v0.5.0, which also adds the empty list)
   method {:test} FindIndexReturnsMinusOneWhenNoElementSatisfiesThePredicate() {
-    expect findIndex(Even, Zing()) == -1;
+    var none: seq<Js> := [];
+    expect findIndex(Even, [Str("zing")]) == -1;
+    expect findIndex(Even, none) == -1;
+  }
+
+  // v0.5.0
+  method {:test} FindIndexIsCurried() {
+    var findIndexEven := (l: seq<Js>) => findIndex(Even, l);
+    expect findIndexEven(A()) == 1;
   }
 
   // describe('findLast') (new in the v0.2.0 suite; "returns the index of the
@@ -458,6 +527,12 @@ module RamdafTests.Ramda.List {
     expect findLast(Even, none) == None;
   }
 
+  // v0.5.0
+  method {:test} FindLastIsCurried() {
+    var findLastEven := (l: seq<Js>) => findLast(Even, l);
+    expect findLastEven(A()) == Some(Num(0));
+  }
+
   // describe('findLastIndex') (the v0.1.5 suite tested it under
   // describe('findLast'))
   method {:test} FindLastIndexReturnsTheIndexOfTheLastElementThatSatisfiesThePredicate() {
@@ -482,6 +557,12 @@ module RamdafTests.Ramda.List {
     expect findLastIndex(Even, none) == -1;
   }
 
+  // v0.5.0
+  method {:test} FindLastIndexIsCurried() {
+    var findLastIndexEven := (l: seq<Js>) => findLastIndex(Even, l);
+    expect findLastIndexEven(A()) == 15;
+  }
+
   // ---- test.flatten.js ----
 
   method {:test} FlattenTurnsANestedListIntoOneFlatList() {
@@ -496,6 +577,13 @@ module RamdafTests.Ramda.List {
     expect flatten(nest2) == [3, 2, 1, 0, -1, -2, -3];
     // v0.2.2
     expect flatten([Leaf(1), Leaf(2), Leaf(3), Leaf(4), Leaf(5)]) == [1, 2, 3, 4, 5];
+  }
+
+  // v0.5.0
+  method {:test} FlattenFlattensAnArrayOfEmptyArrays() {
+    var none: seq<Tree<int>> := [];
+    expect flatten([Node(none), Node(none), Node(none)]) == [];
+    expect flatten(none) == [];
   }
 
   // describe('unnest') (v0.3.0)
@@ -514,6 +602,13 @@ module RamdafTests.Ramda.List {
     expect unnest(nest2) == [Node([Node([Leaf(3)])]), Leaf(2), Leaf(1), Leaf(0),
                              Node([Leaf(-1), Leaf(-2)]), Leaf(-3)];
     expect unnest([Leaf(1), Leaf(2), Leaf(3), Leaf(4), Leaf(5)]) == [Leaf(1), Leaf(2), Leaf(3), Leaf(4), Leaf(5)];
+  }
+
+  // v0.5.0
+  method {:test} UnnestFlattensAnArrayOfEmptyArrays() {
+    var none: seq<Tree<int>> := [];
+    expect unnest([Node(none), Node(none), Node(none)]) == [];
+    expect unnest(none) == [];
   }
 
   // ---- test.range.js ----
@@ -698,5 +793,11 @@ module RamdafTests.Ramda.List {
       map["A" := [Typed("A", 10), Typed("A", 30), Typed("A", 40)],
           "B" := [Typed("B", 20), Typed("B", 60)],
           "C" := [Typed("C", 50)]];
+  }
+
+  // v0.5.0: `groupBy(prop('x'), [])`
+  method {:test} GroupByReturnsAnEmptyObjectIfGivenAnEmptyArray() {
+    var none: seq<map<string, Js>> := [];
+    expect groupBy((o: map<string, Js>) => if "x" in o && o["x"].Str? then o["x"].s else "undefined", none) == map[];
   }
 }

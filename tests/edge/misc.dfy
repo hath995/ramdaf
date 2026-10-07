@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.4.2 under node; the methods named Deviation* pin documented
+// ramda.js v0.5.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -96,6 +96,18 @@ module RamdafTests.Edge.Misc {
     expect mixin(map["a" := 1], none) == map["a" := 1];
   }
 
+  // cloneObj (v0.5.0) copies every own property (node: `cloneObj({a: undefined})`
+  // keeps `a`, and an object value is the same object).
+  method {:test} CloneObjEdges() {
+    var none: map<string, int> := map[];
+    expect cloneObj(none) == map[];
+    expect cloneObj(map["a" := 1, "b" := 2, "c" := 3, "z" := 100]) == map["a" := 1, "b" := 2, "c" := 3, "z" := 100];
+    expect cloneObj(map["a" := Undefined]) == map["a" := Undefined];
+    expect cloneObj(map["hasOwnProperty" := 1]) == map["hasOwnProperty" := 1];
+    var x1 := Obj(map["x" := Num(1)]);
+    expect cloneObj(map["a" := x1, "b" := Num(2)])["a"] == x1;
+  }
+
   // Since v0.2.3 a function entry fails on an absent property without being
   // called (it was called with undefined, None, before); a value entry fails
   // on an absent property.
@@ -126,7 +138,6 @@ module RamdafTests.Edge.Misc {
     expect modulo(5, -4) == 1;
     expect modulo(1, 1) == 0;
     expect modulo(-1, -5) == -1;
-    expect moduloBy(-3, 7) == 1;
   }
 
   // mathMod is `((m % p) + p) % p` with JS's truncated `%`; since v0.4.2 it
@@ -160,8 +171,8 @@ module RamdafTests.Edge.Misc {
 
   method {:test} MathEdges() {
     var empty: seq<int> := [];
-    expect subtractN(5, 2) == -3;
-    expect divideBy(3.0, 6.0) == 2.0;
+    expect subtract(2, 5) == -3;
+    expect divide(6.0, 3.0) == 2.0;
     expect max([3, 9, 2]) == 9;
     expect min([3, 9, 2]) == 2;
     expect max([5]) == 5;
@@ -262,6 +273,17 @@ module RamdafTests.Edge.Misc {
 
   // ---- documented deviations (not node behaviour) ----
 
+
+  // node: cloneObj(JSON.parse('{"__proto__": 5, "a": 1}')) and mixin(<the
+  // same>, {}) are {a: 1}: assigning `__proto__` sets the prototype instead
+  // of a property (the input's own `__proto__` property can only come from
+  // JSON.parse or Object.defineProperty). A map's keys are all ordinary.
+  method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
+    var o := map["__proto__" := 5, "a" := 1];
+    var none: map<string, int> := map[];
+    expect cloneObj(o) == o;
+    expect mixin(o, none) == o;
+  }
 
   // node: eq([], []) is false (two distinct array objects).
   method {:test} DeviationEqIsStructural() {

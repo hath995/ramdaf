@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.4.2 "Data Analysis and Grouping Functions" (ramda.js lines
-// 4834-5220), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
+// Ramdaf: Ramda v0.5.0 "Data Analysis and Grouping Functions" (ramda.js lines
+// 4824-5207), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
 // unportable `functions`/`functionsIn`, and `groupBy`, which since v0.3.0 is
-// defined in "List Functions" (line 3171 in v0.4.2; from v0.2.0 to v0.2.4 an
+// defined in "List Functions" (line 3162 in v0.5.0; from v0.2.0 to v0.2.4 an
 // alias of `partition` there) but which stays here (functions do not move
 // between modules).
 //
@@ -104,7 +104,8 @@ module Ramdaf.Data {
   { var keys := set i | 0 <= i < |list| :: fn(list[i]);
     map k | k in keys :: List.filter(x => fn(x) == k, list) }
 
-  // `useWith(map, pickAll, identity)`: `map(pickAll(names), list)`.
+  // `useWith(map, pickAll, identity)`: `map(pickAll(names), list)` (in JS an
+  // own `__proto__` property is dropped, as for pickAll).
   function project<V>(names: seq<string>, list: seq<map<string, V>>): seq<map<string, Option<V>>>
   { List.mapSeq((obj: map<string, V>) => Object.pickAll(names, obj), list) }
 }

@@ -1,15 +1,20 @@
-// Ramda v0.4.2 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.5.0 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
-// cases of max/min are not expressible (README "Deviations"). Not
+// cases of max/min are not expressible (README "Deviations"). Since v0.5.0
+// `subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` are
+// `op`-curried: one argument fixes the SECOND parameter (`subtract(5)` is
+// `x => x - 5`), and `f(a, _)` with the placeholder `_` (undefined) fixes the
+// first. Ramda's `it`s call the placeholder form "right-curried" and the
+// one-argument form "left sections"; the lambdas follow what the code
+// computes. Not
 // transcribed: mathMod's "requires integer arguments" (string and fractional
 // arguments, which give NaN); the last two asserts of its "behaves
 // differently than JS modulo" (17.2 is fractional, and since v0.4.2
 // `mathMod(17, -5)` is NaN: a modulus below 1 is outside the domain, README)
 // and the four NaN asserts of v0.4.2's "computes the true modulo function"
 // (`mathMod(17, -5)`, `mathMod(17, 0)` and fractional arguments); v0.4.0's 13
-// "throws if given no arguments" cases (add, multiply, subtract, subtractN,
-// divide, divideBy, modulo, moduloBy, mathMod, lt, lte, gt, gte): no-argument
-// calls.
+// "throws if given no arguments" cases (no-argument calls). (v0.5.0
+// removed subtractN, divideBy and moduloBy with their describes.)
 
 module RamdafTests.Ramda.Math {
   import opened Ramdaf.Prelude
@@ -26,22 +31,23 @@ module RamdafTests.Ramda.Math {
 
   // describe('subtract')
   method {:test} SubtractSubtractsTwoNumbers() { expect subtract(22, 7) == 15; }
-  method {:test} SubtractIsAutomaticallyCurried() { var ninesCompl := (x: int) => subtract(9, x); expect ninesCompl(6) == 3; }
-
-  // describe('subtractN')
-  method {:test} SubtractNSubtractsTwoNumbers() { expect subtractN(7, 22) == 15; }
-  method {:test} SubtractNIsAutomaticallyCurried() { var minus6 := (x: int) => subtractN(6, x); expect minus6(9) == 3; }
+  // "is automatically right-curried": `subtract(9, void 0)`
+  method {:test} SubtractIsAutomaticallyRightCurried() { var ninesCompl := (x: int) => subtract(9, x); expect ninesCompl(6) == 3; }
+  // v0.5.0: "allows for left sections too": `subtract(5)`
+  method {:test} SubtractAllowsForLeftSectionsToo() { var minus5 := (x: int) => subtract(x, 5); expect minus5(17) == 12; }
 
   // describe('divide')
   method {:test} DivideDividesTwoNumbers() { expect divide(28.0, 7.0) == 4.0; }
-  method {:test} DivideIsAutomaticallyCurried() {
-    var divideInto120 := (x: real) requires x != 0.0 => divide(120.0, x);
-    expect divideInto120(40.0) == 3.0;
+  // "is automatically right-curried": `divide(28, _)`
+  method {:test} DivideIsAutomaticallyRightCurried() {
+    var into28 := (x: real) requires x != 0.0 => divide(28.0, x);
+    expect into28(7.0) == 4.0;
   }
-
-  // describe('divideBy')
-  method {:test} DivideByDividesTwoNumbers() { expect divideBy(7.0, 28.0) == 4.0; }
-  method {:test} DivideByIsAutomaticallyCurried() { var half := (x: real) => divideBy(2.0, x); expect half(40.0) == 20.0; }
+  // v0.5.0: "allows for left sections too": `divide(2)`
+  method {:test} DivideAllowsForLeftSectionsToo() {
+    var half := (x: real) => divide(x, 2.0);
+    expect half(40.0) == 20.0;
+  }
 
   // describe('modulo')
   method {:test} ModuloDividesAndReturnsTheRemainder() {
@@ -49,28 +55,21 @@ module RamdafTests.Ramda.Math {
     expect modulo(100, 3) == 1;
     expect modulo(100, 17) == 15;
   }
-  method {:test} ModuloIsAutomaticallyCurried() {
-    var modOf120by := (x: int) requires x != 0 => modulo(120, x);
-    expect modOf120by(3) == 0;
-    expect modOf120by(19) == 6;
+  // "is automatically right-curried": `modulo(100, _)`
+  method {:test} ModuloIsAutomaticallyRightCurried() {
+    var hundredMod := (x: int) requires x != 0 => modulo(100, x);
+    expect hundredMod(2) == 0;
+    expect hundredMod(3) == 1;
+    expect hundredMod(17) == 15;
   }
-  method {:test} ModuloPreservesJsModuloForNegativeNumbers() {
-    expect modulo(-5, 4) == -1;
-  }
-
-  // describe('moduloBy')
-  method {:test} ModuloByDividesTheSecondByTheFirst() {
-    expect moduloBy(2, 100) == 0;
-    expect moduloBy(3, 100) == 1;
-    expect moduloBy(17, 100) == 15;
-  }
-  method {:test} ModuloByIsAutomaticallyCurried() {
-    var isOdd := (x: int) => moduloBy(2, x);
+  // v0.5.0: "allows for left sections too": `modulo(2)`
+  method {:test} ModuloAllowsForLeftSectionsToo() {
+    var isOdd := (x: int) => modulo(x, 2);
     expect isOdd(3) == 1;
     expect isOdd(198) == 0;
   }
-  method {:test} ModuloByPreservesJsModuloForNegativeNumbers() {
-    expect moduloBy(4, -5) == -1;
+  method {:test} ModuloPreservesJsModuloForNegativeNumbers() {
+    expect modulo(-5, 4) == -1;
   }
 
   // describe('mathMod') (v0.3.0): the first assert of "behaves differently
@@ -84,9 +83,17 @@ module RamdafTests.Ramda.Math {
   method {:test} MathModComputesTheTrueModuloFunction() {
     expect mathMod(-17, 5) == 3;
   }
-  method {:test} MathModIsCurried() {
+  // "is automatically right-curried": `mathMod(29, _)`
+  method {:test} MathModIsAutomaticallyRightCurried() {
     var f := (p: int) requires p >= 1 => mathMod(29, p);
     expect f(6) == 5;
+  }
+  // v0.5.0: "allows for left sections too", which calls `modulo(5)`, not
+  // mathMod
+  method {:test} MathModAllowsForLeftSectionsToo() {
+    var mod5 := (x: int) => modulo(x, 5);
+    expect mod5(12) == 2;
+    expect mod5(8) == 3;
   }
 
   // describe('sum'), describe('product')
@@ -105,44 +112,76 @@ module RamdafTests.Ramda.Math {
     expect !lt(6, 4);
     expect !lt(7, 7);
   }
-  method {:test} LtIsAutomaticallyCurried() {
-    var atLeast20 := (x: int) => lt(20, x);
-    expect !atLeast20(10);
-    expect !atLeast20(20);
-    expect atLeast20(25);
+  // "is automatically right-curried": `lt(5)`
+  method {:test} LtIsAutomaticallyRightCurried() {
+    var lt5 := (x: int) => lt(x, 5);
+    expect !lt5(10);
+    expect !lt5(5);
+    expect lt5(3);
+  }
+  // v0.5.0: "allows for left sections too": `lt(5, _)`
+  method {:test} LtAllowsForLeftSectionsToo() {
+    var gt5 := (x: int) => lt(5, x);
+    expect gt5(10);
+    expect !gt5(5);
+    expect !gt5(3);
   }
   method {:test} LteReportsLessOrEqual() {
     expect lte(3, 5);
     expect !lte(6, 4);
     expect lte(7, 7);
   }
-  method {:test} LteIsAutomaticallyCurried() {
-    var greaterThan20 := (x: int) => lte(20, x);
-    expect !greaterThan20(10);
-    expect greaterThan20(20);
-    expect greaterThan20(25);
+  // "is automatically right-curried": `lte(20)`
+  method {:test} LteIsAutomaticallyRightCurried() {
+    var noMoreThan20 := (x: int) => lte(x, 20);
+    expect noMoreThan20(10);
+    expect noMoreThan20(20);
+    expect !noMoreThan20(25);
+  }
+  // v0.5.0: "allows for left sections too": `lte(20, _)`
+  method {:test} LteAllowsForLeftSectionsToo() {
+    var atLeast20 := (x: int) => lte(20, x);
+    expect !atLeast20(10);
+    expect atLeast20(20);
+    expect atLeast20(25);
   }
   method {:test} GtReportsGreaterThan() {
     expect !gt(3, 5);
     expect gt(6, 4);
     expect !gt(7, 7);
   }
-  method {:test} GtIsAutomaticallyCurried() {
-    var lessThan20 := (x: int) => gt(20, x);
-    expect lessThan20(10);
-    expect !lessThan20(20);
-    expect !lessThan20(25);
+  // "is automatically right-curried": `gt(20)`
+  method {:test} GtIsAutomaticallyRightCurried() {
+    var gt20 := (x: int) => gt(x, 20);
+    expect !gt20(10);
+    expect !gt20(20);
+    expect gt20(25);
+  }
+  // v0.5.0: "allows for left sections too": `gt(20, _)`
+  method {:test} GtAllowsForLeftSectionsToo() {
+    var upto20 := (x: int) => gt(20, x);
+    expect upto20(10);
+    expect !upto20(20);
+    expect !upto20(25);
   }
   method {:test} GteReportsGreaterOrEqual() {
     expect !gte(3, 5);
     expect gte(6, 4);
     expect gte(7, 7);
   }
-  method {:test} GteIsAutomaticallyCurried() {
-    var upTo20 := (x: int) => gte(20, x);
-    expect upTo20(10);
-    expect upTo20(20);
-    expect !upTo20(25);
+  // "is automatically right-curried": `gte(20)`
+  method {:test} GteIsAutomaticallyRightCurried() {
+    var gte20 := (x: int) => gte(x, 20);
+    expect !gte20(10);
+    expect gte20(20);
+    expect gte20(25);
+  }
+  // v0.5.0: "allows for left sections too": `gte(20, _)`
+  method {:test} GteAllowsForLeftSectionsToo() {
+    var upto20 := (x: int) => gte(20, x);
+    expect upto20(10);
+    expect upto20(20);
+    expect !upto20(25);
   }
 
   // describe('max'), describe('min') (the decimal/string cases are not expressible)
