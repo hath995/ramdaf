@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -707,8 +707,9 @@ module Ramdaf.List {
 
   // `R.mergeAll(list)` (v0.10.0, `@category List`): since v0.20.0
   // `_objectAssign.apply(null, [{}].concat(list))`, the private
-  // `Object.assign`, which copies each object's own properties onto `{}` in
-  // list order: the objects merged left to right, a later object's keys
+  // `Object.assign` (since v0.20.1 `_assign`, the native `Object.assign`
+  // where the engine has one, with the same results), which copies each
+  // object's own properties onto `{}` in list order: the objects merged left to right, a later object's keys
   // winning. The body recurses on all but the last object and merges it
   // over the result (`+`, Dafny's right-biased map union), which is the
   // loop. Until v0.19.1 it was `_curry1(function mergeAll(list) { return

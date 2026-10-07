@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
@@ -172,8 +172,10 @@ module Ramdaf.Object {
   { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
 
   // `R.merge(a, b)` (v0.10.0, "rename R.mixin", with the same body): since
-  // v0.20.0 `_objectAssign({}, l, r)`, the private `Object.assign`, the own
-  // properties of a, then of b: b's value wins where both have the key. The
+  // v0.20.0 `_objectAssign({}, l, r)`, the private `Object.assign` (since
+  // v0.20.1 `_assign`, the native `Object.assign` where the engine has one,
+  // with the same results), the own properties of a, then of b: b's value
+  // wins where both have the key. The
   // body is Dafny's right-biased map union, `a + b`, as it was until
   // v0.18.0; in v0.19.x merge was `mergeWith(function(l, r) { return r;
   // })`, and the body called mergeWith (from v0.16.0 to v0.18.0 its own
