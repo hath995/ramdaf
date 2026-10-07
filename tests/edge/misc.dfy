@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.22.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.23.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -529,19 +529,21 @@ module RamdafTests.Edge.Misc {
 
   // propSatisfies (v0.16.0) gives the predicate the property, undefined
   // (None) when it is absent (node: true, true); composeK and pipeK (v0.16.0)
-  // chain over lists (node: `composeK(x => [x, x * 10], x => [x + 1])([1,
-  // 2])` is [2, 20, 3, 30], and so is `pipeK(x => [x + 1], x => [x, x *
-  // 10])([1, 2])`; `composeK(x => [], x => [x])([1])` and `composeK(x => [x],
-  // x => [x, x])([])` are []).
+  // chain over lists, since v0.23.0 starting from a value that the last
+  // function (the first, for pipeK) is applied to (node: `composeK(x => [x,
+  // x * 10], x => [x + 1])(1)` is [2, 20], and so is `pipeK(x => [x + 1], x
+  // => [x, x * 10])(1)`; `composeK(x => [], x => [x])(1)` and `composeK(x =>
+  // [x], x => [])(1)` are []; until v0.22.1 they took a list, and the first
+  // two on [1, 2] were [2, 20, 3, 30]).
   method {:test} PropSatisfiesAndComposeKEdges() {
     var none: map<string, int> := map[];
     expect propSatisfies((x: Option<int>) => x.None?, "a", none) == true;
     expect propSatisfies((x: Option<int>) => x == Some(1), "a", map["a" := 1]) == true;
-    expect composeK((x: int) => [x, x * 10], (x: int) => [x + 1])([1, 2]) == [2, 20, 3, 30];
-    expect pipeK((x: int) => [x + 1], (x: int) => [x, x * 10])([1, 2]) == [2, 20, 3, 30];
+    expect composeK((x: int) => [x, x * 10], (x: int) => [x + 1])(1) == [2, 20];
+    expect pipeK((x: int) => [x + 1], (x: int) => [x, x * 10])(1) == [2, 20];
     var nothing: seq<int> := [];
-    expect composeK((x: int) => nothing, (x: int) => [x])([1]) == [];
-    expect composeK((x: int) => [x], (x: int) => [x, x])(nothing) == [];
+    expect composeK((x: int) => nothing, (x: int) => [x])(1) == [];
+    expect composeK((x: int) => [x], (x: int) => nothing)(1) == [];
   }
 
   // ---- documented deviations (not node behaviour) ----

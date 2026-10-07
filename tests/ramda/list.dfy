@@ -1,4 +1,4 @@
-// Ramda v0.22.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.23.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -895,10 +895,13 @@ module RamdafTests.Ramda.List {
     expect cat(["1", "2", "3", "4"]) == ("1234", ["1", "12", "123", "1234"]);
   }
 
-  // describe('mapAccumRight') (describe('mapAccumR') until v0.9.1)
+  // describe('mapAccumRight') (describe('mapAccumR') until v0.9.1); since
+  // v0.23.0 fn gets the element first and the result is [list,
+  // accumulator] (until v0.22.1 [accumulator, list]: `(10, [10, 9, 7, 4])`,
+  // and the cat line `("4321", ["4321", "432", "43", "4"])`)
   method {:test} MapAccumRightMapsAndAccumulatesSimpleFunctions() {
-    expect mapAccumRight(AccAdd, 0, [1, 2, 3, 4]) == (10, [10, 9, 7, 4]);
-    expect mapAccumRight(AccMult, 1, [1, 2, 3, 4]) == (24, [24, 24, 12, 4]);
+    expect mapAccumRight(AccAdd, 0, [1, 2, 3, 4]) == ([10, 9, 7, 4], 10);
+    expect mapAccumRight(AccMult, 1, [1, 2, 3, 4]) == ([24, 24, 12, 4], 24);
   }
 
   // The third case folds with `R.concat`, which returns one list, not a pair;
@@ -906,8 +909,8 @@ module RamdafTests.Ramda.List {
   // with a pair-returning concatenation.
   method {:test} MapAccumRightReturnsTheListAndAccumulatorForAnEmptyArray() {
     var empty: seq<int> := [];
-    expect mapAccumRight(AccAdd, 0, empty) == (0, []);
-    expect mapAccumRight(AccMult, 1, empty) == (1, []);
+    expect mapAccumRight(AccAdd, 0, empty) == ([], 0);
+    expect mapAccumRight(AccMult, 1, empty) == ([], 1);
     var noLists: seq<seq<int>> := [];
     var none: seq<int> := [];
     expect mapAccumRight((a: seq<int>, b: seq<int>) => (a + b, a + b), none, noLists) == ([], []);
@@ -916,8 +919,8 @@ module RamdafTests.Ramda.List {
   method {:test} MapAccumRightIsAutomaticallyCurried() {
     var sum := (l: seq<int>) => mapAccumRight(AccAdd, 0, l);
     var cat := (l: seq<string>) => mapAccumRight(AccCat, "", l);
-    expect sum([1, 2, 3, 4]) == (10, [10, 9, 7, 4]);
-    expect cat(["1", "2", "3", "4"]) == ("4321", ["4321", "432", "43", "4"]);
+    expect sum([1, 2, 3, 4]) == ([10, 9, 7, 4], 10);
+    expect cat(["1", "2", "3", "4"]) == (["1234", "234", "34", "4"], "1234");
   }
 
   // ---- mergeAll.js (v0.10.0) ----

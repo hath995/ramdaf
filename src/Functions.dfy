@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.22.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.23.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
 // the functions with `@category Function` (`composeK`, `pipeK`, `juxt`,
@@ -67,22 +67,29 @@ module Ramdaf.Functions {
   function T<U>(x: U): bool { always(true)(x) }
   function F<U>(x: U): bool { always(false)(x) }
 
-  // `R.composeK(…fns)` (v0.16.0, `@category Function`): since v0.18.0
-  // `compose.apply(this, prepend(identity, map(chain, arguments)))` (v0.16.0
-  // `compose.apply(this, map(chain, arguments))`, and `identity` for no
-  // functions; the same results), right-to-left Kleisli composition: each
-  // function is `chain`ed over the monadic value the one to its right
-  // returns (`composeK(f, g)(m)` is `chain(f, chain(g, m))`; `composeK()` is
-  // `identity`). JS chains any Fantasy-land monad through its `chain`
-  // method; here the monad is the list, through `List.chain` (README
-  // "Deviations"). JS takes any number of functions; the port is binary, as
-  // compose is.
-  function composeK<A, B, C>(f: B -> seq<C>, g: A -> seq<B>): seq<A> -> seq<C>
-  { compose((xs: seq<B>) => List.chain(f, xs), (xs: seq<A>) => List.chain(g, xs)) }
+  // `R.composeK(…fns)` (v0.16.0, `@category Function`): since v0.23.0
+  // `compose(compose.apply(this, map(chain, init)), last)`, where `last` is
+  // the last function and `init` the others, right-to-left Kleisli
+  // composition of functions to a monad: the last function is applied to
+  // the value and each other function is `chain`ed over the monadic value
+  // the one to its right returns (`composeK(f, g)(x)` is `chain(f, g(x))`;
+  // `composeK()` throws Error, "composeK requires at least one argument").
+  // From v0.16.0 to v0.22.1 every function was chained, so the composition
+  // took a monadic value (`composeK(f, g)(m)` was `chain(f, chain(g, m))`,
+  // `compose.apply(this, prepend(identity, map(chain, arguments)))` since
+  // v0.18.0, and `composeK()` was `identity`). JS chains any Fantasy-land
+  // monad through its `chain` method; here the monad is the list, through
+  // `List.chain` (README "Deviations"). JS takes any number of functions;
+  // the port is binary, as compose is.
+  function composeK<A, B, C>(f: B -> seq<C>, g: A -> seq<B>): A -> seq<C>
+  { compose((xs: seq<B>) => List.chain(f, xs), g) }
 
   // `R.pipeK(…fns)` (v0.16.0): `composeK.apply(this, reverse(arguments))`,
-  // left-to-right Kleisli composition (`pipeK(f, g)` is `composeK(g, f)`).
-  function pipeK<A, B, C>(f: A -> seq<B>, g: B -> seq<C>): seq<A> -> seq<C>
+  // left-to-right Kleisli composition (`pipeK(f, g)` is `composeK(g, f)`,
+  // since v0.23.0 a function of a value, `chain(g, f(x))`, and `pipeK()`
+  // throws Error; until v0.22.1 of a monadic value, `chain(g, chain(f,
+  // m))`).
+  function pipeK<A, B, C>(f: A -> seq<B>, g: B -> seq<C>): A -> seq<C>
   { composeK(g, f) }
 
   // `R.juxt(fns)` (v0.19.0, `@category Function`): a function that applies

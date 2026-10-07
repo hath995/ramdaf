@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.22.1 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.23.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -362,5 +362,19 @@ module RamdafTests.Edge.Data {
     expect clamp(1, 3, 1) == 1;
     expect clamp(1, 3, 3) == 3;
     expect clamp(-3, -1, 0) == -1;
+  }
+
+  // ascend, descend and sortWith (v0.23.0): comparators by key, and a stable
+  // sort by the first comparator that tells two elements apart (node: [3, 6,
+  // 4, 1, 5], [5, 4, 1, 3, 6], [3, 1, 2] (no comparators: every pair ties),
+  // [2, 4, 3, 1], [4, 2, 3, 1]).
+  method {:test} AscendDescendSortWithEdges() {
+    var none: seq<(int, int) -> int> := [];
+    expect sort((a: int, b: int) => ascend((x: int) => x % 3, a, b), [5, 3, 4, 1, 6]) == [3, 6, 4, 1, 5];
+    expect sort((a: int, b: int) => descend((x: int) => x % 3, a, b), [5, 3, 4, 1, 6]) == [5, 4, 1, 3, 6];
+    expect sortWith(none, [3, 1, 2]) == [3, 1, 2];
+    expect sortWith([(a: int, b: int) => ascend((x: int) => x % 2, a, b)], [3, 2, 1, 4]) == [2, 4, 3, 1];
+    expect sortWith([(a: int, b: int) => ascend((x: int) => x % 2, a, b), (a: int, b: int) => descend((x: int) => x, a, b)],
+                    [3, 2, 1, 4]) == [4, 2, 3, 1];
   }
 }

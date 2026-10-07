@@ -1,7 +1,9 @@
-// Ramdaf: Ramda v0.22.1 `src/comparator.js`, `src/sort.js` and
-// `src/sortBy.js`.
+// Ramdaf: Ramda v0.23.0 `src/comparator.js`, `src/sort.js`, `src/sortBy.js`,
+// `src/ascend.js`, `src/descend.js` and `src/sortWith.js` (v0.23.0; sorting
+// goes in Sort whatever the `@category`).
 //
-// `sort` is `_slice(list).sort(comparator)` (v0.14.0, "Don't clone in sort"),
+// `sort` is `_slice(list).sort(comparator)` (v0.14.0, "Don't clone in sort";
+// since v0.23.0 `Array.prototype.slice.call(list, 0).sort(comparator)`),
 // i.e. JS Array.prototype.sort on a shallow copy, which is stable (ES2019;
 // node is the reference). (From v0.9.0 to v0.13.0 it sorted
 // `clone(list)`, a deep copy, so the elements were copies, an element object
@@ -18,7 +20,7 @@ module Ramdaf.Sort {
   import List
 
   export
-    reveals comparator
+    reveals comparator, ascend, descend, sortWith
     provides sort, sortBy, List
 
   // `pred(a, b) ? -1 : pred(b, a) ? 1 : 0`, from a "less than" predicate.
@@ -68,6 +70,36 @@ module Ramdaf.Sort {
       FilterCongruent(y => cmp(y, list[i]) == 0, y => fn(y) == fn(list[i]), list);
     }
     insertionSort(cmp, list) }
+
+  // `R.ascend(fn, a, b)` (v0.23.0, `@category Function`; sorting goes in
+  // Sort, as `comparator` does): `var aa = fn(a); var bb = fn(b); return aa <
+  // bb ? -1 : aa > bb ? 1 : 0;`, a comparator by the key fn gives, for
+  // `sort` (`sort(ascend(identity), [3, 1, 8])` is `[1, 3, 8]`). JS compares
+  // the keys with `<` and `>`, so string keys work; the keys are ints here,
+  // as sortBy's (README "Deviations").
+  function ascend<T>(fn: T -> int, a: T, b: T): int
+  { var aa := fn(a);
+    var bb := fn(b);
+    if aa < bb then -1 else if aa > bb then 1 else 0 }
+
+  // `R.descend(fn, a, b)` (v0.23.0, `@category Function`): `aa > bb ? -1 :
+  // aa < bb ? 1 : 0`, ascend's comparator reversed, the larger key first.
+  function descend<T>(fn: T -> int, a: T, b: T): int
+  { var aa := fn(a);
+    var bb := fn(b);
+    if aa > bb then -1 else if aa < bb then 1 else 0 }
+
+  // `R.sortWith(fns, list)` (v0.23.0, `@category Relation`; sorting goes in
+  // Sort): `Array.prototype.slice.call(list, 0).sort(function(a, b) { var
+  // result = 0; var i = 0; while (result === 0 && i < fns.length) { result =
+  // fns[i](a, b); i += 1; } return result; })`, a sort by the first
+  // comparator, ties broken by the next (`sortWith([descend(prop('score')),
+  // ascend(prop('title'))], albums)`). The loop is written as a `List.reduce`
+  // over the comparators that keeps the first nonzero result (the later
+  // comparators are not called in JS, which a pure comparator cannot
+  // observe), and the sort is `sort`, by contract.
+  function sortWith<T>(fns: seq<(T, T) -> int>, list: seq<T>): seq<T>
+  { sort((a: T, b: T) => List.reduce((r: int, f: (T, T) -> int) => if r != 0 then r else f(a, b), 0, fns), list) }
 
   // ---- private: insertion sort and its proof ----
 

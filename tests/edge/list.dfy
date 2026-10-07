@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.22.1's own suite does not cover, each checked against
-// dist/ramda.js v0.22.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.23.0's own suite does not cover, each checked against
+// dist/ramda.js v0.23.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -34,13 +34,14 @@ module RamdafTests.Edge.List {
     expect times((i: nat) => i, 0) == [];
   }
 
-  // reduceRight (foldr until v0.9.1) runs from the right with the
-  // accumulator first (since v0.1.1).
-  method {:test} ReduceRightRunsFromTheRightAccumulatorFirst() {
+  // reduceRight (foldr until v0.9.1) runs from the right; since v0.23.0
+  // the callback takes the element first (from v0.1.1 to v0.22.1 the
+  // accumulator; node now: [1, 2], 'zyx', -2 for these callbacks).
+  method {:test} ReduceRightRunsFromTheRightElementFirst() {
     var empty: seq<int> := [];
-    expect reduceRight((acc: seq<int>, x: int) => [x] + acc, empty, [1, 2]) == [1, 2];
-    expect reduceRight((acc: string, a: string) => acc + a, "", ["x", "y", "z"]) == "zyx";
-    expect reduceRight((acc: int, a: int) => acc - a, 0, [1, 2, 3, 4]) == -10;
+    expect reduceRight((x: int, acc: seq<int>) => [x] + acc, empty, [1, 2]) == [1, 2];
+    expect reduceRight((a: string, acc: string) => acc + a, "", ["x", "y", "z"]) == "zyx";
+    expect reduceRight((a: int, acc: int) => a - acc, 0, [1, 2, 3, 4]) == -2;
   }
 
   // Since v0.4.2 findLast/findLastIndex test index 0 and end on the empty
@@ -415,12 +416,15 @@ module RamdafTests.Edge.List {
     expect zipWith((a: int, b: int) => a + b, [1, 2], [10]) == [11];
   }
 
-  // remove, insert and insert.all are built on `_slice`; since v0.2.4 a cut
-  // at 0 is empty (until v0.2.3 it copied the whole list), and since v0.8.0
-  // a negative start cuts at 0 (node: [1, 2, 3, 4, 5], [2, 3, 4, 5],
-  // [2, 3, 4, 5], [], [], [3, 4, 5] and []; until v0.7.2 each threw
-  // RangeError).
-  method {:test} RemoveUsesRamdasSlice() {
+  // remove (v0.2.2) is `splice(start, count)` on a copy since v0.23.0: a
+  // negative start counts from the end, a negative count is 0, and nothing
+  // reads holes (node: [1, 4, 5], [3, 4, 5], [1, 2, 3], [], [1, 2, 3], [1, 2,
+  // 3], l, l, l, l, [], [], [16, 8, 12], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2,
+  // 3], [1, 2], [1, 2, 3, 4], [], [], [1, 2, 3, 5], l). Until v0.22.1 it was
+  // two `_slice` cuts: a negative start cut at 0 (`remove(-1, 2, l)` was [2,
+  // 3, 4, 5]), a negative count repeated elements (`remove(1, -1, l)` was
+  // [1, 1, 2, 3, 4, 5]), and start + count < 0 read holes.
+  method {:test} RemoveSplicesACopy() {
     var l := [1, 2, 3, 4, 5];
     var empty: seq<int> := [];
     expect remove(1, 2, l) == [1, 4, 5];
@@ -429,20 +433,22 @@ module RamdafTests.Edge.List {
     expect remove(0, 5, l) == [];
     expect remove(3, 10, [1, 2, 3]) == [1, 2, 3];
     expect remove(5, 1, [1, 2, 3]) == [1, 2, 3];
-    expect remove(1, -1, l) == [1, 1, 2, 3, 4, 5];
-    expect remove(3, -1, l) == [1, 2, 3, 3, 4, 5];
-    expect remove(2, -2, l) == [1, 2, 1, 2, 3, 4, 5];
+    expect remove(1, -1, l) == l;
+    expect remove(3, -1, l) == l;
+    expect remove(2, -2, l) == l;
     expect remove(1, 0, l) == l;
     expect remove(0, 1, empty) == [];
     expect remove(2, 0, empty) == [];
-    expect remove(4, -4, [16, 8, 12]) == [16, 8, 12, 16, 8, 12];
-    expect remove(-1, 1, l) == [1, 2, 3, 4, 5];
-    expect remove(-1, 2, l) == [2, 3, 4, 5];
-    expect remove(-2, 3, l) == [2, 3, 4, 5];
-    expect remove(-3, 8, l) == [];
-    expect remove(-1, 6, l) == [];
-    expect remove(-10, 12, l) == [3, 4, 5];
+    expect remove(4, -4, [16, 8, 12]) == [16, 8, 12];
+    expect remove(-1, 1, l) == [1, 2, 3, 4];
+    expect remove(-1, 2, l) == [1, 2, 3, 4];
+    expect remove(-2, 3, l) == [1, 2, 3];
+    expect remove(-3, 8, l) == [1, 2];
+    expect remove(-1, 6, l) == [1, 2, 3, 4];
+    expect remove(-10, 12, l) == [];
     expect remove(-1, 1, empty) == [];
+    expect remove(-2, 1, l) == [1, 2, 3, 5];
+    expect remove(2, -5, l) == l;
   }
 
   method {:test} InsertUsesRamdasSlice() {
@@ -508,17 +514,20 @@ module RamdafTests.Edge.List {
   }
 
   // mapAccum and mapAccumRight (mapAccumL and mapAccumR in v0.9.x): the
-  // JSDoc examples (node: ['01234', ['01', '012', '0123', '01234']] and
-  // ['04321', ['04321', '0432', '043', '04']]) and a string, a list of
-  // characters (node: ['abc', ['', 'a', 'ab']] and ['cba', ['cb', 'c',
-  // '']]).
+  // JSDoc examples (node: ['01234', ['01', '012', '0123', '01234']] and,
+  // since v0.23.0, when mapAccumRight's fn gets the element first and its
+  // result is [list, accumulator], [['12340', '2340', '340', '40'],
+  // '12340'], until v0.22.1 ['04321', ['04321', '0432', '043', '04']]) and
+  // a string, a list of characters (node: ['abc', ['', 'a', 'ab']] and
+  // [['cb', 'c', ''], 'cba']).
   method {:test} MapAccumEdges() {
     var f := (a: string, b: string) => (a + b, a + b);
     expect mapAccum(f, "0", ["1", "2", "3", "4"]) == ("01234", ["01", "012", "0123", "01234"]);
-    expect mapAccumRight(f, "0", ["1", "2", "3", "4"]) == ("04321", ["04321", "0432", "043", "04"]);
+    expect mapAccumRight(f, "0", ["1", "2", "3", "4"]) == (["12340", "2340", "340", "40"], "12340");
     var g := (a: string, c: char) => (a + [c], a);
     expect mapAccum(g, "", "abc") == ("abc", ["", "a", "ab"]);
-    expect mapAccumRight(g, "", "abc") == ("cba", ["cb", "c", ""]);
+    var h := (c: char, a: string) => (a + [c], a);
+    expect mapAccumRight(h, "", "abc") == (["cb", "c", ""], "cba");
   }
 
   // mergeAll (v0.10.0) merges left to right, later keys winning (node: {},
@@ -571,15 +580,19 @@ module RamdafTests.Edge.List {
   }
 
   // aperture (v0.12.0): the windows of n consecutive elements, none past
-  // the length, and for n <= 0 `|list| - n + 1` empty ones (node: [[1, 2],
-  // [2, 3]], [], [[], [], []], four [], [[]], ['ab', 'bc'] as arrays of
-  // characters).
+  // the length, and for n <= 0 `|list| - n + 1` of them, empty for n == 0;
+  // since v0.23.0 a window is the native `slice(idx, idx + n)`, whose
+  // negative end counts from the end (node: [[1, 2], [2, 3]], [], [[], [],
+  // []], [[1], [], [], []] (four [] until v0.22.1), [[1], [2], [], [], [],
+  // []], [[], []], [[]], ['ab', 'bc'] as arrays of characters).
   method {:test} ApertureEdges() {
     var empty: seq<int> := [];
     expect aperture(2, [1, 2, 3]) == [[1, 2], [2, 3]];
     expect aperture(7, [1, 2]) == [];
     expect aperture(0, [1, 2]) == [[], [], []];
-    expect aperture(-1, [1, 2]) == [[], [], [], []];
+    expect aperture(-1, [1, 2]) == [[1], [], [], []];
+    expect aperture(-2, [1, 2, 3]) == [[1], [2], [], [], [], []];
+    expect aperture(-1, empty) == [[], []];
     expect aperture(0, empty) == [[]];
     expect aperture(2, "abc") == ["ab", "bc"];
   }

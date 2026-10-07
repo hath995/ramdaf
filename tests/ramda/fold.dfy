@@ -1,4 +1,4 @@
-// Ramda v0.22.1 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
+// Ramda v0.23.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
 // foldr.js; until v0.8.0 test.fold.js), transcribed (reduceIndexed.js and
 // reduceRightIndexed.js, foldlIndexed.js and foldrIndexed.js in v0.9.x, went
 // with the functions in v0.16.0). Not transcribed:
@@ -17,7 +17,9 @@
 // reduceRight, reduceIndexed and reduceRightIndexed, with the same `it`s
 // ("works just like normal foldl" became "… normal reduce"). v0.12.0's
 // reduce "dispatches to objects that implement `reduce`" (method dispatch on
-// a non-array object) is not transcribed.
+// a non-array object) is not transcribed. v0.23.0 passes reduceRight's
+// callback the element first, so its string folds now concatenate in list
+// order and `avg`, symmetric, is unchanged.
 
 module RamdafTests.Ramda.Fold {
   import opened Ramdaf.List
@@ -51,8 +53,14 @@ module RamdafTests.Ramda.Fold {
   }
 
   // describe('reduceRight') (describe('foldr') until v0.9.1)
+  // (`'dcba'` until v0.22.1, when the accumulator came first)
   method {:test} ReduceRightFoldsListsInTheRightOrder() {
-    expect reduceRight((a: string, b: string) => a + b, "", ["a", "b", "c", "d"]) == "dcba";
+    expect reduceRight((a: string, b: string) => a + b, "", ["a", "b", "c", "d"]) == "abcd";
+  }
+
+  // v0.23.0
+  method {:test} ReduceRightFoldsSubtractOverArraysInTheRightOrder() {
+    expect reduceRight((a: int, b: int) => a - b, 0, [1, 2, 3, 4]) == -2;
   }
 
   method {:test} ReduceRightFoldsWithTheSuppliedAccumulator() {
@@ -70,6 +78,6 @@ module RamdafTests.Ramda.Fold {
     var something := (l: seq<real>) => reduceRight(avg, 54.0, l);
     expect something([12.0, 4.0, 10.0, 6.0]) == 12.0;
     var rcat := (l: seq<string>) => reduceRight(cat, "", l);
-    expect rcat(["1", "2", "3", "4"]) == "4321";
+    expect rcat(["1", "2", "3", "4"]) == "1234";
   }
 }

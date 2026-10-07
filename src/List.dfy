@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.22.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.23.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -66,20 +66,23 @@ module Ramdaf.List {
     else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
          reduce(fn, fn(acc, list[0]), list[1..]) }
 
-  // `var idx = list.length; while (idx--) { acc = fn(acc, list[idx]); }`
-  // (`src/reduceRight.js`): `acc = fn(acc, list[idx])` for idx descending.
-  // Since v0.1.1 the accumulator comes first, as in reduce, and the fold runs
-  // from the right, so reduceRight(fn, acc, [x0, ..., xn]) is
-  // fn(... fn(fn(acc, xn), xn-1) ..., x0). v0.10.0 renamed `foldr` to
-  // `reduceRight` with the same code. (`reduceRight` held the definition
-  // from v0.4.1 to v0.8.0, with `foldr` its alias; v0.9.0 removed it and gave
-  // `foldr` the code, which no longer dispatches to a `reduceRight` method.)
-  function reduceRight<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
+  // `var idx = list.length - 1; while (idx >= 0) { acc = fn(list[idx], acc);
+  // idx -= 1; }` (`src/reduceRight.js`, v0.23.0): `acc = fn(list[idx], acc)`
+  // for idx descending, the fold from the right with the element first, so
+  // reduceRight(fn, acc, [x0, ..., xn]) is fn(x0, ... fn(xn-1, fn(xn,
+  // acc)) ...) (`reduceRight((a, b) => a - b, 0, [1, 2, 3, 4])` is -2).
+  // From v0.1.1 to v0.22.1 the callback took the accumulator first, `acc =
+  // fn(acc, list[idx])`, fn(... fn(fn(acc, xn), xn-1) ..., x0) (-10 for the
+  // example), as reduce's does. v0.10.0 renamed `foldr` to `reduceRight`
+  // with the same code. (`reduceRight` held the definition from v0.4.1 to
+  // v0.8.0, with `foldr` its alias; v0.9.0 removed it and gave `foldr` the
+  // code, which no longer dispatches to a `reduceRight` method.)
+  function reduceRight<A, B>(fn: (B, A) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
-      reduceRight(fn, acc, list) == reduceRight(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
+      reduceRight(fn, acc, list) == reduceRight(fn, fn(list[|list| - 1], acc), list[..|list| - 1])
   { if |list| == 0 then acc
     else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         fn(reduceRight(fn, acc, list[1..]), list[0]) }
+         fn(list[0], reduceRight(fn, acc, list[1..])) }
 
   // `R.scan(fn, acc, list)` (v0.10.0, which renamed `scanl`, added in
   // v0.7.0, with the same code): `result[0] = acc; while (++idx < len) { acc
@@ -608,21 +611,29 @@ module Ramdaf.List {
   // args.length`), so a cut at 0 copied the whole list; v0.2.4 checks
   // `typeof to === "number"` instead.
 
+  // `var result = Array.prototype.slice.call(list, 0); result.splice(start,
+  // count); return result;` (v0.23.0): the list without `count` elements from
+  // `start`, with `splice`'s clamping: a negative start counts from the end
+  // (from 0 when it is before the start), a start past the end removes
+  // nothing, and a negative count is 0 (`remove(-1, 2, [1, 2, 3, 4, 5])` is
+  // `[1, 2, 3, 4]`, `remove(1, -1, l)` is l). Until v0.22.1 it was
   // `concat(_slice(list, 0, Math.min(start, length)), _slice(list,
-  // Math.min(length, start + count)))`: the list without `count` elements
-  // from `start` (`remove(0, 2, [1, 2, 3, 4, 5])` is `[3, 4, 5]`; it was
-  // `[1, 2, 3, 4, 5, 3, 4, 5]` before v0.2.4). Since v0.8.0 a negative start
-  // makes the first cut empty (`remove(-1, 2, [1, 2, 3, 4, 5])` is
-  // `[2, 3, 4, 5]`; until v0.7.2 it threw RangeError, and start was at least
-  // 0). start + count < 0 still reads undefined holes, so it is excluded.
+  // Math.min(length, start + count)))` (`remove(0, 2, [1, 2, 3, 4, 5])` is
+  // `[3, 4, 5]` in both; it was `[1, 2, 3, 4, 5, 3, 4, 5]` before v0.2.4):
+  // from v0.8.0 a negative start made the first cut empty (`remove(-1, 2,
+  // l5)` was `[2, 3, 4, 5]`; until v0.7.2 it threw RangeError, and start was
+  // at least 0), a negative count repeated elements (`remove(1, -1, l5)` was
+  // `[1, 1, 2, 3, 4, 5]`), and start + count < 0 read undefined holes, which
+  // the port excluded.
   function remove<T>(start: int, count: int, list: seq<T>): seq<T>
-    requires 0 <= start + count
-    ensures var a := if start < 0 then 0 else if start < |list| then start else |list|;
-      var b := if start + count < |list| then start + count else |list|;
-      remove(start, count, list) == list[..a] + list[b..]
-  { var a := if start < 0 then 0 else if start < |list| then start else |list|;
-    var b := if start + count < |list| then start + count else |list|;
-    list[..a] + list[b..] }
+    ensures var a := if start < 0 then (if |list| + start < 0 then 0 else |list| + start)
+                     else if start > |list| then |list| else start;
+      var c := if count < 0 then 0 else if count > |list| - a then |list| - a else count;
+      remove(start, count, list) == list[..a] + list[a + c..]
+  { var a := if start < 0 then (if |list| + start < 0 then 0 else |list| + start)
+             else if start > |list| then |list| else start;
+    var c := if count < 0 then 0 else if count > |list| - a then |list| - a else count;
+    list[..a] + list[a + c..] }
 
   // `index` is used when `0 <= index < length` and is `length` (the end)
   // otherwise; then `concat(append(elt, _slice(list, 0, index)),
@@ -689,15 +700,21 @@ module Ramdaf.List {
          (r.0, [t.1] + r.1) }
 
   // `R.mapAccumRight(fn, acc, list)` (v0.10.0, which renamed `mapAccumR`
-  // with the same code): as mapAccum with idx descending, `result[idx] =
-  // tuple[1]`, so each mapped element stays at its element's index while the
-  // accumulator runs right to left.
-  function mapAccumRight<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
-    ensures |mapAccumRight(fn, acc, list).1| == |list|
-  { if |list| == 0 then (acc, [])
-    else var t := fn(acc, list[|list| - 1]);
+  // with the same code): `tuple = fn(list[idx], tuple[0]); result[idx] =
+  // tuple[1];` for idx descending, `return [result, tuple[0]];` (v0.23.0):
+  // the accumulator runs right to left, each mapped element stays at its
+  // element's index, and fn takes the element first and returns the pair
+  // [accumulator, mapped element]; the result is [mapped list, accumulator]
+  // (`mapAccumRight((x, acc) => [acc + x, 'm' + x], '', ['1', '2', '3'])` is
+  // `[['m1', 'm2', 'm3'], '321']`). Until v0.22.1 fn took the accumulator
+  // first, `fn(tuple[0], list[idx])`, and the result was [accumulator,
+  // mapped list], as mapAccum's.
+  function mapAccumRight<A, B, C>(fn: (B, A) -> (A, C), acc: A, list: seq<B>): (seq<C>, A)
+    ensures |mapAccumRight(fn, acc, list).0| == |list|
+  { if |list| == 0 then ([], acc)
+    else var t := fn(list[|list| - 1], acc);
          var r := mapAccumRight(fn, t.0, list[..|list| - 1]);
-         (r.0, r.1 + [t.1]) }
+         (r.0 + [t.1], r.1) }
 
   // `R.mergeAll(list)` (v0.10.0, `@category List`): since v0.20.0
   // `_objectAssign.apply(null, [{}].concat(list))`, the private
@@ -719,17 +736,23 @@ module Ramdaf.List {
     else mergeAll(list[..|list| - 1]) + list[|list| - 1] }
 
   // `R.aperture(n, list)` (v0.12.0, `@category List`): `limit = list.length -
-  // (n - 1)`, and for idx below limit `acc[idx] = _slice(list, idx, idx +
-  // n)`: every window of n consecutive elements. For n <= 0 the windows are
-  // empty and there are `|list| - n + 1` of them (`aperture(0, [1, 2])` is
-  // `[[], [], []]`); for n past the length there are none. (Since v0.18.0
-  // it is `_dispatchable('aperture', _xaperture, _aperture)`, the same loop,
-  // and a transformer makes it a transducer.)
+  // (n - 1)`, and for idx below limit `acc[idx] =
+  // Array.prototype.slice.call(list, idx, idx + n)` (v0.23.0, the exported
+  // `slice` here): every window of n consecutive elements; for n past the
+  // length there are none. For n <= 0 there are `|list| - n + 1` windows,
+  // empty for n == 0 (`aperture(0, [1, 2])` is `[[], [], []]`); for n < 0
+  // the native slice counts the end `idx + n` from the end of the list, so
+  // the first windows are not empty (`aperture(-1, [1, 2])` is `[[1], [],
+  // [], []]`). Until v0.22.1 the private `_slice` allocated `Math.max(0,
+  // Math.min(length, idx + n) - idx)` elements, so every window was empty
+  // for n <= 0 (`[[], [], [], []]`). (Since v0.18.0 it is
+  // `_dispatchable(…, _xaperture, _aperture)`, the same loop, and a
+  // transformer makes it a transducer.)
   function aperture<T>(n: int, list: seq<T>): seq<seq<T>>
     ensures |aperture(n, list)| == if |list| - (n - 1) >= 0 then |list| - (n - 1) else 0
   { var limit := |list| - (n - 1);
     var count := if limit >= 0 then limit else 0;
-    seq(count, idx requires 0 <= idx < count => if n <= 0 then [] else list[idx..idx + n]) }
+    seq(count, idx requires 0 <= idx < count => slice(idx, idx + n, list)) }
 
   // `R.none = _curry2(_complement(_dispatchable('any', _xany, _any)))`
   // (v0.12.0, `@category List`): the negation of `any`, true when no element
@@ -899,15 +922,17 @@ module Ramdaf.List {
 
   // `R.sequence(of, traversable)` (v0.19.0, `@category List`):
   // `traversable.sequence(of)` for a traversable with a `sequence` method,
-  // and otherwise `reduceRight(function(acc, x) { return ap(map(prepend, x),
-  // acc); }, of([]), traversable)`, a list of applicatives turned into an
+  // and otherwise `reduceRight(function(x, acc) { return ap(map(prepend, x),
+  // acc); }, of([]), traversable)` (v0.23.0, as reduceRight's callback takes
+  // the element first; `function(acc, x)` before, the same results), a list
+  // of applicatives turned into an
   // applicative of a list: for arrays every way of picking one element of
   // each list, the last list's varying fastest (`sequence(of, [[1, 2], [3,
   // 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]`; `commute`, removed in
   // v0.20.0, was the same). JS takes any Fantasy-land applicative; here arrays (README
   // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`.
   function sequence<A>(of: seq<A> -> seq<seq<A>>, traversable: seq<seq<A>>): seq<seq<A>>
-  { reduceRight((acc: seq<seq<A>>, x: seq<A>) => ap(mapSeq((y: A) => ((l: seq<A>) => [y] + l), x), acc),
+  { reduceRight((x: seq<A>, acc: seq<seq<A>>) => ap(mapSeq((y: A) => ((l: seq<A>) => [y] + l), x), acc),
                 of([]), traversable) }
 
   // `R.traverse(of, f, traversable)` (v0.19.0, `@category List`):

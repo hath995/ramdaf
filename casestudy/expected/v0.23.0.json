@@ -1,0 +1,17 @@
+{
+  "ramda": "v0.23.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.reduceRight", "kind": "breaking", "why": "v0.23.0 passes the callback (element, accumulator): fn(list[idx], acc), was fn(acc, list[idx]); the signature changed"},
+    {"symbol": "Ramdaf.List.mapAccumRight", "kind": "breaking", "why": "v0.23.0 calls fn(element, acc) and returns [list, acc], was fn(acc, element) and [acc, list]; the signature changed"},
+    {"symbol": "Ramdaf.List.remove", "kind": "breaking", "why": "v0.23.0 splices a copy: a negative start counts from the end and a negative count is 0 (remove(-1, 2, [1, 2, 3, 4, 5]) is [1, 2, 3, 4], was [2, 3, 4, 5]); the precondition 0 <= start + count is dropped"},
+    {"symbol": "Ramdaf.List.aperture", "kind": "breaking", "why": "v0.23.0 drops _slice for the native slice, whose negative end counts from the end: aperture(-1, [1, 2]) is [[1], [], [], []], was four empty windows"},
+    {"symbol": "Ramdaf.Functions.composeK", "kind": "breaking", "why": "v0.23.0 applies the last function to a plain value and chains the others: composeK(f, g)(x) is chain(f, g(x)), was chain(f, chain(g, m)) on a monadic value; the signature changed"},
+    {"symbol": "Ramdaf.Functions.pipeK", "kind": "breaking", "why": "knock-on: pipeK(f, g) is composeK(g, f), so it takes a value since v0.23.0; the signature changed"},
+    {"symbol": "Ramdaf.List.sequence", "kind": "compatible", "why": "v0.23.0's sequence passes reduceRight a callback taking (x, acc), as reduceRight's order changed: the revealed body is rewritten with the same results"},
+    {"symbol": "Ramdaf.List.traverse", "kind": "compatible", "why": "knock-on: the revealed body calls sequence, whose revealed body was rewritten with the same results"},
+    {"symbol": "Ramdaf.Sort.ascend", "kind": "added", "why": "new in v0.23.0 (@category Function; sorting goes in Sort): the comparator by the key fn gives, ascending"},
+    {"symbol": "Ramdaf.Sort.descend", "kind": "added", "why": "new in v0.23.0 (@category Function; sorting goes in Sort): the comparator by the key fn gives, descending"},
+    {"symbol": "Ramdaf.Sort.sortWith", "kind": "added", "why": "new in v0.23.0 (@category Relation; sorting goes in Sort): a sort by the first comparator that tells two elements apart"}
+  ]
+}

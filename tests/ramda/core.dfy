@@ -1,6 +1,6 @@
-// Ramda v0.22.1 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.23.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
-// identity.js and isNil.js, transcribed
+// identity.js, isNil.js, ascend.js and descend.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
 // were test.core.js, test.clone.js, test.cloneDeep.js and test.identity.js).
 // Not transcribed: the `head([])`, `head('')`, `last([])` and `last('')`
@@ -10,7 +10,10 @@
 // last and tail (null and undefined are not lists); concat's "delegates to
 // non-String object with a concat method, as second param" (method dispatch
 // on a non-array object) and "throws if not an array, String, or object with
-// a concat method" (object operands); the "throws on zero arguments" cases
+// a concat method" (object operands), and v0.22.0's "throws if attempting
+// to combine an array with a non-array" (a number operand); sortWith.js
+// (v0.23.0), whose `it`s all sort by a string `title` or `genre` with
+// `ascend(prop(…))` (keys are ints here, README "Deviations"); the "throws on zero arguments" cases
 // (no-argument calls; v0.11.0 removed them); isEmpty's cases on values that are not lists
 // ("returns false for null" and "for undefined", "returns true for empty
 // arguments object", v0.18.0's "returns true for empty object", which
@@ -214,6 +217,17 @@ module RamdafTests.Ramda.Core {
   method {:test} LengthReturnsTheLengthOfAString() {
     expect length("") == 0;
     expect length("xyz") == 3;
+  }
+
+  // describe('ascend') (v0.23.0): `[3, 1, 8, 1, 2, 5].sort(R.ascend(R.identity))`,
+  // the comparator passed to Sort.sort
+  method {:test} AscendBuildsAnAscendingComparatorFunctionOutOfTheIdentityFunction() {
+    expect sort((a: int, b: int) => ascend((x: int) => x, a, b), [3, 1, 8, 1, 2, 5]) == [1, 1, 2, 3, 5, 8];
+  }
+
+  // describe('descend') (v0.23.0)
+  method {:test} DescendBuildsADescendingComparatorFunctionOutOfTheIdentityFunction() {
+    expect sort((a: int, b: int) => descend((x: int) => x, a, b), [3, 1, 8, 1, 2, 5]) == [8, 5, 3, 2, 1, 1];
   }
 
   // describe('sort')
