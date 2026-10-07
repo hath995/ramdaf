@@ -1,0 +1,8 @@
+{
+  "ramda": "v0.22.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.allUniq", "kind": "removed", "why": "v0.22.0 removed R.allUniq, deprecated since v0.20.0"},
+    {"symbol": "Ramdaf.List.reduceWhile", "kind": "added", "why": "new in v0.22.0 (@category List): a left fold that stops, returning the accumulator, at the first element for which pred(acc, x) fails"}
+  ]
+}

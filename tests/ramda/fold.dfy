@@ -1,4 +1,4 @@
-// Ramda v0.21.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
+// Ramda v0.22.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
 // foldr.js; until v0.8.0 test.fold.js), transcribed (reduceIndexed.js and
 // reduceRightIndexed.js, foldlIndexed.js and foldrIndexed.js in v0.9.x, went
 // with the functions in v0.16.0). Not transcribed:

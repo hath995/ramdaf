@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.21.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.22.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`
@@ -82,8 +82,11 @@ module Ramdaf.Core {
   // removed): the elements of list1 followed by those of list2. Since v0.18.0
   // (f688d8ac, "remove all type checking from R.concat") it is
   // `flip(invoker(1, 'concat'))`, `list1.concat(list2)`, the same on two
-  // arrays or two strings; mixed arguments no longer throw (`concat([1], 2)`
-  // is `[1, 2]`), which the types exclude here. Until v0.17.1, when the
+  // arrays or two strings; mixed arguments no longer threw (`concat([1], 2)`
+  // was `[1, 2]`), which the types exclude here. Since v0.22.0 it throws
+  // TypeError again when list1 has no `concat` method, or is an array and
+  // list2 is not (`concat([1], 2)`), and otherwise is `list1.concat(list2)`.
+  // Until v0.17.1, when the
   // second argument was not an array, v0.6.0 called the first argument's
   // `concat` method if it had one (`concat("foo", "bar")` is `"foobar"`) and
   // otherwise threw TypeError. From v0.6.0 to v0.7.2 the first argument also

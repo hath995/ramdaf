@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.21.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.22.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -334,10 +334,10 @@ module RamdafTests.Edge.Data {
   // `intersection` (through `_indexOf`), compare with `Object.is`:
   // `union([0], [negate(0)])` is [0, -0], `intersection([0], [negate(0)])`
   // [] and `difference([0], [negate(0)])` [0] (with `===` until v0.13.0: [0],
-  // [-0] and []); since v0.19.0 `uniq` is `uniqBy(identity)`, whose `Set`
-  // keeps a repeated -0, so `union([negate(0)], [negate(0)])` is [-0, -0],
-  // and `symmetricDifference([0], [negate(0)])` (v0.19.0) is [0, -0]. An
-  // int has no -0.
+  // [-0] and []); since v0.19.0 `uniq` is `uniqBy(identity)`, and
+  // `union([negate(0)], [negate(0)])` is [-0] (from v0.19.0 to v0.21.0 its
+  // `Set` kept a repeated -0, [-0, -0]), and `symmetricDifference([0],
+  // [negate(0)])` (v0.19.0) is [0, -0]. An int has no -0.
   method {:test} DeviationSetOperationsSignedZero() {
     expect union([0], [M.negate(0)]) == [0];
     expect intersection([0], [M.negate(0)]) == [0];

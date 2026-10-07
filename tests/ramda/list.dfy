@@ -1,6 +1,6 @@
-// Ramda v0.21.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.22.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
-// lastIndexOf.js, contains.js, allUniq.js, uniq.js, uniqWith.js, map.js,
+// lastIndexOf.js, contains.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
 // flatten.js, unnest.js, range.js, reverse.js, unfold.js, zip.js,
 // zipWith.js, zipObj.js, fromPairs.js, xprod.js, partition.js, groupBy.js,
@@ -8,8 +8,8 @@
 // mergeAll.js, aperture.js, none.js, adjust.js, update.js,
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
-// splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js and
-// groupWith.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js,
+// groupWith.js and reduceWhile.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -33,8 +33,9 @@
 // seq); zipObj's "extra keys are undefined" (until v0.19.1: more keys than
 // values was outside the domain; v0.20.0's "ignores extra keys" is
 // transcribed) and fromPairs's "skips empty Arrays and
-// non-Array elements" (the elements are typed pairs, README "Outside the
-// modeled domain"); times's "throws if second argument is not a valid array
+// non-Array elements" (until v0.21.0; the elements are typed pairs, README
+// "Outside the modeled domain"; v0.22.0's "gives later entries precedence
+// over earlier ones" is transcribed); times's "throws if second argument is not a valid array
 // length" and init's "throws if applied to null or undefined" (not a nat,
 // not a list). toPairs.js and toPairsIn.js test Object functions and are
 // transcribed in tests/ramda/object.dfy. (v0.4.1 removed test.list.js's
@@ -71,7 +72,8 @@
 // "Deviations"), nor are aperture's "can act as a transducer" and
 // commute's and commuteMap's "traverses left to right" (sanctuary's
 // `Either`; v0.20.0 removed commute.js and commuteMap.js with the
-// functions). (v0.18.0 renamed isSet.js to allUniq.js with the function, and
+// functions). (v0.18.0 renamed isSet.js to allUniq.js with the function, which
+// v0.22.0 removed with allUniq.js, and
 // rewrote containsWith.js, without its "is curried", and reverse.js;
 // v0.19.0 removed containsWith.js, createMapEntry.js and mapObj.js with the
 // functions.) v0.19.0's new files: indexBy's key function `prop('id')` is a
@@ -94,6 +96,8 @@
 // README "Deviations") and reduceBy's "correctly reports the arity of
 // curried versions" are not transcribed; reduceBy's students and `{type,
 // val}` records are groupBy's (v0.21.0 moves its key function third).
+// reduceWhile.js's (v0.22.0) "correctly reports the arity of curried
+// versions" is not transcribed, and its `isOdd` ignores the accumulator.
 // groupWith.js's (v0.21.0) `R.equals` is `==`, `R.complement(R.equals)`,
 // `R.T` and `R.F` are binary lambdas, and `R.unnest` of the groups is
 // `chain(identity)` (since v0.18.0), here `chain(g => g, …)`.
@@ -438,17 +442,6 @@ module RamdafTests.Ramda.List {
     expect isDigit("0") == true;
     expect isDigit("1") == true;
     expect isDigit("x") == false;
-  }
-
-  // describe('allUniq') (v0.18.0; describe('isSet') until v0.17.1)
-  method {:test} AllUniqTrueIfTheListHasUniqueElements() {
-    expect allUniq([1, 2, 3, 1, 2, 3, 1, 2, 3]) == false;
-    expect allUniq([3, 1, 4, 2, 5, 7, 9]) == true;
-  }
-
-  method {:test} AllUniqTrueForAnEmptyArray() {
-    var empty: seq<int> := [];
-    expect allUniq(empty) == true;
   }
 
   // describe('uniq')
@@ -837,6 +830,11 @@ module RamdafTests.Ramda.List {
   // describe('fromPairs') (v0.3.0)
   method {:test} FromPairsCombinesTwoElementArraysIntoAnObject() {
     expect fromPairs([("a", 1), ("b", 2), ("c", 3)]) == map["a" := 1, "b" := 2, "c" := 3];
+  }
+
+  // v0.22.0
+  method {:test} FromPairsGivesLaterEntriesPrecedenceOverEarlierOnes() {
+    expect fromPairs([("x", 1), ("x", 2)]) == map["x" := 2];
   }
 
   // ---- scan.js (v0.10.0; scanl.js from v0.7.0 to v0.9.1). Not
@@ -1453,5 +1451,26 @@ module RamdafTests.Ramda.List {
   method {:test} GroupWithAlsoWorksOnStrings() {
     var byEquals := (s: string) => groupWith((a: char, b: char) => a == b, s);
     expect byEquals("Mississippi") == ["M", "i", "ss", "i", "ss", "i", "pp", "i"];
+  }
+
+  // ---- reduceWhile.js (v0.22.0): `isOdd = (_, x) => x % 2 === 1` ----
+
+  function IsOddX(acc: int, x: int): bool { x % 2 == 1 }
+
+  method {:test} ReduceWhileReducesUntilItsPredicateFails() {
+    expect reduceWhile(IsOddX, (a: int, b: int) => a + b, 0, [1, 3, 1, 5, 20, 7, 7, 7]) == 10;
+  }
+
+  method {:test} ReduceWhileReturnsItsAccumulatorWhenGivenAnEmptyArray() {
+    var empty: seq<int> := [];
+    expect reduceWhile(IsOddX, (a: int, b: int) => a + b, 101, empty) == 101;
+  }
+
+  // `reduceWhileOdd = R.reduceWhile(isOdd)`
+  method {:test} ReduceWhileIsCurried() {
+    var reduceWhileOdd := (fn: (int, int) -> int, a: int, l: seq<int>) => reduceWhile(IsOddX, fn, a, l);
+    var empty: seq<int> := [];
+    expect reduceWhileOdd((a: int, b: int) => a + b, 101, empty) == 101;
+    expect reduceWhileOdd((a: int, b: int) => a + b, 0, [1, 2, 3, 4]) == 1;
   }
 }

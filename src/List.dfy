@@ -1,12 +1,13 @@
-// Ramdaf: Ramda v0.21.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.22.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
 // `mapAccumRight`, `mergeAll`, `aperture`, `none`, `adjust`, `update`,
 // `intersperse`, `dropRepeats`, `dropRepeatsWith`, `lensIndex`, `dropLast`,
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
-// `allUniq`, `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
-// `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith` and the renamed functions below; since v0.16.0 the
+// `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
+// `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith`, `reduceWhile`
+// and the renamed functions below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
@@ -27,7 +28,8 @@
 // `createMapEntry` a deprecated alias of the new `objOf` (Object.dfy);
 // v0.19.0 removed `isSet`, `createMapEntry`, `containsWith` and `mapObj`,
 // deprecated in v0.18.0; v0.20.0 removed `commute` and `commuteMap`,
-// deprecated in v0.19.0 for `sequence` and `traverse`.)
+// deprecated in v0.19.0 for `sequence` and `traverse`; v0.22.0 removed
+// `allUniq`, deprecated in v0.20.0.)
 
 module Ramdaf.List {
   import opened Prelude
@@ -43,8 +45,8 @@ module Ramdaf.List {
             repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none,
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
-            allUniq, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
-            without, reduceBy, groupWith
+            pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
+            without, reduceBy, groupWith, reduceWhile
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -326,8 +328,8 @@ module Ramdaf.List {
   // results on Dafny values are the same (README "Deviations" on `-0`), and
   // the body keeps its own recursion, as `head` and `last` did when v0.8.0
   // wrote them on `nth`. Since v0.19.0 `R.uniq = uniqBy(identity)`, whose
-  // JS `Set` keeps a repeated `-0` (`uniq([-0, -0])` is `[-0, -0]`; README
-  // "Deviations").
+  // JS `Set` kept a repeated `-0` until v0.21.0 (`uniq([-0, -0])` was `[-0,
+  // -0]`; since v0.22.0 `[-0]`; README "Deviations").
   function {:isolate_assertions} uniq<T(==)>(list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |uniq(list)| ==> uniq(list)[i] in list
     ensures forall i :: 0 <= i < |list| ==> list[i] in uniq(list)
@@ -387,14 +389,6 @@ module Ramdaf.List {
              }
            }
            r }
-
-  // `R.allUniq(list)` (v0.18.0, `@category List`, f28adc24 "Rename isSet to
-  // allUniq", with isSet's code): `_indexOf(list, list[idx], idx + 1) < 0`
-  // for every idx, with `R.equals`, so true exactly when no element occurs
-  // twice, which is the body (README "Deviations" on `-0`).
-  // `@deprecated since v0.20.0`.
-  function allUniq<T(==)>(list: seq<T>): bool
-  { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
 
   // `var result = []; ... if (!_containsWith(pred, item, result)) result.push(item);`
   // for each item in order (v0.2.4; exported since v0.2.0, and until v0.2.3
@@ -876,7 +870,9 @@ module Ramdaf.List {
   // pushed `null` in place of the element (`uniqBy(x => null, [1, 2])` was
   // `[null]`). Since v0.20.0 the keys go into the private `_Set`, which
   // keeps the `-0` flag and tracks `null` like any other key, so that gives
-  // `[1]`, the first element for the key, as here.
+  // `[1]`, the first element for the key, as here; since v0.22.0 every `-0`
+  // goes to that flag, so a repeated `-0` key is kept once again
+  // (`uniqBy(x => x * 0, [-1, -2])` is `[-1]`, as here).
   function uniqBy<T, U(==)>(fn: T -> U, list: seq<T>): seq<T>
   { if |list| == 0 then []
     else var r := uniqBy(fn, list[..|list| - 1]);
@@ -971,7 +967,9 @@ module Ramdaf.List {
   // gives them, each group folded with valueFn from valueAcc, in list order
   // ("a more general groupBy": `reduceBy(add, 0, x => x % 2 ? 'odd' :
   // 'even', [1, 2, 3])` is `{odd: 4, even: 2}`; v0.21.0 writes `countBy`,
-  // `groupBy` and `indexBy` with it). `_reduce` is `reduce`'s body, so the body calls
+  // `groupBy` and `indexBy` with it). (Since v0.22.0 it is
+  // `_dispatchable('reduceBy', _xreduceBy, …)`: a non-array's `reduceBy`
+  // method is dispatched to, and a transformer makes it a transducer.) `_reduce` is `reduce`'s body, so the body calls
   // `reduce`, and `R.has` (`_has`, an own property; Object's, which List does
   // not import) is written out as `key in acc`. JS converts the key to a
   // string (README "Deviations"), a `__proto__` key sets the prototype
@@ -998,4 +996,18 @@ module Ramdaf.List {
   { if |list| == 0 then []
     else var group := [list[0]] + takeWhile((x: T) => fn(list[0], x), list[1..]);
          [group] + groupWith(fn, list[|group|..]) }
+
+  // `R.reduceWhile(pred, fn, a, list)` (v0.22.0, `@category List`):
+  // `_reduce(function(acc, x) { return pred(acc, x) ? fn(acc, x) :
+  // _reduced(acc); }, a, list)`, a left fold that stops, returning the
+  // accumulator, at the first element for which `pred(acc, x)` fails
+  // (`reduceWhile((acc, x) => x % 2 === 1, add, 0, [1, 3, 5, 60, 777])` is
+  // 9). The private `_reduced` ends `_reduce` early, which the port's
+  // `reduce` cannot do, so the body is its own recursion from the left, as
+  // the fold. `_reduce` also stops at an accumulator carrying the reduced
+  // marker (README "Deviations").
+  function reduceWhile<A, B>(pred: (A, B) -> bool, fn: (A, B) -> A, a: A, list: seq<B>): A
+  { if |list| == 0 then a
+    else if pred(a, list[0]) then reduceWhile(pred, fn, fn(a, list[0]), list[1..])
+    else a }
 }

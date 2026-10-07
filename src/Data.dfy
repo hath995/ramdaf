@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.21.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.22.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
@@ -173,7 +173,8 @@ module Ramdaf.Data {
   // `reduceBy(function(acc, item) { if (acc == null) { acc = []; }
   // acc.push(item); return acc; }, null)`, the same groups, which no longer
   // reads an inherited member for a key such as `hasOwnProperty`; the body
-  // keeps its comprehension, which the postconditions are proved on;
+  // keeps its comprehension, which the postconditions are proved on; since
+  // v0.22.0 `_checkForMethod('groupBy', …)`, no longer a transducer;
   // v0.3.0, which makes groupBy its own function again with the body that
   // partition, its original since v0.2.0, had; partition now splits by a
   // predicate): for each key fn produces, the elements that produce it, in

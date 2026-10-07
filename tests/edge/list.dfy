@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.21.0's own suite does not cover, each checked against
-// dist/ramda.js v0.21.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.22.0's own suite does not cover, each checked against
+// dist/ramda.js v0.22.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -170,22 +170,6 @@ module RamdafTests.Edge.List {
     expect mapObjIndexed((v: int, k: string, o: map<string, int>) => |o| + v, map["a" := 1, "b" := 2]) ==
       map["a" := 3, "b" := 4];
     expect mapObjIndexed((v: int, k: string, o: map<string, int>) => v, none) == map[];
-  }
-
-  // allUniq (v0.18.0, isSet's code; isSet, its alias, went in v0.19.0)
-  // compares with `R.equals` (node: true, false, true, false, false for
-  // `[[1], [1]]`), and is `uniq(list).length === list.length`.
-  method {:test} AllUniqEdges() {
-    var empty: seq<int> := [];
-    expect allUniq(empty) == true;
-    expect allUniq([1, 2, 1]) == false;
-    expect allUniq(["a", "b"]) == true;
-    expect allUniq([3, 3]) == false;
-    expect allUniq([[1], [1]]) == false;
-    var lists := [[1, 2, 1, 3, 2], [4, 5], [6, 6, 6], empty];
-    for i := 0 to |lists| {
-      expect allUniq(lists[i]) == (|uniq(lists[i])| == |lists[i]|);
-    }
   }
 
   // reduce folds from the left (from v0.4.0 to v0.8.0 `reduce` held the
@@ -703,8 +687,10 @@ module RamdafTests.Edge.List {
   // 2])` (v0.20.0), whose group value 1 is truthy, is undefined (the
   // `@@transducer/value` it reads), as is `indexBy(x =>
   // '@@transducer/reduced', [1, 2])` (since v0.19.0, an omission of the
-  // v0.19.0 port; countBy's line is in tests/edge/data.dfy). Here the key is
-  // ordinary. (`mergeAll`
+  // v0.19.0 port; countBy's line is in tests/edge/data.dfy); and
+  // `reduceWhile(() => true, (acc, x) => assoc('x', x, acc),
+  // {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2])` (v0.22.0)
+  // is 9. Here the key is ordinary. (`mergeAll`
   // gave 7 from v0.12.0 to v0.19.1: MergeAllCopiesTheReducedMarker.)
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
     var marked := map["@@transducer/reduced" := 1, "@@transducer/value" := 9];
@@ -713,6 +699,8 @@ module RamdafTests.Edge.List {
     expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
     expect reduceBy(M.add, 0, (x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 3];
     expect indexBy((x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 2];
+    expect reduceWhile((acc: map<string, int>, x: int) => true, (acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2]) ==
+      marked["x" := 2];
   }
 
   // node: since v0.20.0 `mergeAll` copies with the private `_objectAssign`,
@@ -741,26 +729,33 @@ module RamdafTests.Edge.List {
   // node: since v0.14.0 `contains`, `indexOf`, `lastIndexOf` and `isSet`
   // (`_indexOf`), `uniq` (`uniqWith(eq)`) and `dropRepeats` (`_eq`) compare
   // with `Object.is`: `contains(negate(0), [0])` is false, `indexOf` and
-  // `lastIndexOf` of it -1, `allUniq([0, negate(0)])` true (`isSet` from
-  // v0.14.0 to v0.18.0), and `uniq` and
+  // `lastIndexOf` of it -1, and `uniq` and
   // `dropRepeats` of that list [0, -0] (with `===` until v0.13.0: true, 0,
-  // 0, false, [0]); since v0.16.0 `uniqBy(identity, [negate(0), 0])` is
-  // [-0, 0] (`_contains`, `R.equals`); since v0.19.0 `uniq` is
-  // `uniqBy(identity)`, whose `Set` keeps a repeated -0: `uniq([negate(0),
-  // negate(0)])` is [-0, -0], `uniqBy(x => x * 0, [-1, -2])` [-1, -2], and
-  // `without([0], [negate(0)])` (v0.19.0) [-0]. An int has no -0.
+  // 0, [0]; and `isSet([0, negate(0)])`, `allUniq` from v0.18.0, was true
+  // from v0.14.0 until v0.22.0 removed it); since v0.16.0 `uniqBy(identity,
+  // [negate(0), 0])` is [-0, 0] (`_contains`, `R.equals`); since v0.19.0
+  // `uniq` is `uniqBy(identity)`, and `uniq([negate(0), negate(0)])` is
+  // [-0] (from v0.19.0 to v0.21.0 its `Set` kept a repeated -0, [-0, -0];
+  // UniqByOfRepeatedSignedZeroKeys below), and `without([0], [negate(0)])`
+  // (v0.19.0) is [-0]. An int has no -0.
   method {:test} DeviationListSearchesSignedZero() {
     var z := M.negate(0);
     expect contains(z, [0]) == true;
     expect indexOf(z, [0]) == 0;
     expect lastIndexOf(z, [0]) == 0;
-    expect allUniq([0, z]) == false;
     expect uniq([0, z]) == [0];
     expect uniq([z, z]) == [z];
-    expect uniqBy((x: int) => x * 0, [-1, -2]) == [-1];
     expect without([0], [z]) == [];
     expect dropRepeats([0, z]) == [0];
     expect uniqBy((x: int) => x, [z, 0]) == [z];
+  }
+
+  // node: since v0.22.0 uniqBy's `_Set` flags every -0, so a repeated -0
+  // key keeps only its first element: `uniqBy(x => x * 0, [-1, -2])` is
+  // [-1], as here (from v0.19.0 to v0.21.0 [-1, -2], a line of the pin
+  // above).
+  method {:test} UniqByOfRepeatedSignedZeroKeys() {
+    expect uniqBy((x: int) => x * 0, [-1, -2]) == [-1];
   }
 
   // pair (v0.18.0) is a two-element array (node: [1, [2]], ['a', [1, 2]]).
@@ -841,5 +836,15 @@ module RamdafTests.Edge.List {
     expect groupWith((a: int, b: int) => false, [1, 2]) == [[1], [2]];
     expect groupWith((a: int, b: int) => true, empty) == [];
     expect groupWith((a: char, b: char) => a == b, "aaba") == ["aa", "b", "a"];
+  }
+
+  // reduceWhile (v0.22.0): the predicate sees the accumulator and the
+  // element, and the fold stops at the first failure (node: 6, 7, 0, 3).
+  method {:test} ReduceWhileEdges() {
+    var empty: seq<int> := [];
+    expect reduceWhile((acc: int, x: int) => acc < 5, (a: int, b: int) => a + b, 0, [1, 2, 3, 4]) == 6;
+    expect reduceWhile((acc: int, x: int) => false, (a: int, b: int) => a + b, 7, [1, 2]) == 7;
+    expect reduceWhile((acc: int, x: int) => true, (a: int, b: int) => a + b, 0, empty) == 0;
+    expect reduceWhile((acc: int, x: int) => x > 0, (a: int, b: int) => a + b, 0, [1, 2, -1, 4]) == 3;
   }
 }
