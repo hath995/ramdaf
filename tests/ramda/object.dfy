@@ -1,8 +1,8 @@
-// Ramda v0.15.1 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.16.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
 // valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
-// invertObj.js, dissoc.js, lensOn.js and lensProp.js (v0.9.x mixin.js; until
+// invertObj.js, dissoc.js and lenses.js (v0.9.x mixin.js; until
 // v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
 // describes), transcribed. Not
@@ -52,11 +52,9 @@
 // describe('mixin') to describe('merge') with the function; v0.11.0 split
 // has's two-argument `it` in two and replaced its "returns a function that
 // checks the appropriate property" with "is curried, op-style"; v0.12.0
-// removed propOf.js and prop's "is aliased by `get`" with the functions.) lensOn.js's
-// "returns a function with `set` and `map` properties" and the `typeof`
-// checks of its "is curried" hold by construction: a `LensOn` always has its
-// three fields, applied as `.get()`, `.set_(v)` and `.map_(fn)` (README
-// "Deviations"). v0.15.0 deleted eq.js with `eq` (identical.js, in
+// removed propOf.js and prop's "is aliased by `get`" with the functions;
+// v0.16.0 removed lensOn.js and lensProp.js, whose lenses lenses.js now
+// covers with `view`, `over` and `set`.) v0.15.0 deleted eq.js with `eq` (identical.js, in
 // tests/ramda/sql.dfy, has its asserts), replaced evolve's "invokes function
 // with undefined if object does not contain the key" with "does not invoke
 // function if object does not contain the key", and where.js's `R.eq`
@@ -539,85 +537,51 @@ module RamdafTests.Ramda.Object {
     expect dissocB(map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "c" := 3];
   }
 
-  // ---- lensOn.js (v0.11.0) ----
+  // ---- lenses.js (v0.16.0, describe('view, over, and set'), which
+  // replaced lens.js, lensIndex.js, lensProp.js, composeL.js, pipeL.js and
+  // lensOn.js with the van Laarhoven lenses; its `eq` compares
+  // `R.toString`s, structurally) ----
 
-  // `xoLens = lensOn(o => o.x, v => ({x: v}), {x: 1})`
-  function GetX(o: map<string, Js>): Js { if "x" in o then o["x"] else Undefined }
-  function SetX(v: Js): map<string, Js> { map["x" := v] }
-  function XoLens(): LensOn<Js, map<string, Js>> { lensOn(GetX, SetX, map["x" := Num(1)]) }
-
-  method {:test} LensOnCanGetAValue() {
-    expect XoLens().get() == Num(1);
-  }
-
-  method {:test} LensOnCanSetAValue() {
-    expect XoLens().set_(Str("moocow")) == map["x" := Str("moocow")];
-  }
-
-  method {:test} LensOnMapsToANewObject() {
-    var plus10 := (x: Js) => if x.Num? then Num(x.n + 10) else x;
-    expect XoLens().map_(plus10) == map["x" := Num(11)];
-  }
-
-  // `partial2 = lensOn(getX)(setX)`
-  method {:test} LensOnIsCurried() {
-    var partial2 := (o: map<string, Js>) => lensOn(GetX, SetX, o);
-    expect partial2(map["x" := Str("cow")]).set_(Str("moo")) == map["x" := Str("moo")];
-    var x2 := (x: Js) => if x.Num? then Num(x.n * 2) else x;
-    expect partial2(map["x" := Num(100)]).map_(x2) == map["x" := Num(200)];
-  }
-
-  // ---- lensProp.js (v0.14.0) ----
-
-  // `phraseLens = R.lensProp('catchphrase')`, `xLens = R.lensProp('x')`; the
-  // object mixes numbers and strings, so it holds Js values.
-  function LpObj(): map<string, Js> { map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")] }
-  // `uc(s) = s.toUpperCase()`
+  // `alice = {name: 'Alice Jones', address: ['22 Walnut St', 'San
+  // Francisco', 'CA']}`, a Js object here; `nameLens = R.lens(R.prop('name'),
+  // R.assoc('name'))`, whose getter is defined where the object has a name
+  // (`prop` of an absent name is undefined, outside the lens's domain);
+  // `headLens = R.lensIndex(0)`, applied to `alice.address`; `R.toUpper` on
+  // a Js string is Uc, and on a string a lambda calling `S.toUpper` (with
+  // `S.toUpper` itself as the value, the verifier does not prove `over`'s
+  // precondition).
   function Uc(v: Js): Js { if v.Str? then Str(S.toUpper(v.s)) else v }
+  function AliceAddress(): seq<string> { ["22 Walnut St", "San Francisco", "CA"] }
+  function Alice(): map<string, Js>
+  { map["name" := Str("Alice Jones"), "address" := Arr([Str("22 Walnut St"), Str("San Francisco"), Str("CA")])] }
+  function NameLens(): Lens<map<string, Js>, Js, Js>
+  { lens((o: map<string, Js>) requires "name" in o => o["name"], (v: Js, o: map<string, Js>) => assoc("name", v, o)) }
 
-  method {:test} LensPropRetrievesValuesFromInsideAnObject() {
-    expect lensProp<Js>("catchphrase").get(LpObj()) == Str("zing!");
+  method {:test} ViewOverAndSetMayBeAppliedToALensCreatedByLensProp() {
+    expect view(NameLens(), Alice()) == Str("Alice Jones");
+    expect over(NameLens(), Uc, Alice()) ==
+      map["name" := Str("ALICE JONES"), "address" := Arr([Str("22 Walnut St"), Str("San Francisco"), Str("CA")])];
+    expect set_(NameLens(), Str("Alice Smith"), Alice()) ==
+      map["name" := Str("Alice Smith"), "address" := Arr([Str("22 Walnut St"), Str("San Francisco"), Str("CA")])];
   }
 
-  method {:test} LensPropSetsPropertiesOnAnObjectAndReturnsTheNewObject() {
-    expect lensProp<Js>("catchphrase").set_(Str("cow"), LpObj()) ==
-      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("cow")];
+  method {:test} ViewOverAndSetMayBeAppliedToALensCreatedByLensIndex() {
+    var headLens := lensIndex<string, string>(0);
+    expect view(headLens, AliceAddress()) == "22 Walnut St";
+    expect over(headLens, (s: string) => S.toUpper(s), AliceAddress()) == ["22 WALNUT ST", "San Francisco", "CA"];
+    expect set_(headLens, "52 Crane Ave", AliceAddress()) == ["52 Crane Ave", "San Francisco", "CA"];
   }
 
-  // The second assertion holds trivially: the object is a value.
-  method {:test} LensPropTheSetterShouldNotMutateTheObject() {
-    var obj := LpObj();
-    expect lensProp<Js>("catchphrase").set_(Str("kapow!"), obj) ==
-      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("kapow!")];
-    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
-  }
-
-  method {:test} LensPropMapsAPropertyFromGetterToSetter() {
-    expect lensProp<Js>("catchphrase").map_(Uc, LpObj()) ==
-      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("ZING!")];
-  }
-
-  method {:test} LensPropTheModifierShouldNotMutateTheObject() {
-    var obj := LpObj();
-    expect lensProp<Js>("catchphrase").map_(Uc, obj) ==
-      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("ZING!")];
-    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
-  }
-
-  // `xPlus3 = R.compose(xLens.map(R.add(1)), xLens.map(R.add(2)))` and
-  // `set0Plus1 = R.compose(xLens.map(R.add(1)), xLens.set(0))`. The getter,
-  // and so map_, requires the key, while compose takes total functions, so
-  // each curried map_ is guarded by `"x" in o`, which these objects always
-  // pass; the setter is total.
-  function PlusJs(k: int): Js -> Js { (v: Js) => if v.Num? then Num(v.n + k) else v }
-  function XMap(k: int): map<string, Js> -> map<string, Js>
-  { (o: map<string, Js>) => if "x" in o then lensProp<Js>("x").map_(PlusJs(k), o) else o }
-
-  method {:test} LensPropCurriesMapAndSetAndModifiesWithComposedLens() {
-    var xPlus3 := Funcs.compose(XMap(1), XMap(2));
-    expect xPlus3(LpObj()) == map["x" := Num(103), "y" := Num(200), "catchphrase" := Str("zing!")];
-    var set0 := (o: map<string, Js>) => lensProp<Js>("x").set_(Num(0), o);
-    var set0Plus1 := Funcs.compose(XMap(1), set0);
-    expect set0Plus1(LpObj()) == map["x" := Num(1), "y" := Num(200), "catchphrase" := Str("zing!")];
+  // `streetLens = R.compose(addressLens, headLens)` with `addressLens =
+  // R.lensProp('address')`: lenses compose with `compose`. The object here
+  // is alice's address alone, a map of lists of strings, as lensIndex
+  // focuses a list and alice's name (a string) cannot share the map's value
+  // type; JS leaves the name as it is.
+  method {:test} ViewOverAndSetMayBeAppliedToComposedLenses() {
+    var alice := map["address" := AliceAddress()];
+    var streetLens := Funcs.compose(lensProp<seq<string>, string>("address"), lensIndex<string, string>(0));
+    expect view(streetLens, alice) == "22 Walnut St";
+    expect over(streetLens, (s: string) => S.toUpper(s), alice) == map["address" := ["22 WALNUT ST", "San Francisco", "CA"]];
+    expect set_(streetLens, "52 Crane Ave", alice) == map["address" := ["52 Crane Ave", "San Francisco", "CA"]];
   }
 }

@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.15.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.16.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
-// `merge`, `dissoc`, `lensOn`, `lensProp`, `whereEq`). A JS object is a map<string, V>; a missing
+// `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`). A JS object is a map<string, V>; a missing
 // property is JS undefined, here None. The functions that build an object by
 // assigning properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`,
 // `assoc`, `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter) drop an own `__proto__`
@@ -12,7 +12,8 @@
 // v0.10.0 renamed `mixin` to `merge`; v0.12.0 removed `propOf` and the `get`
 // alias of `prop`, deprecated in v0.11.0; v0.15.0 removed `eq`, whose
 // `Object.is` is now `identical`, `@category Relation`, in Data.dfy, where
-// v0.15.1 restores `eq` itself, deprecated.)
+// v0.15.1 restores `eq` itself, deprecated; v0.16.0 removed `lensOn`, as
+// lenses became van Laarhoven functions, and `eq` again.)
 
 module Ramdaf.Object {
   import opened Prelude
@@ -20,7 +21,8 @@ module Ramdaf.Object {
   export
     reveals prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
-            assoc, propEq, evolve, invert, invertObj, dissoc, lensOn, lensProp, whereEq
+            assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq,
+            view, over, set_
     provides Prelude
 
   // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
@@ -226,9 +228,14 @@ module Ramdaf.Object {
   function assoc<V>(p: string, val: V, obj: map<string, V>): map<string, V>
   { obj[p := val] }
 
-  // `obj[name] === val` (in v0.14.0 `_eq(obj[name], val)`, `Object.is`,
-  // since v0.15.0 `R.equals`, deep equality: README "Deviations" on `-0`)
-  function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool
+  // `R.propEq(val, name, obj)` (v0.16.0, which moved the value first):
+  // `propSatisfies(equals(val), name, obj)`, `equals(val, obj[name])`, obj's
+  // property equal to val; an absent property is undefined, which no value
+  // here equals. `R.propSatisfies` (Logic) and `R.equals` (Data) are written
+  // out, as Object imports neither. (Until v0.15.1 `propEq(name, val, obj)`,
+  // `obj[name] === val`, in v0.14.0 `_eq`, `Object.is`, and in v0.15.x
+  // `R.equals`: README "Deviations" on `-0`.)
+  function propEq<V(==)>(val: V, name: string, obj: map<string, V>): bool
   { name in obj && obj[name] == val }
 
   // `R.evolve(transformations, object)` (v0.9.0): since v0.15.0 `for (key in
@@ -286,32 +293,51 @@ module Ramdaf.Object {
     ensures dissoc(p, obj) == obj - {p}
   { obj - {p} }
 
-  // `R.lensOn(get, set, obj)` (v0.11.0, `@category Object`): `var lns =
-  // function() { return get(obj); }; lns.set = set; lns.map = function(fn) {
-  // return set(fn(get(obj))); }; return lns;`, a lens bound to obj, here the
-  // record `Prelude.LensOn` (README "Deviations"; `set` is a Dafny keyword).
-  // JS calls get on each use, so a later mutation of obj shows; a Dafny value
-  // does not change. The code and Ramda's tests take obj last, as here (and
-  // since v0.14.0 the JSDoc; v0.11.0 to v0.13.0's `@sig` and example put it
-  // first, `R.lensOn(xo, get, set)`, which throws in node: "get is not a
-  // function").
-  // As for `lens`, get and set_ are partial arrows: the bound get requires
-  // get's precondition on obj, and map_ that and set_'s on the mapped value.
-  function lensOn<A, V, B>(get: A --> V, set_: V --> B, obj: A): LensOn<V, B>
-  { LensOn(() requires get.requires(obj) => get(obj), set_,
-           (fn: V -> V) requires get.requires(obj) && set_.requires(fn(get(obj))) => set_(fn(get(obj)))) }
-
   // `R.lensProp(k)` (v0.14.0, `@category Object`): `lens(prop(k),
-  // assoc(k))`, a lens on the property k. The getter `prop(k)` is undefined
+  // assoc(k))`, a lens on the property k, since v0.16.0 a van Laarhoven lens
+  // (`Prelude.Lens`, List.dfy's `lens`). The getter `prop(k)` is undefined
   // when obj lacks k (and is the inherited member for a name of
-  // `Object.prototype`), which the value type cannot hold, so it requires
-  // the key (README "Outside the modeled domain"); the setter is `assoc`,
-  // total (`lensProp('x').set(9, {})` is `{x: 9}`). `R.lens` is List's, which
-  // Object does not import, so its body is written out: map_ is set_ of fn
-  // applied to get, requiring both.
-  function lensProp<V>(k: string): Lens<map<string, V>, V>
-  { var get := (obj: map<string, V>) requires k in obj => obj[k];
-    var set_ := (v: V, obj: map<string, V>) => assoc(k, v, obj);
-    Lens(get, set_, (fn: V -> V, obj: map<string, V>) requires get.requires(obj) && set_.requires(fn(get(obj)), obj) =>
-                      set_(fn(get(obj)), obj)) }
+  // `Object.prototype`), which the value type cannot hold, so the lens
+  // requires the key (README "Outside the modeled domain"); since v0.16.0
+  // `set` runs the getter too, so that includes `set_`; the setter, `assoc`,
+  // is total. `R.lens` is List's, which Object does not import, so its body
+  // is written out (with `Prelude.map_` as its match, as in `lens`).
+  function lensProp<V, X>(k: string): Lens<map<string, V>, V, X>
+  { var getter := (obj: map<string, V>) requires k in obj => obj[k];
+    var setter := (v: V, obj: map<string, V>) => assoc(k, v, obj);
+    (f: V --> Functor<X, V>) =>
+      (s: map<string, V>) requires getter.requires(s) && f.requires(getter(s)) &&
+                                   (f(getter(s)).Identity? ==> setter.requires(f(getter(s)).v, s)) =>
+        match f(getter(s))
+          case Const(c) => Const(c)
+          case Identity(v) => Identity(setter(v, s)) }
+
+  // `R.view(lens, x)` (v0.16.0, `@category Object`): `lens(Const)(x).value`,
+  // the lens run with the `Const` functor (private to view.js), which carries
+  // the focus out unchanged: the focus of x (`view(lensProp('x'), {x: 1, y:
+  // 2})` is 1). It requires the lens's precondition for that function and a
+  // `Const` result, as every lens that `lens`, `lensIndex`, `lensProp` and
+  // `compose` of them build gives.
+  function view<S, V>(l: Lens<S, V, V>, x: S): V
+    requires l((v: V) => Const(v)).requires(x) && l((v: V) => Const(v))(x).Const?
+  { l((v: V) => Const(v))(x).c }
+
+  // `R.over(lens, f, x)` (v0.16.0, `@category Object`): `lens(function(y) {
+  // return Identity(f(y)); })(x).value`, the lens run with the `Identity`
+  // functor (private to over.js): x with its focus replaced by f of it
+  // (`over(lensProp('x'), negate, {x: 1, y: 2})` is `{x: -1, y: 2}`). JS
+  // lets f return a value of another type (README "Deviations").
+  function over<S, V, X>(l: Lens<S, V, X>, f: V -> V, x: S): S
+    requires l((y: V) => Identity(f(y))).requires(x) && l((y: V) => Identity(f(y)))(x).Identity?
+  { l((y: V) => Identity(f(y)))(x).v }
+
+  // `R.set(lens, v, x)` (v0.16.0, `@category Object`): `over(lens, always(v),
+  // x)`, x with its focus replaced by v. `set` is a Dafny keyword, hence
+  // `set_`, and `R.always` (Functions) is written out as `_ => v`. As over
+  // runs the getter before ignoring its result, set_ requires the getter's
+  // precondition (`set(lensProp('x'), 9, {})` is `{x: 9}` in node, where the
+  // getter gives undefined: README "Outside the modeled domain").
+  function set_<S, V, X>(l: Lens<S, V, X>, v: V, x: S): S
+    requires over.requires(l, (_: V) => v, x)
+  { over(l, (_: V) => v, x) }
 }

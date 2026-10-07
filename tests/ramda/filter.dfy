@@ -1,6 +1,6 @@
-// Ramda v0.15.1 test/filter.js, filterIndexed.js, reject.js,
-// rejectIndexed.js, takeWhile.js, take.js, dropWhile.js and drop.js (until
-// v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
+// Ramda v0.16.0 test/filter.js, reject.js, takeWhile.js, take.js,
+// dropWhile.js, drop.js, dropLast.js, takeLast.js, dropLastWhile.js and
+// takeLastWhile.js (until v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
 // the partially applied function in full). The "should start at the
 // right arg" cases use a predicate that would fail the test if called; here
 // it is a predicate whose result does not matter (the list is empty), and
@@ -9,8 +9,12 @@
 // dispatch), v0.10.0's reject "dispatches to `filter` method" (likewise)
 // and the "throws on zero arguments" cases (no-argument calls; v0.11.0
 // removed them); v0.15.0's take and drop "never returns the input array"
-// (reference identity) and the object halves of their "dispatches to
-// `slice` method" (method dispatch).
+// (reference identity), and take's "handles zero correctly (#1224)"
+// (v0.16.0; `into` with a transducer, README "Not portable"). v0.16.0
+// replaced take's and drop's "dispatches to `slice` method" (whose object
+// halves were method dispatch) with "can operate on strings" and removed
+// their "is curried", and removed filterIndexed.js and rejectIndexed.js
+// with the functions.
 // (v0.4.1 removed skip's "should be aliased by `drop`" with `drop`; v0.9.0
 // renamed the filter.idx, reject.idx and skip describes to filterIndexed,
 // rejectIndexed and drop, and replaced skipUntil's with dropWhile's, whose
@@ -43,38 +47,6 @@ module RamdafTests.Ramda.Filter {
     expect onlyEven([1, 2, 3, 4, 5, 6, 7]) == [2, 4, 6];
   }
 
-  // describe('filterIndexed') (describe('filter.idx') until v0.8.0)
-  function everyOther(val: int, idx: nat, list: seq<int>): bool { idx % 2 == 0 }
-  function lastTwo(val: int, idx: nat, list: seq<int>): bool { |list| - idx < 3 }
-
-  method {:test} FilterIndexedWorksJustLikeANormalFilter() {
-    expect filterIndexed((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [2, 4];
-  }
-
-  method {:test} FilterIndexedPassesTheIndexAsASecondParameter() {
-    expect filterIndexed(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [8, 7, 3, 9];
-  }
-
-  method {:test} FilterIndexedPassesTheEntireListAsAThirdParameter() {
-    expect filterIndexed(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [0, 9];
-  }
-
-  // v0.5.0
-  method {:test} FilterIndexedReturnsAnEmptyArrayIfNoElementMatches() {
-    expect filterIndexed((x: int, idx: nat, list: seq<int>) => x > 100, [1, 9, 99]) == [];
-  }
-
-  // v0.5.0
-  method {:test} FilterIndexedReturnsAnEmptyArrayIfAskedToFilterAnEmptyArray() {
-    var empty: seq<int> := [];
-    expect filterIndexed((x: int, idx: nat, list: seq<int>) => x > 100, empty) == [];
-  }
-
-  method {:test} FilterIndexedIsAutomaticallyCurried() {
-    var everyOtherPosition := (l: seq<int>) => filterIndexed(everyOther, l);
-    expect everyOtherPosition([8, 6, 7, 5, 3, 0, 9]) == [8, 7, 3, 9];
-  }
-
   // describe('reject')
   method {:test} RejectReducesToNonMatchingElements() {
     expect reject(even, [1, 2, 3, 4, 5]) == [1, 3, 5];
@@ -94,35 +66,6 @@ module RamdafTests.Ramda.Filter {
   method {:test} RejectIsAutomaticallyCurried() {
     var odd := (l: seq<int>) => reject(even, l);
     expect odd([1, 2, 3, 4, 5, 6, 7]) == [1, 3, 5, 7];
-  }
-
-  // describe('rejectIndexed') (describe('reject.idx') until v0.8.0)
-  method {:test} RejectIndexedWorksJustLikeANormalReject() {
-    expect rejectIndexed((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [1, 3, 5];
-  }
-
-  method {:test} RejectIndexedPassesTheIndexAsASecondParameter() {
-    expect rejectIndexed(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [6, 5, 0];
-  }
-
-  method {:test} RejectIndexedPassesTheEntireListAsAThirdParameter() {
-    expect rejectIndexed(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [8, 6, 7, 5, 3];
-  }
-
-  // v0.5.0
-  method {:test} RejectIndexedReturnsAnEmptyArrayIfNoElementMatches() {
-    expect rejectIndexed((x: int, idx: nat, list: seq<int>) => x < 100, [1, 9, 99]) == [];
-  }
-
-  // v0.5.0
-  method {:test} RejectIndexedReturnsAnEmptyArrayIfAskedToFilterAnEmptyArray() {
-    var empty: seq<int> := [];
-    expect rejectIndexed((x: int, idx: nat, list: seq<int>) => x > 100, empty) == [];
-  }
-
-  method {:test} RejectIndexedIsAutomaticallyCurried() {
-    var everyOtherPosition := (l: seq<int>) => rejectIndexed(everyOther, l);
-    expect everyOtherPosition([8, 6, 7, 5, 3, 0, 9]) == [6, 5, 0];
   }
 
   // describe('takeWhile')
@@ -161,17 +104,13 @@ module RamdafTests.Ramda.Filter {
     expect take(-1, [1, 2, 3]) == [1, 2, 3];
   }
 
-  // v0.15.0 "dispatches to `slice` method": its string line (a JS string's
-  // own `slice`; the same seq here); the object with a `slice` method is
-  // not a list
-  method {:test} TakeDispatchesToSliceMethod() {
+  // v0.16.0 (v0.15.0's "dispatches to `slice` method", whose string line
+  // was `take(3, 'Ramda')`; a JS string gives a string, the same seq here)
+  method {:test} TakeCanOperateOnStrings() {
     expect take(3, "Ramda") == "Ram";
-  }
-
-  method {:test} TakeIsAutomaticallyCurried() {
-    var take3 := (l: seq<string>) => take(3, l);
-    expect take3(["a", "b", "c", "d", "e", "f", "g"]) == ["a", "b", "c"];
-    expect take3(["w", "x", "y", "z"]) == ["w", "x", "y"];
+    expect take(2, "Ramda") == "Ra";
+    expect take(1, "Ramda") == "R";
+    expect take(0, "Ramda") == "";
   }
 
   // describe('dropWhile') (v0.9.0, in place of describe('skipUntil'))
@@ -216,14 +155,110 @@ module RamdafTests.Ramda.Filter {
     expect drop(-1, [1, 2, 3]) == [1, 2, 3];
   }
 
-  // v0.15.0 "dispatches to `slice` method": its string line
-  method {:test} DropDispatchesToSliceMethod() {
+  // v0.16.0 (v0.15.0's "dispatches to `slice` method", whose string line
+  // was `drop(3, 'Ramda')`)
+  method {:test} DropCanOperateOnStrings() {
     expect drop(3, "Ramda") == "da";
+    expect drop(4, "Ramda") == "a";
+    expect drop(5, "Ramda") == "";
+    expect drop(6, "Ramda") == "";
   }
 
-  method {:test} DropIsAutomaticallyCurried() {
-    var drop2 := (l: seq<string>) => drop(2, l);
-    expect drop2(["a", "b", "c", "d", "e"]) == ["c", "d", "e"];
-    expect drop2(["x", "y", "z"]) == ["z"];
+  // describe('dropLast') (v0.16.0). Not transcribed: the `-Infinity` line
+  // (not an int) and "never returns the input array" (reference identity).
+  method {:test} DropLastSkipsTheLastNElements() {
+    expect dropLast(3, ["a", "b", "c", "d", "e", "f", "g"]) == ["a", "b", "c", "d"];
+  }
+
+  method {:test} DropLastReturnsAnEmptyArrayIfNIsTooLarge() {
+    expect dropLast(20, ["a", "b", "c", "d", "e", "f", "g"]) == [];
+  }
+
+  method {:test} DropLastReturnsAnEquivalentListIfNIsAtMostZero() {
+    expect dropLast(0, [1, 2, 3]) == [1, 2, 3];
+    expect dropLast(-1, [1, 2, 3]) == [1, 2, 3];
+  }
+
+  method {:test} DropLastCanOperateOnStrings() {
+    expect dropLast(3, "Ramda") == "Ra";
+  }
+
+  method {:test} DropLastIsCurried() {
+    var dropLast2 := (l: seq<string>) => dropLast(2, l);
+    expect dropLast2(["a", "b", "c", "d", "e"]) == ["a", "b", "c"];
+    expect dropLast2(["x", "y", "z"]) == ["x"];
+  }
+
+  // describe('takeLast') (v0.16.0). Not transcribed: the `-Infinity` line
+  // and "never returns the input array", as for dropLast.
+  method {:test} TakeLastTakesOnlyTheLastNElements() {
+    expect takeLast(3, ["a", "b", "c", "d", "e", "f", "g"]) == ["e", "f", "g"];
+  }
+
+  method {:test} TakeLastReturnsOnlyAsManyAsTheArrayCanProvide() {
+    var empty: seq<int> := [];
+    expect takeLast(3, [1, 2]) == [1, 2];
+    expect takeLast(3, empty) == [];
+  }
+
+  method {:test} TakeLastReturnsAnEquivalentListIfNIsBelowZero() {
+    expect takeLast(-1, [1, 2, 3]) == [1, 2, 3];
+  }
+
+  method {:test} TakeLastCanOperateOnStrings() {
+    expect takeLast(3, "Ramda") == "mda";
+  }
+
+  method {:test} TakeLastHandlesZeroCorrectly() {
+    expect takeLast(0, [1, 2, 3]) == [];
+  }
+
+  method {:test} TakeLastIsCurried() {
+    var takeLast3 := (l: seq<string>) => takeLast(3, l);
+    expect takeLast3(["a", "b", "c", "d", "e", "f", "g"]) == ["e", "f", "g"];
+    expect takeLast3(["w", "x", "y", "z"]) == ["x", "y", "z"];
+  }
+
+  // describe('dropLastWhile') (v0.16.0)
+  method {:test} DropLastWhileSkipsElementsWhileTheFunctionReportsTrue() {
+    expect dropLastWhile((x: int) => x >= 5, [1, 3, 5, 7, 9]) == [1, 3];
+  }
+
+  method {:test} DropLastWhileReturnsAnEmptyListForAnEmptyList() {
+    var empty: seq<Js> := [];
+    expect dropLastWhile((x: Js) => false, empty) == [];
+    expect dropLastWhile((x: Js) => true, empty) == [];
+  }
+
+  method {:test} DropLastWhileStartsAtTheRightArgAndAcknowledgesUndefined() {
+    var sublist := dropLastWhile((x: Js) => !x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]);
+    expect |sublist| == 3;
+    expect sublist[0] == Num(1);
+    expect sublist[1] == Num(3);
+    expect sublist[2] == Undefined;
+  }
+
+  method {:test} DropLastWhileIsCurried() {
+    var dropGt7 := (l: seq<int>) => dropLastWhile((x: int) => x > 7, l);
+    expect dropGt7([1, 3, 5, 7, 9]) == [1, 3, 5, 7];
+    expect dropGt7([1, 3, 5]) == [1, 3, 5];
+  }
+
+  // describe('takeLastWhile') (v0.16.0). The predicate of the empty-list
+  // line would fail the test if called; here its result does not matter.
+  method {:test} TakeLastWhileContinuesTakingElementsWhileTheFunctionReportsTrue() {
+    expect takeLastWhile((x: int) => x != 5, [1, 3, 5, 7, 9]) == [7, 9];
+  }
+
+  method {:test} TakeLastWhileStartsAtTheRightArgAndAcknowledgesUndefined() {
+    var empty: seq<Js> := [];
+    expect takeLastWhile((x: Js) => false, empty) == [];
+    expect takeLastWhile((x: Js) => !x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]) == [Num(5), Num(7)];
+  }
+
+  method {:test} TakeLastWhileIsCurried() {
+    var takeLastUntil7 := (l: seq<int>) => takeLastWhile((x: int) => x != 7, l);
+    expect takeLastUntil7([1, 3, 5, 7, 9]) == [9];
+    expect takeLastUntil7([2, 4, 6, 8, 10]) == [2, 4, 6, 8, 10];
   }
 }

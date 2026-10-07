@@ -1,6 +1,7 @@
-// Ramdaf: Ramda v0.15.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.16.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
-// with `@category Logic` (`defaultTo`, `both`, `either`, `complement`).
+// with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
+// `propSatisfies`).
 // (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
 // reused the name `cond` for a new function; v0.9.0 renamed `allPredicates`
 // and `anyPredicates` to `allPass` and `anyPass` and removed `if`; v0.12.0
@@ -11,7 +12,8 @@ module Ramdaf.Logic {
   import opened Prelude
 
   export
-    reveals and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo
+    reveals and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo,
+            propSatisfies
     provides Prelude
 
   // `R.and(a, b)` (v0.12.0): `a && b`. From v0.1.4 to v0.11.0 `and` was the
@@ -71,13 +73,15 @@ module Ramdaf.Logic {
   function ifElse<A, B>(condition: A -> bool, onTrue: A -> B, onFalse: A -> B): A -> B
   { x => if condition(x) then onTrue(x) else onFalse(x) }
 
-  // `R.cond([pred, transform], ...)` (v0.8.0; the name held today's `ifElse`
-  // from v0.6.0 to v0.7.2): a function that tests its arguments against each
-  // pair's predicate in turn and returns the first truthy one's transformer
-  // applied to them; later predicates are not called, and when none matches
-  // the result is undefined (documented), here None. JS takes the pairs as
-  // separate arguments and forwards any number of arguments; here the pairs
-  // are one seq and the result is unary (README "Deviations").
+  // `R.cond([[pred, transform], ...])` (v0.8.0; the name held today's
+  // `ifElse` from v0.6.0 to v0.7.2): a function that tests its arguments
+  // against each pair's predicate in turn and returns the first truthy one's
+  // transformer applied to them; later predicates are not called, and when
+  // none matches the result is undefined (documented), here None. Since
+  // v0.16.0 (f5558cba, "make R.cond a fixed-arity function") JS takes the
+  // pairs as one list, as the port always did (until v0.15.1 they were
+  // separate arguments, `cond([p1, t1], [p2, t2])`); JS forwards any number
+  // of arguments, and the result here is unary (README "Deviations").
   function cond<A, B>(pairs: seq<(A -> bool, A -> B)>): A -> Option<B>
   { x => if |pairs| == 0 then None
          else if pairs[0].0(x) then Some(pairs[0].1(x))
@@ -92,4 +96,12 @@ module Ramdaf.Logic {
   { match v
       case Some(x) => x
       case None => d }
+
+  // `R.propSatisfies(pred, name, obj)` (v0.16.0, `@category Logic`):
+  // `pred(obj[name])`, pred applied to the property, undefined (None) when
+  // obj lacks it (a JS object passes an inherited `Object.prototype` member
+  // for such a name; a map has none, README "Deviations"). `R.prop`
+  // (Object) is written out, as Logic imports only Prelude.
+  function propSatisfies<V>(pred: Option<V> -> bool, name: string, obj: map<string, V>): bool
+  { pred(if name in obj then Some(obj[name]) else None) }
 }

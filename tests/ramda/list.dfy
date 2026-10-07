@@ -1,14 +1,14 @@
-// Ramda v0.15.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.16.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
-// uniqWith.js, map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js, find.js,
+// uniqWith.js, map.js, mapObj.js, mapObjIndexed.js, find.js,
 // findIndex.js, findLast.js, findLastIndex.js, flatten.js, unnest.js,
 // range.js, reverse.js, unfold.js, zip.js, zipWith.js, zipObj.js,
 // fromPairs.js, xprod.js, partition.js, groupBy.js, createMapEntry.js,
 // scan.js, mapAccum.js, mapAccumRight.js, commute.js, commuteMap.js,
-// lens.js, mergeAll.js, aperture.js, none.js, adjust.js, update.js,
-// intersperse.js, dropRepeats.js, dropRepeatsWith.js and lensIndex.js
-// (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// mergeAll.js, aperture.js, none.js, adjust.js, update.js,
+// intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js and
+// uniqBy.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -18,10 +18,9 @@
 // have no Dafny counterpart and are omitted, and so are the "throws on zero
 // arguments" cases (no-argument calls; v0.11.0 removed them) and the
 // `typeof` checks of the "is
-// curried" cases, which hold by construction (as does lens's "returns a
-// function with `set` and `map` properties": a `Lens` always has its three
-// fields; the lens is applied with `.get`, `.set_` and `.map_`, README
-// "Deviations"). findLast's and findLastIndex's `(even, 'zing')` search the
+// curried" cases, which hold by construction. (v0.16.0 removed lens.js,
+// lensIndex.js and mapIndexed.js; the lenses' tests are lenses.js's, in
+// tests/ramda/object.dfy.) findLast's and findLastIndex's `(even, 'zing')` search the
 // string's characters: here a list of Js strings (since v0.5.0 find and
 // findIndex search `['zing']`). indexOf.js and lastIndexOf.js also set a
 // non-index property (`arr[-2] = 4`) on their arrays, which a seq cannot
@@ -87,6 +86,32 @@ module RamdafTests.Ramda.List {
   // describe('slice') (Ramda's other case is a commented-out TODO)
   method {:test} SliceRetrievesTheProperSublist() {
     expect slice(2, 5, [8, 6, 7, 5, 3, 0, 9]) == [7, 5, 3];
+  }
+
+  // v0.16.0 (in place of v0.15.0's "dispatches to `slice` method", an
+  // object with a `slice` method): a JS string gives a string, the same seq
+  // here; JS's `-0` index is 0
+  method {:test} SliceCanOperateOnStrings() {
+    expect slice(0, 0, "abc") == "";
+    expect slice(0, 1, "abc") == "a";
+    expect slice(0, 2, "abc") == "ab";
+    expect slice(0, 3, "abc") == "abc";
+    expect slice(0, 4, "abc") == "abc";
+    expect slice(1, 0, "abc") == "";
+    expect slice(1, 1, "abc") == "";
+    expect slice(1, 2, "abc") == "b";
+    expect slice(1, 3, "abc") == "bc";
+    expect slice(1, 4, "abc") == "bc";
+    expect slice(0, -4, "abc") == "";
+    expect slice(0, -3, "abc") == "";
+    expect slice(0, -2, "abc") == "a";
+    expect slice(0, -1, "abc") == "ab";
+    expect slice(0, 0, "abc") == "";
+    expect slice(-2, -4, "abc") == "";
+    expect slice(-2, -3, "abc") == "";
+    expect slice(-2, -2, "abc") == "";
+    expect slice(-2, -1, "abc") == "b";
+    expect slice(-2, 0, "abc") == "";
   }
 
   // describe('remove') (v0.2.2)
@@ -188,9 +213,16 @@ module RamdafTests.Ramda.List {
     expect of(none) == [[]];
   }
 
-  // describe('empty') (v0.3.0)
-  method {:test} EmptyReturnsAnEmptyList() {
+  // describe('empty') (v0.3.0): v0.16.0's "returns empty array given array"
+  // ("returns an empty list" until v0.15.1) and the first line of "returns
+  // empty string given string" (a string is a seq; `new String('abc')` is
+  // not)
+  method {:test} EmptyReturnsEmptyArrayGivenArray() {
     expect empty([1, 2, 3]) == [];
+  }
+
+  method {:test} EmptyReturnsEmptyStringGivenString() {
+    expect empty("abc") == "";
   }
 
   // describe('chain') (v0.3.0; v0.15.0 rewrote chain.js): `times2(x) = [x *
@@ -224,14 +256,20 @@ module RamdafTests.Ramda.List {
     expect flatInc([1, 2, 3, 4, 5, 6]) == [2, 3, 4, 5, 6, 7];
   }
 
-  // describe('init') (v0.9.0)
-  method {:test} InitReturnsAnEmptyListForAnEmptyList() {
-    var empty: seq<string> := [];
+  // describe('init') (v0.9.0): v0.16.0's "returns all but the last element
+  // of an ordered collection" (until v0.15.1 "returns an empty list for an
+  // empty list" and "returns a new list containing all the elements except
+  // the last element of a list")
+  method {:test} InitReturnsAllButTheLastElementOfAnOrderedCollection() {
+    var empty: seq<int> := [];
+    expect init([1, 2, 3]) == [1, 2];
+    expect init([2, 3]) == [2];
+    expect init([3]) == [];
     expect init(empty) == [];
-  }
-
-  method {:test} InitReturnsAllTheElementsExceptTheLast() {
-    expect init(["a", "b", "c", "d"]) == ["a", "b", "c"];
+    expect init("abc") == "ab";
+    expect init("bc") == "b";
+    expect init("c") == "";
+    expect init("") == "";
   }
 
   // ---- indexOf.js, lastIndexOf.js (test.indexof.js from v0.2.2 to v0.8.0)
@@ -479,29 +517,6 @@ module RamdafTests.Ramda.List {
   // describe('mapObj')
   method {:test} MapObjRunsTheFunctionOverEachProperty() {
     expect mapObj((n: int) => n * n, map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "b" := 4, "c" := 9];
-  }
-
-  // describe('mapIndexed') (describe('map.idx') until v0.8.0; v0.9.0 renames
-  // `addIdx` to `addIndexed`)
-  function addIndexed(x: int, idx: nat, list: seq<int>): int { x + idx }
-  function squareEnds(x: int, idx: nat, list: seq<int>): int
-  { if idx == 0 || idx == |list| - 1 then x * x else x }
-
-  method {:test} MapIndexedWorksJustLikeANormalMap() {
-    expect mapIndexed((x: int, idx: nat, list: seq<int>) => x * 2, [1, 2, 3, 4]) == [2, 4, 6, 8];
-  }
-
-  method {:test} MapIndexedPassesTheIndexAsASecondParameter() {
-    expect mapIndexed(addIndexed, [8, 6, 7, 5, 3, 0, 9]) == [8 + 0, 6 + 1, 7 + 2, 5 + 3, 3 + 4, 0 + 5, 9 + 6];
-  }
-
-  method {:test} MapIndexedPassesTheEntireListAsAThirdParameter() {
-    expect mapIndexed(squareEnds, [8, 6, 7, 5, 3, 0, 9]) == [64, 6, 7, 5, 3, 0, 81];
-  }
-
-  method {:test} MapIndexedIsAutomaticallyCurried() {
-    var makeSquareEnds := (l: seq<int>) => mapIndexed(squareEnds, l);
-    expect makeSquareEnds([8, 6, 7, 5, 3, 0, 9]) == [64, 6, 7, 5, 3, 0, 81];
   }
 
   // describe('mapObjIndexed') (describe('mapObj.idx') from v0.2.2 to v0.8.0)
@@ -1010,88 +1025,6 @@ module RamdafTests.Ramda.List {
     expect cmtmArr(Cs()) == [[11, 13], [12, 13], [11, 14], [12, 14]];
   }
 
-  // ---- lens.js (v0.8.0) ----
-
-  // `getHead(obj) = obj[0]` (undefined for []), `setHead(val, obj) =
-  // [val].concat(obj.slice(1))`; the lists mix numbers and strings, so they
-  // hold Js values.
-  function GetHead(o: seq<Js>): Js { if |o| > 0 then o[0] else Undefined }
-  function SetHead(v: Js, o: seq<Js>): seq<Js> { [v] + (if |o| > 0 then o[1..] else []) }
-  function HeadOf(): Lens<seq<Js>, Js> { lens(GetHead, SetHead) }
-
-  // `getPhrase(obj) = obj.catchphrase`, `setPhrase(val, obj)` sets it on
-  // `R.clone(obj)` (`R.cloneObj(obj)` until v0.8.0)
-  function GetPhrase(o: map<string, Js>): Js { if "catchphrase" in o then o["catchphrase"] else Undefined }
-  function SetPhrase(v: Js, o: map<string, Js>): map<string, Js> { clone(o)["catchphrase" := v] }
-  function PhraseLens(): Lens<map<string, Js>, Js> { lens(GetPhrase, SetPhrase) }
-
-  function Nums(ns: seq<int>): seq<Js> { mapSeq((n: int) => Num(n), ns) }
-  function PhraseObj(): map<string, Js> { map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")] }
-
-  method {:test} LensRetrievesValuesAsDefinedByTheGetter() {
-    expect HeadOf().get(Nums([10, 20, 30, 40])) == Num(10);
-    expect HeadOf().get([Str("a"), Str("b"), Str("c"), Str("d")]) == Str("a");
-  }
-
-  method {:test} LensSetsPropertiesAndReturnsTheNewObject() {
-    expect HeadOf().set_(Str("cow"), Nums([1, 2, 3, 4])) == [Str("cow"), Num(2), Num(3), Num(4)];
-  }
-
-  // The second assertion holds trivially: obj is a value.
-  method {:test} LensTheSetterNeedNotMutateTheObject() {
-    var obj := PhraseObj();
-    expect PhraseLens().set_(Str("kapow!"), obj) == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("kapow!")];
-    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
-  }
-
-  method {:test} LensMapsAPropertyFromGetterToSetter() {
-    var plus10 := (x: Js) => if x.Num? then Num(x.n + 10) else x;
-    expect HeadOf().map_(plus10, Nums([-9, 2, 3])) == Nums([1, 2, 3]);
-  }
-
-  // `uc(s) = s.toUpperCase()`
-  method {:test} LensTheModifierNeedNotMutateTheObject() {
-    var obj := PhraseObj();
-    var uc := (s: Js) => if s.Str? then Str(S.toUpper(s.s)) else s;
-    expect PhraseLens().map_(uc, obj) == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("ZING!")];
-    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
-  }
-
-  // `get1(x) = x[1]`; `set1(val, obj)` replaces element 1 by
-  // `obj.concat().splice(1, 1, val)` (appended to a shorter list); `partial =
-  // R.lens(get1)`
-  function Get1(o: seq<Js>): Js { if |o| > 1 then o[1] else Undefined }
-  function Set1(v: Js, o: seq<Js>): seq<Js> { if |o| > 1 then o[1 := v] else o + [v] }
-
-  method {:test} LensIsCurried() {
-    var partial := (s: (Js, seq<Js>) -> seq<Js>) => lens(Get1, s);
-    expect partial(Set1).get([Str("zeroth"), Str("first"), Str("second")]) == Str("first");
-    expect partial(Set1).get(Nums([10, 20, 30])) == Num(20);
-    expect partial(Set1).set_(Str("zoom"), Nums([10, 20, 30])) == [Num(10), Str("zoom"), Num(30)];
-    var x2 := (x: Js) => if x.Num? then Num(x.n * 2) else x;
-    expect partial(Set1).map_(x2, Nums([10, 20, 30])) == Nums([10, 40, 30]);
-    // v0.9.0: `set` and `map` are curried, `.set('zoom')(…)` and `.map(x2)(…)`
-    var setZoom := (o: seq<Js>) => partial(Set1).set_(Str("zoom"), o);
-    expect setZoom(Nums([10, 20, 30])) == [Num(10), Str("zoom"), Num(30)];
-    var mapX2 := (o: seq<Js>) => partial(Set1).map_(x2, o);
-    expect mapX2(Nums([10, 20, 30])) == Nums([10, 40, 30]);
-  }
-
-  // v0.9.0: "curries map and set and modifies with composed lens":
-  // `compose(headOf.map(add(1)), headOf.map(add(2)))`,
-  // `compose(headOf.map(add(1)), headOf.set(0))` and `map` of the first
-  function AddJs(k: int): Js -> Js { (x: Js) => if x.Num? then Num(x.n + k) else x }
-
-  method {:test} LensCurriesMapAndSetAndModifiesWithComposedLens() {
-    var headPlus3 := Funcs.compose((o: seq<Js>) => HeadOf().map_(AddJs(1), o), (o: seq<Js>) => HeadOf().map_(AddJs(2), o));
-    expect headPlus3(Nums([-2, 2, 3])) == Nums([1, 2, 3]);
-    var set0Plus1 := Funcs.compose((o: seq<Js>) => HeadOf().map_(AddJs(1), o), (o: seq<Js>) => HeadOf().set_(Num(0), o));
-    expect set0Plus1(Nums([-2, 2, 3])) == Nums([1, 2, 3]);
-    var mapHeadPlus3 := (l: seq<seq<Js>>) => mapSeq(headPlus3, l);
-    expect mapHeadPlus3([Nums([-2, 2, 3]), Nums([-1, 2, 3])]) == [Nums([1, 2, 3]), Nums([2, 2, 3])];
-  }
-
-
   // ---- partition.js (v0.3.0: partition splits a list by a predicate; its
   // v0.1.4 to v0.2.4 grouping tests moved to groupBy's file, below) ----
 
@@ -1151,8 +1084,8 @@ module RamdafTests.Ramda.List {
     expect groupBy((o: map<string, Js>) => if "x" in o && o["x"].Str? then o["x"].s else "undefined", none) == map[];
   }
 
-  // ---- adjust.js, update.js, intersperse.js, dropRepeats.js,
-  // dropRepeatsWith.js and lensIndex.js (v0.14.0) ----
+  // ---- adjust.js, update.js, intersperse.js, dropRepeats.js and
+  // dropRepeatsWith.js (v0.14.0) ----
 
   // `R.add(1)` is `x => x + 1`.
   method {:test} AdjustAppliesTheGivenFunctionToTheValueAtTheGivenIndex() {
@@ -1260,51 +1193,41 @@ module RamdafTests.Ramda.List {
     expect byI(DrwObjs2()) == DrwObjs();
   }
 
-  // `headOf = R.lensIndex(0)`, over lists of ints, strings or (where a
-  // string is set into a number list) Js values.
-  method {:test} LensIndexRetrievesTheNthValueFromAnArray() {
-    expect lensIndex<int>(0).get([10, 20, 30, 40]) == 10;
-    expect lensIndex<string>(0).get(["a", "b", "c", "d"]) == "a";
+  // ---- splitEvery.js and uniqBy.js (v0.16.0). Not transcribed:
+  // splitEvery's "throws if first argument is not positive" (outside the
+  // domain, README "Outside the modeled domain") and uniqBy's "has R.equals
+  // semantics" (`-0`, NaN and objects with an `equals` method, README
+  // "Deviations"). ----
+
+  // its string lines split a string into strings, the same seqs here
+  method {:test} SplitEverySplitsACollectionIntoSlicesOfTheSpecifiedLength() {
+    var empty: seq<int> := [];
+    expect splitEvery(1, [1, 2, 3, 4]) == [[1], [2], [3], [4]];
+    expect splitEvery(2, [1, 2, 3, 4]) == [[1, 2], [3, 4]];
+    expect splitEvery(3, [1, 2, 3, 4]) == [[1, 2, 3], [4]];
+    expect splitEvery(4, [1, 2, 3, 4]) == [[1, 2, 3, 4]];
+    expect splitEvery(5, [1, 2, 3, 4]) == [[1, 2, 3, 4]];
+    expect splitEvery(3, empty) == [];
+    expect splitEvery(1, "abcd") == ["a", "b", "c", "d"];
+    expect splitEvery(2, "abcd") == ["ab", "cd"];
+    expect splitEvery(3, "abcd") == ["abc", "d"];
+    expect splitEvery(4, "abcd") == ["abcd"];
+    expect splitEvery(5, "abcd") == ["abcd"];
+    expect splitEvery(3, "") == [];
   }
 
-  method {:test} LensIndexSetsAValueAtPositionN() {
-    expect lensIndex<Js>(0).set_(Str("cow"), Nums([1, 2, 3, 4])) == [Str("cow"), Num(2), Num(3), Num(4)];
+  function Abs(n: int): int { if n < 0 then -n else n }
+
+  method {:test} UniqByReturnsASetFromAnyArrayBasedOnPredicate() {
+    expect uniqBy(Abs, [-2, -1, 0, 1, 2]) == [-2, -1, 0];
   }
 
-  // The second assertion holds trivially: xs is a value.
-  method {:test} LensIndexTheSetterShouldNotMutateTheObject() {
-    var xs := [1, 2, 3, 4];
-    expect lensIndex<int>(0).set_(10, xs) == [10, 2, 3, 4];
-    expect xs == [1, 2, 3, 4];
+  method {:test} UniqByKeepsElementsFromTheLeft() {
+    expect uniqBy(Abs, [-1, 2, 4, 3, 1, 3]) == [-1, 2, 4, 3];
   }
 
-  method {:test} LensIndexMapsAnIndexFromGetterToSetter() {
-    expect lensIndex<int>(0).map_((x: int) => x + 10, [-9, 2, 3]) == [1, 2, 3];
-  }
-
-  // `uc(s) = s.toUpperCase()`
-  method {:test} LensIndexTheModifierShouldNotMutateTheObject() {
-    var xs := ["a", "b", "c"];
-    expect lensIndex<string>(0).map_(S.toUpper, xs) == ["A", "b", "c"];
-    expect xs == ["a", "b", "c"];
-  }
-
-  // `headPlus3 = R.compose(headOf.map(R.add(1)), headOf.map(R.add(2)))`,
-  // `set0Plus1 = R.compose(headOf.map(R.add(1)), headOf.set(0))` and
-  // `R.map(headPlus3)`. The getter, and so map_, requires a non-empty list,
-  // while compose and mapSeq take total functions, so each curried map_ is
-  // guarded by `|o| > 0`, which these non-empty lists always pass (node
-  // gives [NaN] for `headOf.map(R.add(1), [])`); the setter is total.
-  function HeadMap(k: int): seq<int> -> seq<int>
-  { (o: seq<int>) => if |o| > 0 then lensIndex<int>(0).map_((x: int) => x + k, o) else o }
-
-  method {:test} LensIndexCurriesMapAndSetAndModifiesWithComposedLens() {
-    var headPlus3 := Funcs.compose(HeadMap(1), HeadMap(2));
-    expect headPlus3([-2, 2, 3]) == [1, 2, 3];
-    var set0 := (o: seq<int>) => lensIndex<int>(0).set_(0, o);
-    var set0Plus1 := Funcs.compose(HeadMap(1), set0);
-    expect set0Plus1([-2, 2, 3]) == [1, 2, 3];
-    var mapHeadPlus3 := (l: seq<seq<int>>) => mapSeq(headPlus3, l);
-    expect mapHeadPlus3([[-2, 2, 3], [-1, 2, 3]]) == [[1, 2, 3], [2, 2, 3]];
+  method {:test} UniqByReturnsAnEmptyArrayForAnEmptyArray() {
+    var empty: seq<int> := [];
+    expect uniqBy((x: int) => x, empty) == [];
   }
 }

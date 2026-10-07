@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.15.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.16.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
@@ -6,8 +6,8 @@
 // there) but which stays here (functions do not move between modules); from
 // v0.9.0 on, the functions with `@category Relation` (`equals` and
 // `identical`; v0.15.0 removed `eqDeep`, v0.9.0, which `equals` replaces,
-// and `eq`, then in Object.dfy; v0.15.1 restored both, deprecated, and
-// `@category Relation` puts `eq` here too).
+// and `eq`, then in Object.dfy; v0.15.1 restored both, deprecated, with
+// `eq` here by `@category Relation`, and v0.16.0 removed them again).
 //
 // The set functions are `uniq`/`uniqWith` of a combined or filtered list, as
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
@@ -29,8 +29,7 @@ module Ramdaf.Data {
 
   export
     reveals union, unionWith, difference, differenceWith,
-            intersection, intersectionWith, countBy, groupBy, project, equals, identical,
-            eq, eqDeep
+            intersection, intersectionWith, countBy, groupBy, project, equals, identical
     provides Prelude, List, Object
 
   // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
@@ -156,7 +155,7 @@ module Ramdaf.Data {
   { List.mapSeq((obj: map<string, V>) => Object.pickAll(names, obj), list) }
 
   // `R.equals(a, b)` (v0.15.0, `@category Relation`, which replaces
-  // `eqDeep`, v0.9.0 to v0.14.0 and since v0.15.1 a deprecated alias of
+  // `eqDeep`, v0.9.0 to v0.14.0 and in v0.15.1 a deprecated alias of
   // equals): `a.equals(b)` or `b.equals(a)` when either
   // has an `equals` method (Fantasy-land), and otherwise `_equals(a, b, [],
   // [])`: values of the same `type` that are `identical` or, for arrays and
@@ -169,27 +168,10 @@ module Ramdaf.Data {
 
   // `R.identical(a, b)` (v0.15.0, `@category Relation`, in place of `eq`,
   // v0.1.0 to v0.14.0, which was `Object.is` since v0.9.0 and which v0.15.1
-  // restores, deprecated, below): `a === b ? a !==
+  // restored, deprecated, and v0.16.0 removed): `a === b ? a !==
   // 0 || 1 / a === 1 / b : a !== a && b !== b`, `Object.is`. On ints that is
   // `==`; JS can make `-0`, which an int does not have, and Dafny equality is
   // structural where JS compares objects and arrays by reference (README
   // "Deviations").
   function identical<T(==)>(a: T, b: T): bool { a == b }
-
-  // `R.eq(a, b)` (deprecated since v0.15.0, `@category Relation`): v0.15.0
-  // removed `eq` for `identical`, and v0.15.1 ("Deprecate `eq` and
-  // `deepEq`") restores it as `_curry2(_eq)`, with the private `_eq` holding
-  // `Object.is` again, the same results as `identical`. (Until v0.14.0 it
-  // was in Object.dfy, from v0.1.0, with `===` until v0.8.0; a removed name
-  // that returns is a new function, and `@category Relation` puts it here.)
-  // On ints that is `==`; JS can make `-0`, which an int does not have, and
-  // Dafny equality is structural where JS compares objects and arrays by
-  // reference (README "Deviations").
-  function eq<T(==)>(a: T, b: T): bool { a == b }
-
-  // `R.eqDeep = equals` (deprecated since v0.15.0, `@category Relation`):
-  // v0.15.1 restores the name removed in v0.15.0 as an alias of `equals`
-  // (v0.9.0 to v0.14.0 its own `_eqDeep`), so the alias calls it. Numbers are
-  // compared with `identical`, so `-0` differs from `0` (README "Deviations").
-  function eqDeep<T(==)>(a: T, b: T): bool { equals(a, b) }
 }

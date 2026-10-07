@@ -1,5 +1,5 @@
-// Ramda v0.15.1 test/always.js, T.js, F.js, compose.js, pipe.js,
-// converge.js, flip.js, ap.js, composeL.js and pipeL.js (until v0.8.0 test.always.js,
+// Ramda v0.16.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -9,7 +9,7 @@
 // "returns argument if given exactly one argument" (compose and pipe are
 // binary here, and the latter checks function identity; v0.11.0 replaces it
 // with "can be applied to one argument", a one-function compose or pipe and
-// its arity); flip's "produces a function that throws if given no arguments"
+// its arity), and v0.16.0's "is a variadic function" (arity); flip's "produces a function that throws if given no arguments"
 // (v0.4.0 to v0.10.0; no-argument call);
 // ap's "dispatches to the passed object's ap method" (method dispatch on a
 // non-array object) and the `typeof` check of its "is curried" (since v0.5.0
@@ -20,10 +20,12 @@
 // of functions that are not portable (README) are not transcribed: useWith,
 // once, memoize, construct, constructN, unary, binary, nAry, apply, unapply,
 // composeP, pipeP, curry, curryN, op, partial, partialRight, wrap, forEach,
-// forEachIndexed, installTo (until v0.11.0), path, pathOn, pathEq, is, isArrayLike, type,
+// forEachIndexed (until v0.15.1), installTo (until v0.11.0), path, pathOn,
+// pathEq, is, propIs (v0.16.0), isArrayLike, type,
 // functions, functionsIn, bind, invoker, lift, liftN, nthArg, and v0.9.0's
-// new arity.js and call.js, v0.14.0's uncurryN.js and v0.15.0's
-// addIndex.js; test/helpers/test.examplesRunner.js (test/ until v0.14.0) runs the JSDoc examples
+// new call.js, v0.14.0's uncurryN.js and v0.15.0's addIndex.js, and
+// v0.16.0's composeK.js and pipeK.js, whose monad is an `Identity` object
+// with a `chain` method, not a list (README "Deviations"); test/helpers/test.examplesRunner.js (test/ until v0.14.0) runs the JSDoc examples
 // through `dox` and is not a hand-written suite. (v0.1.3 moved test.lazy.js
 // out of test/, v0.4.1 removed test.always.js's "should be aliased by
 // `constant`" with `constant`, and v0.9.0 removed alwaysZero's describe with
@@ -36,7 +38,9 @@
 // with the function and added the unportable invoke.js, into.js and
 // transduce.js; v0.13.0 added isNaN.js and retitled the "is automatically
 // curried" `it`s "is curried"; v0.14.0 removed func.js with the function;
-// v0.15.0 removed isNaN.js with the function.)
+// v0.15.0 removed isNaN.js with the function; v0.16.0 removed composeL.js,
+// pipeL.js, arity.js and forEachIndexed.js with the functions and rewrote
+// compose.js and pipe.js.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -81,31 +85,30 @@ module RamdafTests.Ramda.Functions {
 
   // ---- compose.js, pipe.js, converge.js ----
 
-  function a(x: string): string { x + "A" }
-  function b(x: string): string { x + "B" }
-  function c(x: string): string { x + "C" }
-  function d(x: string): string { x + "D" }
+  // describe('compose'), describe('pipe'): v0.16.0's "performs
+  // right-to-left (left-to-right) function composition", with `f(a) = [a]`,
+  // `g(a, b) = [a, b]` and `h(a, b, c) = [a, b, c]` (the last two take a
+  // tuple here; Wrap, Pair and Triple, as F is Ramda's F), nested for three
+  // functions; its `.length` lines (arity),
+  // curried calls (`compose(f, f, g)(1)(2)`, since v0.16.0 the result is
+  // curried to the first function's arity) and `R.curry(g)` lines are not
+  // transcribed. (Until v0.15.1 "executes its passed in functions in order
+  // from right to left (left to right)" over string functions and "first
+  // function is passed multiple args".)
+  function Wrap<T>(a: T): seq<T> { [a] }
+  function Pair(t: (int, int)): seq<int> { [t.0, t.1] }
+  function Triple(t: (int, int, int)): seq<int> { [t.0, t.1, t.2] }
 
-  // `compose(a, b, c, d)`, nested
-  method {:test} ComposeRunsRightToLeft() {
-    expect compose(a, compose(b, compose(c, d)))("") == "DCBA";
+  method {:test} ComposePerformsRightToLeftFunctionComposition() {
+    expect compose(Wrap<seq<seq<int>>>, compose(Wrap<seq<int>>, Wrap<int>))(1) == [[[1]]];
+    expect compose(Wrap<seq<seq<int>>>, compose(Wrap<seq<int>>, Pair))((1, 2)) == [[[1, 2]]];
+    expect compose(Wrap<seq<seq<int>>>, compose(Wrap<seq<int>>, Triple))((1, 2, 3)) == [[[1, 2, 3]]];
   }
 
-  // v0.2.3: "first function is passed multiple args" (`e(a, b, c)` takes the
-  // three arguments as a tuple here).
-  function e(t: (int, int, int)): string { NumStr(t.2) + "E" }
-
-  method {:test} ComposeFirstFunctionIsPassedMultipleArgs() {
-    expect compose(a, compose(b, compose(c, e)))((1, 2, 3)) == "3ECBA";
-  }
-
-  // `pipe(a, b, c, d)`, nested
-  method {:test} PipeRunsLeftToRight() {
-    expect pipe(a, pipe(b, pipe(c, d)))("") == "ABCD";
-  }
-
-  method {:test} PipeFirstFunctionIsPassedMultipleArgs() {
-    expect pipe(e, pipe(a, pipe(b, c)))((1, 2, 3)) == "3EABC";
+  method {:test} PipePerformsLeftToRightFunctionComposition() {
+    expect pipe(Wrap<int>, pipe(Wrap<seq<int>>, Wrap<seq<seq<int>>>))(1) == [[[1]]];
+    expect pipe(Pair, pipe(Wrap<seq<int>>, Wrap<seq<seq<int>>>))((1, 2)) == [[[1, 2]]];
+    expect pipe(Triple, pipe(Wrap<seq<int>>, Wrap<seq<seq<int>>>))((1, 2, 3)) == [[[1, 2, 3]]];
   }
 
   // describe('converge') (describe('fork') until v0.4.1)
@@ -152,105 +155,5 @@ module RamdafTests.Ramda.Functions {
   method {:test} ApIsCurried() {
     var val := (vs: seq<int>) => ap([mult2, plus3], vs);
     expect val([1, 2, 3]) == [2, 4, 6, 4, 5, 6];
-  }
-
-  // ---- composeL.js and pipeL.js (v0.14.0) ----
-
-  // `identityLens = R.lens(R.identity, R.identity)` (the setter `identity(x,
-  // source)` returns x), `headLens = R.lensIndex(0)`, `secondLens =
-  // R.lensIndex(1)`, `xLens = R.lensProp('x')`. JS composes any number of
-  // lenses; here composeL and pipeL are binary, nested from the right as
-  // Ramda folds them (`composeL(a, b, c)` is `composeL(a, composeL(b, c))`,
-  // `pipeL(a, b, c)` is `composeL(c, b, a)`).
-  function IdentityLens<T>(): Lens<T, T> { lens(C.identity, (x: T, source: T) => C.identity(x)) }
-  function ObjWithList(): map<string, seq<int>> { map["x" := [1, 2, 3]] }
-  function ListOfObjs(): seq<map<string, int>> { [map["x" := 4], map["x" := 5], map["x" := 6]] }
-  function Source(): seq<map<string, seq<int>>>
-  { [map["x" := [0, 1], "y" := [2, 3]], map["x" := [4, 5], "y" := [6, 7]]] }
-  function HeadOfXLens(): Lens<map<string, seq<int>>, int> { composeL(lensIndex(0), O.lensProp("x")) }
-  function XOfHeadLens(): Lens<seq<map<string, int>>, int> { composeL(O.lensProp("x"), lensIndex(0)) }
-  function SecondOfXOfHeadLens(): Lens<seq<map<string, seq<int>>>, int>
-  { composeL(lensIndex(1), composeL(O.lensProp("x"), lensIndex(0))) }
-
-  method {:test} ComposeLComposesGetsFromRightToLeft() {
-    expect HeadOfXLens().get(ObjWithList()) == 1;
-    expect XOfHeadLens().get(ListOfObjs()) == 4;
-  }
-
-  method {:test} ComposeLComposesSetsFromRightToLeft() {
-    expect HeadOfXLens().set_(10, ObjWithList()) == map["x" := [10, 2, 3]];
-    expect XOfHeadLens().set_(10, ListOfObjs()) == [map["x" := 10], map["x" := 5], map["x" := 6]];
-  }
-
-  // The second assertion holds trivially: the source is a value.
-  method {:test} ComposeLDoesNotMutateTheSourceWhenSetting() {
-    expect HeadOfXLens().set_(10, ObjWithList()) == map["x" := [10, 2, 3]];
-    expect ObjWithList() == map["x" := [1, 2, 3]];
-  }
-
-  method {:test} ComposeLCanComposeMultipleLenses() {
-    var source := Source();
-    expect SecondOfXOfHeadLens().get(source) == 1;
-    expect SecondOfXOfHeadLens().set_(8, source) ==
-      [map["x" := [0, 8], "y" := [2, 3]], map["x" := [4, 5], "y" := [6, 7]]];
-    expect source == [map["x" := [0, 1], "y" := [2, 3]], map["x" := [4, 5], "y" := [6, 7]]];
-  }
-
-  // xLens.set(1, objWithList) puts the number 1 where the list was, so these
-  // objects hold Js values.
-  function JsObjWithList(): map<string, Js> { map["x" := Arr([Num(1), Num(2), Num(3)])] }
-
-  method {:test} ComposeLSatisfiesLeftIdentity() {
-    var xIdentityLens := composeL(O.lensProp<Js>("x"), IdentityLens());
-    expect xIdentityLens.get(JsObjWithList()) == O.lensProp<Js>("x").get(JsObjWithList());
-    expect xIdentityLens.set_(Num(1), JsObjWithList()) == O.lensProp<Js>("x").set_(Num(1), JsObjWithList());
-  }
-
-  method {:test} ComposeLSatisfiesRightIdentity() {
-    var identityXLens := composeL(IdentityLens(), O.lensProp<Js>("x"));
-    expect identityXLens.get(JsObjWithList()) == O.lensProp<Js>("x").get(JsObjWithList());
-    expect identityXLens.set_(Num(1), JsObjWithList()) == O.lensProp<Js>("x").set_(Num(1), JsObjWithList());
-  }
-
-  method {:test} ComposeLSatisfiesAssociativity() {
-    var source := Source();
-    var l1 := composeL(lensIndex<int>(1), composeL(O.lensProp<seq<int>>("x"), lensIndex<map<string, seq<int>>>(0)));
-    var l2 := composeL(composeL(lensIndex<int>(1), O.lensProp<seq<int>>("x")), lensIndex<map<string, seq<int>>>(0));
-    var expected := [map["x" := [0, 8], "y" := [2, 3]], map["x" := [4, 5], "y" := [6, 7]]];
-    expect l1.get(source) == 1;
-    expect l1.set_(8, source) == expected;
-    expect l2.get(source) == 1;
-    expect l2.set_(8, source) == expected;
-  }
-
-  // `headThenXLens = R.pipeL(headLens, xLens)`, `xThenHeadLens =
-  // R.pipeL(xLens, headLens)`, `headXHeadLens = R.pipeL(headLens, xLens,
-  // headLens)`
-  function HeadThenXLens(): Lens<seq<map<string, int>>, int> { pipeL(lensIndex(0), O.lensProp("x")) }
-  function XThenHeadLens(): Lens<map<string, seq<int>>, int> { pipeL(O.lensProp("x"), lensIndex(0)) }
-  function HeadXHeadLens(): Lens<seq<map<string, seq<int>>>, int>
-  { pipeL(pipeL(lensIndex(0), O.lensProp("x")), lensIndex(0)) }
-
-  method {:test} PipeLComposesGetsFromLeftToRight() {
-    expect XThenHeadLens().get(ObjWithList()) == 1;
-    expect HeadThenXLens().get(ListOfObjs()) == 4;
-  }
-
-  method {:test} PipeLComposesSetsFromLeftToRight() {
-    expect XThenHeadLens().set_(10, ObjWithList()) == map["x" := [10, 2, 3]];
-    expect HeadThenXLens().set_(10, ListOfObjs()) == [map["x" := 10], map["x" := 5], map["x" := 6]];
-  }
-
-  method {:test} PipeLDoesNotMutateTheSourceWhenSetting() {
-    expect XThenHeadLens().set_(10, ObjWithList()) == map["x" := [10, 2, 3]];
-    expect ObjWithList() == map["x" := [1, 2, 3]];
-  }
-
-  method {:test} PipeLCanComposeMultipleLenses() {
-    var source := Source();
-    expect HeadXHeadLens().get(source) == 0;
-    expect HeadXHeadLens().set_(8, source) ==
-      [map["x" := [8, 1], "y" := [2, 3]], map["x" := [4, 5], "y" := [6, 7]]];
-    expect source == [map["x" := [0, 1], "y" := [2, 3]], map["x" := [4, 5], "y" := [6, 7]]];
   }
 }

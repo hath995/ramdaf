@@ -1,42 +1,18 @@
-// Ramdaf: Ramda v0.15.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.16.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "String Functions" section; from v0.9.0 on, the functions
 // with `@category String` (`nthChar`, `nthCharCode`; v0.9.0 renamed
 // `toUpperCase` and `toLowerCase` to `toUpper` and `toLower`; v0.14.0
 // removed `charAt` and `charCodeAt`, deprecated since v0.12.0 for `nthChar`
-// and `nthCharCode`). The
+// and `nthCharCode`; v0.16.0 removed `substring`, `substringFrom`,
+// `substringTo`, `strIndexOf` and `strLastIndexOf`, deprecated since v0.15.0
+// for `slice`, `indexOf` and `lastIndexOf`, which work on strings). The
 // String.prototype methods, with JS's index clamping. A Dafny `string` is a
 // sequence of Unicode scalar values where JS counts UTF-16 code units, and
 // case conversion is ASCII-only (see README "Deviations").
 
 module Ramdaf.String {
   export
-    reveals substring, substringFrom, substringTo, nthChar, nthCharCode,
-            strIndexOf, strLastIndexOf, toUpper, toLower, trim, replace, split
-
-  // `R.substring = slice` (v0.12.0; until v0.11.0 `invoker(2, 'substring')`,
-  // `String.prototype.substring`, which clamped both indices into the string
-  // and swapped them when start > end): on a string `str.slice(start, end)`,
-  // so a negative index counts from the end (`substring(-4, -2, 'Ramda')` is
-  // 'am'), both are clamped into the string, and the result is empty when
-  // end falls at or before start. `List.slice` is written out, as String
-  // does not import List.
-  function substring(start: int, end: int, s: string): string
-    ensures |substring(start, end, s)| <= |s|
-  { var n := |s|;
-    var a := if start < 0 then (if n + start < 0 then 0 else n + start) else if start > n then n else start;
-    var b := if end < 0 then (if n + end < 0 then 0 else n + end) else if end > n then n else end;
-    if a < b then s[a..b] else "" }
-
-  // `substring(__, Infinity)` (v0.12.0; `flip(substring)(undefined)` until
-  // v0.11.0): `substringFrom(n, s) == s.slice(n)`, so a negative n counts from
-  // the end (`substringFrom(-2, 'Ramda')` is 'da'; it was 'Ramda'). The
-  // length is the end that Infinity is clamped to.
-  function substringFrom(n: int, s: string): string { substring(n, |s|, s) }
-
-  // `substring(0)`: `substringTo(n, s) == s.slice(0, n)` (since v0.12.0; a
-  // negative n counts from the end, `substringTo(-2, 'Ramda')` is 'Ram',
-  // where `s.substring(0, n)` gave '').
-  function substringTo(n: int, s: string): string { substring(0, n, s) }
+    reveals nthChar, nthCharCode, toUpper, toLower, trim, replace, split
 
   // `R.nthChar(n, str)` (v0.12.0, in place of `charAt`, which v0.14.0
   // removed): `str.charAt(n < 0 ? str.length + n : n)`, the character at n,
@@ -53,31 +29,6 @@ module Ramdaf.String {
   function nthCharCode(n: int, s: string): int
     requires 0 <= (if n < 0 then |s| + n else n) < |s|
   { s[if n < 0 then |s| + n else n] as int }
-
-  // `String.prototype.indexOf(sub)` (`str.indexOf(c)` since v0.5.0, an
-  // invoker before): the first index where sub occurs, or -1.
-  // (`sub <= t` is Dafny's prefix test: sub occurs at i iff `sub <= s[i..]`.)
-  function strIndexOf(sub: string, s: string): int
-    ensures strIndexOf(sub, s) == -1 ||
-      (0 <= strIndexOf(sub, s) <= |s| && sub <= s[strIndexOf(sub, s)..])
-    ensures forall i :: 0 <= i <= |s| && sub <= s[i..] ==> 0 <= strIndexOf(sub, s) <= i
-  { if |sub| > |s| then -1
-    else if sub <= s then 0
-    else var r := strIndexOf(sub, s[1..]);
-         assert forall i :: 1 <= i <= |s| ==> s[i..] == s[1..][i - 1..];
-         if r < 0 then -1 else r + 1 }
-
-  // `String.prototype.lastIndexOf(sub)` (`str.lastIndexOf(c)` since v0.5.0):
-  // the last index where sub occurs, or -1 (so `strLastIndexOf("", s) == |s|`).
-  function strLastIndexOf(sub: string, s: string): int
-    ensures strLastIndexOf(sub, s) == -1 ||
-      (0 <= strLastIndexOf(sub, s) <= |s| && sub <= s[strLastIndexOf(sub, s)..])
-    ensures forall i :: 0 <= i <= |s| && sub <= s[i..] ==> i <= strLastIndexOf(sub, s)
-  { if |sub| > |s| then -1
-    else if |s| == 0 then 0
-    else var r := strLastIndexOf(sub, s[1..]);
-         assert forall i :: 1 <= i <= |s| ==> s[i..] == s[1..][i - 1..];
-         if r >= 0 then r + 1 else if sub <= s then 0 else -1 }
 
   // `R.toUpper = invoker(0, 'toUpperCase')` (v0.9.0, which renamed
   // `toUpperCase` with the same code): `String.prototype.toUpperCase()`,
@@ -114,16 +65,24 @@ module Ramdaf.String {
   // of pattern is replaced, and in the replacement `$$` is `$`, `$&` the
   // match, `` $` `` the text before it and `$'` the text after it
   // (GetSubstitution; a string pattern has no captures, so `$1`, `$<` and any
-  // other `$` stay literal). The body expands the replacement one token at a
-  // time, left to right, recursing on the rest of the replacement.
+  // other `$` stay literal). The first occurrence is at the length of
+  // `split(pattern, str)`'s first piece, when there is more than one piece
+  // (an empty pattern occurs at 0); until v0.15.1 the body found it with the
+  // exported `strIndexOf`, which v0.16.0 removed, and the postconditions
+  // named it. The body expands the replacement one token at a time, left to
+  // right, recursing on the rest of the replacement.
   function replace(pattern: string, replacement: string, str: string): string
-    ensures strIndexOf(pattern, str) < 0 ==> replace(pattern, replacement, str) == str
-    ensures strIndexOf(pattern, str) >= 0 ==>
-      str[..strIndexOf(pattern, str)] <= replace(pattern, replacement, str)
+    ensures (forall j :: 0 <= j <= |str| ==> !(pattern <= str[j..])) ==>
+      replace(pattern, replacement, str) == str
+    ensures forall i :: 0 <= i <= |str| && pattern <= str[i..] &&
+                        (forall j :: 0 <= j < i ==> !(pattern <= str[j..])) ==>
+      str[..i] <= replace(pattern, replacement, str)
     decreases |replacement|
-  { var i := strIndexOf(pattern, str);
-    if i < 0 then str
+  { var parts := split(pattern, str);
+    if |pattern| > 0 && |parts| == 1 then str
     else
+      var i := if |pattern| == 0 then 0 else |parts[0]|;
+      assert pattern <= str[i..] && forall j :: 0 <= j < i ==> !(pattern <= str[j..]);
       var before, after := str[..i], str[i + |pattern|..];
       if |replacement| == 0 then before + after
       else
@@ -137,11 +96,24 @@ module Ramdaf.String {
         var rest := replace(pattern, if special then r[2..] else r[1..], str);
         before + piece + rest[|before|..] }
 
-  // `String.prototype.split(sep)`: the pieces between occurrences of sep;
-  // an empty separator splits into single characters (and "" into []).
+  // `String.prototype.split(sep)`: the pieces between occurrences of sep,
+  // found left to right; an empty separator splits into single characters
+  // (and "" into []). The body cuts at s's start when sep is a prefix of it,
+  // and otherwise puts s's first character at the start of the first piece
+  // of the rest (until v0.15.1 it found the first occurrence with the
+  // exported `strIndexOf`, which v0.16.0 removed; the pieces are the same).
   function split(sep: string, s: string): seq<string>
     decreases |s|
+    ensures |sep| > 0 ==> |split(sep, s)| > 0 && split(sep, s)[0] <= s
+    ensures |sep| > 0 ==> forall j :: 0 <= j < |split(sep, s)[0]| ==> !(sep <= s[j..])
+    ensures |sep| > 0 && |split(sep, s)| > 1 ==>
+      |split(sep, s)[0]| + |sep| <= |s| && sep <= s[|split(sep, s)[0]|..]
+    ensures |sep| > 0 && |split(sep, s)| == 1 ==> forall j :: 0 <= j <= |s| ==> !(sep <= s[j..])
   { if |sep| == 0 then (if |s| == 0 then [] else [[s[0]]] + split(sep, s[1..]))
-    else var i := strIndexOf(sep, s);
-         if i < 0 then [s] else [s[..i]] + split(sep, s[i + |sep|..]) }
+    else if sep <= s then [""] + split(sep, s[|sep|..])
+    else if |s| == 0 then [""]
+    else
+      var r := split(sep, s[1..]);
+      assert forall j :: 1 <= j <= |s| ==> s[j..] == s[1..][j - 1..];
+      [[s[0]] + r[0]] + r[1..] }
 }

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.15.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.16.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`
@@ -40,7 +40,10 @@ module Ramdaf.Core {
 
   // `R.nth(n, list)` (v0.8.0): `n < 0 ? list[list.length + n] : list[n]`,
   // the element at n, a negative n counting from the end; out of range it is
-  // undefined (documented: `nth(-99, list)`), here None. (v0.1.0 to v0.4.0
+  // undefined (documented: `nth(-99, list)`), here None. Since v0.16.0
+  // ("support strings in index and slice functions") a JS string gives
+  // `list.charAt(idx)`, the character, and '' out of range (`nth(3, 'abc')`),
+  // also None here (README "JS -> Dafny mapping"). (v0.1.0 to v0.4.0
   // had another `nth` in List, from v0.3.0 an alias of `prop`; v0.4.1
   // removed it.)
   function nth<T>(n: int, list: seq<T>): Option<T>
@@ -48,20 +51,22 @@ module Ramdaf.Core {
     if 0 <= i < |list| then Some(list[i]) else None }
 
   // `arr[0]` (since v0.8.0 `nth(0)`): `head([])` is undefined (not an
-  // element), so the empty list is excluded.
+  // element; `head('')` is '' since v0.16.0, not a character), so the empty
+  // list is excluded.
   function head<T>(list: seq<T>): T
     requires |list| > 0
   { list[0] }
 
-  // `arr[arr.length - 1]` (since v0.8.0 `nth(-1)`): `last([])` is undefined,
-  // so the empty list is excluded.
+  // `arr[arr.length - 1]` (since v0.8.0 `nth(-1)`): `last([])` is undefined
+  // (`last('')` '' since v0.16.0), so the empty list is excluded.
   function last<T>(list: seq<T>): T
     requires |list| > 0
   { list[|list| - 1] }
 
   // `_slice(list, 1)` (v0.8.0; `(arr.length > 1) ? slice(arr, 1) : []`
   // before, the same on lists, as `_slice` of a list with at most one
-  // element is [])
+  // element is []; since v0.16.0 `_checkForMethod('tail', slice(1,
+  // Infinity))`, the same, and a JS string gives a string)
   function tail<T>(list: seq<T>): seq<T>
     ensures |list| > 0 ==> tail(list) == list[1..]
   { if |list| <= 1 then [] else list[1..] }

@@ -1,8 +1,8 @@
-// Ramda v0.15.1 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.16.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
 // median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real
-// for division and for mean's and median's results); the string comparisons in lt/lte/gt/gte and the decimal/string
+// for division and for mean's and median's results); the string comparisons in lt/lte/gt/gte and the Date/string
 // cases of max/min are not expressible (README "Deviations"). `subtract`,
 // `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` were
 // `op`-curried until v0.10.0 and are `_curry2` since v0.11.0, with the same
@@ -200,70 +200,37 @@ module RamdafTests.Ramda.Math {
     expect gte20(25);
   }
 
-  // describe('max'), describe('min') (the decimal/string cases are not expressible)
-  method {:test} MaxCalculatesTheLargestValue() {
-    expect max([2, 1, 2, 8, 6, 7, 5, 3, 0, 9]) == 9;
-    expect max([7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1]) == 52;
+  // describe('max'), describe('min'): rewritten in v0.16.0 for the binary
+  // functions (until v0.15.1 they took a list: "calculates the largest
+  // value of a list", "finds max in any position", "accepts negative
+  // numbers, decimals, and even strings", "returns -Infinity for an empty
+  // list" and "returns a number"). Their "works for any orderable type"
+  // compares Dates and strings, not ints (README "Deviations").
+  method {:test} MaxReturnsTheLargerOfItsTwoArguments() {
+    expect max(-7, 7) == 7;
+    expect max(7, -7) == 7;
   }
-  // v0.7.0 (its "returns -Infinity for an empty list" is outside the domain,
-  // and "returns a number" has string elements)
-  method {:test} MaxFindsMaxInAnyPosition() {
-    expect max([6, 2, 1, 3]) == 6;
-    expect max([3, 6, 2, 1]) == 6;
-    expect max([3, 1, 6, 2]) == 6;
-    expect max([3, 1, 2, 6]) == 6;
-  }
-  // "accepts negative numbers, decimals, and even strings": the negative
-  // numbers only, with the decimals -4.3 and -1.1 truncated to ints.
-  method {:test} MaxAcceptsNegativeNumbers() {
-    expect max([-6, -2, -4, -1, -5]) == -1;
-  }
-  method {:test} MinCalculatesTheSmallestValue() {
-    expect min([2, 1, 2, 8, 6, 7, 5, 3, 0, 9]) == 0;
-    expect min([7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1]) == 1;
-  }
-  // v0.7.0 (as for max)
-  method {:test} MinFindsMinInAnyPosition() {
-    expect min([0, 2, 1, 3]) == 0;
-    expect min([3, 0, 2, 1]) == 0;
-    expect min([3, 1, 0, 2]) == 0;
-    expect min([3, 1, 2, 0]) == 0;
-  }
-  // As above for min.
-  method {:test} MinAcceptsNegativeNumbers() {
-    expect min([-6, -2, -4, -1, -5]) == -6;
+  method {:test} MinReturnsTheSmallerOfItsTwoArguments() {
+    expect min(-7, 7) == -7;
+    expect min(7, -7) == -7;
   }
 
   function Xy(x: int, y: int): map<string, int> { map["x" := x, "y" := y] }
   // `prop('x')`: every record here has an x.
   function X(o: map<string, int>): int { Field(o, "x") }
 
-  // describe('maxBy') (describe('maxWith') until v0.7.2; v0.2.0: a key
-  // function instead of a comparator)
-  method {:test} MaxByCalculatesTheLargestValueUsingTheKey() {
-    expect maxBy(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
+  // describe('maxBy') (describe('maxWith') until v0.7.2), describe('minBy'):
+  // rewritten in v0.16.0 for the binary functions (until v0.15.1 "calculates
+  // the largest (smallest) value of a list using the supplied comparator",
+  // "returns undefined (null) for the empty list" and "is curried"); `n => n
+  // * n` and `prop('x')`.
+  method {:test} MaxByReturnsTheLargerValueAsDeterminedByTheFunction() {
+    expect maxBy((n: int) => n * n, -3, 2) == -3;
+    expect maxBy(X, Xy(3, 1), Xy(5, 10)) == Xy(5, 10);
   }
-  method {:test} MaxByReturnsUndefinedForTheEmptyList() {
-    var empty: seq<map<string, int>> := [];
-    expect maxBy(X, empty) == None;
-  }
-  method {:test} MaxByIsProperlyCurried() {
-    var highestX := (l: seq<map<string, int>>) requires |l| != 1 => maxBy(X, l);
-    expect highestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
-  }
-
-  // describe('minBy') (describe('minWith') until v0.7.2)
-  method {:test} MinByCalculatesTheSmallestValueUsingTheKey() {
-    expect minBy(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
-  }
-  // "returns null for the empty list" checks for undefined
-  method {:test} MinByReturnsUndefinedForTheEmptyList() {
-    var empty: seq<map<string, int>> := [];
-    expect minBy(X, empty) == None;
-  }
-  method {:test} MinByIsProperlyCurried() {
-    var lowestX := (l: seq<map<string, int>>) requires |l| != 1 => minBy(X, l);
-    expect lowestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
+  method {:test} MinByReturnsTheSmallerValueAsDeterminedByTheFunction() {
+    expect minBy((n: int) => n * n, -3, 2) == 2;
+    expect minBy(X, Xy(3, 1), Xy(5, 10)) == Xy(3, 1);
   }
 
   // describe('inc') (v0.9.0): its int lines (12.34 and the infinities are

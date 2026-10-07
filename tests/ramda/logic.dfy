@@ -1,7 +1,8 @@
-// Ramda v0.15.1 test/both.js, either.js, complement.js, and.js, or.js,
-// not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js and
-// defaultTo.js (until v0.8.0 test.booleans.js, test.allany.js and
-// test.cond.js), transcribed.
+// Ramda v0.16.0 test/both.js, either.js, complement.js, and.js, or.js,
+// not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
+// defaultTo.js and propSatisfies.js (until v0.8.0 test.booleans.js,
+// test.allany.js and test.cond.js), transcribed. (v0.16.0 passes cond's
+// pairs as one list, `R.cond([[p, f], …])`, the port's form all along.)
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression", "short-circuits on first false value"), which detect a call by
 // its side effect, the "reports its arity" cases, and the "throws on zero
@@ -308,5 +309,17 @@ module RamdafTests.Ramda.Logic {
   method {:test} DefaultToCanBeCalledWithBothArgumentsDirectly() {
     expect defaultTo(Num(42), None) == Num(42);
     expect defaultTo(Num(42), Some(Str("a real value"))) == Str("a real value");
+  }
+
+  // describe('propSatisfies') (v0.16.0): `isPositive(n) = n > 0`, which
+  // gets the property, None when it is absent (`undefined > 0` is false)
+  function IsPositive(n: Option<int>): bool { n.Some? && n.value > 0 }
+
+  method {:test} PropSatisfiesReturnsTrueIfThePropertySatisfiesThePredicate() {
+    expect propSatisfies(IsPositive, "x", map["x" := 1, "y" := 0]) == true;
+  }
+
+  method {:test} PropSatisfiesReturnsFalseOtherwise() {
+    expect propSatisfies(IsPositive, "y", map["x" := 1, "y" := 0]) == false;
   }
 }

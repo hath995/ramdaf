@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.15.1's own suite does not cover, each checked against
-// dist/ramda.js v0.15.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.16.0's own suite does not cover, each checked against
+// dist/ramda.js v0.16.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -7,6 +7,7 @@ module RamdafTests.Edge.List {
   import opened Ramdaf.Core
   import opened Ramdaf.List
   import M = Ramdaf.Math
+  import O = Ramdaf.Object
   import opened Support
 
   method {:test} CoreEdges() {
@@ -40,30 +41,6 @@ module RamdafTests.Edge.List {
     expect reduceRight((acc: seq<int>, x: int) => [x] + acc, empty, [1, 2]) == [1, 2];
     expect reduceRight((acc: string, a: string) => acc + a, "", ["x", "y", "z"]) == "zyx";
     expect reduceRight((acc: int, a: int) => acc - a, 0, [1, 2, 3, 4]) == -10;
-  }
-
-  // The indexed folds (the `.idx` properties until v0.8.0, foldlIndexed and
-  // foldrIndexed in v0.9.x) pass (acc, element, index, list).
-  method {:test} IndexedFoldsPassTheIndexAndList() {
-    var empty: seq<string> := [];
-    var f := (acc: string, x: string, i: nat, l: seq<string>) => acc + x + NumStr(i) + NumStr(|l|);
-    expect reduceIndexed(f, "", ["a", "b"]) == "a02b12";
-    expect reduceRightIndexed(f, "", ["a", "b"]) == "b12a02";
-    expect reduceIndexed(f, "5", empty) == "5";
-    expect reduceIndexed((acc: int, x: int, i: nat, l: seq<int>) => acc + x * i, 0, [1, 2, 3]) == 8;
-    var none: seq<nat> := [];
-    expect reduceRightIndexed((acc: seq<nat>, x: int, i: nat, l: seq<int>) => acc + [i], none, [9, 9, 9]) == [2, 1, 0];
-  }
-
-  method {:test} IndexedMapFilterRejectEdges() {
-    var empty: seq<int> := [];
-    expect mapIndexed((x: int, i: nat, l: seq<int>) => x + i, empty) == [];
-    expect mapIndexed((x: int, i: nat, l: seq<int>) => |l| - i, [5, 5, 5]) == [3, 2, 1];
-    expect filterIndexed((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7];
-    expect filterIndexed((x: int, i: nat, l: seq<int>) => false, [1, 2]) == [];
-    expect filterIndexed((x: int, i: nat, l: seq<int>) => i < |l|, [1, 2]) == [1, 2];
-    expect rejectIndexed((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7, 7];
-    expect rejectIndexed((x: int, i: nat, l: seq<int>) => true, empty) == [];
   }
 
   // Since v0.4.2 findLast/findLastIndex test index 0 and end on the empty
@@ -299,24 +276,24 @@ module RamdafTests.Edge.List {
     expect commuteMap(reverse, of, [[1, 2], [3, 4]]) == [[2, 4], [1, 4], [2, 3], [1, 3]];
   }
 
-  // lens (v0.8.0), Ramda's headLens example (node: 10, ['mu', 20, 30, 40],
-  // [11, 20, 30, 40]).
+  // lens (v0.8.0), Ramda's headLens example, run with view, set and over
+  // since v0.16.0 (node: 10, ['mu', 20, 30, 40], [11, 20, 30, 40]).
   method {:test} LensEdges() {
-    var headLens := lens((a: seq<Js>) => if |a| > 0 then a[0] else Undefined,
+    var headLens := lens<seq<Js>, Js, Js>((a: seq<Js>) => if |a| > 0 then a[0] else Undefined,
                          (v: Js, a: seq<Js>) => [v] + (if |a| > 0 then a[1..] else []));
     var l := [Num(10), Num(20), Num(30), Num(40)];
-    expect headLens.get(l) == Num(10);
-    expect headLens.set_(Str("mu"), l) == [Str("mu"), Num(20), Num(30), Num(40)];
-    expect headLens.map_((x: Js) => if x.Num? then Num(x.n + 1) else x, l) == [Num(11), Num(20), Num(30), Num(40)];
-    // On ints the getter is partial: node's `l([])` is undefined and
-    // `l.map(x => x + 1, [])` is `[NaN]`, so get and map_ require a
-    // non-empty list; the setter is total (`l.set(9, [])` is `[9]`). Node:
-    // 10, [9], [11, 20].
-    var intHead := lens((a: seq<int>) requires |a| > 0 => a[0],
+    expect O.view(headLens, l) == Num(10);
+    expect O.set_(headLens, Str("mu"), l) == [Str("mu"), Num(20), Num(30), Num(40)];
+    expect O.over(headLens, (x: Js) => if x.Num? then Num(x.n + 1) else x, l) == [Num(11), Num(20), Num(30), Num(40)];
+    // On ints the getter is partial: node's `view(l, [])` is undefined, and
+    // since v0.16.0 `set` runs the getter too (`set(l, 9, [])` is [9], which
+    // the setter alone gave in v0.15.x), so every use requires a non-empty
+    // list. Node: 10, [9, 20], [11, 20].
+    var intHead := lens<seq<int>, int, int>((a: seq<int>) requires |a| > 0 => a[0],
                         (v: int, a: seq<int>) => [v] + (if |a| > 0 then a[1..] else []));
-    expect intHead.get([10, 20]) == 10;
-    expect intHead.set_(9, []) == [9];
-    expect intHead.map_((x: int) => x + 1, [10, 20]) == [11, 20];
+    expect O.view(intHead, [10, 20]) == 10;
+    expect O.set_(intHead, 9, [10, 20]) == [9, 20];
+    expect O.over(intHead, (x: int) => x + 1, [10, 20]) == [11, 20];
   }
 
   // xprod (v0.8.0 removed xprodWith; xprod is unchanged): node gives
@@ -410,34 +387,27 @@ module RamdafTests.Edge.List {
     expect dropRepeatsWith((a: int, b: int) => abs(a) == abs(b), [1, -1, 1, 3, -3]) == [1, 3];
   }
 
-  // lensIndex (v0.14.0). Node: `lensIndex(0)([1, 2])` 1, `lensIndex(-1)` 2,
-  // `lensIndex(-2)` 1; since v0.15.1 the setter is `update(n)`:
-  // `.set(9, [1, 2])` [9, 2] at 0 and -2, [1, 9] at 1 and -1, and [1, 2] at
-  // 2, 5 and -3 (out of range, the list); `lensIndex(0).set(9, [])` and
-  // `lensIndex(-1).set(9, [])` []; `lensIndex(-1).map(x => x + 1, [1, 2])`
-  // [1, 3], `lensIndex(-2).map(…)` [2, 2], `lensIndex(1).map(x => x + 1, [1,
-  // 2, 3])` [1, 3, 3]. (In v0.14.0 and v0.15.0 the `_slice` setter gave [1,
-  // 2, 9] at 2 and 5, [9, 1, 2] at -1, [9] for [], and `map` at -1 [3, 1,
-  // 2]; it read undefined holes for n <= -2. Outside the domain:
-  // `lensIndex(5)([1, 2])` and `lensIndex(-3)([1, 2])` are undefined, and
-  // `lensIndex(5).map(x => x + 1, [1, 2])` calls fn on undefined.)
+  // lensIndex (v0.14.0), run with view, set and over since v0.16.0. Node:
+  // `view(lensIndex(0), [1, 2])` 1, at -1 2, at -2 1; `set(…, 9, [1, 2])`
+  // [9, 2] at 0 and -2, [1, 9] at 1 and -1 (the setter is `update(n)` since
+  // v0.15.1); `over(…, x => x + 1, [1, 2])` [2, 2] at 0 and -2, [1, 3] at 1
+  // and -1; `over(lensIndex(1), …, [1, 2, 3])` [1, 3, 3]. (Outside the
+  // domain: `view(lensIndex(5), [1, 2])` is undefined, and since v0.16.0
+  // `set` and `over` run the getter, so `set(lensIndex(5), 9, [1, 2])`
+  // ([1, 2]) and `set(lensIndex(0), 9, [])` ([]) are outside it too; in
+  // v0.15.1 the setter alone was total.)
   method {:test} LensIndexEdges() {
-    var none: seq<int> := [];
-    expect lensIndex<int>(0).get([1, 2]) == 1;
-    expect lensIndex<int>(-1).get([1, 2]) == 2;
-    expect lensIndex<int>(-2).get([1, 2]) == 1;
-    expect lensIndex<int>(0).set_(9, [1, 2]) == [9, 2];
-    expect lensIndex<int>(1).set_(9, [1, 2]) == [1, 9];
-    expect lensIndex<int>(2).set_(9, [1, 2]) == [1, 2];
-    expect lensIndex<int>(5).set_(9, [1, 2]) == [1, 2];
-    expect lensIndex<int>(-1).set_(9, [1, 2]) == [1, 9];
-    expect lensIndex<int>(-2).set_(9, [1, 2]) == [9, 2];
-    expect lensIndex<int>(-3).set_(9, [1, 2]) == [1, 2];
-    expect lensIndex<int>(-1).set_(9, none) == [];
-    expect lensIndex<int>(0).set_(9, none) == [];
-    expect lensIndex<int>(-1).map_((x: int) => x + 1, [1, 2]) == [1, 3];
-    expect lensIndex<int>(-2).map_((x: int) => x + 1, [1, 2]) == [2, 2];
-    expect lensIndex<int>(1).map_((x: int) => x + 1, [1, 2, 3]) == [1, 3, 3];
+    expect O.view(lensIndex<int, int>(0), [1, 2]) == 1;
+    expect O.view(lensIndex<int, int>(-1), [1, 2]) == 2;
+    expect O.view(lensIndex<int, int>(-2), [1, 2]) == 1;
+    expect O.set_(lensIndex<int, int>(0), 9, [1, 2]) == [9, 2];
+    expect O.set_(lensIndex<int, int>(1), 9, [1, 2]) == [1, 9];
+    expect O.set_(lensIndex<int, int>(-1), 9, [1, 2]) == [1, 9];
+    expect O.set_(lensIndex<int, int>(-2), 9, [1, 2]) == [9, 2];
+    expect O.over(lensIndex<int, int>(0), (x: int) => x + 1, [1, 2]) == [2, 2];
+    expect O.over(lensIndex<int, int>(-1), (x: int) => x + 1, [1, 2]) == [1, 3];
+    expect O.over(lensIndex<int, int>(-2), (x: int) => x + 1, [1, 2]) == [2, 2];
+    expect O.over(lensIndex<int, int>(1), (x: int) => x + 1, [1, 2, 3]) == [1, 3, 3];
   }
 
   method {:test} TakeDropEdges() {
@@ -666,6 +636,42 @@ module RamdafTests.Edge.List {
     expect none((x: int) => true, empty) == true;
   }
 
+  // v0.16.0's last-n functions (node: [], [], [1]; [], [1, 2, 3], [1, 2, 3],
+  // [1, 2]; [], [3, 1], [1, 2]; [1, 2], [2], [], and ['b'] for
+  // `takeLastWhile(x => x !== 'a', 'bab')`, an array of characters, the
+  // same seq here).
+  method {:test} LastNEdges() {
+    var empty: seq<int> := [];
+    expect dropLast(1, empty) == [];
+    expect dropLast(3, [1, 2, 3]) == [];
+    expect dropLast(2, [1, 2, 3]) == [1];
+    expect takeLast(1, empty) == [];
+    expect takeLast(3, [1, 2, 3]) == [1, 2, 3];
+    expect takeLast(5, [1, 2, 3]) == [1, 2, 3];
+    expect takeLast(-2, [1, 2]) == [1, 2];
+    expect dropLastWhile((x: int) => true, [1, 2]) == [];
+    expect dropLastWhile((x: int) => x > 1, [3, 1, 2]) == [3, 1];
+    expect dropLastWhile((x: int) => false, [1, 2]) == [1, 2];
+    expect takeLastWhile((x: int) => true, [1, 2]) == [1, 2];
+    expect takeLastWhile((x: int) => x > 1, [3, 1, 2]) == [2];
+    expect takeLastWhile((x: int) => false, [1, 2]) == [];
+    expect takeLastWhile((c: char) => c != 'a', "bab") == "b";
+  }
+
+  // splitEvery and uniqBy (v0.16.0). Node: [[1]], [], [[1, 2, 3], [4, 5, 6],
+  // [7]]; `uniqBy(x => x % 3, [1, 4, 2, 7, 5, 3])` [1, 2, 3], `uniqBy(x => [x
+  // % 2], [1, 3, 2])` [1, 2] (array keys compared with `R.equals`), `uniqBy(x
+  // => 0, [5, 6])` [5].
+  method {:test} SplitEveryAndUniqByEdges() {
+    var empty: seq<int> := [];
+    expect splitEvery(2, [1]) == [[1]];
+    expect splitEvery(1, empty) == [];
+    expect splitEvery(3, [1, 2, 3, 4, 5, 6, 7]) == [[1, 2, 3], [4, 5, 6], [7]];
+    expect uniqBy((x: int) => x % 3, [1, 4, 2, 7, 5, 3]) == [1, 2, 3];
+    expect uniqBy((x: int) => [x % 2], [1, 3, 2]) == [1, 2];
+    expect uniqBy((x: int) => 0, [5, 6]) == [5];
+  }
+
   // ---- documented deviations (not node behaviour) ----
 
   // JS unfold (unfoldr until v0.9.1) would loop forever here; the fuel bound
@@ -750,7 +756,8 @@ module RamdafTests.Edge.List {
   // with `Object.is`: `contains(negate(0), [0])` is false, `indexOf` and
   // `lastIndexOf` of it -1, `isSet([0, negate(0)])` true, and `uniq` and
   // `dropRepeats` of that list [0, -0] (with `===` until v0.13.0: true, 0,
-  // 0, false, [0]). An int has no -0.
+  // 0, false, [0]); since v0.16.0 `uniqBy(identity, [negate(0), 0])` is
+  // [-0, 0] (`_contains`, `R.equals`). An int has no -0.
   method {:test} DeviationListSearchesSignedZero() {
     var z := M.negate(0);
     expect contains(z, [0]) == true;
@@ -759,5 +766,6 @@ module RamdafTests.Edge.List {
     expect isSet([0, z]) == false;
     expect uniq([0, z]) == [0];
     expect dropRepeats([0, z]) == [0];
+    expect uniqBy((x: int) => x, [z, 0]) == [z];
   }
 }

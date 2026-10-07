@@ -1,10 +1,11 @@
-// Ramda v0.15.1 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.16.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
 // identity.js and isNil.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
 // were test.core.js, test.clone.js, test.cloneDeep.js and test.identity.js).
-// Not transcribed: head's and last's "returns undefined for an empty list"
-// (the empty list is outside their domain, README "Outside the modeled
+// Not transcribed: the `head([])`, `head('')`, `last([])` and `last('')`
+// lines (until v0.15.1 the `it`s "returns undefined for an empty list"; the
+// empty list is outside their domain, README "Outside the modeled
 // domain"); the "throws if applied to null or undefined" cases of nth, head,
 // last and tail (null and undefined are not lists); concat's "delegates to
 // non-String object with a concat method, as second param" (method dispatch
@@ -128,7 +129,10 @@ module RamdafTests.Ramda.Core {
     expect conc123Js([Str("a"), Str("b"), Str("c")]) == [Num(1), Num(2), Num(3), Str("a"), Str("b"), Str("c")];
   }
 
-  // describe('nth') (v0.8.0): undefined is None
+  // describe('nth') (v0.8.0): undefined is None. v0.16.0 adds string lines:
+  // a character is a one-character JS string, here a char, and the '' that
+  // `nth(3, 'abc')` gives out of range is None (README "JS -> Dafny
+  // mapping"); v0.16.0 removed "is curried".
   function NthList(): seq<string> { ["foo", "bar", "baz", "quux"] }
 
   method {:test} NthAcceptsPositiveOffsets() {
@@ -137,6 +141,10 @@ module RamdafTests.Ramda.Core {
     expect nth(2, NthList()) == Some("baz");
     expect nth(3, NthList()) == Some("quux");
     expect nth(4, NthList()) == None;
+    expect nth(0, "abc") == Some('a');
+    expect nth(1, "abc") == Some('b');
+    expect nth(2, "abc") == Some('c');
+    expect nth(3, "abc") == None;
   }
 
   method {:test} NthAcceptsNegativeOffsets() {
@@ -145,31 +153,49 @@ module RamdafTests.Ramda.Core {
     expect nth(-3, NthList()) == Some("bar");
     expect nth(-4, NthList()) == Some("foo");
     expect nth(-5, NthList()) == None;
+    expect nth(-1, "abc") == Some('c');
+    expect nth(-2, "abc") == Some('b');
+    expect nth(-3, "abc") == Some('a');
+    expect nth(-4, "abc") == None;
   }
 
-  method {:test} NthIsCurried() {
-    var nth0 := (l: seq<string>) => nth(0, l);
-    expect nth0(NthList()) == Some("foo");
+  // describe('head'): v0.16.0's "returns the first element of an ordered
+  // collection" (until v0.15.1 "returns the first element of a list", over
+  // ['a', 'b', 'c', 'd']); its `head([])` and `head('')` lines are outside
+  // the domain (undefined and '', README "Outside the modeled domain")
+  method {:test} HeadReturnsTheFirstElementOfAnOrderedCollection() {
+    expect head([1, 2, 3]) == 1;
+    expect head([2, 3]) == 2;
+    expect head([3]) == 3;
+    expect head("abc") == 'a';
+    expect head("bc") == 'b';
+    expect head("c") == 'c';
   }
 
-  // describe('head')
-  method {:test} HeadReturnsTheFirstElement() {
-    expect head(["a", "b", "c", "d"]) == "a";
+  // describe('last'): v0.16.0's "returns the first element of an ordered
+  // collection" (sic; it checks the last), with the same exclusions
+  method {:test} LastReturnsTheFirstElementOfAnOrderedCollection() {
+    expect last([1, 2, 3]) == 3;
+    expect last([1, 2]) == 2;
+    expect last([1]) == 1;
+    expect last("abc") == 'c';
+    expect last("ab") == 'b';
+    expect last("a") == 'a';
   }
 
-  // describe('last') ("returns the first element of a list" checks the last)
-  method {:test} LastReturnsTheLastElement() {
-    expect last(["a", "b", "c", "d"]) == "d";
-  }
-
-  // describe('tail')
-  method {:test} TailReturnsAnEmptyListForAnEmptyList() {
-    var empty: seq<string> := [];
+  // describe('tail'): v0.16.0's "returns the tail of an ordered collection"
+  // (until v0.15.1 "returns an empty list for an empty list" and "returns a
+  // new list containing all the elements after the first element of a list")
+  method {:test} TailReturnsTheTailOfAnOrderedCollection() {
+    var empty: seq<int> := [];
+    expect tail([1, 2, 3]) == [2, 3];
+    expect tail([2, 3]) == [3];
+    expect tail([3]) == [];
     expect tail(empty) == [];
-  }
-
-  method {:test} TailReturnsTheRest() {
-    expect tail(["a", "b", "c", "d"]) == ["b", "c", "d"];
+    expect tail("abc") == "bc";
+    expect tail("bc") == "c";
+    expect tail("c") == "";
+    expect tail("") == "";
   }
 
   // describe('length') (v0.9.0; describe('size') until v0.8.0)

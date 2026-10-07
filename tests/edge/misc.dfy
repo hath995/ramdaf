@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.15.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.16.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -27,7 +27,7 @@ module RamdafTests.Edge.Misc {
     var none: map<string, int> := map[];
     expect eqProps("x", none, none) == true;
     expect eqProps("x", map["x" := 1], none) == false;
-    expect propEq("nope", 1, map["foo" := 1]) == false;
+    expect propEq(1, "nope", map["foo" := 1]) == false;
     expect prop("nope", map["a" := 1]) == None;
     expect keys(none) == {};
   }
@@ -180,33 +180,34 @@ module RamdafTests.Edge.Misc {
     expect whereEq(map["a" := 1, "b" := 2], map["a" := 1]) == false;
   }
 
-  // lensProp (v0.14.0). Node: `lensProp('a')({a: 1})` is 1,
-  // `lensProp('x').set(9, {})` is {x: 9} (the setter is `assoc`, total), and
-  // `lensProp('a').map(x => x + 1, {a: 1, b: 2})` is {a: 2, b: 2}.
-  // (`lensProp('x')({})` is undefined, outside the getter's domain.)
+  // lensProp (v0.14.0), run with view, set and over since v0.16.0. Node:
+  // `view(lensProp('a'), {a: 1})` is 1, `set(lensProp('x'), 9, {x: 1})` is
+  // {x: 9}, and `over(lensProp('a'), x => x + 1, {a: 1, b: 2})` is {a: 2,
+  // b: 2}. (`view(lensProp('x'), {})` is undefined, outside the getter's
+  // domain, and since v0.16.0 so is `set(lensProp('x'), 9, {})`, {x: 9} in
+  // node, as `set` runs the getter.)
   method {:test} LensPropEdges() {
-    expect lensProp("a").get(map["a" := 1]) == 1;
-    var none: map<string, int> := map[];
-    expect lensProp("x").set_(9, none) == map["x" := 9];
-    expect lensProp("a").map_((x: int) => x + 1, map["a" := 1, "b" := 2]) == map["a" := 2, "b" := 2];
+    expect view(lensProp<int, int>("a"), map["a" := 1]) == 1;
+    expect set_(lensProp<int, int>("x"), 9, map["x" := 1]) == map["x" := 9];
+    expect over(lensProp<int, int>("a"), (x: int) => x + 1, map["a" := 1, "b" := 2]) == map["a" := 2, "b" := 2];
   }
 
-  // composeL and pipeL (v0.14.0) of property lenses. Node: for
-  // `l = composeL(lensProp('b'), lensProp('a'))` and `s = {a: {b: 1}, c: {d:
-  // 2}}`, `l(s)` is 1, `l.set(9, s)` is {a: {b: 9}, c: {d: 2}}, `l.map(x =>
-  // x + 1, s)` is {a: {b: 2}, c: {d: 2}}, `l.set(9, {a: {}})` is {a: {b: 9}};
-  // `pipeL(lensProp('a'), lensProp('b'))` gives the same.
-  method {:test} ComposeLEdges() {
-    var l := composeL(lensProp<int>("b"), lensProp<map<string, int>>("a"));
+  // Lenses compose with compose and pipe (v0.16.0; composeL and pipeL from
+  // v0.14.0 to v0.15.1). Node: for `l = compose(lensProp('a'),
+  // lensProp('b'))` and `s = {a: {b: 1}, c: {d: 2}}`, `view(l, s)` is 1,
+  // `set(l, 9, s)` is {a: {b: 9}, c: {d: 2}} and `over(l, x => x + 1, s)` is
+  // {a: {b: 2}, c: {d: 2}}; `pipe(lensProp('b'), lensProp('a'))`, the same
+  // lens, gives 1 and {a: {b: 9}, c: {d: 2}}. (`set(l, 9, {a: {}})` is {a:
+  // {b: 9}} in node, outside the domain: the inner getter needs b.)
+  method {:test} ComposedLensEdges() {
+    var l := compose(lensProp<map<string, int>, int>("a"), lensProp<int, int>("b"));
     var s := map["a" := map["b" := 1], "c" := map["d" := 2]];
-    expect l.get(s) == 1;
-    expect l.set_(9, s) == map["a" := map["b" := 9], "c" := map["d" := 2]];
-    expect l.map_((x: int) => x + 1, s) == map["a" := map["b" := 2], "c" := map["d" := 2]];
-    var noB: map<string, int> := map[];
-    expect l.set_(9, map["a" := noB]) == map["a" := map["b" := 9]];
-    var p := pipeL(lensProp<map<string, int>>("a"), lensProp<int>("b"));
-    expect p.get(s) == 1;
-    expect p.set_(9, s) == map["a" := map["b" := 9], "c" := map["d" := 2]];
+    expect view(l, s) == 1;
+    expect set_(l, 9, s) == map["a" := map["b" := 9], "c" := map["d" := 2]];
+    expect over(l, (x: int) => x + 1, s) == map["a" := map["b" := 2], "c" := map["d" := 2]];
+    var p := pipe(lensProp<int, int>("b"), lensProp<map<string, int>, int>("a"));
+    expect view(p, s) == 1;
+    expect set_(p, 9, s) == map["a" := map["b" := 9], "c" := map["d" := 2]];
   }
 
   // JS `%` truncates toward zero: the remainder takes the dividend's sign.
@@ -254,59 +255,39 @@ module RamdafTests.Edge.Misc {
 
   method {:test} MathEdges() {
     var empty: seq<int> := [];
-    // ties (v0.7.0's createMaxMin keeps the first winner)
-    expect max([3, 3]) == 3;
-    expect min([2, 2, 5]) == 2;
+    // max and min (binary since v0.16.0) keep the first argument on a tie
+    // (node: 3, 2, 9, 3, 9; until v0.15.1 they took a list, and
+    // createMaxMin kept the first winner)
+    expect max(3, 3) == 3;
+    expect min(2, 2) == 2;
+    expect max(9, 3) == 9;
+    expect min(9, 3) == 3;
+    expect max(3, 9) == 9;
     expect subtract(2, 5) == -3;
     expect divide(6.0, 3.0) == 2.0;
-    expect max([3, 9, 2]) == 9;
-    expect min([3, 9, 2]) == 2;
-    expect max([5]) == 5;
     expect sum(empty) == 0;
     expect product(empty) == 1;
   }
 
-  // v0.2.0: maxWith/minWith (since v0.8.0 maxBy/minBy) take a key function,
-  // and the running winner is replaced only by a strictly better key, so the
-  // first of equals wins (node: `maxBy(k => k % 3, [1, 3, 3, 2])` is 2).
-  // Since v0.15.0 the first element is skipped: node gives [5, 1] and [1, 1]
-  // here, and 3 for `maxBy(x => x % 2, [1, 3, 2])` and 4 for `minBy(x => x %
-  // 2, [2, 4, 1])` (1 and 2 until v0.14.0).
+  // maxBy and minBy (binary since v0.16.0, `f(b) > f(a) ? b : a`) keep the
+  // first argument on a tie (node: [5, 1], [1, 1], 3, 3). (Since v0.2.0
+  // maxWith/minWith, maxBy/minBy since v0.8.0, took a key function and a
+  // list, the first of equals winning; in v0.15.x the first element was
+  // skipped.)
   method {:test} MaxByMinByKeepTheFirstOfEquals() {
-    expect maxBy((r: (int, int)) => r.0, [(3, 0), (5, 1), (5, 2), (1, 3)]) == Some((5, 1));
-    expect minBy((r: (int, int)) => r.0, [(3, 0), (1, 1), (1, 2)]) == Some((1, 1));
-    expect maxBy((x: int) => x % 2, [1, 3, 2]) == Some(3);
-    expect minBy((x: int) => x % 2, [2, 4, 1]) == Some(4);
+    expect maxBy((r: (int, int)) => r.0, (5, 1), (5, 2)) == (5, 1);
+    expect minBy((r: (int, int)) => r.0, (1, 1), (1, 2)) == (1, 1);
+    expect maxBy((x: int) => x % 2, 3, 5) == 3;
+    expect minBy((x: int) => x % 2, 3, 5) == 3;
   }
 
-  // Node (v0.15.0): `maxBy(x => -x, [1, 2, 3])` is 2 (1 until v0.14.0, as
-  // list[0] is skipped), `minBy(x => -x, [1, 2, 3])` 3, `minBy(x => x, [])`
-  // undefined, and `maxBy(x => x, [9, 1])` 1. (`maxBy(x => x, [7])` is
-  // undefined, 7 until v0.14.0, outside the domain.)
+  // Node (v0.16.0): `maxBy(x => -x, 1, 2)` is 1, `minBy(x => -x, 1, 2)` 2,
+  // `maxBy(x => x, 9, 1)` 9 and `minBy(x => x, 9, 1)` 1.
   method {:test} MaxByMinByCompareKeys() {
-    var empty: seq<int> := [];
-    expect maxBy((x: int) => -x, [1, 2, 3]) == Some(2);
-    expect minBy((x: int) => -x, [1, 2, 3]) == Some(3);
-    expect minBy((x: int) => x, empty) == None;
-    expect maxBy((x: int) => x, [9, 1]) == Some(1);
-  }
-
-  // Since v0.12.0 substring is slice: a negative index counts from the end,
-  // both are clamped, and nothing is swapped (node: '', 'c', 'b', '', '', '',
-  // 'cd', 'abc', 'ab', 'ab'; until v0.11.0 String.prototype.substring
-  // clamped negatives to 0 and swapped, giving 'cde', 'c', 'ab', 'abc', '',
-  // '', 'abcd', 'abc', '', 'ab').
-  method {:test} SubstringIsSlice() {
-    expect substring(5, 2, "abcdefg") == "";
-    expect substring(2, 100, "abc") == "c";
-    expect substring(-3, 2, "abcd") == "b";
-    expect substring(3, -1, "abcd") == "";
-    expect substring(2, 2, "abcd") == "";
-    expect substringFrom(10, "abc") == "";
-    expect substringFrom(-2, "abcd") == "cd";
-    expect substringTo(10, "abc") == "abc";
-    expect substringTo(-2, "abcd") == "ab";
-    expect substring(-10, 2, "abcd") == "ab";
+    expect maxBy((x: int) => -x, 1, 2) == 1;
+    expect minBy((x: int) => -x, 1, 2) == 2;
+    expect maxBy((x: int) => x, 9, 1) == 9;
+    expect minBy((x: int) => x, 9, 1) == 1;
   }
 
   // nthChar and nthCharCode (v0.12.0) count a negative n from the end; out
@@ -328,16 +309,6 @@ module RamdafTests.Edge.Misc {
     expect split(",", "a,b,") == ["a", "b", ""];
     expect split("aa", "aaa") == ["", "a"];
     expect split("x", "abc") == ["abc"];
-  }
-
-  method {:test} StrIndexOfEdges() {
-    expect strIndexOf("", "abc") == 0;
-    expect strIndexOf("", "") == 0;
-    expect strLastIndexOf("", "abc") == 3;
-    expect strLastIndexOf("aa", "aaa") == 1;
-    expect strIndexOf("aa", "aaa") == 0;
-    expect strIndexOf("abcd", "abc") == -1;
-    expect strLastIndexOf("bc", "abcbc") == 3;
   }
 
   method {:test} CaseConversionOfAscii() {
@@ -543,21 +514,21 @@ module RamdafTests.Edge.Misc {
     expect invert(map["a" := "constructor", "b" := "constructor"]) == map["constructor" := {"a", "b"}];
   }
 
-  // lensOn (v0.11.0) binds get and set to obj (node: 1, {x: 'moocow'},
-  // {x: 11}, 10 for `lensOn(o => o[0], v => [v], [10, 20])()`, and 9 for
-  // `lensOn(o => o.x, v => v * 3, {x: 2}).map(x => x + 1)`, a set that
-  // returns a number). The getters are partial arrows: with `{}` bound,
-  // node's `l()` is undefined and `l.map(x => x + 1)` is `{x: NaN}`, so they
-  // require the key (the index).
-  method {:test} LensOnEdges() {
-    var l := lensOn((o: map<string, int>) requires "x" in o => o["x"], (v: int) => map["x" := v], map["x" := 1]);
-    expect l.get() == 1;
-    expect l.set_(5) == map["x" := 5];
-    expect l.map_((x: int) => x + 10) == map["x" := 11];
-    var first := lensOn((a: seq<int>) requires |a| > 0 => a[0], (v: int) => [v], [10, 20]);
-    expect first.get() == 10;
-    var triple := lensOn((o: map<string, int>) requires "x" in o => o["x"], (v: int) => v * 3, map["x" := 2]);
-    expect triple.map_((x: int) => x + 1) == 9;
+  // propSatisfies (v0.16.0) gives the predicate the property, undefined
+  // (None) when it is absent (node: true, true); composeK and pipeK (v0.16.0)
+  // chain over lists (node: `composeK(x => [x, x * 10], x => [x + 1])([1,
+  // 2])` is [2, 20, 3, 30], and so is `pipeK(x => [x + 1], x => [x, x *
+  // 10])([1, 2])`; `composeK(x => [], x => [x])([1])` and `composeK(x => [x],
+  // x => [x, x])([])` are []).
+  method {:test} PropSatisfiesAndComposeKEdges() {
+    var none: map<string, int> := map[];
+    expect propSatisfies((x: Option<int>) => x.None?, "a", none) == true;
+    expect propSatisfies((x: Option<int>) => x == Some(1), "a", map["a" := 1]) == true;
+    expect composeK((x: int) => [x, x * 10], (x: int) => [x + 1])([1, 2]) == [2, 20, 3, 30];
+    expect pipeK((x: int) => [x + 1], (x: int) => [x, x * 10])([1, 2]) == [2, 20, 3, 30];
+    var nothing: seq<int> := [];
+    expect composeK((x: int) => nothing, (x: int) => [x])([1]) == [];
+    expect composeK((x: int) => [x], (x: int) => [x, x])(nothing) == [];
   }
 
   // ---- documented deviations (not node behaviour) ----
@@ -575,7 +546,10 @@ module RamdafTests.Edge.Misc {
   // x}, <the JSON object>)` has the keys ['a']; since v0.14.0
   // `whereEq(<JSON {"__proto__": 1}>, {})` is true (`mapObj`'s copy of the
   // spec drops the property, so it is not tested) and the keys of
-  // `lensProp('__proto__').set(1, {a: 1})` are ['a'] (`assoc`); and since
+  // `lensProp('__proto__').set(1, {a: 1})` were ['a'] (`assoc`; since
+  // v0.16.0 `set(lensProp('__proto__'), 1, <JSON {"__proto__": 0, "a":
+  // 1}>)` has the keys ['a'], as set runs the getter, which here requires
+  // the key); and since
   // v0.15.0 `pick(['toString'], {})` has the inherited function as its
   // `toString` (`names[idx] in obj`), and `evolve({a: f}, {toString: 4})` is
   // {toString: '[object Undefined]'}, as the object's own `toString` key
@@ -597,17 +571,15 @@ module RamdafTests.Edge.Misc {
     expect assoc("__proto__", 1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
     expect assoc("a", 2, map["__proto__" := 5, "b" := 1]) == map["__proto__" := 5, "b" := 1, "a" := 2];
     expect whereEq(map["__proto__" := 1], none) == false;
-    expect lensProp("__proto__").set_(1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
+    expect set_(lensProp<int, int>("__proto__"), 1, map["__proto__" := 0, "a" := 1]) == map["__proto__" := 1, "a" := 1];
   }
 
-  // node: identical([], []) and eq([], []) are false (two distinct array
-  // objects; eq until v0.14.0, which v0.15.0 replaced with identical and
-  // v0.15.1 restored, deprecated, as `_curry2(_eq)`, `Object.is`).
+  // node: identical([], []) is false (two distinct array objects; eq([],
+  // []) until v0.14.0 and in v0.15.1, which v0.15.0 and v0.16.0 removed).
   method {:test} DeviationIdenticalIsStructural() {
     var a: seq<int> := [];
     var b: seq<int> := [];
     expect D.identical(a, b) == true;
-    expect D.eq(a, b) == true;
   }
 
   // node: a read of a name that the object lacks finds the inherited
@@ -618,8 +590,9 @@ module RamdafTests.Edge.Misc {
   // (since v0.1.0), and `where({toString: x => x === undefined}, {})` is
   // false, as the predicate gets it (since v0.14.0; until v0.13.0 a function
   // entry was called for an inherited property, so `where({toString: () =>
-  // true}, {})` was true, except in v0.2.3). A map has no prototype: the
-  // reads give None.
+  // true}, {})` was true, except in v0.2.3), and so is
+  // `propSatisfies(x => x === undefined, 'toString', {})` (v0.16.0). A map
+  // has no prototype: the reads give None.
   method {:test} DeviationInheritedMembersAreAbsent() {
     var none: map<string, int> := map[];
     expect prop("toString", none) == None;
@@ -628,6 +601,7 @@ module RamdafTests.Edge.Misc {
     expect L.pluck("toString", [none]) == [None];
     expect D.project(["toString"], [none]) == [map["toString" := None]];
     expect where(map["toString" := (x: Option<int>) => x.None?], none) == true;
+    expect propSatisfies((x: Option<int>) => x.None?, "toString", none) == true;
   }
 
   // node: 'STRASSE' and 'Ä'; case conversion is ASCII-only here.
@@ -654,11 +628,10 @@ module RamdafTests.Edge.Misc {
     expect invert(map["a" := "__proto__", "b" := "x"]) == map["__proto__" := {"a"}, "x" := {"b"}];
   }
 
-  // node: identical(negate(0), 0), identical(multiply(-1, 0), 0),
-  // identical(modulo(-4, 2), 0) and eq(negate(0), 0) are false (`Object.is`;
-  // with `eq`, which v0.15.0 replaced with identical and v0.15.1 restored,
-  // since v0.9.0), as each left side is -0;
-  // and `propEq('a', negate(0), {a: 0})`, `eqProps('a', {a: negate(0)}, {a:
+  // node: identical(negate(0), 0), identical(multiply(-1, 0), 0) and
+  // identical(modulo(-4, 2), 0) are false (`Object.is`; with `eq` from
+  // v0.9.0 to v0.14.0 and in v0.15.1), as each left side is -0;
+  // and `propEq(negate(0), 'a', {a: 0})` (`propEq('a', …)` until v0.15.1), `eqProps('a', {a: negate(0)}, {a:
   // 0})` and `whereEq({a: 0}, {a: negate(0)})` are false since v0.14.0
   // (`Object.is`, since v0.15.0 `R.equals`, which compares numbers with
   // identical; true until v0.13.0, with `===`). An int has no -0.
@@ -666,8 +639,7 @@ module RamdafTests.Edge.Misc {
     expect D.identical(negate(0), 0) == true;
     expect D.identical(multiply(-1, 0), 0) == true;
     expect D.identical(modulo(-4, 2), 0) == true;
-    expect D.eq(negate(0), 0) == true;
-    expect propEq("a", negate(0), map["a" := 0]) == true;
+    expect propEq(negate(0), "a", map["a" := 0]) == true;
     expect eqProps("a", map["a" := negate(0)], map["a" := 0]) == true;
     expect whereEq(map["a" := 0], map["a" := negate(0)]) == true;
   }

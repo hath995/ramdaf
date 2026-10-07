@@ -1,6 +1,7 @@
-// Ramda v0.15.1 test/reduce.js, reduceRight.js, reduceIndexed.js and
-// reduceRightIndexed.js (v0.9.x foldl.js, foldr.js, foldlIndexed.js and
-// foldrIndexed.js; until v0.8.0 test.fold.js), transcribed. Not transcribed:
+// Ramda v0.16.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
+// foldr.js; until v0.8.0 test.fold.js), transcribed (reduceIndexed.js and
+// reduceRightIndexed.js, foldlIndexed.js and foldrIndexed.js in v0.9.x, went
+// with the functions in v0.16.0). Not transcribed:
 // the "should correctly report the arity of curried versions" cases (Dafny
 // functions have no arity) and the "throws on zero arguments" cases (v0.5.0
 // to v0.10.0; no-argument calls). The alias `it`s assert `strictEqual` on the function
@@ -70,87 +71,4 @@ module RamdafTests.Ramda.Fold {
     var rcat := (l: seq<string>) => reduceRight(cat, "", l);
     expect rcat(["1", "2", "3", "4"]) == "4321";
   }
-
-  // describe('reduceIndexed') (describe('foldlIndexed') until v0.9.1,
-  // describe('foldl.idx') until v0.8.0)
-  function timesIndexed(tot: int, num: int, idx: nat, ls: seq<int>): int { tot + num * idx }
-
-  // (v0.5.0 gives it a body: `foldl.idx(R.add, 0, …)`, `foldl.idx(R.multiply, 1, …)`)
-  method {:test} ReduceIndexedWorksJustLikeNormalReduce() {
-    expect reduceIndexed((a: int, x: int, i: nat, l: seq<int>) => add(a, x), 0, [1, 2, 3, 4]) == 10;
-    expect reduceIndexed((a: int, x: int, i: nat, l: seq<int>) => mult(a, x), 1, [1, 2, 3, 4]) == 24;
-  }
-
-  // `objectify` assigns `acc[elem] = idx` on an object.
-  method {:test} ReduceIndexedPassesTheIndexAsAThirdParameter() {
-    expect reduceIndexed(timesIndexed, 0, [1, 2, 3, 4, 5]) == 40;
-    var empty: map<string, nat> := map[];
-    expect reduceIndexed((acc: map<string, nat>, elem: string, idx: nat, ls: seq<string>) => acc[elem := idx],
-                    empty, ["a", "b", "c", "d", "e"]) == map["a" := 0, "b" := 1, "c" := 2, "d" := 3, "e" := 4];
-  }
-
-  // (v0.5.0 gives it a body)
-  method {:test} ReduceIndexedPassesTheEntireListAsAFourthParameter() {
-    var list := [1, 2, 3];
-    expect reduceIndexed((acc: bool, x: int, idx: nat, ls: seq<int>) => acc && ls == list, true, list);
-  }
-
-  // v0.5.0
-  method {:test} ReduceIndexedIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => reduceIndexed((a: int, x: int, i: nat, ls: seq<int>) => add(a, x), 0, l);
-    expect sum([1, 2, 3, 4]) == 10;
-    var catAll := (l: seq<string>) => reduceIndexed((a: string, x: string, i: nat, ls: seq<string>) => cat(a, x), "", l);
-    expect catAll(["1", "2", "3", "4"]) == "1234";
-  }
-
-  // describe('reduceRightIndexed') (describe('foldrIndexed') until v0.9.1,
-  // describe('foldr.idx') until v0.8.0)
-  method {:test} ReduceRightIndexedFoldsListsInTheRightOrder() {
-    expect reduceRightIndexed((a: string, b: string, idx: nat, list: seq<string>) => a + NumStr(idx) + b, "",
-                    ["a", "b", "c", "d"]) == "3d2c1b0a";
-  }
-
-  method {:test} ReduceRightIndexedFoldsWithTheSuppliedAccumulator() {
-    var empty: seq<int> := [];
-    expect reduceRightIndexed((acc: seq<int>, n: int, i: nat, ls: seq<int>) => acc + [i, n], empty, [12, 4, 10, 6]) ==
-      [3, 6, 2, 10, 1, 4, 0, 12];
-  }
-
-  // The result is the accumulator itself (v0.2.3 asserts `memo`; before, it
-  // asserted `== 0`, which JS's `[] == 0` satisfies).
-  method {:test} ReduceRightIndexedReturnsTheAccumulatorForAnEmptyArray() {
-    var empty: seq<int> := [];
-    expect reduceRightIndexed((a: seq<int>, n: int, i: nat, ls: seq<int>) => a + [i], empty, empty) == empty;
-  }
-
-  method {:test} ReduceRightIndexedIsAutomaticallyCurried() {
-    var something := (l: seq<int>) => reduceRightIndexed((acc: int, b: int, i: nat, ls: seq<int>) => acc + i + b, 54, l);
-    expect something([12, 4, 10, 6]) == 92;
-  }
-
-  // v0.5.0
-  method {:test} ReduceRightIndexedPassesTheIndexAsAThirdParameter() {
-    expect reduceRightIndexed(timesIndexed, 0, [1, 2, 3, 4, 5]) == 40;
-    var empty: map<string, nat> := map[];
-    expect reduceRightIndexed((acc: map<string, nat>, elem: string, idx: nat, ls: seq<string>) => acc[elem := idx],
-                    empty, ["a", "b", "c", "d", "e"]) == map["a" := 0, "b" := 1, "c" := 2, "d" := 3, "e" := 4];
-  }
-
-  // v0.5.0
-  method {:test} ReduceRightIndexedPassesTheEntireListAsAFourthParameter() {
-    var list := [1, 2, 3];
-    expect reduceRightIndexed((acc: bool, x: int, idx: nat, ls: seq<int>) => acc && ls == list, true, list);
-  }
-
-  // v0.5.0: the second "should be automatically curried" (`reduceRightIndexed(R.add)`)
-  method {:test} ReduceRightIndexedIsAutomaticallyCurriedWithAdd() {
-    var sum := (l: seq<int>) => reduceRightIndexed((a: int, x: int, i: nat, ls: seq<int>) => add(a, x), 0, l);
-    expect sum([1, 2, 3, 4]) == 10;
-    var catAll := (l: seq<string>) => reduceRightIndexed((a: string, x: string, i: nat, ls: seq<string>) => cat(a, x), "", l);
-    expect catAll(["1", "2", "3", "4"]) == "4321";
-  }
-
-  // `'' + n` for the index in "folds lists in the right order"
-  function NumStr(n: nat): string
-  { if n < 10 then [('0' as int + n) as char] else NumStr(n / 10) + NumStr(n % 10) }
 }
