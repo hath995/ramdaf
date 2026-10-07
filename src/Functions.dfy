@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.29.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
 // the functions with `@category Function` (`juxt`, `applySpec`, `o`,
@@ -143,7 +143,12 @@ module Ramdaf.Functions {
   // "JS -> Dafny mapping"; nest for more), so xf gets the second function
   // and the first one's result: `pipeWith(xf, (f, g))(x)` is `xf(g, f(x))`.
   // The result is unary (tuple the arguments for more; README
-  // "Deviations").
+  // "Deviations"). Until v0.28.0 `_reduce` stopped at a result carrying the
+  // reduced marker and returned its `@@transducer/value`
+  // (`pipeWith((f, r) => f(r), [x => x, x => ({'@@transducer/reduced': 1,
+  // '@@transducer/value': 9})])(0)` was 9; an omission of the v0.26.0 to
+  // v0.28.0 ports, README "Deviations"); since v0.29.0 `_reduce` is a plain
+  // loop and gives the marked object, as here.
   function pipeWith<A, B, G, C>(xf: (G, B) -> C, fns: (A -> B, G)): A -> C
   { x => xf(fns.1, fns.0(x)) }
 

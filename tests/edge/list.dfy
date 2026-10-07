@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.28.0's own suite does not cover, each checked against
-// dist/ramda.js v0.28.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.29.0's own suite does not cover, each checked against
+// dist/ramda.js v0.29.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -151,11 +151,14 @@ module RamdafTests.Edge.List {
     expect fromPairs([("1", "x")]) == map["1" := "x"];
   }
 
-  // of, empty and length (v0.3.0).
+  // of, empty and length (v0.3.0). Since v0.29.0 `of(Ctor, val)`: node gives
+  // [1] and [[]] for `of(Array, 1)` and `of(Array, [])`, and [1] for a
+  // constructor without an `of` method (`of({}, 1)`); the port ignores Ctor.
   method {:test} OfEmptyLengthEdges() {
     var none: seq<int> := [];
-    expect of(1) == [1];
-    expect of(none) == [none];
+    expect of((), 1) == [1];
+    expect of((), none) == [none];
+    expect of("Array", 1) == [1];
     expect empty([1, 2]) == [];
     expect empty(none) == [];
     expect length(none) == 0;
@@ -700,11 +703,12 @@ module RamdafTests.Edge.List {
   // node: since v0.12.0 `_reduce` stops when the accumulator has a truthy
   // `@@transducer/reduced` property and returns its `@@transducer/value`
   // (the transducer protocol's "reduced" marker; `__transducers_reduced__`
-  // and `value` until v0.13.0): `reduce((acc, x) => assoc('x', x, acc),
+  // and `value` until v0.13.0; since v0.29.0 only in `_xReduce`, behind
+  // reduce, reduceWhile and reduceBy): `reduce((acc, x) => assoc('x', x, acc),
   // {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2, 3])` is 9,
   // `mapObjIndexed((x, k, o) => x, {'@@transducer/reduced': 1,
-  // '@@transducer/value': 5, z: 3})` is undefined (and so was `mapObj`'s
-  // until v0.18.0), and `reduceBy(add, 0, x => '@@transducer/reduced', [1,
+  // '@@transducer/value': 5, z: 3})` was undefined until v0.28.0 (and so was
+  // `mapObj`'s until v0.18.0; ReducedMarkerIsOrdinaryInPlainFolds below), and `reduceBy(add, 0, x => '@@transducer/reduced', [1,
   // 2])` (v0.20.0), whose group value 1 is truthy, is undefined (the
   // `@@transducer/value` it reads), as is `indexBy(x =>
   // '@@transducer/reduced', [1, 2])` (since v0.19.0, an omission of the
@@ -719,14 +723,12 @@ module RamdafTests.Edge.List {
   // {'@@transducer/reduced': 1}, {n: 3}])` is `{k: {n: 1}}`); reduceRight
   // stops at a marked accumulator (`reduceRight((x, acc) => assoc('x', x,
   // acc), {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2])` is
-  // 9); and `collectBy(x => '@@transducer/reduced', [1, 2])` is [] (its group
-  // object is marked). Here the key is ordinary. (`mergeAll`
+  // 9); and in v0.28.0 `collectBy(x => '@@transducer/reduced', [1, 2])` was []
+  // (its group object was marked). Here the key is ordinary. (`mergeAll`
   // gave 7 from v0.12.0 to v0.19.1: MergeAllCopiesTheReducedMarker.)
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
     var marked := map["@@transducer/reduced" := 1, "@@transducer/value" := 9];
     expect reduce((acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2, 3]) == marked["x" := 3];
-    var o := map["@@transducer/reduced" := 1, "@@transducer/value" := 5, "z" := 3];
-    expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
     expect reduceBy(M.add, 0, (x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 3];
     expect indexBy((x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 2];
     expect reduceWhile((acc: map<string, int>, x: int) => true, (acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2]) ==
@@ -737,6 +739,18 @@ module RamdafTests.Edge.List {
       map["k" := stop["n" := 3]];
     expect indexBy((o: map<string, int>) => "k", [map["n" := 1], stop, map["n" := 3]]) == map["k" := map["n" := 3]];
     expect reduceRight((x: int, acc: map<string, int>) => acc["x" := x], marked, [1, 2]) == marked["x" := 1];
+  }
+
+  // node: since v0.29.0 (960cc98e) the private `_reduce` is a plain loop,
+  // and only `_xReduce` (reduce, reduceWhile, reduceBy) stops at the marker,
+  // so `mapObjIndexed((x, k, o) => x, {'@@transducer/reduced': 1,
+  // '@@transducer/value': 5, z: 3})` (`_arrayReduce` over the keys) is the
+  // object and `collectBy(x => '@@transducer/reduced', [1, 2])` is [[1, 2]],
+  // as here (undefined and [] until v0.28.0, lines of the pin above;
+  // pipeWith's and composeWith's are in tests/edge/misc.dfy).
+  method {:test} ReducedMarkerIsOrdinaryInPlainFolds() {
+    var o := map["@@transducer/reduced" := 1, "@@transducer/value" := 5, "z" := 3];
+    expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
     expect collectBy((x: int) => "@@transducer/reduced", [1, 2]) == [[1, 2]];
   }
 
@@ -776,7 +790,8 @@ module RamdafTests.Edge.List {
   // UniqByOfRepeatedSignedZeroKeys below), and `without([0], [negate(0)])`
   // (v0.19.0) is [-0], and since v0.24.0 `startsWith([0], [negate(0)])` and
   // `endsWith([negate(0)], [1, 0])` are false (`R.equals`), as is
-  // `includes(negate(0), [0])` (v0.26.0). An int has no -0.
+  // `includes(negate(0), [0])` (v0.26.0), and `dropRepeatsBy(x => x * 0, [-1,
+  // 1, 2])` (v0.29.0, eqBy) is [-1, 1], its keys -0 and 0. An int has no -0.
   method {:test} DeviationListSearchesSignedZero() {
     var z := M.negate(0);
     expect indexOf(z, [0]) == 0;
@@ -789,6 +804,7 @@ module RamdafTests.Edge.List {
     expect startsWith([0], [z]) == true;
     expect endsWith([z], [1, 0]) == true;
     expect includes(z, [0]) == true;
+    expect dropRepeatsBy((x: int) => x * 0, [-1, 1, 2]) == [-1];
   }
 
   // node: since v0.22.0 uniqBy's `_Set` flags every -0, so a repeated -0
@@ -843,13 +859,15 @@ module RamdafTests.Edge.List {
   }
 
   // sequence and traverse (v0.19.0) (node: [[1, 2], [1, 3]], [[1], [1]],
-  // [[1, 2], [1, -2], [-1, 2], [-1, -2]], [[]]).
+  // [[1, 2], [1, -2], [-1, 2], [-1, -2]], [[]]; since v0.29.0 with `R.of(Array)`
+  // or `Array` itself for `R.of`).
   method {:test} SequenceTraverseEdges() {
     var none: seq<int> := [];
-    expect sequence(of, [[1], [2, 3]]) == [[1, 2], [1, 3]];
+    var ofArray := (x: seq<int>) => of((), x);
+    expect sequence(ofArray, [[1], [2, 3]]) == [[1, 2], [1, 3]];
     expect sequence((x: seq<int>) => [x, x], [[1]]) == [[1], [1]];
-    expect traverse(of, (x: int) => [x, -x], [1, 2]) == [[1, 2], [1, -2], [-1, 2], [-1, -2]];
-    expect traverse(of, (x: int) => [x], none) == [[]];
+    expect traverse(ofArray, (x: int) => [x, -x], [1, 2]) == [[1, 2], [1, -2], [-1, 2], [-1, -2]];
+    expect traverse(ofArray, (x: int) => [x], none) == [[]];
   }
 
   // reduceBy (v0.20.0; since v0.21.0 `reduceBy(valueFn, valueAcc, keyFn,
@@ -960,5 +978,38 @@ module RamdafTests.Edge.List {
   // tags first occur (README "Deviations").
   method {:test} DeviationCollectByIntegerTagsFirst() {
     expect collectBy((x: int) => [('0' as int + x % 3) as char], [5, 4, 3, 2]) == [[5, 2], [4], [3]];
+  }
+
+  // dropRepeatsBy, isNotNil and swap (v0.29.0) (node: [1, 2, 5], [1, 2, 1],
+  // [5], [7]; false, false, true, true; [3, 2, 1], [3, 2, 1], [1, 2, 3], [1,
+  // 2, 3], [1, 2, 3], [4, 2, 3, 1], [1, 2, 3], [], 'cba').
+  method {:test} DropRepeatsByIsNotNilSwapEdges() {
+    var none: seq<int> := [];
+    expect dropRepeatsBy((x: int) => x % 2, [1, 3, 2, 4, 5]) == [1, 2, 5];
+    expect dropRepeatsBy((x: int) => x, [1, 1, 2, 1]) == [1, 2, 1];
+    expect dropRepeatsBy((x: int) => 0, [5, 6, 7]) == [5];
+    expect dropRepeatsBy((x: int) => x, [7]) == [7];
+    var nothing: Option<seq<int>> := None;
+    expect isNotNil(nothing) == false;
+    expect isNotNil(Some(0)) == true;
+    expect isNotNil(Some(none)) == true;
+    expect swap(0, 2, [1, 2, 3]) == [3, 2, 1];
+    expect swap(-1, -3, [1, 2, 3]) == [3, 2, 1];
+    expect swap(1, 1, [1, 2, 3]) == [1, 2, 3];
+    expect swap(5, 0, [1, 2, 3]) == [1, 2, 3];
+    expect swap(0, -4, [1, 2, 3]) == [1, 2, 3];
+    expect swap(0, 3, [1, 2, 3, 4]) == [4, 2, 3, 1];
+    expect swap(3, 3, [1, 2, 3]) == [1, 2, 3];
+    expect swap(0, 1, none) == [];
+    expect swap(2, 0, "abc") == "cba";
+  }
+
+  // node: swap (v0.29.0) builds its result with `concat`, which spreads an
+  // element that is an array: `swap(0, 1, [[1, 2], [3]])` is [3, 1, 2] and
+  // `swap(0, 1, [[], 1])` [1]; here the elements are exchanged whole
+  // (README "Deviations").
+  method {:test} DeviationSwapSpreadsArrayElements() {
+    expect swap(0, 1, [[1, 2], [3]]) == [[3], [1, 2]];
+    expect swap(0, 1, [Arr([]), Num(1)]) == [Num(1), Arr([])];
   }
 }

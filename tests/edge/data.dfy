@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.28.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.29.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -47,11 +47,12 @@ module RamdafTests.Edge.Data {
   }
 
   // Since v0.2.4 union/difference/intersection keep the first occurrence
-  // (uniq); since v0.20.0 intersection takes its elements, and their order,
-  // from the shorter list, the first when they are equally long (until
-  // v0.19.1 always the second: `intersection([3, 2], [1, 2, 3])` and
-  // `intersection([1, 2], [2, 1])` were [2, 3] and [2, 1]; node now: [3, 2],
-  // [1, 2]).
+  // (uniq); since v0.29.0 intersection takes its elements, and their order,
+  // from the second list again, as until v0.19.1 (node: [1, 2], [2, 1], [4,
+  // 3, 2], [3, 1], [1, 2], [2, 3], [2, 1]); from v0.20.0 to v0.28.0 it took
+  // them from the shorter list, the first when they were equally long
+  // (`intersection([3, 2], [1, 2, 3])` and `intersection([1, 2], [2, 1])`
+  // were [3, 2] and [1, 2]).
   method {:test} SetOperationsKeepFirstOccurrences() {
     var empty: seq<int> := [];
     expect union([1, 2, 3], [1]) == [1, 2, 3];
@@ -63,8 +64,8 @@ module RamdafTests.Edge.Data {
     expect intersection([1, 2, 3, 4], [4, 3, 2]) == [4, 3, 2];
     expect intersection([1, 2, 1, 3], [3, 1, 1]) == [3, 1];
     expect intersection([1, 2], [3, 1, 2, 1]) == [1, 2];
-    expect intersection([3, 2], [1, 2, 3]) == [3, 2];
-    expect intersection([1, 2], [2, 1]) == [1, 2];
+    expect intersection([3, 2], [1, 2, 3]) == [2, 3];
+    expect intersection([1, 2], [2, 1]) == [2, 1];
   }
 
   // Since v0.7.0 difference and differenceWith are loops (same results).

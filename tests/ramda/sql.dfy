@@ -1,4 +1,4 @@
-// Ramda v0.28.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.29.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, difference.js, differenceWith.js,
 // countBy.js, sortBy.js, equals.js, identical.js, eqBy.js,
 // symmetricDifference.js, symmetricDifferenceWith.js, clamp.js and
@@ -29,8 +29,8 @@
 //   and boxed values with extra properties (no such values). Its mixed
 //   values are Js;
 // - identical.js's `[] !== []`, `-0`, NaN and `new Number(0)` lines and its
-//   "is curried", which compares two arrays by reference (README
-//   "Deviations");
+//   "is curried" (until v0.25.0), which compared two arrays by reference
+//   (README "Deviations"), and v0.29.0's cross-origin `it` (a Proxy);
 // - eqBy.js's (v0.18.0) and symmetricDifference.js's (v0.19.0) "has
 //   R.equals semantics" (`-0`, NaN and `Just` objects with an `equals`
 //   method), and equals.js's v0.19.0 "considers equivalent Error objects
@@ -77,15 +77,16 @@ module RamdafTests.Ramda.Sql {
       map["name" := Some(Str("Alois")), "hair" := None]];
   }
 
-  // describe('propEq'): v0.17.0 restores `propEq(name, val, obj)` and the
-  // v0.15.1 `it`s over the four kids (v0.16.0 alone moved the value first,
-  // over `abby` and `fred`); "is curried" filters with `R.propEq('hair')`
-  // applied to 'brown' and with `R.propEq('hair', 'brown')`.
+  // describe('propEq'): v0.29.0 moves the value first, `propEq(val, name,
+  // obj)`, over the four kids (v0.17.0 restored `propEq(name, val, obj)` and
+  // the v0.15.1 `it`s; v0.16.0 alone moved the value first, over `abby` and
+  // `fred`); its "handles number as property" (array indices) and nil-object
+  // lines are not transcribed.
   method {:test} PropEqDeterminesWhetherAParticularPropertyMatchesAGivenValue() {
     var kids := Kids();
-    expect propEq("name", Str("Abby"), kids[0]) == true;
-    expect propEq("hair", Str("brown"), kids[1]) == true;
-    expect propEq("hair", Str("blond"), kids[1]) == false;
+    expect propEq(Str("Abby"), "name", kids[0]) == true;
+    expect propEq(Str("brown"), "hair", kids[1]) == true;
+    expect propEq(Str("blond"), "hair", kids[1]) == false;
   }
 
   function R(): seq<int> { [1, 2, 3, 4] }
@@ -116,6 +117,15 @@ module RamdafTests.Ramda.Sql {
 
   method {:test} IntersectionHasNoDuplicates() {
     expect intersection(R2(), S2()) == [3, 4];
+  }
+
+  // (v0.29.0)
+  method {:test} IntersectionHasNoDuplicatesEvenIfTheFirstListIsBiggerAndHasDuplicates() {
+    expect intersection(R2(), S()) == [3, 4];
+  }
+
+  method {:test} IntersectionHasNoDuplicatesEvenIfTheSecondListIsBiggerAndHasDuplicates() {
+    expect intersection(R(), S2()) == [3, 4];
   }
 
   // describe('difference')
@@ -300,6 +310,16 @@ module RamdafTests.Ramda.Sql {
     expect identical(a, b) == true;
     expect identical(Undefined, Undefined) == true;
     expect identical(Null, Undefined) == false;
+  }
+
+  // "is auto-curried" (v0.29.0, as identical is curried by hand): `unaryFn =
+  // R.identical('foo')` is a lambda (D5); its `length` checks are not
+  // transcribed, nor is "does not access the placeholder property of its
+  // arguments…" (a cross-origin Proxy).
+  method {:test} IdenticalIsAutoCurried() {
+    var unaryFn := (b: string) => identical("foo", b);
+    expect unaryFn("bar") == false;
+    expect unaryFn("foo") == true;
   }
 
   // ---- eqBy.js (v0.18.0) ----

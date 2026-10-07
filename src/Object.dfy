@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.29.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`, `objOf`,
@@ -245,15 +245,18 @@ module Ramdaf.Object {
   function assoc<V>(p: string, val: V, obj: map<string, V>): map<string, V>
   { obj[p := val] }
 
-  // `R.propEq(name, val, obj)` (v0.17.0, "revert change to R.propEq
-  // argument order", b5f7ba1e; v0.16.0 alone took `propEq(val, name, obj)`):
+  // `R.propEq(val, name, obj)` (v0.29.0, a4998cf7 "change propEq/pathEq
+  // parameters order": the value first again, as in v0.16.0 alone; from
+  // v0.17.0, "revert change to R.propEq argument order", b5f7ba1e, to v0.28.0
+  // and before v0.16.0 `propEq(name, val, obj)`):
   // `propSatisfies(equals(val), name, obj)` (v0.16.0 to v0.21.0; since
-  // v0.22.0 `equals(val, obj[name])` itself), obj's property equal to val; an absent
+  // v0.22.0 `equals(val, obj[name])` itself, and since v0.28.0 `equals(val,
+  // prop(name, obj))`), obj's property equal to val; an absent
   // property is undefined, which no value here equals. `R.propSatisfies`
   // (Logic) and `R.equals` (Data) are written out, as Object imports
   // neither. (Until v0.15.1 `obj[name] === val`, in v0.14.0 `_eq`,
   // `Object.is`, and in v0.15.x `R.equals`: README "Deviations" on `-0`.)
-  function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool
+  function propEq<V(==)>(val: V, name: string, obj: map<string, V>): bool
   { name in obj && obj[name] == val }
 
   // `R.evolve(transformations, object)` (v0.9.0): since v0.15.0 `for (key in

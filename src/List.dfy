@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.29.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -7,7 +7,8 @@
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
 // `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
 // `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith`, `reduceWhile`,
-// `startsWith`, `endsWith`, `includes`, `move` and the renamed functions
+// `startsWith`, `endsWith`, `includes`, `move`, `count`, `collectBy`,
+// `splitWhenever`, `dropRepeatsBy`, `swap` and the renamed functions
 // below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
@@ -48,7 +49,7 @@ module Ramdaf.List {
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
             without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes, move,
-            count, collectBy, splitWhenever
+            count, collectBy, splitWhenever, dropRepeatsBy, swap
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -60,7 +61,12 @@ module Ramdaf.List {
   // `@@transducer/reduced` property and returns its `@@transducer/value`
   // (`__transducers_reduced__` and `value` until v0.13.0), which a generic A
   // cannot single out (README "Deviations"); it also dispatches to a
-  // `reduce` method of a non-list and walks iterators.
+  // `reduce` method of a non-list and walks iterators. Since v0.29.0
+  // (960cc98e, "split _reduce to _xReduce(for transformers) & _reduce(for
+  // reducers)") reduce is `_xReduce(_xwrap(fn), acc, list)`, the same loop,
+  // still stopping at the marker, while the private `_reduce` that other
+  // functions fold with no longer does; a null or undefined list gives acc
+  // (6aadd7b7).
   function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
       reduce(fn, acc, list) == fn(reduce(fn, acc, list[..|list| - 1]), list[|list| - 1])
@@ -120,8 +126,10 @@ module Ramdaf.List {
 
   // `R.mapObjIndexed` (v0.9.0, which renamed `mapObj.idx`, added in v0.2.2,
   // with the same code): `fn(obj[key], key, obj)` for every own property
-  // (an own `__proto__` dropped in JS, and `@@transducer/reduced` ending the
-  // fold since v0.12.0, as for `mapObj`, which v0.19.0 removed). Since
+  // (an own `__proto__` dropped in JS, and from v0.12.0 to v0.28.0
+  // `@@transducer/reduced` ending the fold, as for `mapObj`, which v0.19.0
+  // removed; since v0.29.0 it folds the keys with the private
+  // `_arrayReduce`, a plain loop, so the key is ordinary, as here). Since
   // v0.14.0 its JSDoc says
   // `@category Object`; functions do not move between modules.
   function mapObjIndexed<V, W>(fn: (V, string, map<string, V>) -> W, obj: map<string, V>): map<string, W>
@@ -144,12 +152,20 @@ module Ramdaf.List {
   function ap<A, B>(fns: seq<A -> B>, vs: seq<A>): seq<B>
   { reduce((acc: seq<B>, fn: A -> B) => acc + mapSeq(fn, vs), [], fns) }
 
-  // `function of(x) { return [x]; }` (v0.10.0, "remove dispatch from
-  // R.of"): the singleton list. From v0.3.0 to v0.9.1 `R.of(x, container)`
-  // called `container.of(x)` for a container with an `of` method
-  // (Fantasy-land) and ignored any other container, a parameter the port
-  // never had.
-  function of<T>(x: T): seq<T> { [x] }
+  // `R.of(Ctor, val)` (v0.29.0, dec329da "`of` now works with Applicatives";
+  // its JSDoc says `@category Function`, and functions do not move):
+  // `_curry2`, `Ctor['fantasy-land/of'](val)` when the constructor (a type
+  // representative) has that method, else `Ctor.of(val)`, else `[val]`
+  // (`of(Array, 42)` is `Array.of(42)`, `[42]`). No Dafny value has
+  // methods, so Ctor, a value of any type, is ignored and the result is the
+  // singleton list (README "Deviations"); the uncurried port takes Ctor
+  // first, as Ramda does, and `of(x)` alone is now a function in JS. From
+  // v0.10.0 ("remove dispatch from R.of") to v0.28.0 it was `function of(x) {
+  // return [x]; }`, `of(x)` here; from v0.3.0 to v0.9.1 `R.of(x,
+  // container)` called `container.of(x)` for a container with an `of`
+  // method (Fantasy-land) and ignored any other container, an optional
+  // parameter the port did not have.
+  function of<C, T>(Ctor: C, val: T): seq<T> { [val] }
 
   // `R.empty(x)` (v0.3.0): `[]`, unless x has an `empty` method, which is
   // then called (Fantasy-land). Since v0.16.0 ("define R.empty for Object
@@ -943,7 +959,14 @@ module Ramdaf.List {
   // each list, the last list's varying fastest (`sequence(of, [[1, 2], [3,
   // 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]`; `commute`, removed in
   // v0.20.0, was the same). JS takes any Fantasy-land applicative; here arrays (README
-  // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`.
+  // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`. Since
+  // v0.29.0 (dec329da) the first argument F may be a type representative:
+  // `of` is `F['fantasy-land/of']` or `F.of` when F has one, and F itself
+  // otherwise, so a function such as the port's `of` is used as before
+  // (Ramda's tests pass `R.of(Array)`), and a traversable's
+  // `fantasy-land/traverse` or `traverse` method is called with `{
+  // 'fantasy-land/of': of }` and identity (until v0.28.0 its `sequence(of)`
+  // method).
   function sequence<A>(of: seq<A> -> seq<seq<A>>, traversable: seq<seq<A>>): seq<seq<A>>
   { reduceRight((x: seq<A>, acc: seq<seq<A>>) => ap(mapSeq((y: A) => ((l: seq<A>) => [y] + l), x), acc),
                 of([]), traversable) }
@@ -951,7 +974,9 @@ module Ramdaf.List {
   // `R.traverse(of, f, traversable)` (v0.19.0, `@category List`):
   // `sequence(of, map(f, traversable))`, f mapped over the traversable and
   // the results sequenced (`commuteMap`, removed in v0.20.0, with its
-  // arguments in another order).
+  // arguments in another order). Since v0.29.0 F may be a type
+  // representative, as for sequence, and the traversable's method gets `(
+  // TypeRep, f)` (until v0.28.0 `traverse(f, of)`).
   function traverse<A, B>(of: seq<B> -> seq<seq<B>>, f: A -> seq<B>, traversable: seq<A>): seq<seq<B>>
   { sequence(of, mapSeq(f, traversable)) }
 
@@ -994,7 +1019,10 @@ module Ramdaf.List {
   // elements of list that are not in xs (`R.equals`, `==` here: README
   // "Deviations" on `-0`); a transformer in list position makes it a
   // transducer. The private `_includes` is `includes` (until v0.27.2 the
-  // body called `contains`, which v0.28.0 removed).
+  // body called `contains`, which v0.28.0 removed). Since v0.29.0 (6d2f4776,
+  // "Improve R.without and R.intersection time complexity") xs is put in a
+  // private `_Set`, `reject(toRemove.has.bind(toRemove), list)`, the same
+  // `R.equals` membership test, so the body keeps `includes`.
   function without<T(==)>(xs: seq<T>, list: seq<T>): seq<T>
   { reject((x: T) => includes(x, xs), list) }
 
@@ -1008,7 +1036,8 @@ module Ramdaf.List {
   // 'even', [1, 2, 3])` is `{odd: 4, even: 2}`; v0.21.0 writes `countBy`,
   // `groupBy` and `indexBy` with it). (Since v0.22.0 it is
   // `_dispatchable('reduceBy', _xreduceBy, …)`: a non-array's `reduceBy`
-  // method is dispatched to, and a transformer makes it a transducer.) `_reduce` is `reduce`'s body, so the body calls
+  // method is dispatched to, and a transformer makes it a transducer.) `_reduce` is `reduce`'s body (since v0.29.0
+  // `_xReduce(_xwrap(…), {}, list)`, which it is again), so the body calls
   // `reduce`, and `R.has` (`_has`, an own property; Object's, which List does
   // not import) is written out as `key in acc`. JS converts the key to a
   // string (README "Deviations"), a `__proto__` key sets the prototype
@@ -1107,7 +1136,8 @@ module Ramdaf.List {
   // `R.count(pred, list)` (v0.28.0, `@category List`): `_reduce(function(a,
   // e) { return pred(e) ? a + 1 : a; }, 0, list)`, the number of elements
   // that satisfy pred (`count(x => x % 2 === 0, [1, 2, 3, 4, 5])` is 2).
-  // `_reduce` is reduce's body, so the body calls `reduce`.
+  // `_reduce` is reduce's loop (since v0.29.0 without the reduced marker,
+  // which a number never is), so the body calls `reduce`.
   function count<T>(pred: T -> bool, list: seq<T>): nat
   { reduce<nat, T>((a: nat, e: T) => if pred(e) then a + 1 else a, 0, list) }
 
@@ -1119,8 +1149,10 @@ module Ramdaf.List {
   // `for…in` lists integer-like tags first, ascending, and then the others
   // in insertion order; here the groups come in the order their tags first
   // occur (README "Deviations"). A tag that names an `Object.prototype`
-  // member finds it in `o`, which throws TypeError, and a tag
-  // `@@transducer/reduced` ends `_reduce` (README "Deviations"). The body
+  // member finds it in `o`, which throws TypeError (README "Deviations"),
+  // and in v0.28.0 a tag `@@transducer/reduced` ended `_reduce`, which since
+  // v0.29.0 is a plain loop (`collectBy(x => '@@transducer/reduced', [1,
+  // 2])` is `[[1, 2]]`, as here; `[]` in v0.28.0). The body
   // takes the first element's group and recurses on the elements with other
   // tags.
   function collectBy<T>(fn: T -> string, list: seq<T>): seq<seq<T>>
@@ -1146,4 +1178,48 @@ module Ramdaf.List {
     if |rest| == 0 then []
     else var chunk := takeWhile((x: T) => !pred(x), rest);
          [chunk] + splitWhenever(pred, rest[|chunk|..]) }
+
+  // `R.dropRepeatsBy(fn, list)` (v0.29.0, c7aef9ad, `@category List`):
+  // `dropRepeatsWith(eqBy(fn))`, consecutive elements whose fn values are
+  // equal kept once (`dropRepeatsBy(Math.abs, [1, -1, -1, 2, 3, -4, 4, 2,
+  // 2])` is `[1, 2, 3, -4, 2]`); a non-array with a `dropRepeatsBy` method is
+  // not dispatched to, but a transformer makes it a transducer. `R.eqBy` is
+  // Data's, which List does not import, so it is written out as `fn(a) ==
+  // fn(b)` (`R.equals` as `==`, README "Deviations" on `-0`).
+  function dropRepeatsBy<T, U(==)>(fn: T -> U, list: seq<T>): seq<T>
+  { dropRepeatsWith((a: T, b: T) => fn(a) == fn(b), list) }
+
+  // `R.swap(indexA, indexB, o)` (v0.29.0, 3e100e9b, `@category List`): for
+  // an array `swapList`: `result = list.slice()`, a negative index counting
+  // from the end (`length + index`), the copy itself when either index is
+  // then below 0 or above the length, or the two are equal, and otherwise
+  // `[].concat(result.slice(0, positiveMin)).concat(result[positiveMax])
+  // .concat(result.slice(positiveMin + 1, positiveMax))
+  // .concat(result[positiveMin]).concat(result.slice(positiveMax + 1,
+  // length))`: the elements at the two indices exchanged (`swap(0, 2, ['a',
+  // 'b', 'c', 'd', 'e', 'f'])` is `['c', 'b', 'a', 'd', 'e', 'f']`, `swap(-1,
+  // 0, …)` exchanges the ends). An index equal to the length passes the test
+  // and reads undefined, which no element holds (`swap(0, 3, ['a', 'b',
+  // 'c'])` is `[undefined, 'b', 'c', 'a']`), so that case is excluded
+  // (README "Outside the modeled domain"). `concat` spreads an element that
+  // is an array (`swap(0, 1, [[1, 2], [3]])` is `[3, 1, 2]`), which a
+  // generic T cannot tell apart (README "Deviations"). A JS string is
+  // swapped the same way and joined (`swap(0, 2, 'foo')` is 'oof'), here
+  // the same seq; an object gets two own properties exchanged on a clone
+  // (`swap('a', 'b', {a: 1, b: 2})` is `{a: 2, b: 1}`), which this list
+  // signature does not take (README "Deviations").
+  function swap<T>(indexA: int, indexB: int, list: seq<T>): seq<T>
+    requires var a := if indexA < 0 then |list| + indexA else indexA;
+             var b := if indexB < 0 then |list| + indexB else indexB;
+             !(a == |list| && 0 <= b < |list|) && !(b == |list| && 0 <= a < |list|)
+  { var length := |list|;
+    var positiveIndexA := if indexA < 0 then length + indexA else indexA;
+    var positiveIndexB := if indexB < 0 then length + indexB else indexB;
+    var positiveMin := if positiveIndexA < positiveIndexB then positiveIndexA else positiveIndexB;
+    var positiveMax := if positiveIndexA < positiveIndexB then positiveIndexB else positiveIndexA;
+    if positiveIndexA < 0 || positiveIndexA > length then list
+    else if positiveIndexB < 0 || positiveIndexB > length then list
+    else if positiveIndexA == positiveIndexB then list
+    else list[..positiveMin] + [list[positiveMax]] + list[positiveMin + 1..positiveMax] +
+         [list[positiveMin]] + list[positiveMax + 1..] }
 }

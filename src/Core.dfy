@@ -1,8 +1,8 @@
-// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.29.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`
-// (`isNil`). (v0.2.0 removed `cloneDeep`, which v0.8.0 brought back; v0.4.1
+// (`isNil`, `isNotNil`). (v0.2.0 removed `cloneDeep`, which v0.8.0 brought back; v0.4.1
 // removed the `first` alias of `head`; v0.9.0 removed the aliases `car`,
 // `cdr`, `cons` and `push`, `size`, whose alias `length` holds its code now,
 // and `cloneDeep`, which `clone` became, and renamed `repeatN` to `repeat`,
@@ -14,7 +14,7 @@ module Ramdaf.Core {
 
   export
     reveals clone, isEmpty, prepend, nth, head, last, tail, append,
-            concat, identity, times, length, isNil
+            concat, identity, times, length, isNil, isNotNil
     provides Prelude
 
   // `R.clone(value)` (`src/clone.js`): `_baseCopy(value, [], [])`, a deep
@@ -110,7 +110,8 @@ module Ramdaf.Core {
   // since v0.9.0 `new Array(Number(n))`, which only changes non-numbers):
   // fn applied to 0, 1, ..., n - 1. `new Array(n)` throws RangeError for a
   // negative n (since v0.19.1 times throws it first, "n must be a
-  // non-negative number", for a negative n or NaN), so n is a nat.
+  // non-negative number", for a negative n or NaN), so n is a nat. (Since
+  // v0.29.0, 3141d1a7, the list is built with `push`, the same list.)
   function times<T>(fn: nat -> T, n: nat): seq<T>
     ensures |times(fn, n)| == n
     ensures forall i :: 0 <= i < n ==> times(fn, n)[i] == fn(i)
@@ -127,4 +128,10 @@ module Ramdaf.Core {
   // (README "Deviations"). (Since v0.11.0 it is `_curry1`, so a call with
   // no argument returns isNil itself, which the port has no form for.)
   function isNil<T>(x: Option<T>): bool { x.None? }
+
+  // `R.isNotNil(x)` (v0.29.0, 4bb8dd81, `@category Type`): `_curry1(function
+  // isNotNil(x) { return !isNil(x); })`, false for null and undefined and
+  // true for any other value (`isNotNil(0)` is true); an Option here, as for
+  // isNil (README "Deviations").
+  function isNotNil<T>(x: Option<T>): bool { !isNil(x) }
 }

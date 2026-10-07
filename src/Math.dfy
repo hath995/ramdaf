@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.29.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
 // functions with `@category Math` (`inc`, `dec`, `negate`, `mean`,
 // `median`). (v0.5.0 removed
@@ -87,28 +87,45 @@ module Ramdaf.Math {
   // element of a list, `createMaxMin(gt, -Infinity)` (v0.7.0; a fold with
   // `Math.max` from v0.2.0 to v0.6.0), with `max([])` -Infinity, so the empty
   // list was excluded. JS compares any orderable values (`max('a', 'b')` is
-  // 'b'); here ints (README "Deviations").
+  // 'b'); here ints (README "Deviations"). Since v0.29.0 (37c568af,
+  // "Improve min and max logic") it is b when `a === b`, else the larger
+  // when exactly one of `a > b` and `b > a` holds, else the value whose
+  // `typeof` name is later, else the one whose `toString` is later, else b
+  // (`max('a', 7)` is 'a', `max(NaN, 1)` 1): on ints the same results, as
+  // the other branches only decide for NaN, values of different types and
+  // -0 (`max(-0, 0)` is 0, was -0), so the body stays.
   function max(a: int, b: int): int { if b > a then b else a }
 
   // `R.min(a, b)` (v0.16.0): `b < a ? b : a`, the smaller of two values
   // (until v0.15.1 the least element of a list, `createMaxMin(lt,
-  // Infinity)`, with `min([])` Infinity).
+  // Infinity)`, with `min([])` Infinity). Since v0.29.0 it mirrors max: a
+  // when `a === b`, else the smaller by `<`, by `typeof` name (`min('a', 7)`
+  // is 7, was 'a') or by `toString`, else a; on ints the same results.
   function min(a: int, b: int): int { if b < a then b else a }
 
-  // `R.maxBy(f, a, b)` (v0.16.0, 43b57125): `f(b) > f(a) ? b : a`, the value
-  // with the larger key (a on a tie; `maxBy(n => n * n, -3, 2)` is -3). Keys
-  // are ints (README "Deviations"). Until v0.15.1 `maxBy(keyFn, list)`
+  // `R.maxBy(f, a, b)` (v0.16.0, 43b57125): since v0.29.0 (37c568af) `var
+  // resultB = f(b); return max(f(a), resultB) === resultB ? b : a;`, the
+  // value with the larger key, b on a tie (`maxBy(n => n * n, -3, 3)` is 3;
+  // `maxBy(n => n * n, -3, 2)` is -3); from v0.16.0 to v0.28.0 `f(b) > f(a) ?
+  // b : a`, a on a tie (-3). The body calls `max`. Keys are ints (README
+  // "Deviations"). Until v0.15.1 `maxBy(keyFn, list)`
   // (`maxWith` until v0.8.0) was the element of a list with the greatest
   // key, the first on a tie, undefined (None) for []; in v0.15.x
   // `_createMaxMinBy` started from `list[1]` (7f7648df), so `list[0]` was
   // never considered and a one-element list, which called
   // `keyFn(undefined)`, was excluded.
-  function maxBy<T>(keyFn: T -> int, a: T, b: T): T { if keyFn(b) > keyFn(a) then b else a }
+  function maxBy<T>(keyFn: T -> int, a: T, b: T): T
+  { var resultB := keyFn(b);
+    if max(keyFn(a), resultB) == resultB then b else a }
 
-  // `R.minBy(f, a, b)` (v0.16.0): `f(b) < f(a) ? b : a`, the value with the
-  // smaller key (a on a tie); until v0.15.1 the element of a list with the
-  // least key, as maxBy.
-  function minBy<T>(keyFn: T -> int, a: T, b: T): T { if keyFn(b) < keyFn(a) then b else a }
+  // `R.minBy(f, a, b)` (v0.16.0): since v0.29.0 `var resultB = f(b); return
+  // min(f(a), resultB) === resultB ? b : a;`, the value with the smaller
+  // key, b on a tie (`minBy(n => n * n, -3, 3)` is 3); from v0.16.0 to
+  // v0.28.0 `f(b) < f(a) ? b : a`, a on a tie; until v0.15.1 the element of
+  // a list with the least key, as maxBy. The body calls `min`.
+  function minBy<T>(keyFn: T -> int, a: T, b: T): T
+  { var resultB := keyFn(b);
+    if min(keyFn(a), resultB) == resultB then b else a }
 
   // `R.inc = add(1)` (v0.9.0).
   function inc(n: int): int { add(1, n) }

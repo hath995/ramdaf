@@ -1,4 +1,4 @@
-// Ramda v0.28.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.29.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
 // median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real
@@ -113,6 +113,19 @@ module RamdafTests.Ramda.Math {
   method {:test} MinReturnsTheSmallerOfItsTwoArguments() {
     expect min(-7, 7) == -7;
     expect min(7, -7) == -7;
+  }
+
+  // v0.29.0's "returns the second (max; min: first) argument if both
+  // arguments are equal according to the native JS strict equals operator":
+  // its `7, 7` lines (`undefined, undefined` is not an int). Its other new
+  // `it`s order values that do not compare, by type name, by `toString` or
+  // as given (`max('a', 7)`, `min(obj1, null)`, `max(NaN, NaN)`): not ints
+  // (README "Deviations").
+  method {:test} MaxReturnsTheSecondArgumentIfBothArgumentsAreStrictlyEqual() {
+    expect max(7, 7) == 7;
+  }
+  method {:test} MinReturnsTheFirstArgumentIfBothArgumentsAreStrictlyEqual() {
+    expect min(7, 7) == 7;
   }
 
   function Xy(x: int, y: int): map<string, int> { map["x" := x, "y" := y] }

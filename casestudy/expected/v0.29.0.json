@@ -1,0 +1,14 @@
+{
+  "ramda": "v0.29.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Object.propEq", "kind": "breaking", "why": "v0.29.0 (a4998cf7) moves the value first: propEq(val, name, obj)"},
+    {"symbol": "Ramdaf.List.of", "kind": "breaking", "why": "v0.29.0 (dec329da) takes a constructor first, of(Ctor, val), dispatching to its of method; the port ignores Ctor"},
+    {"symbol": "Ramdaf.Math.maxBy", "kind": "breaking", "why": "v0.29.0 is max(f(a), f(b)) === f(b) ? b : a, so a tie gives b (was a)"},
+    {"symbol": "Ramdaf.Math.minBy", "kind": "breaking", "why": "v0.29.0 is min(f(a), f(b)) === f(b) ? b : a, so a tie gives b (was a)"},
+    {"symbol": "Ramdaf.Data.intersection", "kind": "breaking", "why": "v0.29.0 filters list2 by membership in list1 (v0.20.0 took the shorter list's elements and order)"},
+    {"symbol": "Ramdaf.List.dropRepeatsBy", "kind": "added", "why": "new in v0.29.0 (@category List): dropRepeatsWith(eqBy(fn))"},
+    {"symbol": "Ramdaf.Core.isNotNil", "kind": "added", "why": "new in v0.29.0 (@category Type): !isNil(x)"},
+    {"symbol": "Ramdaf.List.swap", "kind": "added", "why": "new in v0.29.0 (@category List): the elements at two indices exchanged"}
+  ]
+}

@@ -1,6 +1,6 @@
-// Ramda v0.28.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.29.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
-// identity.js, isNil.js, ascend.js and descend.js, transcribed
+// identity.js, isNil.js, isNotNil.js, ascend.js and descend.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
 // were test.core.js, test.clone.js, test.cloneDeep.js and test.identity.js).
 // Not transcribed: the `head([])`, `head('')`, `last([])` and `last('')`
@@ -321,5 +321,16 @@ module RamdafTests.Ramda.Core {
     expect isNil(Some(Obj(map[]))) == false;
     expect isNil(Some(Num(0))) == false;
     expect isNil(Some(Str(""))) == false;
+  }
+
+  // ---- isNotNil.js (v0.29.0): `void 0`, `undefined` and `null` are None ----
+
+  method {:test} IsNotNilTestsAValueForNullOrUndefined() {
+    var none: Option<Js> := None;
+    expect isNotNil(none) == false;
+    expect isNotNil(Some(Arr([]))) == true;
+    expect isNotNil(Some(Obj(map[]))) == true;
+    expect isNotNil(Some(Num(0))) == true;
+    expect isNotNil(Some(Str(""))) == true;
   }
 }

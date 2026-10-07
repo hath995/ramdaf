@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.29.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
@@ -108,24 +108,27 @@ module Ramdaf.Data {
            r
          else out }
 
-  // `uniq(_filter(flip(_contains)(lookupList), filteredList))` (v0.20.0),
-  // where `lookupList` is list1 when it is longer than list2 and list2
-  // otherwise, and `filteredList` the other one: the elements of the
-  // shorter list (list1 when they are equally long) that occur in the
-  // longer, each kept at its first occurrence there, in that list's order
-  // (`intersection([3, 2], [1, 2, 3])` is `[3, 2]`; `intersection([1, 2, 3,
-  // 4], [4, 3, 2])` is `[4, 3, 2]`). From v0.1.1 to v0.19.1 it was
-  // `uniq(filter(flip(contains)(list1), list2))`, always the elements of
-  // list2 in list2's order (`[2, 3]` for the first example).
+  // `var toKeep = new _Set(); for (…) toKeep.add(list1[i]); return
+  // uniq(_filter(toKeep.has.bind(toKeep), list2));` (v0.29.0, 6d2f4776
+  // "Improve R.without and R.intersection time complexity"): the elements of
+  // list2 that occur in list1, each kept at its first occurrence, in list2's
+  // order (`intersection([3, 2], [1, 2, 3])` is `[2, 3]`; `intersection([1,
+  // 2, 3, 4], [4, 3, 2])` is `[4, 3, 2]`), as from v0.1.1 to v0.19.1
+  // (`uniq(filter(flip(contains)(list1), list2))`). The private `_Set`
+  // tests membership with `R.equals`, `x in list1` here, and `_filter` is
+  // `filter` on a list. From v0.20.0 to v0.28.0 it was
+  // `uniq(_filter(flip(_includes)(lookupList), filteredList))`, with
+  // `lookupList` list1 when it was longer than list2 and list2 otherwise,
+  // and `filteredList` the other one: the elements of the shorter list
+  // (list1 when they were equally long), in that list's order (`[3, 2]` for
+  // the first example).
   function intersection<T(==)>(list1: seq<T>, list2: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |intersection(list1, list2)| ==>
       intersection(list1, list2)[i] in list1 && intersection(list1, list2)[i] in list2
     ensures forall i :: 0 <= i < |list2| && list2[i] in list1 ==> list2[i] in intersection(list1, list2)
     ensures forall i, j :: 0 <= i < j < |intersection(list1, list2)| ==>
       intersection(list1, list2)[i] != intersection(list1, list2)[j]
-  { var lookupList := if |list1| > |list2| then list1 else list2;
-    var filteredList := if |list1| > |list2| then list2 else list1;
-    List.uniq(List.filter(x => x in lookupList, filteredList)) }
+  { List.uniq(List.filter(x => x in list1, list2)) }
 
   // `R.countBy(fn, list)`: since v0.21.0 `reduceBy(function(acc, elem) {
   // return acc + 1; }, 0)`, so the body calls `List.reduceBy`: for each key

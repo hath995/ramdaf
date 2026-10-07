@@ -1,4 +1,4 @@
-// Ramda v0.28.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.29.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -9,8 +9,8 @@
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
 // splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js,
-// groupWith.js, reduceWhile.js, startsWith.js, endsWith.js, move.js, count.js
-// and splitWhenever.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// groupWith.js, reduceWhile.js, startsWith.js, endsWith.js, move.js, count.js,
+// splitWhenever.js, dropRepeatsBy.js and swap.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -108,6 +108,16 @@
 // (v0.26.0 removed the per-function "is curried" `it`s and adjust's "curries
 // the arguments", with their transcriptions here, and renamed contains.js
 // includes.js, contains being deprecated.)
+// v0.29.0's "can act as a transducer" `it`s (`into` and `transduce`, of
+// find, findIndex, findLast, findLastIndex, map, none, dropRepeats,
+// dropRepeatsWith, dropRepeatsBy, aperture, uniqBy, uniqWith, without,
+// groupBy, indexBy, countBy, reduceBy, scan and others), mergeAll's
+// "acts as if nil values are simply empty objects" (null elements), of's
+// sanctuary dispatch and sequence's and traverse's new Fantasy-land `it`s
+// ("swaps types in a Maybe of Either", "operates on a list of
+// FL-applicatives", "operates on a FL-compliant Maybe of Either", "works
+// for the example in the docs") are not transcribed; dropRepeatsWith.js's
+// `eqI` is the lambda `(a, b) => a.i === b.i` (was `R.eqProps('i')`).
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -221,14 +231,17 @@ module RamdafTests.Ramda.List {
     expect repeat(Null, 3) == [Null, Null, Null];
   }
 
-  // describe('of') (v0.3.0)
+  // describe('of') (v0.3.0): since v0.29.0 `R.of(Array, x)`, the
+  // constructor `Array` written `()` (no Dafny value has an `of` method, so
+  // the port ignores it; README "Deviations"); its "dispatches to an
+  // available of method" (sanctuary's Maybe) is not transcribed.
   method {:test} OfReturnsItsArgumentAsAnArray() {
-    expect of(100) == [100];
-    expect of([100]) == [[100]];
-    expect of(Null) == [Null];
-    expect of(Undefined) == [Undefined];
+    expect of((), 100) == [100];
+    expect of((), [100]) == [[100]];
+    expect of((), Null) == [Null];
+    expect of((), Undefined) == [Undefined];
     var none: seq<int> := [];
-    expect of(none) == [[]];
+    expect of((), none) == [[]];
   }
 
   // describe('empty') (v0.3.0): v0.16.0's "returns empty array given array"
@@ -1065,18 +1078,20 @@ module RamdafTests.Ramda.List {
       map["ABC" := map["id" := "abc", "title" := "B"], "XYZ" := map["id" := "xyz", "title" := "A"]];
   }
 
-  // ---- sequence.js, traverse.js (v0.19.0): their list `it`s; `R.of` is
-  // List.of ----
+  // ---- sequence.js, traverse.js (v0.19.0): their list `it`s; `ofArray =
+  // R.of(Array)` (v0.29.0; `R.of` until v0.28.0) is List.of applied to the
+  // constructor, written `()` ----
 
   method {:test} SequenceOperatesOnAListOfLists() {
     var none: seq<seq<int>> := [];
     var empty: seq<int> := [];
-    expect sequence(of, none) == [[]];
-    expect sequence(of, [empty, [1, 2, 3, 4]]) == [];
-    expect sequence(of, [[1], [2, 3, 4]]) == [[1, 2], [1, 3], [1, 4]];
-    expect sequence(of, [[1, 2], [3, 4]]) == [[1, 3], [1, 4], [2, 3], [2, 4]];
-    expect sequence(of, [[1, 2, 3], [4]]) == [[1, 4], [2, 4], [3, 4]];
-    expect sequence(of, [[1, 2, 3, 4], empty]) == [];
+    var ofArray := (x: seq<int>) => of((), x);
+    expect sequence(ofArray, none) == [[]];
+    expect sequence(ofArray, [empty, [1, 2, 3, 4]]) == [];
+    expect sequence(ofArray, [[1], [2, 3, 4]]) == [[1, 2], [1, 3], [1, 4]];
+    expect sequence(ofArray, [[1, 2], [3, 4]]) == [[1, 3], [1, 4], [2, 3], [2, 4]];
+    expect sequence(ofArray, [[1, 2, 3], [4]]) == [[1, 4], [2, 4], [3, 4]];
+    expect sequence(ofArray, [[1, 2, 3, 4], empty]) == [];
   }
 
   // `R.map(R.add(10))` (until v0.19.1 commuteMap.js's `plus10map`)
@@ -1085,12 +1100,13 @@ module RamdafTests.Ramda.List {
   method {:test} TraverseOperatesOnAListOfLists() {
     var none: seq<seq<int>> := [];
     var empty: seq<int> := [];
-    expect traverse(of, Plus10Map, none) == [[]];
-    expect traverse(of, Plus10Map, [empty, [1, 2, 3, 4]]) == [];
-    expect traverse(of, Plus10Map, [[1], [2, 3, 4]]) == [[11, 12], [11, 13], [11, 14]];
-    expect traverse(of, Plus10Map, [[1, 2], [3, 4]]) == [[11, 13], [11, 14], [12, 13], [12, 14]];
-    expect traverse(of, Plus10Map, [[1, 2, 3], [4]]) == [[11, 14], [12, 14], [13, 14]];
-    expect traverse(of, Plus10Map, [[1, 2, 3, 4], empty]) == [];
+    var ofArray := (x: seq<int>) => of((), x);
+    expect traverse(ofArray, Plus10Map, none) == [[]];
+    expect traverse(ofArray, Plus10Map, [empty, [1, 2, 3, 4]]) == [];
+    expect traverse(ofArray, Plus10Map, [[1], [2, 3, 4]]) == [[11, 12], [11, 13], [11, 14]];
+    expect traverse(ofArray, Plus10Map, [[1, 2], [3, 4]]) == [[11, 13], [11, 14], [12, 13], [12, 14]];
+    expect traverse(ofArray, Plus10Map, [[1, 2, 3], [4]]) == [[11, 14], [12, 14], [13, 14]];
+    expect traverse(ofArray, Plus10Map, [[1, 2, 3, 4], empty]) == [];
   }
 
   // ---- splitAt.js, splitWhen.js (v0.19.0) ----
@@ -1408,5 +1424,67 @@ module RamdafTests.Ramda.List {
     expect splitWhenever((x: int) => x == 3, empty) == [];
     expect splitWhenever((x: int) => x == 1, [1, 2, 3]) == [[2, 3]];
     expect splitWhenever((x: int) => x == 4, [1, 2, 3]) == [[1, 2, 3]];
+  }
+
+  // ---- dropRepeatsBy.js (v0.29.0): the records `{i}` are maps (`I`, as
+  // dropRepeatsWith.js's), `fn = ({ i
+  // }) => ({ i: Math.abs(i) })`, and `({ n, ...rest }) => ({ ...rest })` the
+  // record without n ----
+
+  function AbsI(o: map<string, int>): map<string, int> { I(Abs(Field(o, "i"))) }
+
+  method {:test} DropRepeatsByRemovesRepeatedElementsBasedOnPredicate() {
+    var objs := [I(1), I(2), I(3), I(-4), I(5), I(3)];
+    var objs2 := [I(1), I(-1), I(1), I(2), I(3), I(3), I(-4), I(4), I(5), I(3)];
+    expect dropRepeatsBy(AbsI, objs2) == objs;
+    expect dropRepeatsBy(AbsI, objs) == objs;
+  }
+
+  method {:test} DropRepeatsByKeepsElementsFromTheLeft() {
+    var r := (i: int, n: int) => map["i" := i, "n" := n];
+    expect dropRepeatsBy((o: map<string, int>) => o - {"n"}, [r(1, 1), r(1, 2), r(1, 3), r(4, 1), r(4, 2)]) ==
+      [r(1, 1), r(4, 1)];
+  }
+
+  method {:test} DropRepeatsByReturnsAnEmptyArrayForAnEmptyArray() {
+    var empty: seq<map<string, int>> := [];
+    expect dropRepeatsBy(AbsI, empty) == [];
+  }
+
+  // ---- swap.js (v0.29.0): its list and string `it`s; the two object `it`s
+  // ("swaps property values from one property to another", "does nothing
+  // when property names are not defined") are not transcribed (a list here,
+  // README "Deviations") ----
+
+  function SwapList(): seq<string> { ["a", "b", "c", "d", "e", "f"] }
+
+  method {:test} SwapSwapsAnElementFromOneIndexToTheOther() {
+    var list := SwapList();
+    expect swap(0, 1, list) == ["b", "a", "c", "d", "e", "f"];
+    expect swap(2, 1, list) == ["a", "c", "b", "d", "e", "f"];
+    expect swap(-1, 0, list) == ["f", "b", "c", "d", "e", "a"];
+    expect swap(4, 1, list) == ["a", "e", "c", "d", "b", "f"];
+  }
+
+  method {:test} SwapDoesNothingWhenIndexesAreOutsideTheListBoundaries() {
+    var list := SwapList();
+    expect swap(-20, 2, list) == list;
+    expect swap(20, 2, list) == list;
+    expect swap(2, 20, list) == list;
+    expect swap(2, -20, list) == list;
+    expect swap(20, 20, list) == list;
+    expect swap(-20, -20, list) == list;
+  }
+
+  method {:test} SwapDoesNothingWhenIndexesAreEqual() {
+    expect swap(0, 0, SwapList()) == SwapList();
+  }
+
+  method {:test} SwapShouldBeTheSameWhenSwappingIndexOrder() {
+    expect swap(0, 1, SwapList()) == swap(1, 0, SwapList());
+  }
+
+  method {:test} SwapSwapsCharactersInStringFromOneIndexToAnother() {
+    expect swap(0, 2, "foo") == "oof";
   }
 }

@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.28.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.29.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -27,7 +27,7 @@ module RamdafTests.Edge.Misc {
     var none: map<string, int> := map[];
     expect eqProps("x", none, none) == true;
     expect eqProps("x", map["x" := 1], none) == false;
-    expect propEq("nope", 1, map["foo" := 1]) == false;
+    expect propEq(1, "nope", map["foo" := 1]) == false;
     expect prop("nope", map["a" := 1]) == None;
     expect keys(none) == {};
   }
@@ -259,20 +259,24 @@ module RamdafTests.Edge.Misc {
     expect product(empty) == 1;
   }
 
-  // maxBy and minBy (binary since v0.16.0, `f(b) > f(a) ? b : a`) keep the
-  // first argument on a tie (node: [5, 1], [1, 1], 3, 3). (Since v0.2.0
-  // maxWith/minWith, maxBy/minBy since v0.8.0, took a key function and a
-  // list, the first of equals winning; in v0.15.x the first element was
-  // skipped.)
-  method {:test} MaxByMinByKeepTheFirstOfEquals() {
-    expect maxBy((r: (int, int)) => r.0, (5, 1), (5, 2)) == (5, 1);
-    expect minBy((r: (int, int)) => r.0, (1, 1), (1, 2)) == (1, 1);
-    expect maxBy((x: int) => x % 2, 3, 5) == 3;
-    expect minBy((x: int) => x % 2, 3, 5) == 3;
+  // maxBy and minBy (binary since v0.16.0) take the second argument on a
+  // tie since v0.29.0, `max(f(a), f(b)) === f(b) ? b : a` (node: [5, 2], [1,
+  // 2], 5, 5, and `maxBy(n => n * n, -3, 3)` and `minBy` of it 3); from
+  // v0.16.0 to v0.28.0 `f(b) > f(a) ? b : a` kept the first ([5, 1], [1, 1],
+  // 3, 3). (Since v0.2.0 maxWith/minWith, maxBy/minBy since v0.8.0, took a
+  // key function and a list, the first of equals winning; in v0.15.x the
+  // first element was skipped.)
+  method {:test} MaxByMinByTakeTheSecondOfEquals() {
+    expect maxBy((r: (int, int)) => r.0, (5, 1), (5, 2)) == (5, 2);
+    expect minBy((r: (int, int)) => r.0, (1, 1), (1, 2)) == (1, 2);
+    expect maxBy((x: int) => x % 2, 3, 5) == 5;
+    expect minBy((x: int) => x % 2, 3, 5) == 5;
+    expect maxBy((n: int) => n * n, -3, 3) == 3;
+    expect minBy((n: int) => n * n, -3, 3) == 3;
   }
 
-  // Node (v0.16.0): `maxBy(x => -x, 1, 2)` is 1, `minBy(x => -x, 1, 2)` 2,
-  // `maxBy(x => x, 9, 1)` 9 and `minBy(x => x, 9, 1)` 1.
+  // Node (v0.16.0, and v0.29.0): `maxBy(x => -x, 1, 2)` is 1, `minBy(x =>
+  // -x, 1, 2)` 2, `maxBy(x => x, 9, 1)` 9 and `minBy(x => x, 9, 1)` 1.
   method {:test} MaxByMinByCompareKeys() {
     expect maxBy((x: int) => -x, 1, 2) == 1;
     expect minBy((x: int) => -x, 1, 2) == 2;
@@ -685,8 +689,8 @@ module RamdafTests.Edge.Misc {
   // node: identical(negate(0), 0), identical(multiply(-1, 0), 0) and
   // identical(modulo(-4, 2), 0) are false (`Object.is`; with `eq` from
   // v0.9.0 to v0.14.0 and in v0.15.1), as each left side is -0;
-  // and `propEq('a', negate(0), {a: 0})` (`propEq(negate(0), 'a', {a: 0})`
-  // in v0.16.0), `eqProps('a', {a: negate(0)}, {a:
+  // and `propEq(negate(0), 'a', {a: 0})` (since v0.29.0, and in v0.16.0;
+  // `propEq('a', negate(0), {a: 0})` otherwise), `eqProps('a', {a: negate(0)}, {a:
   // 0})` and `whereEq({a: 0}, {a: negate(0)})` are false since v0.14.0
   // (`Object.is`, since v0.15.0 `R.equals`, which compares numbers with
   // identical; true until v0.13.0, with `===`). An int has no -0.
@@ -694,7 +698,7 @@ module RamdafTests.Edge.Misc {
     expect D.identical(negate(0), 0) == true;
     expect D.identical(multiply(-1, 0), 0) == true;
     expect D.identical(modulo(-4, 2), 0) == true;
-    expect propEq("a", negate(0), map["a" := 0]) == true;
+    expect propEq(negate(0), "a", map["a" := 0]) == true;
     expect eqProps("a", map["a" := negate(0)], map["a" := 0]) == true;
     expect whereEq(map["a" := 0], map["a" := negate(0)]) == true;
   }
@@ -803,6 +807,20 @@ module RamdafTests.Edge.Misc {
     var ap := (f: int -> int, r: int) => f(r);
     expect pipeWith(ap, ((x: int) => x + 1, (x: int) => x * 2))(3) == 8;
     expect composeWith(ap, ((x: int) => x + 1, (x: int) => x * 2))(3) == 7;
+  }
+
+  // node: pipeWith and composeWith fold the later functions with the private
+  // `_reduce`, which from v0.26.0 to v0.28.0 stopped at a result carrying the
+  // reduced marker and returned its `@@transducer/value`
+  // (`pipeWith((f, r) => f(r), [x => x + 1, x => ({'@@transducer/reduced': 1,
+  // '@@transducer/value': x})])(1)` and `composeWith` of the reversed pair
+  // were 2, an omission of those ports); since v0.29.0 `_reduce` is a plain
+  // loop and gives the marked object, as here.
+  method {:test} PipeWithComposeWithKeepAReducedMarker() {
+    var ap := (f: int -> map<string, int>, r: int) => f(r);
+    var mark := (x: int) => map["@@transducer/reduced" := 1, "@@transducer/value" := x];
+    expect pipeWith(ap, ((x: int) => x + 1, mark))(1) == mark(2);
+    expect composeWith(ap, (mark, (x: int) => x + 1))(1) == mark(2);
   }
 
   // xor (v0.27.0): true when exactly one operand is true (node: false, true,
