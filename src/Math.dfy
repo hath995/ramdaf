@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.22.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.22.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
 // functions with `@category Math` (`inc`, `dec`, `negate`, `mean`,
 // `median`). (v0.5.0 removed
