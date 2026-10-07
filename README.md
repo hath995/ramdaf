@@ -132,7 +132,7 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0 and `{'@@functional/placeholder': true}` since v0.15.0, which also curries `concat` and `contains` this way, and since v0.10.0 `merge`) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) Since v0.11.0 `op` is gone and every curried function takes the placeholder in any position: `f(R.__, b)` is still `x => f(x, b)`, while `f(R.__)` is `f` itself, so `subtract(R.__)(5)` is `x => 5 - x` (from v0.6.0 to v0.10.0 `op` made it `x => x - 5`). |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type. (Since v0.11.0 a curried Ramda function called with no arguments returns itself, `identity()` is `identity`; the functions Ramda returns, such as `always(7)`, `T` and `cond(…)`'s result, are not curried, and they are the ones called this way.) |
 
-## Modules and exports (v0.30.0)
+## Modules and exports (v0.30.1)
 
 | Module | Exports |
 |---|---|
@@ -146,8 +146,8 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | toUpper, toLower, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, countBy, groupBy, project, equals, identical, eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin |
 
-That is 212 of Ramda v0.30.0's 269 export names (since v0.9.0 Ramda has no
-functions stored as properties of exports). The other 55 names are listed
+That is 212 of Ramda v0.30.1's 271 export names (since v0.9.0 Ramda has no
+functions stored as properties of exports). The other 57 names are listed
 under "Not portable".
 
 ### Support declarations
@@ -173,7 +173,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.30.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
+Ramda v0.30.1 does not export the helpers `_makeFlat`, `_checkForMethod` and
 `_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
@@ -223,7 +223,7 @@ and `_modify` (behind `assoc`, `dissoc` and `modify`), `_isTypedArray`,
 and adds `_arrayReduce`, `_createReduce`, `_xArrayReduce`, `_xReduce` and
 `_xscan`, as `_reduce` becomes a plain loop and `_xReduce` the transducer
 fold; v0.30.0 adds `_nth`, `_path` and `_placeholder`, the code of `nth`,
-`path` and `__`).
+`path` and `__`, and v0.30.1 deletes `_placeholder` again).
 Since v0.9.0 they are the modules `src/internal/_*.js` (since v0.25.0
 `source/internal/_*.js`; until v0.8.0 local to `ramda.js`), and Ramdaf does not export them either. (`isArrayLike`, private since v0.3.0, was exported from v0.5.0 to
 v0.23.0, not portable, and is private again since v0.24.0 as
@@ -235,12 +235,12 @@ does.)
 
 ## Not portable
 
-These Ramda v0.30.0 exports are not ported, rather than faked:
+These Ramda v0.30.1 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
 | `curry`, `curryN`, `uncurryN` | Ramdaf functions are uncurried, and Dafny has no partial application to curry into. (v0.5.0 moved `curry`'s arity argument to the new `curryN(n, fn)`.) `uncurryN(n, fn)` (v0.14.0) goes the other way, a function of n arguments that applies the curried `fn` to them a few at a time, by each intermediate function's `length` (`uncurryN(2, a => b => a + b)(1, 2)` → `3`): n fixes the result's arity at run time. |
-| `__` | The currying placeholder, the object `{'@@functional/placeholder': true}` (v0.15.0, which recognised any object with that property until v0.30.0 (e02ae048) recognised only that object itself; `{ramda: 'placeholder'}` from v0.9.0 to v0.14.0; until v0.8.0 a non-enumerable `undefined`). Since v0.11.0 every curried function accepts it in any argument position (`subtract(R.__, 5)`, `has(R.__, obj)`). Until v0.10.0 it served `op` (v0.5.0), which v0.11.0 removed: `op(fn)` made a binary function from one with exactly two parameters (v0.6.0; before, at least two); in v0.5.0 its one-argument call fixed the second parameter, with the placeholder `R._` for the first, and from v0.6.0 one argument fixed the first parameter and the placeholder as the first argument the second (v0.9.0 curried `concat` and `contains`, and v0.10.0 `merge`, the same way). The uncurried port has no partial application (see the mapping). (`version`, the release string from v0.5.0 to v0.8.0, was listed here as release metadata until v0.9.0 removed it.) |
+| `__` | The currying placeholder, the object `{'@@functional/placeholder': true}` (v0.15.0, which recognises any object with that property, except in v0.30.0 alone (e02ae048), which recognised only that object itself, until v0.30.1 (32254004, "cross-version placeholder support") restored the property test; `{ramda: 'placeholder'}` from v0.9.0 to v0.14.0; until v0.8.0 a non-enumerable `undefined`). Since v0.11.0 every curried function accepts it in any argument position (`subtract(R.__, 5)`, `has(R.__, obj)`). Until v0.10.0 it served `op` (v0.5.0), which v0.11.0 removed: `op(fn)` made a binary function from one with exactly two parameters (v0.6.0; before, at least two); in v0.5.0 its one-argument call fixed the second parameter, with the placeholder `R._` for the first, and from v0.6.0 one argument fixed the first parameter and the placeholder as the first argument the second (v0.9.0 curried `concat` and `contains`, and v0.10.0 `merge`, the same way). The uncurried port has no partial application (see the mapping). (`version`, the release string from v0.5.0 to v0.8.0, was listed here as release metadata until v0.9.0 removed it.) |
 | `nAry`, `unary`, `binary` | Change a function's reported arity (`fn.length`), which Dafny functions do not have (`unary(fn)` is `nAry(1, fn)`, `binary(fn)` is `nAry(2, fn)`; v0.2.0; `arity`, deprecated in v0.15.0, was here until v0.16.0 removed it). |
 | `invoker` | Calls a JS method on an object at run time: `func` (deprecated in v0.12.0, removed in v0.14.0) looked it up by name, `invoke(methodName, args, obj)` (v0.12.0 to v0.15.1; v0.13.0 moved `obj` last; deprecated in v0.15.0, removed in v0.16.0) was `obj[methodName].apply(obj, args)`, and so, since v0.8.0, does `invokerN(n, 'name', ...args)` (since v0.15.0 `invoker(arity, method)` takes no initial arguments), which calls the last argument's own method `name` and which v0.9.0 renames `invoker` (from v0.6.0 to v0.7.2 `invoker(method)` and `invokerN(n, method)` took the method itself; until v0.5.0 `invoker` took a name and a prototype; v0.8.0 removed that `invoker`). |
 | `bind` | Fixes the `this` of a JS function (v0.6.0; since v0.11.0 the result keeps `fn`'s arity); Dafny functions have no `this`. |
@@ -257,6 +257,7 @@ These Ramda v0.30.0 exports are not ported, rather than faked:
 | `type`, `toString` | Test the run-time type of an arbitrary value (`isNaN(x)`, from v0.13.0 until v0.15.0 removed it for `identical(NaN, x)`, was `typeof x === 'number' && x !== x`, and a NaN is not an `int`, so on every representable value it would have been the constant `false`; `toString(val)`, v0.14.0, writes any value as JavaScript source, choosing the form by its run-time type: `toString([1, 'a', {b: null}])` → `'[1, "a", {"b": null}]'`, with Dates, `arguments` objects and boxed primitives each in their own syntax): v0.5.0 exported `isArrayLike`, the predicate behind `flatten`, whose rule v0.7.2 narrows to objects owning their extreme indices, and which v0.24.0 makes private again, `_isArrayLike` (v0.5.0 also removed `isAtom`, which was here for the same reason; `functions` and `functionsIn`, v0.4.0, deprecated in v0.18.0 and removed in v0.19.0, had their own row: they listed the property names whose values are functions, `typeof obj[key] === 'function'`, inherited ones too for `functionsIn`, a run-time type test on each value, which a `map<string, V>` of one value type cannot make); `type(val)` (v0.8.0) names the type (`'Null'`, `'Undefined'`, or `Object.prototype.toString`'s tag such as `'Object'`, `'Number'` or `'Array'`), which a generic Dafny function cannot inspect. |
 | `is`, `propIs` | Test a value's constructor and prototype chain at run time: `is(ctor, val)` is `val != null && val.constructor === ctor \|\| val instanceof ctor` (v0.4.0; v0.3.0 had `val != null && Object(val) instanceof ctor`), and `propIs(type, name, obj)` (v0.16.0) is `propSatisfies(is(type), name, obj)`. (`is` is also a Dafny keyword.) |
 | `match`, `test` | Regular expressions (`test(pattern, str)`, v0.12.0, runs a copy of the RegExp's `test`, and since v0.18.0 throws `TypeError` for a pattern that is not a RegExp). |
+| `ascendNatural`, `descendNatural` | Locale-sensitive natural ordering (v0.30.1): `ascendNatural(locales, fn, a, b)` is `fn(a).localeCompare(fn(b), locales, {numeric: true})`, and `descendNatural` swaps the operands: the engine's `Intl.Collator` for the BCP 47 locales, digit runs compared as numbers (`sort(ascendNatural('en', identity), ['3', '1', '10', 'Ørjan', 'Bob', 'Älva'])` → `['1', '3', '10', 'Älva', 'Bob', 'Ørjan']`, and with `'sv'` 'Bob' comes before 'Älva'). Even on ASCII the order is not that of the code points (`['_', '-', 'a', 'A', 'a2', 'a10', 'b', 'B', 'z']`), and a key that is not a string throws `TypeError` (`ascendNatural('en', x => x, 1, 2)`). The collation is locale data of the engine (ICU), which a Dafny function does not have (as for Unicode case mapping, README "Deviations"), and the port's comparator keys are ints (`ascend`), on which it would only throw. |
 | `into`, `transduce`, `reduced` | Transducers (v0.12.0; `reduced(x)`, v0.15.0, wraps x in the "reduced" marker object `{'@@transducer/value': x, '@@transducer/reduced': true}`, with which a `reduce` callback stops the fold: `reduce((a, x) => x > 2 ? reduced(a) : a + x, 0, [1, 2, 3, 4])` → `3`; the port's folds run to the end, README "Deviations"): `transduce(xf, fn, acc, list)` folds `list` with `xf(fn)`, and `into(acc, xf, list)` with `xf` applied to a step function chosen by the run-time type of `acc` (an array, a string, an object, or a transformer). A transducer `xf` is built by calling `map`, `filter`, `take` and the other dispatching functions with a transformer object (one with `@@transducer/step` and `@@transducer/result` methods; `step` and `result` until v0.13.0) in list position, a run-time test of the argument; ends early through the `@@transducer/reduced` marker (`__transducers_reduced__` until v0.13.0). The port's functions take lists, and a Dafny function cannot be both a list function and a transducer, nor test its argument's shape. |
 | `path`, `pathEq`, `pathOr`, `pathSatisfies`, `lensPath`, `assocPath`, `dissocPath`, `hasPath`, `paths`, `modifyPath` | Walk an arbitrary JS value along a list of property names (v0.2.0; `modifyPath(path, fn, obj)`, v0.28.0, copies the objects and arrays on the path that own each name and applies fn at its end, or returns obj where the path is missing (since v0.29.1 an empty path gives `fn(obj)`, where it gave obj); `hasPath(path, obj)`, v0.26.0, tests that each name on the path is an own property (`_has`) of the value reached, false for an empty path (and since v0.27.0 for a nil value on the way); `paths(pathsArray, obj)`, v0.27.0, looks up each path, and since then `path(p, obj)` is `paths([p], obj)[0]`, reading an integer segment with `nth`, so a negative index counts from the end (`path(['a', -1], {a: [1, 2]})` → `2`); `pathSatisfies` applies pred to the object for an empty path since v0.27.0; v0.3.0 removed `pathWith`; `pathEq(path, val, obj)`, v0.7.0, compares what `path` finds, since v0.14.0 with `Object.is` (since v0.29.0 `pathEq(val, path, obj)`, the value first, as `propEq`); `pathOr(d, path, obj)`, v0.18.0, is `defaultTo(d, path(path, obj))`, the default where `path` finds `null`, `undefined` or NaN; `pathSatisfies(pred, path, obj)`, v0.19.0, is `path.length > 0 && pred(path(path, obj))`, and `lensPath(path)`, v0.19.0, is `lens(path(path), assocPath(path))`; `assocPath(path, val, obj)`, v0.8.0, copies every object on the way and sets the last property, replacing a value that is not an object with `{}` (since v0.29.0 also a primitive that the object owns on the path: `assocPath(['a', 'b'], 42, {a: 'str'})` → `{a: {b: 42}}`); `dissocPath(path, obj)`, v0.11.0, copies every object on the way and deletes the last property, turning arrays, strings and other primitives on the way into objects: `dissocPath(['a', 'b'], {a: 'str'})` → `{a: {0: 's', 1: 't', 2: 'r'}}`. Until v0.10.0 the path was a dot-separated string, and `pathOn(sep, str, obj)`, removed in v0.11.0, split it on any separator; since v0.14.0 an empty path gives the object itself): object properties, array indices (`path(['a', 'e', 'f', '1'], obj)` → `101`, Ramda's own test) and string characters, returning whatever value is there (an object, an array or a primitive). The mapping has no type for such a heterogeneous nested value: a `map<string, V>` is homogeneous, and `Tree<T>` has no keys. A nested-object datatype would cover only the object case and leave most of Ramda's `path` tests untranscribable. |
 | `mergeDeepLeft`, `mergeDeepRight`, `mergeDeepWith`, `mergeDeepWithKey`, `partialObject` | Merge nested objects (v0.24.0; `partialObject(f, o)`, v0.28.0, is `props => f(mergeDeepRight(o, props))`): `mergeDeepWithKey(fn, l, r)` is `mergeWithKey` with a key whose two values are both plain objects (`_isObject`, `Object.prototype.toString` gives `[object Object]`) merged recursively, and `fn(k, lVal, rVal)` for any other shared key (`mergeDeepRight({a: {x: 1, y: 2}, b: 1, c: [1, 2]}, {a: {y: 3}, b: {z: 1}, c: [3]})` → `{a: {x: 1, y: 3}, b: {z: 1}, c: [3]}`: arrays are not merged); `mergeDeepWith(fn, l, r)` passes fn the two values, and `mergeDeepLeft` and `mergeDeepRight` keep the left and the right one. Their objects mix plain objects and other values at any depth (every example and test: `{w: 1, x: 2, y: {z: 3}}`), the path row's heterogeneous nested value, which a homogeneous `map<string, V>` cannot hold; and with a generic V no Dafny function can tell whether a value is an object, so a port without the recursion (`mergeWithKey` under these names) would differ from node wherever V is itself a map. |
@@ -264,7 +265,7 @@ These Ramda v0.30.0 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.30.0 (node) | Ramdaf |
+| Function | Ramda v0.30.1 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`, and since v0.16.0 `head('')` and `last('')` → `''`, not a character; `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `repeat` (`repeatN` until v0.8.0), `times` | `new Array(n)` throws `RangeError` for a negative n: `repeat(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3; since v0.19.1 `times` throws its own `RangeError: n must be a non-negative number`, for NaN too) | `n: nat` |
@@ -291,7 +292,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.30.0 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.30.1 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `identical` (`eq` until v0.14.0 and in v0.15.1) | `identical` (`Object.is`) compares arrays and objects by reference: `identical([], [])` → `false`. (Until v0.14.0 `===` or `Object.is` also made `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq` (v0.14.0; `where`'s value entries before) and `dropRepeats` (v0.14.0) compare by reference: for `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(Ro, So).length` → `0` and `difference(…)` → `4`. Since v0.15.0 they compare with `R.equals`, deep equality, as here, except that in v0.15.0 alone `uniq` kept a JS `Set`, which compares by reference (unless an object has an `equals` method), so `uniq([{a: 1}, {a: 1}])` kept both and `union(Ro, So).length` was still `8`; v0.15.1 makes `uniq` `uniqWith(equals)` again.) | Structural `==`: `true` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert`, `collectBy` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}`; `collectBy(fn, list)` (v0.28.0) lists its groups in `for…in` order of their tags, integer-like tags first and ascending: `collectBy(x => String(x % 3), [5, 4, 3, 2])` → `[[3], [4], [5, 2]]` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets; `collectBy`'s groups in the order their tags first occur, `[[5, 2], [4], [3]]` | A `map` has no key order. |
@@ -346,11 +347,11 @@ also lists what it skips: arity checks, side-effect counting, calls with no
 arguments, `null` or `undefined` in place of a list, JS coercion, reference
 equality, method dispatch on non-array objects, array-like objects,
 prototypes, string-keyed `sortBy`, and the unportable functions' files
-(v0.30.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `construct.js`,
+(v0.30.1: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `construct.js`,
 `constructN.js`, `curry.js`, `curryN.js`, `forEach.js`,
 `into.js`, `lensPath.js`, `pathSatisfies.js`,
 `invoker.js`, `is.js`, `lift.js`, `liftN.js`, `propIs.js`, `modifyPath.js`, `partialObject.js`, `unwind.js`,
-`partial.js`, `partialRight.js`, `match.js`, `memoizeWith.js`, `hasPath.js`, `andThen.js`, `otherwise.js`, `paths.js`, `addIndexRight.js`,
+`partial.js`, `partialRight.js`, `match.js`, `memoizeWith.js`, `hasPath.js`, `andThen.js`, `otherwise.js`, `paths.js`, `addIndexRight.js`, `ascendNatural.js`, `descendNatural.js`,
 `mergeDeepLeft.js`, `mergeDeepRight.js`, `mergeDeepWith.js`, `mergeDeepWithKey.js`, `nAry.js`,
 `nthArg.js`, `once.js`, `path.js`, `pathEq.js`, `pathOr.js`, `dissocPath.js`,
 `test.js`, `transduce.js`, `tap.js`, `tryCatch.js`, `type.js`, `unapply.js`, `unary.js`,
@@ -378,7 +379,8 @@ v0.25.0 removed `intersectionWith.js`, with the function; v0.26.0 removed
 `then.js` `andThen.js` with the function and added `paths.js` and
 `xor.js`; v0.28.0 removed `merge.js`, `composeK.js`, `pipeK.js`,
 `composeP.js` and `pipeP.js`, with the functions, and moved the jsverify
-properties to fast-check; v0.29.0 added `addIndexRight.js`).
+properties to fast-check; v0.29.0 added `addIndexRight.js`, and v0.30.1
+`ascendNatural.js` and `descendNatural.js`).
 `test.examplesRunner.js` (v0.5.0; in `test/helpers/` since v0.15.0) runs the JSDoc examples through `dox`
 and is not transcribed.
 
@@ -441,7 +443,7 @@ and is not transcribed.
 | v0.29.0 | 2023-04-02 | ported | — |
 | v0.29.1 | 2023-10-04 | ported | — |
 | v0.30.0 | 2024-04-27 | ported | — |
-| v0.30.1 | 2024-06-02 | pending | — |
+| v0.30.1 | 2024-06-02 | ported | — |
 | v0.31.0 | 2025-06-22 | pending | — |
 | v0.31.1 | 2025-06-22 | pending | — |
 | v0.31.2 | 2025-06-22 | pending | — |
@@ -3048,6 +3050,27 @@ and is not transcribed.
     and array lines; new edges cover both.
 - **Expected tier: patch.** `flow` and `isNotEmpty` were added
   (`casestudy/expected/v0.30.0.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.30.1 (2024-06-02)
+
+- **Ramda** (the `source/` and `test/` diff, every changed module compared
+  in normalised form, behaviour checked in node with a differential run of
+  the ported exports, which finds no change):
+  - New, not portable: `ascendNatural` and `descendNatural` (`@category
+    Function`), comparators by `localeCompare` with the given locales and
+    numeric collation.
+  - Not visible in this encoding: the placeholder is recognised by its
+    `@@functional/placeholder` property again; JSDoc fixes for `head`,
+    `last`, `nth` and `flow`.
+- **Ramdaf:**
+  - "Not portable": a new row for `ascendNatural` and `descendNatural`
+    (locale collation, which needs the engine's locale data); the `__` row
+    records the restored property test.
+  - No source change; the headers cite v0.30.1.
+  - Tests: ascendNatural.js and descendNatural.js are not transcribed.
+- **Expected tier: patch.** No Dafny-visible change
+  (`casestudy/expected/v0.30.1.json`, with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
