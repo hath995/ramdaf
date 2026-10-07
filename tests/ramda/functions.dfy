@@ -1,4 +1,4 @@
-// Ramda v0.17.1 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.18.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
@@ -12,8 +12,10 @@
 // its arity), and v0.16.0's "is a variadic function" (arity); flip's "produces a function that throws if given no arguments"
 // (v0.4.0 to v0.10.0; no-argument call);
 // ap's "dispatches to the passed object's ap method" (method dispatch on a
-// non-array object) and the `typeof` check of its "is curried" (since v0.5.0
-// the dispatch case calls `ap(obj, 10)`, on the first argument); v0.14.0's
+// non-array object), the `typeof` check of its "is curried" (since v0.5.0
+// the dispatch case calls `ap(obj, 10)`, on the first argument) and
+// v0.18.0's "interprets ((->) r) as an applicative" (`ap` on functions; the
+// port's takes lists, README "Deviations"); v0.14.0's
 // converge "returns a function with the length of the "longest" argument"
 // (arity), "passes context to its functions" (`this`) and the
 // `f3(R.__).length` half of its "returns a curried function". The files
@@ -21,7 +23,7 @@
 // once, memoize, construct, constructN, unary, binary, nAry, apply, unapply,
 // composeP, pipeP, curry, curryN, op, partial, partialRight, wrap, forEach,
 // forEachIndexed (until v0.15.1), installTo (until v0.11.0), path, pathOn,
-// pathEq, is, propIs (v0.16.0), isArrayLike, type,
+// pathEq, pathOr (v0.18.0), is, propIs (v0.16.0), isArrayLike, type,
 // functions, functionsIn, bind, invoker, lift, liftN, nthArg, and v0.9.0's
 // new call.js, v0.14.0's uncurryN.js and v0.15.0's addIndex.js, and
 // v0.16.0's composeK.js and pipeK.js, whose monad is an `Identity` object
@@ -40,7 +42,10 @@
 // curried" `it`s "is curried"; v0.14.0 removed func.js with the function;
 // v0.15.0 removed isNaN.js with the function; v0.16.0 removed composeL.js,
 // pipeL.js, arity.js and forEachIndexed.js with the functions and rewrote
-// compose.js and pipe.js.)
+// compose.js and pipe.js; v0.18.0 rewrote compose's and pipe's "performs
+// right-to-left (left-to-right) function composition" again, retitled ap's
+// "applies a list of functions to a list of values" "interprets [a] as an
+// applicative", and passes converge's functions as one list, a pair here.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -85,43 +90,48 @@ module RamdafTests.Ramda.Functions {
 
   // ---- compose.js, pipe.js, converge.js ----
 
-  // describe('compose'), describe('pipe'): v0.16.0's "performs
-  // right-to-left (left-to-right) function composition", with `f(a) = [a]`,
-  // `g(a, b) = [a, b]` and `h(a, b, c) = [a, b, c]` (the last two take a
-  // tuple here; Wrap, Pair and Triple, as F is Ramda's F), nested for three
-  // functions; its `.length` lines (arity),
-  // curried calls (`compose(f, f, g)(1)(2)`, since v0.16.0 the result is
-  // curried to the first function's arity) and `R.curry(g)` lines are not
-  // transcribed. (Until v0.15.1 "executes its passed in functions in order
-  // from right to left (left to right)" over string functions and "first
-  // function is passed multiple args".)
-  function Wrap<T>(a: T): seq<T> { [a] }
-  function Pair(t: (int, int)): seq<int> { [t.0, t.1] }
-  function Triple(t: (int, int, int)): seq<int> { [t.0, t.1, t.2] }
+  // describe('compose'), describe('pipe'): v0.18.0's "performs
+  // right-to-left (left-to-right) function composition", `f =
+  // compose(R.map, R.multiply, parseInt)` (`pipe(parseInt, R.multiply,
+  // R.map)`), nested here, with the curried `R.multiply(n)` and `R.map(fn)`
+  // as lambdas and `parseInt(s, radix)` taking a tuple, its omitted radix
+  // undefined (None, base 10); the `.length` line (arity) is not transcribed.
+  // (v0.16.0 and v0.17.x composed `f(a) = [a]`, `g(a, b) = [a, b]` and `h(a,
+  // b, c) = [a, b, c]`; until v0.15.1 "executes its passed in functions in
+  // order from right to left (left to right)" over string functions and
+  // "first function is passed multiple args".)
+  function ParseInt(t: (string, Option<int>)): int
+    decreases |t.0|
+  { var radix := if t.1.Some? then t.1.value else 10;
+    if |t.0| == 0 then 0
+    else ParseInt((t.0[..|t.0| - 1], t.1)) * radix + (t.0[|t.0| - 1] as int - '0' as int) }
+  function MultiplyBy(n: int): int -> int { (x: int) => multiply(n, x) }
+  function MapWith(fn: int -> int): seq<int> -> seq<int> { (l: seq<int>) => mapSeq(fn, l) }
 
   method {:test} ComposePerformsRightToLeftFunctionComposition() {
-    expect compose(Wrap<seq<seq<int>>>, compose(Wrap<seq<int>>, Wrap<int>))(1) == [[[1]]];
-    expect compose(Wrap<seq<seq<int>>>, compose(Wrap<seq<int>>, Pair))((1, 2)) == [[[1, 2]]];
-    expect compose(Wrap<seq<seq<int>>>, compose(Wrap<seq<int>>, Triple))((1, 2, 3)) == [[[1, 2, 3]]];
+    var f := compose(MapWith, compose(MultiplyBy, ParseInt));
+    expect f(("10", None))([1, 2, 3]) == [10, 20, 30];
+    expect f(("10", Some(2)))([1, 2, 3]) == [2, 4, 6];
   }
 
   method {:test} PipePerformsLeftToRightFunctionComposition() {
-    expect pipe(Wrap<int>, pipe(Wrap<seq<int>>, Wrap<seq<seq<int>>>))(1) == [[[1]]];
-    expect pipe(Pair, pipe(Wrap<seq<int>>, Wrap<seq<seq<int>>>))((1, 2)) == [[[1, 2]]];
-    expect pipe(Triple, pipe(Wrap<seq<int>>, Wrap<seq<seq<int>>>))((1, 2, 3)) == [[[1, 2, 3]]];
+    var f := pipe(ParseInt, pipe(MultiplyBy, MapWith));
+    expect f(("10", None))([1, 2, 3]) == [10, 20, 30];
+    expect f(("10", Some(2)))([1, 2, 3]) == [2, 4, 6];
   }
 
-  // describe('converge') (describe('fork') until v0.4.1)
-  // `converge(mult, add(1), add(3))(2)`: mult(add1(2), add3(2)) = mult(3, 5)
+  // describe('converge') (describe('fork') until v0.4.1): since v0.18.0 the
+  // branching functions are one list, a pair here
+  // `converge(mult, [add(1), add(3)])(2)`: mult(add1(2), add3(2)) = mult(3, 5)
   method {:test} ConvergePassesTheResultsOfTwoFunctionsIntoAThird() {
-    expect converge((a: int, b: int) => a * b, (x: int) => add(1, x), (x: int) => add(3, x))(2) == 15;
+    expect converge((a: int, b: int) => a * b, ((x: int) => add(1, x), (x: int) => add(3, x)))(2) == 15;
   }
 
-  // v0.14.0 "returns a curried function": `f2 = converge(mult, a => a, (a,
-  // b) => b)` takes two arguments (a tuple here), and `f2(6)(7)` is
+  // v0.14.0 "returns a curried function": `f2 = converge(mult, [a => a, (a,
+  // b) => b])` takes two arguments (a tuple here), and `f2(6)(7)` is
   // `mult(6, 7)`; its `f3(R.__).length` checks an arity.
   method {:test} ConvergeReturnsACurriedFunction() {
-    var f2 := converge((a: int, b: int) => a * b, (p: (int, int)) => p.0, (p: (int, int)) => p.1);
+    var f2 := converge((a: int, b: int) => a * b, ((p: (int, int)) => p.0, (p: (int, int)) => p.1));
     var f2Of6 := (y: int) => f2((6, y));
     expect f2Of6(7) == 42;
   }

@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.17.1 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.18.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -247,10 +247,23 @@ module RamdafTests.Edge.Data {
   // node: equals(negate(0), 0) and equals([negate(0)], [0]) are false
   // (v0.15.0; eqDeep([negate(0)], [0]) from v0.9.0 to v0.14.0 and in
   // v0.15.1): numbers are compared with identical, `Object.is`, and
-  // negate(0) is -0; an int has no -0.
+  // negate(0) is -0; and so are eqBy(identity, 0, negate(0)) and eqBy(x =>
+  // x * 0, -1, 1) (v0.18.0, `equals(f(x), f(y))`; -1 * 0 is -0). An int has
+  // no -0.
   method {:test} DeviationEqualsSignedZero() {
     expect equals(M.negate(0), 0) == true;
     expect equals([M.negate(0)], [0]) == true;
+    expect eqBy((x: int) => x, 0, M.negate(0)) == true;
+    expect eqBy((x: int) => x * 0, -1, 1) == true;
+  }
+
+  // eqBy (v0.18.0) compares f's results with equals (node: true, false,
+  // true, true).
+  method {:test} EqByEdges() {
+    expect eqBy((x: int) => x % 3, 1, 4) == true;
+    expect eqBy((x: int) => x % 3, 1, 5) == false;
+    expect eqBy((l: seq<int>) => |l|, [1, 2], [3, 4]) == true;
+    expect eqBy((x: int) => [x], 1, 1) == true;
   }
 
   // node: `Array.prototype.sort` puts undefined elements last without

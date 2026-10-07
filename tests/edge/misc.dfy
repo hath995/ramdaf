@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.17.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.18.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -290,17 +290,6 @@ module RamdafTests.Edge.Misc {
     expect minBy((x: int) => x, 9, 1) == 1;
   }
 
-  // nthChar and nthCharCode (v0.12.0) count a negative n from the end; out
-  // of range nthChar is '' (node: 'a', 'c', '', '', 97, 99).
-  method {:test} NthCharEdges() {
-    expect nthChar(0, "abc") == "a";
-    expect nthChar(-1, "abc") == "c";
-    expect nthChar(5, "abc") == "";
-    expect nthChar(-5, "abc") == "";
-    expect nthCharCode(0, "abc") == 97;
-    expect nthCharCode(-1, "abc") == 99;
-  }
-
   method {:test} SplitEdges() {
     expect split("", "abc") == ["a", "b", "c"];
     expect split("", "") == [];
@@ -426,13 +415,37 @@ module RamdafTests.Edge.Misc {
   }
 
   // converge (fork until v0.4.1) applies both functions to the same
-  // argument, then combines them.
+  // argument, then combines them; since v0.18.0 the functions are one list,
+  // a pair here (node: [6, 10] and 'ab!2').
   method {:test} ConvergeEdges() {
-    expect converge((a: int, b: int) => [a, b], (x: int) => x + 1, (x: int) => x * 2)(5) == [6, 10];
-    expect converge((n: int, t: string) => t + NumStr(n), (s: string) => |s|, (s: string) => s + "!")("ab") == "ab!2";
-    // node: converge((x, y) => [x, y], (a, b) => a + b, (a, b) => a * b)(2, 5)
+    expect converge((a: int, b: int) => [a, b], ((x: int) => x + 1, (x: int) => x * 2))(5) == [6, 10];
+    expect converge((n: int, t: string) => t + NumStr(n), ((s: string) => |s|, (s: string) => s + "!"))("ab") == "ab!2";
+    // node: converge((x, y) => [x, y], [(a, b) => a + b, (a, b) => a * b])(2, 5)
     // is [7, 10]; the port's result is unary, so the arguments are a tuple.
-    expect converge((x: int, y: int) => [x, y], (t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1)((2, 5)) == [7, 10];
+    expect converge((x: int, y: int) => [x, y], ((t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1))((2, 5)) == [7, 10];
+  }
+
+  // when and unless (v0.18.0) pass x through the function when the predicate
+  // holds (fails), and return x otherwise; a falsy predicate result (`0`,
+  // '') is false here (node: -5, -5, 5, 5, ['z'], [2], 1, 9).
+  method {:test} WhenUnlessEdges() {
+    expect when((x: int) => x > 0, negate, 5) == -5;
+    expect when((x: int) => x > 0, negate, -5) == -5;
+    expect unless((x: int) => x > 0, negate, 5) == 5;
+    expect unless((x: int) => x > 0, negate, -5) == 5;
+    var empty: seq<string> := [];
+    expect when(isEmpty, (l: seq<string>) => ["z"], empty) == ["z"];
+    expect unless((l: seq<int>) => isEmpty(l), tail, [1, 2]) == [2];
+    expect when((x: int) => false, (x: int) => 9, 1) == 1;
+    expect unless((x: int) => false, (x: int) => 9, 1) == 9;
+  }
+
+  // objOf (v0.18.0; createMapEntry's code) builds a one-property object
+  // (node: {a: 1}, {'': [1]}, and the key toString is an own property).
+  method {:test} ObjOfEdges() {
+    expect objOf("a", 1) == map["a" := 1];
+    expect objOf("", [1]) == map["" := [1]];
+    expect objOf("toString", 1) == map["toString" := 1];
   }
 
   // inc and dec (v0.9.0) are add(1) and add(-1), and negate is -n (v0.11.0;
@@ -556,8 +569,9 @@ module RamdafTests.Edge.Misc {
   // finds the transformations' inherited `toString` and calls it. (From
   // v0.9.0 to v0.14.0 `evolve({toString: x => typeof x}, {})` passed the
   // inherited member to the transformation, {toString: 'function'}; since
-  // v0.15.0 it is {}, as here.) A map's keys are all ordinary, and `{}` has
-  // no `toString`.
+  // v0.15.0 it is {}, as here.) Since v0.18.0 `objOf('__proto__', 1)` has
+  // no own key (createMapEntry's assignment, in List's pin). A map's keys
+  // are all ordinary, and `{}` has no `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
@@ -572,6 +586,7 @@ module RamdafTests.Edge.Misc {
     expect assoc("a", 2, map["__proto__" := 5, "b" := 1]) == map["__proto__" := 5, "b" := 1, "a" := 2];
     expect whereEq(map["__proto__" := 1], none) == false;
     expect set_(lensProp<int, int>("__proto__"), 1, map["__proto__" := 0, "a" := 1]) == map["__proto__" := 1, "a" := 1];
+    expect objOf("__proto__", 1) == map["__proto__" := 1];
   }
 
   // node: identical([], []) is false (two distinct array objects; eq([],
@@ -610,12 +625,15 @@ module RamdafTests.Edge.Misc {
     expect toUpper("ä") == "ä";
   }
 
-  // node: `nthCharCode(0, '\u{1F600}')` is 55357 (a UTF-16 surrogate; until
-  // v0.13.0 the pin used `charCodeAt`, which v0.14.0 removed) and the length
-  // is 2; a Dafny char is a code point.
+  // node: the length of '\u{1F600}' is 2, `split('', '\u{1F600}')` has two
+  // pieces (the UTF-16 surrogates), and since v0.18.0 `reverse('a\u{1F600}')`
+  // reverses the code units, '\ude00\ud83da' (until v0.17.1 the pin used
+  // `nthCharCode(0, '\u{1F600}')`, 55357, and until v0.13.0 `charCodeAt`; both
+  // are gone); a Dafny char is a code point.
   method {:test} DeviationCharactersAreCodePoints() {
-    expect nthCharCode(0, "\U{1F600}") == 0x1F600;
     expect |"\U{1F600}"| == 1;
+    expect split("", "\U{1F600}") == ["\U{1F600}"];
+    expect L.reverse("a\U{1F600}") == "\U{1F600}a";
   }
 
   // node: invert({a: '__proto__', b: 'x'}) is {x: ['b']} since v0.10.0:
@@ -645,11 +663,13 @@ module RamdafTests.Edge.Misc {
     expect whereEq(map["a" := 0], map["a" := negate(0)]) == true;
   }
 
-  // node: allPass([]) and anyPass([]) throw "First argument to arity must be
-  // a non-negative integer no greater than ten" (v0.9.0: the result's arity
-  // is the longest predicate's, and `max([])` is -Infinity); the
-  // two-argument forms allPass([], 5) and anyPass([], 5) are true and false.
-  method {:test} DeviationAllPassOfTheEmptyList() {
+  // node: since v0.18.0 allPass([])(5) is true and anyPass([])(5) false, as
+  // here. (This was the pin DeviationAllPassOfTheEmptyList from v0.9.0 to
+  // v0.17.1, when allPass([]) and anyPass([]) threw "First argument to arity
+  // must be a non-negative integer no greater than ten", the result's arity
+  // being the longest predicate's and `max([])` -Infinity, while the
+  // two-argument forms allPass([], 5) and anyPass([], 5) were true and false.)
+  method {:test} AllPassOfTheEmptyList() {
     var none: seq<int -> bool> := [];
     expect allPass(none)(5) == true;
     expect anyPass(none)(5) == false;

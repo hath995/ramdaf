@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.17.1's own suite does not cover, each checked against
-// dist/ramda.js v0.17.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.18.0's own suite does not cover, each checked against
+// dist/ramda.js v0.18.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -175,7 +175,8 @@ module RamdafTests.Edge.List {
     expect containsWith((a: int, b: int) => a % 10 == b % 10, 12, [2, 3]) == true;
   }
 
-  // isSet(list) is `uniq(list).length === list.length`.
+  // isSet(list) is `uniq(list).length === list.length` (since v0.18.0 isSet
+  // is allUniq, below).
   method {:test} IsSetEdges() {
     var empty: seq<int> := [];
     expect isSet(empty) == true;
@@ -185,6 +186,21 @@ module RamdafTests.Edge.List {
     var lists := [[1, 2, 1, 3, 2], [4, 5], [6, 6, 6], empty];
     for i := 0 to |lists| {
       expect isSet(lists[i]) == (|uniq(lists[i])| == |lists[i]|);
+    }
+  }
+
+  // allUniq (v0.18.0, isSet's code) compares with `R.equals` (node: true,
+  // false, true, false, false for `[[1], [1]]`).
+  method {:test} AllUniqEdges() {
+    var empty: seq<int> := [];
+    expect allUniq(empty) == true;
+    expect allUniq([1, 2, 1]) == false;
+    expect allUniq(["a", "b"]) == true;
+    expect allUniq([3, 3]) == false;
+    expect allUniq([[1], [1]]) == false;
+    var lists := [[1, 2, 1, 3, 2], [4, 5], [6, 6, 6], empty];
+    for i := 0 to |lists| {
+      expect allUniq(lists[i]) == isSet(lists[i]);
     }
   }
 
@@ -254,10 +270,11 @@ module RamdafTests.Edge.List {
   }
 
   // commute and commuteMap (v0.8.0): every choice of one element per list,
-  // the first list's element varying fastest; of builds the starting functor
-  // (node: [[]], [], [], [[1], [2], [3]], [[1], [1]], [], the eight triples,
-  // ['ac', 'bc', 'ad', 'bd'] as character pairs, [[1, 3], [1, 3], [2, 3],
-  // [2, 3]], [[2, 1]], [[]] and [[2, 4], [1, 4], [2, 3], [1, 3]]).
+  // since v0.18.0 the last list's element varying fastest (until v0.17.1 the
+  // first's); of builds the starting functor (node: [[]], [], [], [[1], [2],
+  // [3]], [[1], [1]], [], the eight triples, ['ac', 'ad', 'bc', 'bd'] as
+  // character pairs, [[1, 3], [1, 3], [2, 3], [2, 3]], [[2, 1]], [[]] and
+  // [[2, 4], [2, 3], [1, 4], [1, 3]]).
   method {:test} CommuteEdges() {
     var none: seq<seq<int>> := [];
     var empty: seq<int> := [];
@@ -268,12 +285,12 @@ module RamdafTests.Edge.List {
     expect commute((x: seq<int>) => [x, x], [[1]]) == [[1], [1]];
     expect commute((x: seq<int>) => [], [[1]]) == [];
     expect commute(of, [[1, 2], [3, 4], [5, 6]]) ==
-      [[1, 3, 5], [2, 3, 5], [1, 4, 5], [2, 4, 5], [1, 3, 6], [2, 3, 6], [1, 4, 6], [2, 4, 6]];
-    expect commute(of, ["ab", "cd"]) == ["ac", "bc", "ad", "bd"];
+      [[1, 3, 5], [1, 3, 6], [1, 4, 5], [1, 4, 6], [2, 3, 5], [2, 3, 6], [2, 4, 5], [2, 4, 6]];
+    expect commute(of, ["ab", "cd"]) == ["ac", "ad", "bc", "bd"];
     expect commute((x: seq<int>) => [x, x], [[1, 2], [3]]) == [[1, 3], [1, 3], [2, 3], [2, 3]];
     expect commuteMap((xs: seq<int>) => [|xs|], of, [[1, 2], [3]]) == [[2, 1]];
     expect commuteMap((xs: seq<int>) => mapSeq((x: int) => x + 10, xs), of, none) == [[]];
-    expect commuteMap(reverse, of, [[1, 2], [3, 4]]) == [[2, 4], [1, 4], [2, 3], [1, 3]];
+    expect commuteMap(reverse, of, [[1, 2], [3, 4]]) == [[2, 4], [2, 3], [1, 4], [1, 3]];
   }
 
   // lens (v0.8.0), Ramda's headLens example, run with view, set and over
@@ -599,6 +616,9 @@ module RamdafTests.Edge.List {
   method {:test} MiscListEdges() {
     var empty: seq<int> := [];
     expect reverse([1]) == [1];
+    // v0.18.0: a JS string reverses to a string (node 'cba', '')
+    expect reverse("abc") == "cba";
+    expect reverse("") == "";
     expect indexOf(2, [1, 2, 3, 2]) == 1;
     expect lastIndexOf(2, [1, 2, 3, 2]) == 3;
     expect xprod(empty, [1]) == [];
@@ -754,7 +774,8 @@ module RamdafTests.Edge.List {
   // node: since v0.14.0 `contains`, `indexOf`, `lastIndexOf` and `isSet`
   // (`_indexOf`), `uniq` (`uniqWith(eq)`) and `dropRepeats` (`_eq`) compare
   // with `Object.is`: `contains(negate(0), [0])` is false, `indexOf` and
-  // `lastIndexOf` of it -1, `isSet([0, negate(0)])` true, and `uniq` and
+  // `lastIndexOf` of it -1, `isSet([0, negate(0)])` true (and since
+  // v0.18.0 `allUniq`, which isSet now is), and `uniq` and
   // `dropRepeats` of that list [0, -0] (with `===` until v0.13.0: true, 0,
   // 0, false, [0]); since v0.16.0 `uniqBy(identity, [negate(0), 0])` is
   // [-0, 0] (`_contains`, `R.equals`). An int has no -0.
@@ -764,8 +785,15 @@ module RamdafTests.Edge.List {
     expect indexOf(z, [0]) == 0;
     expect lastIndexOf(z, [0]) == 0;
     expect isSet([0, z]) == false;
+    expect allUniq([0, z]) == false;
     expect uniq([0, z]) == [0];
     expect dropRepeats([0, z]) == [0];
     expect uniqBy((x: int) => x, [z, 0]) == [z];
+  }
+
+  // pair (v0.18.0) is a two-element array (node: [1, [2]], ['a', [1, 2]]).
+  method {:test} PairEdges() {
+    expect pair(1, [2]) == (1, [2]);
+    expect pair("a", pair(1, 2)) == ("a", (1, 2));
   }
 }

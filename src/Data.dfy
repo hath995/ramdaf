@@ -1,11 +1,11 @@
-// Ramdaf: Ramda v0.17.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
 // defined in "List Functions" (from v0.2.0 to v0.2.4 an alias of `partition`
 // there) but which stays here (functions do not move between modules); from
-// v0.9.0 on, the functions with `@category Relation` (`equals` and
-// `identical`; v0.15.0 removed `eqDeep`, v0.9.0, which `equals` replaces,
+// v0.9.0 on, the functions with `@category Relation` (`equals`,
+// `identical` and `eqBy`; v0.15.0 removed `eqDeep`, v0.9.0, which `equals` replaces,
 // and `eq`, then in Object.dfy; v0.15.1 restored both, deprecated, with
 // `eq` here by `@category Relation`, and v0.16.0 removed them again).
 //
@@ -29,7 +29,8 @@ module Ramdaf.Data {
 
   export
     reveals union, unionWith, difference, differenceWith,
-            intersection, intersectionWith, countBy, groupBy, project, equals, identical
+            intersection, intersectionWith, countBy, groupBy, project, equals, identical,
+            eqBy
     provides Prelude, List, Object
 
   // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
@@ -156,12 +157,14 @@ module Ramdaf.Data {
 
   // `R.equals(a, b)` (v0.15.0, `@category Relation`, which replaces
   // `eqDeep`, v0.9.0 to v0.14.0 and in v0.15.1 a deprecated alias of
-  // equals): `a.equals(b)` or `b.equals(a)` when either
-  // has an `equals` method (Fantasy-land), and otherwise `_equals(a, b, [],
-  // [])`: values of the same `type` that are `identical` or, for arrays and
-  // objects, have the same number of own keys and, for each key of a, a key
-  // of b with a deeply equal value (with cycle detection, Date times, RegExp
-  // flags and boxed primitives compared by value). On Dafny values that is
+  // equals): `_equals(a, b, [], [])`: values that are `identical`, or of the
+  // same `type` and, for arrays, objects and `arguments` objects, with the
+  // same number of own keys and, for each key of a, a key of b with a deeply
+  // equal value (with cycle detection, Date times, RegExp flags and boxed
+  // primitives compared by value, and since v0.18.0 Maps and Sets by their
+  // entries). Until v0.17.1 `a.equals(b)` decided when a had an `equals`
+  // method (Fantasy-land), then `b.equals(a)`; since v0.18.0 (18737774) both
+  // must agree, at every depth. On Dafny values that is
   // structural equality. Numbers are compared with `identical`, so `-0`
   // differs from `0` (README "Deviations").
   function equals<T(==)>(a: T, b: T): bool { a == b }
@@ -174,4 +177,10 @@ module Ramdaf.Data {
   // structural where JS compares objects and arrays by reference (README
   // "Deviations").
   function identical<T(==)>(a: T, b: T): bool { a == b }
+
+  // `R.eqBy(f, x, y)` (v0.18.0, `@category Relation`): `equals(f(x), f(y))`,
+  // whether x and y map to equal values (`eqBy(Math.abs, 5, -5)` is true).
+  // `R.equals` compares numbers with `identical`, so `eqBy(x => x * 0, -1,
+  // 1)` is false in JS (-0 and 0; README "Deviations").
+  function eqBy<T, U(==)>(f: T -> U, x: T, y: T): bool { equals(f(x), f(y)) }
 }

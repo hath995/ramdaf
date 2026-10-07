@@ -1,12 +1,13 @@
-// Ramdaf: Ramda v0.17.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
 // `mapAccumRight`, `mergeAll`, `aperture`, `none`, `adjust`, `update`,
 // `intersperse`, `dropRepeats`, `dropRepeatsWith`, `lensIndex`, `dropLast`,
-// `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy` and the
-// renamed functions below; since v0.16.0 the JSDoc of `lens` and
-// `lensIndex` says `@category Object`, and functions do not move). (v0.4.1
+// `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
+// `allUniq`, `pair` and the renamed functions below; since v0.16.0 the
+// JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
+// not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
 // `flattenShallow`, and renamed `all`/`any` to their aliases `every`/`some`;
 // v0.8.0 removed `xprodWith`. v0.9.0 removed `reduce` and `reduceRight`,
@@ -20,7 +21,9 @@
 // `reduceRightIndexed`, `mapAccum`, `mapAccumRight`, `scan` and `unfold`,
 // with the same code. v0.16.0 removed `mapIndexed`, `filterIndexed`,
 // `rejectIndexed`, `reduceIndexed` and `reduceRightIndexed`, deprecated
-// since v0.15.0 for `addIndex`, which is not portable.)
+// since v0.15.0 for `addIndex`, which is not portable. v0.18.0 renamed
+// `isSet` to `allUniq`, keeping `isSet` as a deprecated alias, and made
+// `createMapEntry` a deprecated alias of the new `objOf` (Object.dfy).)
 
 module Ramdaf.List {
   import opened Prelude
@@ -35,7 +38,8 @@ module Ramdaf.List {
             ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scan,
             createMapEntry, repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none,
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
-            dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy
+            dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
+            allUniq, pair
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -91,7 +95,11 @@ module Ramdaf.List {
       case None => []
       case Some(pair) => [pair.0] + unfold(fn, pair.1, fuel - 1) }
 
-  // `map` is a Dafny keyword, so Ramda's `map` is named mapSeq.
+  // `map` is a Dafny keyword, so Ramda's `map` is named mapSeq. Since v0.18.0
+  // (0481c5da, 35acea0d) JS `map(fn, functor)` also maps an object's values
+  // (`map(dec, {x: 4})` is `{x: 3}`, which mapObj does here) and composes
+  // with a function (`map(f, g)` is `compose(f, g)`); the port's takes a
+  // list (README "Deviations").
   function mapSeq<A, B>(fn: A -> B, list: seq<A>): seq<B>
     ensures |mapSeq(fn, list)| == |list|
     ensures forall i :: 0 <= i < |list| ==> mapSeq(fn, list)[i] == fn(list[i])
@@ -99,7 +107,8 @@ module Ramdaf.List {
 
   // `_reduce(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`
   // (`foldl` until v0.8.0 and `_foldl` in v0.9.x, the same function):
-  // fn applied to every own property. (In JS an own `__proto__` property is
+  // fn applied to every own property. `@deprecated since v0.18.0`, when
+  // `map` began to map objects. (In JS an own `__proto__` property is
   // dropped, as the assignment sets the prototype, and since v0.12.0 a
   // truthy `@@transducer/reduced` result (`__transducers_reduced__` until
   // v0.13.0) ends the fold; README "Deviations".)
@@ -124,7 +133,9 @@ module Ramdaf.List {
   // function applied to every value, the functions outermost
   // (`ap([f, g], [1, 2])` is `[f(1), f(2), g(1), g(2)]`). A non-array object with an `ap` method is dispatched to (Fantasy-land;
   // since v0.5.0 the first argument, `fns.ap(vs)`, before that `vs`); no
-  // Dafny value has one.
+  // Dafny value has one. Since v0.18.0 (35acea0d) `ap(applicative, fn)` also
+  // takes functions, the reader applicative, `ap(f, g)(x)` being
+  // `f(x)(g(x))`; here both are lists (README "Deviations").
   function ap<A, B>(fns: seq<A -> B>, vs: seq<A>): seq<B>
   { reduce((acc: seq<B>, fn: A -> B) => acc + mapSeq(fn, vs), [], fns) }
 
@@ -151,32 +162,37 @@ module Ramdaf.List {
   // (README "Deviations"). The body concatenates the mapped lists (with
   // `reduce`, `foldl` until v0.9.1). (Since v0.15.0 it is
   // `_dispatchable('chain', _xchain, _chain)` with `_chain = unnest(map(f,
-  // list))`, the exported `map`: a transformer makes it a transducer.)
+  // list))`, the exported `map`: a transformer makes it a transducer; since
+  // v0.18.0 `_makeFlat(false)(map(fn, monad))`, the same, and a function
+  // monad gives `x => monad(fn(x))(x)`, which the port's list type excludes,
+  // README "Deviations".)
   function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
   { reduce((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
 
-  // `R.commuteMap(fn, of, list)` (v0.8.0): `_reduce(consF, of([]), list)`
-  // with `consF(acc, ftor) = _ap(_map(append, fn(ftor)), acc)` (v0.10.0;
-  // v0.9.x folded with `_foldl`, which v0.10.0 renamed `_reduce`, and the
-  // body with `foldl`; v0.8.0 folded with `reduce`, which v0.9.0 removed, and
-  // called `R.ap` and `R.map`), which turns a
-  // list of functors into a functor of lists, fn transforming each functor
-  // first. For arrays: every way of picking one element of fn(ftor) for each
-  // ftor, the first list's element varying fastest (`commuteMap(map(x => x +
-  // 10), of, [[1, 2], [3]])` is `[[11, 13], [12, 13]]`). JS dispatches `ap`
-  // and `map` to any Fantasy-land functor, with of building the result's
-  // functor (since v0.9.0 only `of`'s functor and its `ap`); here they are
-  // arrays (README "Deviations"). `R.append` (Core) is written out as
-  // `l + [x]`.
+  // `R.commuteMap(fn, of, list)` (v0.8.0): since v0.18.0 (1502c6d5 "fix
+  // R.commute and R.commuteMap", 7ef6df08) `reduceRight(consF, of([]),
+  // list)` with `consF(acc, x) = ap(map(prepend, fn(x)), acc)`, which turns
+  // a list of functors into a functor of lists, fn transforming each functor
+  // first. For arrays: every way of picking one element of fn(x) for each x,
+  // the last list's element varying fastest (`commuteMap(map(x => x + 10),
+  // of, [[1, 2], [3, 4]])` is `[[11, 13], [11, 14], [12, 13], [12, 14]]`).
+  // Until v0.17.1 it was `_reduce(consF, of([]), list)` with `consF(acc,
+  // ftor) = _ap(_map(append, fn(ftor)), acc)` (v0.10.0; v0.9.x folded with
+  // `_foldl`, and v0.8.0 with `reduce`, calling `R.ap` and `R.map`), so the
+  // first list's element varied fastest (`[[11, 13], [12, 13], [11, 14],
+  // [12, 14]]`). JS dispatches `ap` and `map` to any Fantasy-land functor,
+  // with of building the result's functor; here they are arrays (README
+  // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`.
   function commuteMap<A, B>(fn: seq<A> -> seq<B>, of: seq<B> -> seq<seq<B>>, list: seq<seq<A>>): seq<seq<B>>
-  { reduce((acc: seq<seq<B>>, ftor: seq<A>) => ap(mapSeq((x: B) => ((l: seq<B>) => l + [x]), fn(ftor)), acc),
-           of([]), list) }
+  { reduceRight((acc: seq<seq<B>>, x: seq<A>) => ap(mapSeq((y: B) => ((l: seq<B>) => [y] + l), fn(x)), acc),
+                of([]), list) }
 
   // `R.commute = commuteMap(identity)` (v0.16.0, "Make `commute` more
   // efficient"; `commuteMap(map(identity))` from v0.8.0 to v0.15.1, the same
   // results on arrays): commuteMap with no transformation (`commute(of, [[1,
-  // 2], [3, 4]])` is `[[1, 3], [2, 3], [1, 4], [2, 4]]`). `R.identity` (Core)
-  // is written out as `xs => xs`.
+  // 2], [3, 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]` since v0.18.0, and
+  // was `[[1, 3], [2, 3], [1, 4], [2, 4]]`). `R.identity` (Core) is written
+  // out as `xs => xs`.
   function commute<A>(of: seq<A> -> seq<seq<A>>, list: seq<seq<A>>): seq<seq<A>>
   { commuteMap((xs: seq<A>) => xs, of, list) }
 
@@ -324,7 +340,8 @@ module Ramdaf.List {
   // which only add the placeholder form `contains(__, list)`).
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
 
-  // `pred(x, list[idx])` for some idx (exported since v0.1.5).
+  // `pred(x, list[idx])` for some idx (exported since v0.1.5;
+  // `@deprecated since v0.18.0`).
   function containsWith<T>(pred: (T, T) -> bool, x: T, list: seq<T>): bool
   { exists i :: 0 <= i < |list| && pred(x, list[i]) }
 
@@ -401,12 +418,19 @@ module Ramdaf.List {
            }
            r }
 
-  // True exactly when no element occurs twice, which is the body. (v0.2.4
-  // checks `indexOf(list, list[i], i + 1) < 0` for every i, since v0.14.0
-  // with `Object.is` and since v0.15.0 with `R.equals`; until v0.2.3 it was `uniq(list).length ===
-  // list.length`, the same result.)
-  function isSet<T(==)>(list: seq<T>): bool
+  // `R.allUniq(list)` (v0.18.0, `@category List`, f28adc24 "Rename isSet to
+  // allUniq", with isSet's code): `_indexOf(list, list[idx], idx + 1) < 0`
+  // for every idx, with `R.equals`, so true exactly when no element occurs
+  // twice, which is the body (README "Deviations" on `-0`).
+  function allUniq<T(==)>(list: seq<T>): bool
   { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
+
+  // `R.isSet = allUniq` (v0.18.0, `@deprecated since v0.18.0`, `@see
+  // R.allUniq`), so the body calls allUniq. Until v0.17.1 isSet held the
+  // code: since v0.2.4 `indexOf(list, list[i], i + 1) < 0` for every i (since
+  // v0.14.0 with `Object.is` and since v0.15.0 with `R.equals`), and until
+  // v0.2.3 `uniq(list).length === list.length`, the same result.
+  function isSet<T(==)>(list: seq<T>): bool { allUniq(list) }
 
   // `var result = []; ... if (!containsWith(pred, item, result)) result.push(item);`
   // for each item in order (v0.2.4; exported since v0.2.0, and until v0.2.3
@@ -459,9 +483,11 @@ module Ramdaf.List {
   { if |list| == 0 then []
     else (match list[0] case Leaf(v) => [v] case Node(c) => flatten(c)) + flatten(list[1..]) }
 
-  // `makeFlat(false)` (v0.3.0): one level of nesting removed, a Node's
-  // children spliced in and a Leaf kept (`unnest([1, [2], [[3]]])` is
-  // `[1, 2, [3]]`).
+  // `makeFlat(false)` (v0.3.0; since v0.18.0 `chain(_identity)`, bae565e2,
+  // the same on arrays, and any Fantasy-land chain is unnested): one level
+  // of nesting removed, a Node's children spliced in and a Leaf kept
+  // (`unnest([1, [2], [[3]]])` is `[1, 2, [3]]`). The port's chain takes a
+  // list of lists, so the body is its own.
   function unnest<T>(list: seq<Tree<T>>): seq<Tree<T>>
   { if |list| == 0 then []
     else (match list[0] case Leaf(_) => [list[0]] case Node(c) => c) + unnest(list[1..]) }
@@ -505,7 +531,10 @@ module Ramdaf.List {
 
   // `R.createMapEntry(key, val)` (v0.7.0): `var obj = {}; obj[key] = val;
   // return obj;`, the object with the one property. Defined in "List
-  // Functions", hence here. JS converts the key to a string, and a
+  // Functions", hence here. Since v0.18.0 (de2cc7e6, "rename
+  // R.createMapEntry") it is `objOf` (Object.dfy), which holds the code, and
+  // `@deprecated since v0.18.0`; `R.objOf` is Object's, which List does not
+  // import, so its body is written out (the same body as before). JS converts the key to a string, and a
   // `__proto__` key sets the prototype instead of a property (README
   // "Deviations").
   function createMapEntry<V>(key: string, val: V): map<string, V> { map[key := val] }
@@ -546,7 +575,10 @@ module Ramdaf.List {
     else mapSeq((y: B) => (a[0], y), b) + xprod(a[1..], b) }
 
   // `_slice(list).reverse()` (v0.9.0; an explicit loop since v0.6.0): the
-  // list back to front.
+  // list back to front. Since v0.18.0 (de345057) a JS string gives
+  // `list.split('').reverse().join('')`, a string where it was an array of
+  // characters, the same Dafny seq (JS reverses UTF-16 code units: README
+  // "Deviations").
   function reverse<T>(list: seq<T>): seq<T>
     ensures |reverse(list)| == |list|
     ensures forall i :: 0 <= i < |list| ==> reverse(list)[i] == list[|list| - 1 - i]
@@ -721,7 +753,9 @@ module Ramdaf.List {
   // (n - 1)`, and for idx below limit `acc[idx] = _slice(list, idx, idx +
   // n)`: every window of n consecutive elements. For n <= 0 the windows are
   // empty and there are `|list| - n + 1` of them (`aperture(0, [1, 2])` is
-  // `[[], [], []]`); for n past the length there are none.
+  // `[[], [], []]`); for n past the length there are none. (Since v0.18.0
+  // it is `_dispatchable('aperture', _xaperture, _aperture)`, the same loop,
+  // and a transformer makes it a transducer.)
   function aperture<T>(n: int, list: seq<T>): seq<seq<T>>
     ensures |aperture(n, list)| == if |list| - (n - 1) >= 0 then |list| - (n - 1) else 0
   { var limit := |list| - (n - 1);
@@ -862,4 +896,8 @@ module Ramdaf.List {
   { if |list| == 0 then []
     else var r := uniqBy(fn, list[..|list| - 1]);
          if fn(list[|list| - 1]) in mapSeq(fn, r) then r else r + [list[|list| - 1]] }
+
+  // `R.pair(fst, snd)` (v0.18.0, `@category List`): `[fst, snd]`, a
+  // two-element array, which is a pair here (README "JS -> Dafny mapping").
+  function pair<A, B>(fst: A, snd: B): (A, B) { (fst, snd) }
 }

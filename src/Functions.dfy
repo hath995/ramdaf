@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.17.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
 // the functions with `@category Function` (`composeK`, `pipeK`). (v0.4.1
@@ -29,24 +29,29 @@ module Ramdaf.Functions {
 
   // `pipe(f, g)(x) == g(f(x))` (from v0.4.0 to v0.10.0 JS `pipe(f)` was f
   // itself, as `compose(f)` was, and since v0.11.0 it is a wrapper with f's
-  // results; since v0.16.0 `curryN(fns[0].length, reduce(_pipe, …))`)
+  // results; since v0.16.0 `curryN(fns[0].length, reduce(_pipe, …))`, and
+  // since v0.18.0 `_arity(…)`, whose result is not curried)
   function pipe<A, B, C>(f: A -> B, g: B -> C): A -> C { x => g(f(x)) }
 
   // `flip(fn)(a, b) == fn(b, a)`
   function flip<A, B, C>(fn: (A, B) -> C): (B, A) -> C { (b, a) => fn(a, b) }
 
-  // `converge(after, f1, ..., fn)(...args) == after(f1(...args), ..., fn(...args))`
-  // (v0.4.2 renamed `fork`, added in v0.1.2, to `converge` with the same
-  // code; v0.1.4 had moved `after` first and allowed any number of
-  // functions, though v0.4.2's documentation names three; since v0.11.0 it
-  // is `curryN(3, …)`, so `converge(after, f)` waits for another function,
-  // and since v0.14.0 its result is curried to the longest function's arity,
-  // `curryN(max(pluck('length', fns)), …)` (since v0.16.0 with
-  // `Math.max`, as `R.max` became binary), and passes its `this` on).
-  // The port takes exactly two functions, and its result is unary (tuple the
-  // arguments for more).
-  function converge<A, B, C, D>(after: (B, C) -> D, f1: A -> B, f2: A -> C): A -> D
-  { x => after(f1(x), f2(x)) }
+  // `converge(after, [f1, ..., fn])(...args) == after(f1(...args), ..., fn(...args))`
+  // (v0.18.0, 360d5904 "make converge a binary function": `_curry2(function
+  // converge(after, fns))`, the branching functions one list, and the result
+  // curried to the longest function's arity, `curryN(Math.max.apply(Math,
+  // pluck('length', fns)), …)`, which passes its `this` on; `converge(after,
+  // [])` throws, as the arity is -Infinity). Until v0.17.1 the functions
+  // were separate arguments, `converge(after, f1, f2)`: v0.4.2 renamed
+  // `fork`, added in v0.1.2, to `converge` with the same code, v0.1.4 had
+  // moved `after` first and allowed any number of functions (v0.4.2's
+  // documentation named three), v0.11.0 made it `curryN(3, …)`, so
+  // `converge(after, f)` waited for another function, and v0.14.0 curried
+  // its result to the longest function's arity. The list is a pair here
+  // (README "JS -> Dafny mapping"), so the port takes exactly two
+  // functions, and its result is unary (tuple the arguments for more).
+  function converge<A, B, C, D>(after: (B, C) -> D, fns: (A -> B, A -> C)): A -> D
+  { x => after(fns.0(x), fns.1(x)) }
 
   // JS `always(v)` ignores however many arguments it gets; the port's result
   // takes one argument of any type.
@@ -59,8 +64,10 @@ module Ramdaf.Functions {
   function T<U>(x: U): bool { always(true)(x) }
   function F<U>(x: U): bool { always(false)(x) }
 
-  // `R.composeK(…fns)` (v0.16.0, `@category Function`): `compose.apply(this,
-  // map(chain, arguments))`, right-to-left Kleisli composition: each
+  // `R.composeK(…fns)` (v0.16.0, `@category Function`): since v0.18.0
+  // `compose.apply(this, prepend(identity, map(chain, arguments)))` (v0.16.0
+  // `compose.apply(this, map(chain, arguments))`, and `identity` for no
+  // functions; the same results), right-to-left Kleisli composition: each
   // function is `chain`ed over the monadic value the one to its right
   // returns (`composeK(f, g)(m)` is `chain(f, chain(g, m))`; `composeK()` is
   // `identity`). JS chains any Fantasy-land monad through its `chain`

@@ -1,0 +1,18 @@
+{
+  "ramda": "v0.18.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.String.nthChar", "kind": "removed", "why": "v0.18.0 removed R.nthChar, deprecated since v0.16.0 (6c0ba86b 'remove functions deprecated in v0.16.0')"},
+    {"symbol": "Ramdaf.String.nthCharCode", "kind": "removed", "why": "v0.18.0 removed R.nthCharCode, deprecated since v0.16.0 (6c0ba86b)"},
+    {"symbol": "Ramdaf.List.commuteMap", "kind": "breaking", "why": "v0.18.0's commuteMap folds with reduceRight and prepend (1502c6d5, 7ef6df08), so the last list's element varies fastest: commuteMap(map(add(10)), of, [[1, 2], [3, 4]]) went from [[11, 13], [12, 13], [11, 14], [12, 14]] to [[11, 13], [11, 14], [12, 13], [12, 14]]"},
+    {"symbol": "Ramdaf.List.commute", "kind": "breaking", "why": "knock-on of commuteMap (commute = commuteMap(identity)): commute(of, [[1, 2], [3, 4]]) went from [[1, 3], [2, 3], [1, 4], [2, 4]] to [[1, 3], [1, 4], [2, 3], [2, 4]]"},
+    {"symbol": "Ramdaf.Functions.converge", "kind": "breaking", "why": "v0.18.0 makes converge binary (360d5904): converge(after, [f1, f2]) takes the branching functions as one list (converge(mult, add(1), add(3))(2) now throws), a pair here: the signature changes"},
+    {"symbol": "Ramdaf.List.isSet", "kind": "compatible", "why": "v0.18.0 renamed isSet to allUniq (f28adc24) and made isSet its deprecated alias: the revealed body is allUniq(list), with the same results"},
+    {"symbol": "Ramdaf.List.allUniq", "kind": "added", "why": "new in v0.18.0 (@category List): isSet's code under the new name, no element occurring twice (R.equals)"},
+    {"symbol": "Ramdaf.List.pair", "kind": "added", "why": "new in v0.18.0 (@category List): pair(fst, snd) = [fst, snd], a pair here"},
+    {"symbol": "Ramdaf.Data.eqBy", "kind": "added", "why": "new in v0.18.0 (@category Relation): eqBy(f, x, y) = equals(f(x), f(y))"},
+    {"symbol": "Ramdaf.Object.objOf", "kind": "added", "why": "new in v0.18.0 (@category Object): createMapEntry's code under the new name (de2cc7e6), {key: val}"},
+    {"symbol": "Ramdaf.Logic.when", "kind": "added", "why": "new in v0.18.0 (@category Logic): when(pred, whenTrueFn, x) = pred(x) ? whenTrueFn(x) : x"},
+    {"symbol": "Ramdaf.Logic.unless", "kind": "added", "why": "new in v0.18.0 (@category Logic): unless(pred, whenFalseFn, x) = pred(x) ? x : whenFalseFn(x)"}
+  ]
+}

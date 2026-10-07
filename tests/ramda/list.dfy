@@ -1,14 +1,14 @@
-// Ramda v0.17.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.18.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
-// lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
+// lastIndexOf.js, contains.js, containsWith.js, allUniq.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapObjIndexed.js, find.js,
 // findIndex.js, findLast.js, findLastIndex.js, flatten.js, unnest.js,
 // range.js, reverse.js, unfold.js, zip.js, zipWith.js, zipObj.js,
 // fromPairs.js, xprod.js, partition.js, groupBy.js, createMapEntry.js,
 // scan.js, mapAccum.js, mapAccumRight.js, commute.js, commuteMap.js,
 // mergeAll.js, aperture.js, none.js, adjust.js, update.js,
-// intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js and
-// uniqBy.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
+// uniqBy.js and pair.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -54,14 +54,22 @@
 // Object.is semantics" `it`s of contains, indexOf, lastIndexOf and isSet
 // test `-0` and NaN, which an int does not have (README "Deviations",
 // pinned in tests/edge/list.dfy), and v0.15.0's "has R.equals semantics"
-// `it`s of contains, isSet, uniq and dropRepeats (`-0`, NaN and objects
+// `it`s of contains, isSet (allUniq's since v0.18.0), uniq and dropRepeats (`-0`, NaN and objects
 // with an `equals` method; v0.15.1 adds uniq's `[[1], [1]]` line, which is
 // transcribed alone), chain's transducer, dispatch and arity `it`s,
 // and reduced.js (transducers, README "Not portable"); adjust's and update's "accepts an
 // array-like object" pass an `arguments` object; intersperse's "dispatches"
 // (method dispatch) and the "can act as a transducer" `it`s of dropRepeats
 // and dropRepeatsWith (`into`) are not transcribed either, and the `typeof`
-// check of dropRepeatsWith's "is curried" holds by construction.
+// check of dropRepeatsWith's "is curried" holds by construction. v0.18.0's
+// functor `it`s are not transcribed either: map's "maps over objects" and
+// "interprets ((->) r) as a functor", chain's "interprets ((->) r) as a
+// monad", unnest's "is equivalent to R.chain(R.identity)" (a `Maybe`) and
+// empty's arguments object (the port's functions take lists, README
+// "Deviations"), nor are aperture's "can act as a transducer" and
+// commute's and commuteMap's "traverses left to right" (sanctuary's
+// `Either`). (v0.18.0 renamed isSet.js to allUniq.js with the function, and
+// rewrote containsWith.js, without its "is curried", and reverse.js.)
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -404,33 +412,27 @@ module RamdafTests.Ramda.List {
     expect isDigit("x") == false;
   }
 
-  // describe('containsWith') (v0.9.0's its; the function is older): `eqA`
-  // compares the `a` properties
-  function Oa(a: int): map<string, int> { map["a" := a] }
-  function EqA(r: map<string, int>, t: map<string, int>): bool
-  { "a" in r && "a" in t && r["a"] == t["a"] }
+  // describe('containsWith') (v0.18.0 rewrote it: `absEq` compares
+  // absolute values; until v0.17.1 `eqA` compared objects' `a` properties,
+  // with an "is curried" `it`)
+  function AbsEq(a: int, b: int): bool { (if a < 0 then -a else a) == (if b < 0 then -b else b) }
 
   method {:test} ContainsWithDeterminesIfAnElementIsInTheListByThePredicate() {
-    var so := [Oa(3), Oa(4), Oa(5), Oa(6)];
-    expect containsWith(EqA, Oa(3), so) == true;
-    expect containsWith(EqA, Oa(3000), so) == false;
+    expect containsWith(AbsEq, 5, [1, 2, 3]) == false;
+    expect containsWith(AbsEq, 5, [4, 5, 6]) == true;
+    expect containsWith(AbsEq, 5, [-1, -2, -3]) == false;
+    expect containsWith(AbsEq, 5, [-4, -5, -6]) == true;
   }
 
-  method {:test} ContainsWithIsCurried() {
-    var ro := [Oa(1), Oa(2), Oa(3), Oa(4)];
-    var withEqA := (x: map<string, int>) => ((l: seq<map<string, int>>) => containsWith(EqA, x, l));
-    expect withEqA(Oa(3))(ro) == true;
+  // describe('allUniq') (v0.18.0; describe('isSet') until v0.17.1)
+  method {:test} AllUniqTrueIfTheListHasUniqueElements() {
+    expect allUniq([1, 2, 3, 1, 2, 3, 1, 2, 3]) == false;
+    expect allUniq([3, 1, 4, 2, 5, 7, 9]) == true;
   }
 
-  // describe('isSet')
-  method {:test} IsSetTrueIfTheListHasUniqueElements() {
-    expect isSet([1, 2, 3, 1, 2, 3, 1, 2, 3]) == false;
-    expect isSet([3, 1, 4, 2, 5, 7, 9]) == true;
-  }
-
-  method {:test} IsSetTrueForAnEmptyArray() {
+  method {:test} AllUniqTrueForAnEmptyArray() {
     var empty: seq<int> := [];
-    expect isSet(empty) == true;
+    expect allUniq(empty) == true;
   }
 
   // describe('uniq')
@@ -741,13 +743,22 @@ module RamdafTests.Ramda.List {
 
   // ---- reverse.js ----
 
+  // (v0.18.0 rewrote "reverses arrays", which had `[1, 2, 3, 4]`, and
+  // folded "returns the empty list to itself" into it)
   method {:test} ReverseReversesArrays() {
-    expect reverse([1, 2, 3, 4]) == [4, 3, 2, 1];
-  }
-
-  method {:test} ReverseOfTheEmptyList() {
     var empty: seq<int> := [];
     expect reverse(empty) == [];
+    expect reverse([1]) == [1];
+    expect reverse([1, 2]) == [2, 1];
+    expect reverse([1, 2, 3]) == [3, 2, 1];
+  }
+
+  // v0.18.0: a JS string gives a string, the same seq here
+  method {:test} ReverseReversesStrings() {
+    expect reverse("") == "";
+    expect reverse("a") == "a";
+    expect reverse("ab") == "ba";
+    expect reverse("abc") == "cba";
   }
 
   // ---- unfold.js (v0.10.0; unfoldr.js in v0.9.x, test.unfold.js until
@@ -993,18 +1004,20 @@ module RamdafTests.Ramda.List {
   function Bs(): seq<seq<int>> { [[1, 2], [3]] }
   function Cs(): seq<seq<int>> { [[1, 2], [3, 4]] }
 
-  // describe('commute'): `R.of` is List.of
+  // describe('commute'): `R.of` is List.of (since v0.18.0 the last list's
+  // element varies fastest: `cs` gave `[[1, 3], [2, 3], [1, 4], [2, 4]]`
+  // until v0.17.1, and commuteMap likewise)
   method {:test} CommutePivotsAList() {
     expect commute(of, As()) == [[1, 3], [1, 4]];
     expect commute(of, Bs()) == [[1, 3], [2, 3]];
-    expect commute(of, Cs()) == [[1, 3], [2, 3], [1, 4], [2, 4]];
+    expect commute(of, Cs()) == [[1, 3], [1, 4], [2, 3], [2, 4]];
   }
 
   method {:test} CommuteIsCurried() {
     var cmtArr := (l: seq<seq<int>>) => commute(of, l);
     expect cmtArr(As()) == [[1, 3], [1, 4]];
     expect cmtArr(Bs()) == [[1, 3], [2, 3]];
-    expect cmtArr(Cs()) == [[1, 3], [2, 3], [1, 4], [2, 4]];
+    expect cmtArr(Cs()) == [[1, 3], [1, 4], [2, 3], [2, 4]];
   }
 
   // describe('commuteMap'): `plus10map = R.map(x => x + 10)`
@@ -1013,7 +1026,7 @@ module RamdafTests.Ramda.List {
   method {:test} CommuteMapPivotsAListAndAppliesATransformation() {
     expect commuteMap(Plus10Map, of, As()) == [[11, 13], [11, 14]];
     expect commuteMap(Plus10Map, of, Bs()) == [[11, 13], [12, 13]];
-    expect commuteMap(Plus10Map, of, Cs()) == [[11, 13], [12, 13], [11, 14], [12, 14]];
+    expect commuteMap(Plus10Map, of, Cs()) == [[11, 13], [11, 14], [12, 13], [12, 14]];
   }
 
   // `cmtPlus10 = commuteMap(plus10map)`, `cmtmArr = cmtPlus10(R.of)`
@@ -1022,7 +1035,7 @@ module RamdafTests.Ramda.List {
     var cmtmArr := cmtPlus10(of);
     expect cmtmArr(As()) == [[11, 13], [11, 14]];
     expect cmtmArr(Bs()) == [[11, 13], [12, 13]];
-    expect cmtmArr(Cs()) == [[11, 13], [12, 13], [11, 14], [12, 14]];
+    expect cmtmArr(Cs()) == [[11, 13], [11, 14], [12, 13], [12, 14]];
   }
 
   // ---- partition.js (v0.3.0: partition splits a list by a predicate; its
@@ -1229,5 +1242,14 @@ module RamdafTests.Ramda.List {
   method {:test} UniqByReturnsAnEmptyArrayForAnEmptyArray() {
     var empty: seq<int> := [];
     expect uniqBy((x: int) => x, empty) == [];
+  }
+
+  // ---- pair.js (v0.18.0) ----
+
+  // `pair('foo')('bar')` as a lambda
+  method {:test} PairCreatesATwoElementArray() {
+    expect pair("foo", "bar") == ("foo", "bar");
+    var pairFoo := (b: string) => pair("foo", b);
+    expect pairFoo("bar") == ("foo", "bar");
   }
 }

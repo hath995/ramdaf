@@ -1,4 +1,4 @@
-// Ramda v0.17.1 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.18.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
 // identity.js and isNil.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
@@ -13,11 +13,13 @@
 // a concat method" (object operands); the "throws on zero arguments" cases
 // (no-argument calls; v0.11.0 removed them); isEmpty's cases on values that are not lists
 // ("returns false for null" and "for undefined", "returns true for empty
-// arguments object", the two objects with a `length` property, and of
-// "returns false for every other value" all but `isEmpty([''])`); length's
+// arguments object", v0.18.0's "returns true for empty object", which
+// replaced the two objects with a `length` property, and of "returns false
+// for every other value" all but `isEmpty([''])`); length's
 // cases on functions, arguments objects and values of other types (NaN);
 // clone's "clone objects with circular references" and "clone instances"
-// (cycles, prototypes) and "clone date" (no Date value), the Date property
+// (cycles, prototypes) and "clone date" (no Date value), v0.18.0's
+// "dispatches to `clone` method if present" (method dispatch), the Date property
 // of "clone shallow object", the mutations of the original after cloning (a
 // Dafny value cannot be mutated, so the clone equals the input) and the
 // `!==`, `===` and `notStrictEqual` halves (reference identity); identity's
@@ -39,13 +41,17 @@ module RamdafTests.Ramda.Core {
   import opened Support
 
   // describe('isEmpty') (a string is a seq here)
+  // (v0.18.0 adds the `' '` and `[[]]` lines)
   method {:test} IsEmptyTrueForEmptyString() {
     expect isEmpty("") == true;
+    expect isEmpty(" ") == false;
   }
 
   method {:test} IsEmptyTrueForEmptyArray() {
     var empty: seq<string> := [];
     expect isEmpty(empty) == true;
+    var nested: seq<seq<int>> := [[]];
+    expect isEmpty(nested) == false;
   }
 
   // "returns false for every other value": its list case

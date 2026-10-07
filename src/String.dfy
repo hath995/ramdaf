@@ -1,34 +1,20 @@
-// Ramdaf: Ramda v0.17.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "String Functions" section; from v0.9.0 on, the functions
-// with `@category String` (`nthChar`, `nthCharCode`; v0.9.0 renamed
-// `toUpperCase` and `toLowerCase` to `toUpper` and `toLower`; v0.14.0
-// removed `charAt` and `charCodeAt`, deprecated since v0.12.0 for `nthChar`
-// and `nthCharCode`; v0.16.0 removed `substring`, `substringFrom`,
-// `substringTo`, `strIndexOf` and `strLastIndexOf`, deprecated since v0.15.0
-// for `slice`, `indexOf` and `lastIndexOf`, which work on strings). The
-// String.prototype methods, with JS's index clamping. A Dafny `string` is a
-// sequence of Unicode scalar values where JS counts UTF-16 code units, and
-// case conversion is ASCII-only (see README "Deviations").
+// with `@category String`. (v0.9.0 renamed `toUpperCase` and `toLowerCase`
+// to `toUpper` and `toLower`; v0.14.0 removed `charAt` and `charCodeAt`,
+// deprecated since v0.12.0 for `nthChar` and `nthCharCode`; v0.16.0 removed
+// `substring`, `substringFrom`, `substringTo`, `strIndexOf` and
+// `strLastIndexOf`, deprecated since v0.15.0 for `slice`, `indexOf` and
+// `lastIndexOf`, which work on strings; v0.18.0 removed `nthChar` and
+// `nthCharCode` (v0.12.0), deprecated since v0.16.0, when `nth` began to
+// work on strings.) The String.prototype methods, with JS's index clamping.
+// A Dafny `string` is a sequence of Unicode scalar values where JS counts
+// UTF-16 code units, and case conversion is ASCII-only (see README
+// "Deviations").
 
 module Ramdaf.String {
   export
-    reveals nthChar, nthCharCode, toUpper, toLower, trim, replace, split
-
-  // `R.nthChar(n, str)` (v0.12.0, in place of `charAt`, which v0.14.0
-  // removed): `str.charAt(n < 0 ? str.length + n : n)`, the character at n,
-  // a negative n counting from the end; out of range the empty string
-  // (`nthChar(-2, 'Ramda')` is 'd').
-  function nthChar(n: int, s: string): string
-  { var i := if n < 0 then |s| + n else n;
-    if 0 <= i < |s| then [s[i]] else "" }
-
-  // `R.nthCharCode(n, str)` (v0.12.0, in place of `charCodeAt`, which
-  // v0.14.0 removed): `str.charCodeAt(n < 0 ? str.length + n : n)`; out of
-  // range NaN, which int cannot hold, so the index must fall in the string
-  // (README "Outside the modeled domain").
-  function nthCharCode(n: int, s: string): int
-    requires 0 <= (if n < 0 then |s| + n else n) < |s|
-  { s[if n < 0 then |s| + n else n] as int }
+    reveals toUpper, toLower, trim, replace, split
 
   // `R.toUpper = invoker(0, 'toUpperCase')` (v0.9.0, which renamed
   // `toUpperCase` with the same code): `String.prototype.toUpperCase()`,

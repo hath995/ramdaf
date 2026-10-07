@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.17.1 `src/comparator.js`, `src/sort.js` and
+// Ramdaf: Ramda v0.18.0 `src/comparator.js`, `src/sort.js` and
 // `src/sortBy.js`.
 //
 // `sort` is `_slice(list).sort(comparator)` (v0.14.0, "Don't clone in sort"),

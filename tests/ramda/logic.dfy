@@ -1,9 +1,9 @@
-// Ramda v0.17.1 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.18.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
-// defaultTo.js and propSatisfies.js (until v0.8.0 test.booleans.js,
-// test.allany.js and test.cond.js), transcribed. (v0.16.0 passes cond's
-// pairs as one list, `R.cond([[p, f], …])`, the port's form all along.)
-// Not transcribed: the short-circuit cases ("does not evaluate the second
+// defaultTo.js, propSatisfies.js, when.js and unless.js (until v0.8.0
+// test.booleans.js, test.allany.js and test.cond.js), transcribed. (v0.16.0
+// passes cond's pairs as one list, `R.cond([[p, f], …])`, the port's form
+// all along.) Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression", "short-circuits on first false value"), which detect a call by
 // its side effect, the "reports its arity" cases, and the "throws on zero
 // arguments" cases (no-argument calls, until v0.10.0; the `typeof` checks of "is curried"
@@ -21,9 +21,19 @@
 // new `into` and transformer `it`s (transducers, not portable) and ifElse.js's
 // arity and curried `it`s (`R.gt`, `R.subtract` on two arguments) are not
 // transcribed, nor are v0.14.0's "dispatches to `and` method" and
-// "dispatches to `or` method", whose operands are objects with methods.) defaultTo's values are Js values
-// (the default 42 and the values differ in type), and its null and undefined
-// are both None (README "Deviations").
+// "dispatches to `or` method", whose operands are objects with methods, and
+// which v0.18.0 removed with the dispatch. v0.18.0 makes and.js and or.js
+// bool-only, all transcribed; it drops allPass's and anyPass's "does not
+// have to be curried" (`allPass(preds, v)` now ignores v) and adds "returns
+// true on empty predicate list" and "returns a curried function whose arity
+// matches that of the highest-arity predicate", whose uncurried call is
+// transcribed over a tuple (its `.length` and curried calls are not).)
+// defaultTo's values are Js values (the default 42 and the values differ in
+// type), and its null and undefined are both None (README "Deviations");
+// v0.18.0's `defaultTo42(NaN)` line is not transcribed (no NaN). when.js's
+// and unless.js's values are Js values too: `R.is(Number)` and
+// `R.isArrayLike` are not portable, and `R.of` changes the value's type, so
+// they are local functions on Js.
 
 module RamdafTests.Ramda.Logic {
   import opened Ramdaf.Prelude
@@ -92,18 +102,38 @@ module RamdafTests.Ramda.Logic {
     expect f((12, 2, 6)) == true;
   }
 
-  // describe('and') (v0.12.0, the value operator): "compares two values with
-  // js &&" uses numbers and an array (`and(1, 0)` → 0), which are not bool
-  // operands; its curried case `halfTruth = and(true)` with `false`
+  // describe('and') (v0.12.0, the value operator; until v0.17.1 "compares
+  // two values with js &&" used numbers and an array, `and(1, 0)` → 0, which
+  // are not bool operands)
+  method {:test} AndComparesTwoValuesWithJsAnd() {
+    expect and(true, true) == true;
+    expect and(true, false) == false;
+    expect and(false, true) == false;
+    expect and(false, false) == false;
+  }
+
+  // `halfTruth = and(true)`
   method {:test} AndIsCurried() {
     var halfTruth := (b: bool) => and(true, b);
     expect halfTruth(false) == false;
+    expect halfTruth(true) == true;
   }
 
-  // describe('or') (v0.12.0): the bool lines of "is curried"
-  // (`or(false)(true)`; `or('lie')(false)` and `or('')(0)` are not bool)
+  // describe('or') (v0.12.0; v0.18.0's "compares two values with js &&", so
+  // titled, is or's truth table; until v0.17.1 its operands were numbers,
+  // strings and an array)
+  method {:test} OrComparesTwoValuesWithJsOr() {
+    expect or(true, true) == true;
+    expect or(true, false) == true;
+    expect or(false, true) == true;
+    expect or(false, false) == false;
+  }
+
+  // `or(false)(false)`, `or(false)(true)` (`or('lie')(false)` and
+  // `or('')(0)` until v0.17.1)
   method {:test} OrIsCurried() {
     var orFalse := (b: bool) => or(false, b);
+    expect orFalse(false) == false;
     expect orFalse(true) == true;
   }
 
@@ -125,9 +155,20 @@ module RamdafTests.Ramda.Logic {
     expect ok(3) == false;
     expect ok(21) == false;
   }
-  method {:test} AllPassDoesNotHaveToBeCurried() {
-    expect allPass([odd, (n: int) => n > 5])(3) == false;
-    expect allPass([odd, (n: int) => n > 5])(7) == true;
+  method {:test} AllPassReturnsTrueOnEmptyPredicateList() {
+    var none: seq<int -> bool> := [];
+    expect allPass(none)(3) == true;
+  }
+
+  // `plusEq(w, x, y, z) = w + x === y + z`; the four arguments are a tuple,
+  // which `odd` and `gt5` read the first of
+  function plusEq(t: (int, int, int, int)): bool { t.0 + t.1 == t.2 + t.3 }
+
+  // "returns a curried function whose arity matches that of the
+  // highest-arity predicate" (v0.18.0): its uncurried call
+  method {:test} AllPassReturnsACurriedFunctionOfTheHighestArity() {
+    var ok := allPass([(t: (int, int, int, int)) => odd(t.0), (t: (int, int, int, int)) => t.0 > 5, plusEq]);
+    expect ok((9, 9, 9, 9)) == true;
   }
 
   // describe('anyPass') (describe('anyPredicates') until v0.8.0)
@@ -140,9 +181,14 @@ module RamdafTests.Ramda.Logic {
     expect ok(3) == true;
     expect ok(22) == true;
   }
-  method {:test} AnyPassDoesNotHaveToBeCurried() {
-    expect anyPass([odd, (n: int) => n < 5])(3) == true;
-    expect anyPass([odd, (n: int) => n < 5])(22) == false;
+  method {:test} AnyPassReturnsFalseForAnEmptyPredicateList() {
+    var none: seq<int -> bool> := [];
+    expect anyPass(none)(3) == false;
+  }
+
+  method {:test} AnyPassReturnsACurriedFunctionOfTheHighestArity() {
+    var ok := anyPass([(t: (int, int, int, int)) => odd(t.0), (t: (int, int, int, int)) => t.0 < 5, plusEq]);
+    expect ok((6, 7, 8, 9)) == false;
   }
 
   // ---- all.js, any.js ----
@@ -321,5 +367,47 @@ module RamdafTests.Ramda.Logic {
 
   method {:test} PropSatisfiesReturnsFalseOtherwise() {
     expect propSatisfies(IsPositive, "y", map["x" := 1, "y" := 0]) == false;
+  }
+
+  // ---- when.js, unless.js (v0.18.0) ----
+
+  // `R.isArrayLike` on the values these tests use (`R.is(Number)` is
+  // IsNumber, above)
+  function IsArrayLike(v: Js): bool { v.Arr? }
+
+  // describe('when'): `when(is(Number), add(1))`
+  function AddOne(v: Js): Js { if v.Num? then Num(v.n + 1) else v }
+
+  method {:test} WhenCallsTheWhenTrueFunctionIfTheValidatorReturnsATruthyValue() {
+    expect when(IsNumber, AddOne, Num(10)) == Num(11);
+  }
+
+  method {:test} WhenReturnsTheArgumentUnmodifiedIfTheValidatorReturnsAFalseyValue() {
+    expect when(IsNumber, AddOne, Str("hello")) == Str("hello");
+  }
+
+  // `ifIsNumber = when(is(Number))`
+  method {:test} WhenReturnsACurriedFunction() {
+    var ifIsNumber := (f: Js -> Js) => ((x: Js) => when(IsNumber, f, x));
+    expect ifIsNumber(AddOne)(Num(15)) == Num(16);
+    expect ifIsNumber(AddOne)(Str("hello")) == Str("hello");
+  }
+
+  // describe('unless'): `unless(isArrayLike, of)`, `R.of` making a list
+  function Of(v: Js): Js { Arr([v]) }
+
+  method {:test} UnlessCallsTheWhenFalseFunctionIfTheValidatorReturnsAFalseyValue() {
+    expect unless(IsArrayLike, Of, Num(10)) == Arr([Num(10)]);
+  }
+
+  method {:test} UnlessReturnsTheArgumentUnmodifiedIfTheValidatorReturnsATruthyValue() {
+    expect unless(IsArrayLike, Of, Arr([Num(10)])) == Arr([Num(10)]);
+  }
+
+  // `unless(isArrayLike)(of)`
+  method {:test} UnlessReturnsACurriedFunction() {
+    var unlessArrayLike := (f: Js -> Js) => ((x: Js) => unless(IsArrayLike, f, x));
+    expect unlessArrayLike(Of)(Num(10)) == Arr([Num(10)]);
+    expect unlessArrayLike(Of)(Arr([Num(10)])) == Arr([Num(10)]);
   }
 }

@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.17.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
-// `propSatisfies`).
+// `propSatisfies`, `when`, `unless`).
 // (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
 // reused the name `cond` for a new function; v0.9.0 renamed `allPredicates`
 // and `anyPredicates` to `allPass` and `anyPass` and removed `if`; v0.12.0
@@ -13,19 +13,21 @@ module Ramdaf.Logic {
 
   export
     reveals and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo,
-            propSatisfies
+            propSatisfies, when, unless
     provides Prelude
 
   // `R.and(a, b)` (v0.12.0): `a && b`. From v0.1.4 to v0.11.0 `and` was the
   // predicate combinator that v0.12.0 renamed `both` (v0.1.0 to v0.1.3 had
   // the operator `!!(a && b)`). JS takes any values and returns the deciding
   // one (`and(1, 0)` is 0); the operands here are bool (README
-  // "Deviations"). Since v0.14.0 a first argument with an `and` method is
-  // dispatched to (`a.and(b)`, Fantasy-land); a bool has none.
+  // "Deviations"). From v0.14.0 to v0.17.1 a first argument with an `and`
+  // method was dispatched to (`a.and(b)`, Fantasy-land; a bool has none);
+  // v0.18.0 removed the dispatch.
   function and(a: bool, b: bool): bool { a && b }
 
   // `R.or(a, b)` (v0.12.0): `a || b`, as for and (`either` until v0.11.0;
-  // since v0.14.0 an `or` method of the first argument is dispatched to).
+  // from v0.14.0 to v0.17.1 an `or` method of the first argument was
+  // dispatched to).
   function or(a: bool, b: bool): bool { a || b }
 
   // `R.not(a)` (v0.12.0): `!a`, as for and (`complement` until v0.11.0).
@@ -34,10 +36,17 @@ module Ramdaf.Logic {
   // v0.1.4 renamed `andFn`, `orFn` and `notFn` to `and`, `or` and `not`, and
   // v0.12.0 renamed those to `both`, `either` and `complement`, with the same
   // code. JS forwards any number of arguments to the predicates; the port's
-  // predicates are unary (tuple the arguments for more).
+  // predicates are unary (tuple the arguments for more). Since v0.18.0
+  // (c6ee5614, "Simplify logical functions") they are `lift(and)`,
+  // `lift(or)` and `lift(not)`: on functions the same results, though the
+  // second predicate is called even when the first decides (which a pure
+  // predicate cannot observe) and the result is curried to the longer
+  // predicate's arity; they also lift the operators over any other
+  // applicative, such as lists (`both([true, false], [true])` is `[true,
+  // false]`), which these predicate types exclude (README "Deviations").
 
   // `R.both(f, g)` (v0.12.0, `and` until v0.11.0): `f(...) && g(...)`,
-  // short-circuited (v0.7.0; before, `!!(...)`). JS returns the deciding
+  // short-circuited from v0.7.0 to v0.17.1 (before, `!!(...)`). JS returns the deciding
   // operand, not a boolean; with boolean predicates that is the same bool
   // (README "Deviations").
   function both<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) && g(x) }
@@ -49,19 +58,21 @@ module Ramdaf.Logic {
   // `R.complement(f)` (v0.12.0, `not` until v0.11.0): `!f(...)`.
   function complement<T>(f: T -> bool): T -> bool { x => !f(x) }
 
-  // `R.allPass = _predicateWrap(_all)` (v0.9.0, which renamed
-  // `allPredicates`): `allPass(preds)` is a predicate true exactly when every
-  // predicate holds; the JS form that also takes the values
-  // (`allPass(preds, v)`) is the application `allPass(preds)(v)`. Since
-  // v0.9.0 JS `allPass([])` throws, as the result's arity is the longest
-  // predicate's, while `allPass([], v)` is true, as here (README
-  // "Deviations").
+  // `R.allPass(preds)` (v0.9.0, which renamed `allPredicates`): since v0.18.0
+  // (a599a531, "make R.anyPass and R.allPass return curried functions")
+  // `_curry1`, a loop over the predicates curried to the longest one's arity,
+  // `curryN(reduce(max, 0, pluck('length', preds)), …)`: a predicate true
+  // exactly when every predicate holds, so `allPass([])(v)` is true, as here.
+  // From v0.9.0 to v0.17.1 it was `_predicateWrap(_all)`: a second argument
+  // applied it at once (`allPass(preds, v)`, which now returns the predicate
+  // and ignores v), and `allPass([])` threw, as the arity was `max([])`.
   function allPass<T>(preds: seq<T -> bool>): T -> bool
   { x => forall i :: 0 <= i < |preds| ==> preds[i](x) }
 
-  // `R.anyPass = _predicateWrap(_any)` (v0.9.0, which renamed
-  // `anyPredicates`): true exactly when some predicate holds (`anyPass([])`
-  // throws in JS, `anyPass([], v)` is false).
+  // `R.anyPass(preds)` (v0.9.0, which renamed `anyPredicates`): as allPass
+  // (since v0.18.0 a curried loop; `_predicateWrap(_any)` until v0.17.1),
+  // true exactly when some predicate holds (`anyPass([])(v)` is false, and
+  // threw until v0.17.1).
   function anyPass<T>(preds: seq<T -> bool>): T -> bool
   { x => exists i :: 0 <= i < |preds| && preds[i](x) }
 
@@ -87,8 +98,10 @@ module Ramdaf.Logic {
          else if pairs[0].0(x) then Some(pairs[0].1(x))
          else cond(pairs[1..])(x) }
 
-  // `R.defaultTo(d, v)` (v0.10.0, `@category Logic`): `v == null ? d : v`,
-  // the value unless it is null or undefined, then the default. The port's
+  // `R.defaultTo(d, v)` (v0.10.0, `@category Logic`): `v == null || v !== v ?
+  // d : v` (since v0.18.0; `v == null ? d : v` before), the value unless it
+  // is null, undefined or (since v0.18.0) NaN, then the default (a T here has
+  // no NaN). The port's
   // None stands for both (an absent property, a "no value" result), so the
   // value is an Option; JS lets the default and the value differ in type
   // (README "Deviations", with `isNil`).
@@ -104,4 +117,18 @@ module Ramdaf.Logic {
   // (Object) is written out, as Logic imports only Prelude.
   function propSatisfies<V>(pred: Option<V> -> bool, name: string, obj: map<string, V>): bool
   { pred(if name in obj then Some(obj[name]) else None) }
+
+  // `R.when(pred, whenTrueFn, x)` (v0.18.0, `@category Logic`): `pred(x) ?
+  // whenTrueFn(x) : x`, x passed through whenTrueFn when pred holds for it
+  // (truthy), and x itself otherwise. JS lets whenTrueFn return a value of
+  // another type (`when(x => x > 0, String, 3)` is '3'; README "Deviations").
+  function when<T>(pred: T -> bool, whenTrueFn: T -> T, x: T): T
+  { if pred(x) then whenTrueFn(x) else x }
+
+  // `R.unless(pred, whenFalseFn, x)` (v0.18.0, `@category Logic`): `pred(x) ?
+  // x : whenFalseFn(x)`, x itself when pred holds for it, and otherwise x
+  // passed through whenFalseFn (`unless(isArrayLike, of)(10)` is `[10]` in
+  // JS, of another type: README "Deviations").
+  function unless<T>(pred: T -> bool, whenFalseFn: T -> T, x: T): T
+  { if pred(x) then x else whenFalseFn(x) }
 }

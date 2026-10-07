@@ -1,6 +1,6 @@
-// Ramda v0.17.1 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.18.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
-// countBy.js, sortBy.js, equals.js and identical.js (until v0.8.0
+// countBy.js, sortBy.js, equals.js, identical.js and eqBy.js (until v0.8.0
 // test.sql.js, whose copy of the groupBy describe v0.9.0 dropped; eq.js and
 // eqDeep.js, restored in v0.15.1, went with the functions in v0.16.0),
 // transcribed. Not transcribed:
@@ -21,10 +21,16 @@
 //   Dafny value cannot contain itself), "throws if given no arguments"
 //   (until v0.10.0), and v0.15.0's boxed-primitive `it`s (`new Boolean`,
 //   `new Number`, `new String`) and "dispatches to `equals` method"
-//   (objects with methods). Its mixed values are Js;
+//   (objects with methods; v0.18.0 replaces it with "dispatches to `equals`
+//   method recursively" and "is commutative", both on such objects), and
+//   v0.18.0's `it`s on `arguments` objects, Maps, Sets, WeakMaps, WeakSets
+//   and boxed values with extra properties (no such values). Its mixed
+//   values are Js;
 // - identical.js's `[] !== []`, `-0`, NaN and `new Number(0)` lines and its
 //   "is curried", which compares two arrays by reference (README
-//   "Deviations").
+//   "Deviations");
+// - eqBy.js's (v0.18.0) "has R.equals semantics" (`-0`, NaN and `Just`
+//   objects with an `equals` method).
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -333,5 +339,18 @@ module RamdafTests.Ramda.Sql {
     expect identical(a, b) == true;
     expect identical(Undefined, Undefined) == true;
     expect identical(Null, Undefined) == false;
+  }
+
+  // ---- eqBy.js (v0.18.0) ----
+
+  // `Math.abs`
+  function Abs(n: int): int { if n < 0 then -n else n }
+
+  method {:test} EqByDeterminesWhetherTwoValuesMapToTheSameValueInTheCodomain() {
+    expect eqBy(Abs, 5, 5) == true;
+    expect eqBy(Abs, 5, -5) == true;
+    expect eqBy(Abs, -5, 5) == true;
+    expect eqBy(Abs, -5, -5) == true;
+    expect eqBy(Abs, 42, 99) == false;
   }
 }

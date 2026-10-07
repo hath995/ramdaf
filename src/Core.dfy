@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.17.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`
@@ -24,15 +24,19 @@ module Ramdaf.Core {
   // R.cloneDeep" gave `clone` v0.8.0's `cloneDeep` code and removed the
   // other two; until v0.8.0 `clone(list)` was `_slice(list)`
   // (`list.concat()` before v0.2.0), a shallow copy of a list, and the port
-  // took a seq. A Dafny value is immutable and has no identity, so its copy
-  // is the value itself. In JS an own `__proto__` property is not copied
+  // took a seq. Since v0.18.0 (dde2110f) a value with a `clone` method is
+  // cloned by it; no Dafny value has methods. A Dafny value is immutable and
+  // has no identity, so its copy is the value itself. In JS an own `__proto__` property is not copied
   // (README "Deviations").
   function clone<T>(value: T): T { value }
 
-  // `Object(list).length === 0` (v0.9.0; v0.8.0 `val == null || val.length
-  // === 0`, `!list || !list.length` before): on a list (or a JS string) the
-  // same test, |list| == 0. Only non-list arguments changed (since v0.8.0
-  // `isEmpty(0)` is false, and since v0.9.0 `isEmpty(null)` too).
+  // `x != null && equals(x, empty(x))` (v0.18.0, 6eb89a45 "define R.isEmpty
+  // in terms of R.empty"; `Object(list).length === 0` from v0.9.0, v0.8.0
+  // `val == null || val.length === 0`, `!list || !list.length` before): on a
+  // list (or a JS string) the same test, |list| == 0, which the body keeps
+  // (Core imports neither List's `empty` nor Data's `equals`). Only non-list
+  // arguments changed (since v0.8.0 `isEmpty(0)` is false, since v0.9.0
+  // `isEmpty(null)` too, and since v0.18.0 `isEmpty({})` is true).
   function isEmpty<T>(list: seq<T>): bool { |list| == 0 }
 
   function prepend<T>(el: T, list: seq<T>): seq<T> { [el] + list }
@@ -75,17 +79,21 @@ module Ramdaf.Core {
 
 
   // `R.concat` (v0.2.4; until v0.2.3 it was an alias of `merge`, which v0.2.4
-  // removed): the elements of list1 followed by those of list2. When the
-  // second argument is not an array, v0.6.0 calls the first argument's
-  // `concat` method if it has one (`concat("foo", "bar")` is `"foobar"`) and
-  // otherwise throws TypeError. From v0.6.0 to v0.7.2 the first argument
-  // also had to be truthy, so `concat("", "bar")` threw; since v0.8.0
-  // `_hasMethod` tests `obj != null`, so it is `"bar"`, as here. (v0.4.0 and
-  // v0.5.0 tested for a String first argument and then the second argument's
+  // removed): the elements of list1 followed by those of list2. Since v0.18.0
+  // (f688d8ac, "remove all type checking from R.concat") it is
+  // `flip(invoker(1, 'concat'))`, `list1.concat(list2)`, the same on two
+  // arrays or two strings; mixed arguments no longer throw (`concat([1], 2)`
+  // is `[1, 2]`), which the types exclude here. Until v0.17.1, when the
+  // second argument was not an array, v0.6.0 called the first argument's
+  // `concat` method if it had one (`concat("foo", "bar")` is `"foobar"`) and
+  // otherwise threw TypeError. From v0.6.0 to v0.7.2 the first argument also
+  // had to be truthy, so `concat("", "bar")` threw; from v0.8.0 `_hasMethod`
+  // tested `obj != null`, so it is `"bar"`, as here. (v0.4.0 and v0.5.0
+  // tested for a String first argument and then the second argument's
   // method.) A Dafny string is a seq, so the same function covers strings.
   // (From v0.9.0 to v0.10.0 `concat` was `op`-curried, and since v0.11.0 it
-  // is `_curry2`, which takes the placeholder in either position,
-  // `concat(__, b)`; neither changes the two-argument result.)
+  // is curried with the placeholder in either position, `concat(__, b)`;
+  // neither changes the two-argument result.)
   function concat<T>(list1: seq<T>, list2: seq<T>): seq<T> { list1 + list2 }
 
   function identity<T>(x: T): T { x }

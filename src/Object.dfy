@@ -1,12 +1,13 @@
-// Ramdaf: Ramda v0.17.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
-// `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`). A JS object is a map<string, V>; a missing
-// property is JS undefined, here None. The functions that build an object by
-// assigning properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`,
-// `assoc`, `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter) drop an own `__proto__`
-// property in JS, as the assignment sets the prototype instead; a map's keys
-// are all ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to
+// `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
+// `objOf`). A JS object is a map<string, V>; a missing property is JS
+// undefined, here None. The functions that build an object by assigning
+// properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`, `assoc`,
+// `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter, `objOf`) drop an own
+// `__proto__` property in JS, as the assignment sets the prototype instead; a
+// map's keys are all ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to
 // `pickBy`, and `props` to `propOf`, reusing the name `props` for a new
 // function; v0.9.0 removed `cloneObj`, which `clone` (Core.dfy) took over;
 // v0.10.0 renamed `mixin` to `merge`; v0.12.0 removed `propOf` and the `get`
@@ -22,7 +23,7 @@ module Ramdaf.Object {
     reveals prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
             assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq,
-            view, over, set_
+            view, over, set_, objOf
     provides Prelude
 
   // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
@@ -341,4 +342,11 @@ module Ramdaf.Object {
   function set_<S, V, X>(l: Lens<S, V, X>, v: V, x: S): S
     requires over.requires(l, (_: V) => v, x)
   { over(l, (_: V) => v, x) }
+
+  // `R.objOf(key, val)` (v0.18.0, `@category Object`; de2cc7e6 "rename
+  // R.createMapEntry", which is now its deprecated alias in List.dfy): `var
+  // obj = {}; obj[key] = val; return obj;`, the object with the one
+  // property. JS converts the key to a string, and a `__proto__` key sets the
+  // prototype instead of a property (README "Deviations").
+  function objOf<V>(key: string, val: V): map<string, V> { map[key := val] }
 }

@@ -1,8 +1,8 @@
-// Ramda v0.17.1 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.18.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
 // valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
-// invertObj.js, dissoc.js and lenses.js (v0.9.x mixin.js; until
+// invertObj.js, dissoc.js, lenses.js and objOf.js (v0.9.x mixin.js; until
 // v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
 // describes), transcribed. Not
@@ -583,5 +583,14 @@ module RamdafTests.Ramda.Object {
     expect view(streetLens, alice) == "22 Walnut St";
     expect over(streetLens, (s: string) => S.toUpper(s), alice) == map["address" := ["22 WALNUT ST", "San Francisco", "CA"]];
     expect set_(streetLens, "52 Crane Ave", alice) == map["address" := ["52 Crane Ave", "San Francisco", "CA"]];
+  }
+
+  // ---- objOf.js (v0.18.0) ----
+
+  // `objOf('foo')(42)` as a lambda
+  method {:test} ObjOfCreatesAnObjectContainingASingleKeyValuePair() {
+    expect objOf("foo", 42) == map["foo" := 42];
+    var objOfFoo := (v: int) => objOf("foo", v);
+    expect objOfFoo(42) == map["foo" := 42];
   }
 }

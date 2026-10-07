@@ -1,4 +1,4 @@
-// Ramda v0.17.1 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.18.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
 // median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real
@@ -248,11 +248,14 @@ module RamdafTests.Ramda.Math {
     expect dec(1) == 0;
   }
 
-  // describe('negate') (v0.9.0): its int lines (`negate(0)` is `-0` in JS,
-  // which 2015's `strictEqual`, `===`, equated with 0)
+  // describe('negate') (v0.9.0): its int lines (not the Infinity ones).
+  // Since v0.18.0 the test compares with `R.toString`, which tells `-0` from
+  // `0`: `negate(-0)` is `0` and `negate(0)` is `-0`, both 0 here, as an
+  // int has no `-0` (README "Deviations"; until v0.17.1 `negate(0) === 0`).
   method {:test} NegateNegatesItsArgument() {
     expect negate(-1) == 1;
-    expect negate(0) == 0;
+    expect negate(-0) == 0;
+    expect negate(0) == -0;
     expect negate(1) == -1;
   }
 

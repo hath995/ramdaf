@@ -1,41 +1,16 @@
-// Ramda v0.17.1 test/nthChar.js, nthCharCode.js, toUpper.js, toLower.js,
-// trim.js, split.js and replace.js (until v0.8.0 test.stringBasics.js and
-// test.replace.js), transcribed. (v0.14.0 removed charAt.js and
-// charCodeAt.js, and v0.16.0 substring.js, substringFrom.js, substringTo.js,
-// strIndexOf.js and strLastIndexOf.js, with the functions.) Not transcribed:
-// match.js and test.js (regular expressions are not portable, README),
-// toString.js (v0.14.0; not portable, README), and
+// Ramda v0.18.0 test/toUpper.js, toLower.js, trim.js, split.js and
+// replace.js (until v0.8.0 test.stringBasics.js and test.replace.js),
+// transcribed. (v0.14.0 removed charAt.js and charCodeAt.js, v0.16.0
+// substring.js, substringFrom.js, substringTo.js, strIndexOf.js and
+// strLastIndexOf.js, and v0.18.0 nthChar.js and nthCharCode.js, with the
+// functions.) Not transcribed: match.js and test.js (regular expressions are
+// not portable, README), toString.js (v0.14.0; not portable, README), and
 // trim's "falls back to a shim if String.prototype.trim is not present"
 // (v0.6.0), which is only registered when that method is missing, so not
 // under node (its asserts repeat the other three).
 
 module RamdafTests.Ramda.String {
   import opened Ramdaf.String
-
-  // describe('nthChar') (v0.12.0)
-  method {:test} NthCharReturnsTheNthCharacter() {
-    expect nthChar(2, "Ramda") == "m";
-  }
-  method {:test} NthCharAcceptsNegativeOffsets() {
-    expect nthChar(-2, "Ramda") == "d";
-  }
-  method {:test} NthCharIsCurried() {
-    var at2 := (s: string) => nthChar(2, s);
-    expect at2("Ramda") == "m";
-  }
-
-  // describe('nthCharCode') (v0.12.0): `'m'.charCodeAt(0)` and
-  // `'d'.charCodeAt(0)`
-  method {:test} NthCharCodeReturnsTheCodeOfTheNthCharacter() {
-    expect nthCharCode(2, "Ramda") == 'm' as int;
-  }
-  method {:test} NthCharCodeAcceptsNegativeOffsets() {
-    expect nthCharCode(-2, "Ramda") == 'd' as int;
-  }
-  method {:test} NthCharCodeIsCurried() {
-    var at2 := (s: string) requires |s| > 2 => nthCharCode(2, s);
-    expect at2("Ramda") == 'm' as int;
-  }
 
   // describe('toUpper'), describe('toLower') (describe('toUpperCase') and
   // describe('toLowerCase') until v0.8.0)
