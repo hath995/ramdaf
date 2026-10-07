@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.2.4's own suite does not cover, each checked against
-// ramda.js v0.2.4 under node (the expected values are node's output). The
+// Edge cases Ramda v0.3.0's own suite does not cover, each checked against
+// ramda.js v0.3.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -96,16 +96,82 @@ module RamdafTests.Edge.List {
     expect sliceFrom(-2, [1, 2, 3]) == [2, 3];
   }
 
-  function parity(x: int): string { if x % 2 == 0 then "even" else "odd" }
-
-  // partition groups by whatever key the function returns.
+  // Since v0.3.0 partition splits a list into (passing, failing), each in
+  // list order. (Its v0.1.4 to v0.2.4 grouping cases are groupBy's now, in
+  // tests/edge/data.dfy.)
   method {:test} PartitionEdges() {
-    var empty: seq<int> := [];
-    expect partition(parity, [1, 2, 3, 4, 5]) == map["odd" := [1, 3, 5], "even" := [2, 4]];
-    expect partition((x: int) => "k", empty) == map[];
-    // `String(x > 2)`: a predicate's results as keys
-    expect partition((x: int) => if x > 2 then "true" else "false", [1, 3, 2, 4]) == map["false" := [1, 2], "true" := [3, 4]];
-    expect partition((s: string) => s, ["b", "a", "b"]) == map["b" := ["b", "b"], "a" := ["a"]];
+    var none: seq<int> := [];
+    expect partition((x: int) => x > 2, [1, 3, 2, 4]) == ([3, 4], [1, 2]);
+    expect partition((x: int) => true, [1, 2]) == ([1, 2], []);
+    expect partition((x: int) => false, [1, 2]) == ([], [1, 2]);
+    expect partition((x: int) => x > 0, none) == ([], []);
+    // `partition(x => x % 2)([1, 2, 3])`
+    var odds := (l: seq<int>) => partition((x: int) => x % 2 != 0, l);
+    expect odds([1, 2, 3]) == ([1, 3], [2]);
+    // `partition(s => s, ['a', '', 'b'])`: the empty string is falsy
+    expect partition((s: string) => s != "", ["a", "", "b"]) == (["a", "b"], [""]);
+  }
+
+  // ap (v0.3.0) applies every function to every value, the functions
+  // outermost.
+  method {:test} ApEdges() {
+    var nofns: seq<int -> int> := [];
+    var none: seq<int> := [];
+    expect ap(nofns, [1, 2]) == [];
+    expect ap([(x: int) => x], none) == [];
+    expect ap([(x: int) => "f" + NumStr(x), (x: int) => "g" + NumStr(x)], [1, 2]) == ["f1", "f2", "g1", "g2"];
+  }
+
+  // chain/flatMap (v0.3.0) flatten the mapped results one level only.
+  method {:test} ChainEdges() {
+    var none: seq<int> := [];
+    expect chain((x: int) => none, [1, 2]) == [];
+    expect chain((x: int) => [x, x], [1, 2]) == [1, 1, 2, 2];
+    expect chain((x: int) => [[x]], [1, 2]) == [[1], [2]];
+    expect chain((x: int) => [Num(x), Arr([Num(x)])], [1, 2]) == [Num(1), Arr([Num(1)]), Num(2), Arr([Num(2)])];
+    expect flatMap((x: int) => [x, x], [1]) == [1, 1];
+  }
+
+  // unnest/flattenShallow (v0.3.0) remove one level of nesting;
+  // flattenDeep is flatten.
+  method {:test} UnnestEdges() {
+    var none: seq<Tree<int>> := [];
+    expect unnest(none) == [];
+    expect unnest([Node(none)]) == [];
+    expect unnest([Node([Node([Leaf(1)])])]) == [Node([Leaf(1)])];
+    expect unnest([Leaf(1)]) == [Leaf(1)];
+    expect unnest([Leaf("ab")]) == [Leaf("ab")];
+    expect flattenShallow([Leaf(1), Node([Leaf(2), Node([Leaf(3)])])]) == [Leaf(1), Leaf(2), Node([Leaf(3)])];
+    expect flattenDeep([Leaf(1), Node([Leaf(2), Node([Leaf(3)])])]) == [1, 2, 3];
+    expect flattenDeep(none) == [];
+  }
+
+  // zipObj and fromPairs (v0.3.0): a later duplicate key wins.
+  method {:test} ZipObjFromPairsEdges() {
+    var nokeys: seq<string> := [];
+    expect zipObj(["a", "a"], [1, 2]) == map["a" := 2];
+    expect zipObj(["b", "a"], [1, 2]) == map["b" := 1, "a" := 2];
+    expect zipObj(nokeys, [1, 2]) == map[];
+    // `zipObj(['a'])(['z'])`
+    var zipA := (vs: seq<string>) requires |vs| >= 1 => zipObj(["a"], vs);
+    expect zipA(["z"]) == map["a" := "z"];
+    var nopairs: seq<(string, int)> := [];
+    expect fromPairs([("a", 1), ("a", 2)]) == map["a" := 2];
+    expect fromPairs(nopairs) == map[];
+    // `fromPairs([[1, 'x']])`: JS converts the key 1 to the string "1".
+    expect fromPairs([("1", "x")]) == map["1" := "x"];
+  }
+
+  // of, empty and length (v0.3.0).
+  method {:test} OfEmptyLengthEdges() {
+    var none: seq<int> := [];
+    expect of(1) == [1];
+    expect of(none) == [none];
+    expect empty([1, 2]) == [];
+    expect empty(none) == [];
+    expect length(none) == 0;
+    // a string is a list of characters
+    expect length("abc") == 3;
   }
 
   method {:test} MapObjEdges() {
@@ -311,5 +377,32 @@ module RamdafTests.Edge.List {
   // JS unfoldr would loop forever here; the fuel bound stops it.
   method {:test} DeviationUnfoldrStopsAtFuel() {
     expect unfoldr((n: int) => Some((n, n + 1)), 0, 3) == [0, 1, 2];
+  }
+
+  // node: flatten([{length: 0}]) is [], flatten([{length: 2, 0: 'a', 1: 'b'}])
+  // is ['a', 'b'] and unnest([{length: 0}]) is [] (since v0.3.0 an array-like
+  // element is flattened); a Leaf is never flattened.
+  method {:test} DeviationLeafIsNeverArrayLike() {
+    var len0 := map["length" := 0];
+    expect flatten([Leaf(len0)]) == [len0];
+    var ab := map["length" := Num(2), "0" := Str("a"), "1" := Str("b")];
+    expect flatten([Leaf(ab)]) == [ab];
+    expect unnest([Leaf(len0)]) == [Leaf(len0)];
+  }
+
+  // node: chain(x => 'ab', [1, 2]) is ['ab', 'ab'] (a string is not
+  // array-like, so it stays one element); here f returns a seq, a string is a
+  // seq of characters, and the results are concatenated.
+  method {:test} DeviationChainConcatenatesStringResults() {
+    expect chain((x: int) => "ab", [1, 2]) == "abab";
+  }
+
+  // node: zipObj(['__proto__', 'a'], [1, 2]) is {a: 2} and
+  // fromPairs([['__proto__', 5], ['a', 1]]) is {a: 1}: assigning
+  // `__proto__` sets the prototype (a primitive is ignored) instead of a
+  // property. A map's keys are all ordinary.
+  method {:test} DeviationPrototypeKeysAreOrdinaryInZipObjAndFromPairs() {
+    expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
+    expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
   }
 }

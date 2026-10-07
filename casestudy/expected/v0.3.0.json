@@ -1,0 +1,22 @@
+{
+  "ramda": "v0.3.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.partition", "kind": "breaking", "why": "v0.3.0 makes partition a split by a predicate (Haskell's partition), returning [passing, failing]; its key-grouping body became groupBy's: partition(x => x % 2, [0, 1, 2, 3]) went from {0: [0, 2], 1: [1, 3]} to [[1, 3], [0, 2]], so fn: T -> string became pred: T -> bool and the result a pair"},
+    {"symbol": "Ramdaf.Data.groupBy", "kind": "compatible", "why": "knock-on of partition: v0.3.0 makes groupBy its own function with partition's old body instead of an alias of partition; the revealed body no longer calls List.partition, same results"},
+    {"symbol": "Ramdaf.Core.length", "kind": "added", "why": "new in v0.3.0: aliasFor('size').is('length')"},
+    {"symbol": "Ramdaf.Functions.K", "kind": "added", "why": "v0.3.0 moves the K alias from tap (not portable) to always: aliasFor('always').is('constant').and('K')"},
+    {"symbol": "Ramdaf.Functions.distributeTo", "kind": "added", "why": "new in v0.3.0: aliasFor('fork').is('distributeTo')"},
+    {"symbol": "Ramdaf.List.ap", "kind": "added", "why": "new in v0.3.0: R.ap(fns, vs), each function mapped over vs and the results concatenated"},
+    {"symbol": "Ramdaf.List.of", "kind": "added", "why": "new in v0.3.0: R.of(x) is [x]"},
+    {"symbol": "Ramdaf.List.empty", "kind": "added", "why": "new in v0.3.0: R.empty(x) is []"},
+    {"symbol": "Ramdaf.List.chain", "kind": "added", "why": "new in v0.3.0: R.chain(f, list) is unnest(map(f, list))"},
+    {"symbol": "Ramdaf.List.flatMap", "kind": "added", "why": "new in v0.3.0: aliasFor('chain').is('flatMap')"},
+    {"symbol": "Ramdaf.List.unnest", "kind": "added", "why": "new in v0.3.0: R.unnest flattens one level (makeFlat(false))"},
+    {"symbol": "Ramdaf.List.flattenShallow", "kind": "added", "why": "new in v0.3.0: aliasFor('unnest').is('flattenShallow')"},
+    {"symbol": "Ramdaf.List.flattenDeep", "kind": "added", "why": "new in v0.3.0: aliasFor('flatten').is('flattenDeep')"},
+    {"symbol": "Ramdaf.List.zipObj", "kind": "added", "why": "new in v0.3.0: R.zipObj(keys, values), a later duplicate key wins"},
+    {"symbol": "Ramdaf.List.fromPairs", "kind": "added", "why": "new in v0.3.0: R.fromPairs(pairs), a later duplicate key wins"},
+    {"symbol": "Ramdaf.Math.mathMod", "kind": "added", "why": "new in v0.3.0: R.mathMod(m, p) is ((m % p) + p) % p, NaN unless m is an integer >= 1 and p a nonzero integer"}
+  ]
+}

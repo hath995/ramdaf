@@ -1,20 +1,26 @@
-// Ramda v0.2.4 test/test.list.js, test/test.indexof.js,
+// Ramda v0.3.0 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
-// test/test.unfold.js, test/test.zip.js, test/test.product.js and
-// test/test.partition.js, transcribed. Arity (`.length`) checks have no Dafny
-// counterpart and are omitted. `find(even, 'zing')` searches the string's
-// characters: here a list of Js strings. test.indexof.js also sets a
-// non-index property (`arr[-2] = 4`) on its arrays, which a seq cannot
-// carry and which indexOf ignores. Not transcribed: test.flatten.js's "is not
-// destructive" (reference inequality) and "handles ridiculously large
-// inputs" (its `new Array(1000000)` is a million empty slots, which a seq
-// cannot hold).
+// test/test.unfold.js, test/test.zip.js, test/test.product.js,
+// test/test.partition.js and test/test.groupBy.js, transcribed. Arity
+// (`.length`) checks have no Dafny counterpart and are omitted.
+// `find(even, 'zing')` searches the string's characters: here a list of Js
+// strings. test.indexof.js also sets a non-index property (`arr[-2] = 4`) on
+// its arrays, which a seq cannot carry and which indexOf ignores. Not
+// transcribed: test.flatten.js's "is not destructive" (reference inequality;
+// flatten's, and v0.3.0's unnest's), "handles ridiculously large inputs" (its
+// `new Array(1000000)` is a million empty slots, which a seq cannot hold) and
+// v0.3.0's "handles array-like objects" (flatten's and unnest's: an object
+// with a `length` property is not a seq); test.zip.js's zipObj "extra keys
+// are undefined" (more keys than values is outside the domain, README) and
+// fromPairs "skips empty Arrays and non-Array elements" (the elements are
+// typed pairs, README "Outside the modeled domain").
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
   import opened Ramdaf.Core
   import opened Ramdaf.List
+  import opened Ramdaf.Data
   import opened Support
 
   // ---- test.list.js ----
@@ -137,6 +143,28 @@ module RamdafTests.Ramda.List {
   method {:test} RepeatNIsAutomaticallyCurried() {
     var nTrues := (n: nat) => repeatN(true, n);
     expect nTrues(4) == [true, true, true, true];
+  }
+
+  // describe('of') (v0.3.0)
+  method {:test} OfReturnsItsArgumentAsAnArray() {
+    expect of(100) == [100];
+    expect of([100]) == [[100]];
+    expect of(Null) == [Null];
+    expect of(Undefined) == [Undefined];
+    var none: seq<int> := [];
+    expect of(none) == [[]];
+  }
+
+  // describe('empty') (v0.3.0)
+  method {:test} EmptyReturnsAnEmptyList() {
+    expect empty([1, 2, 3]) == [];
+  }
+
+  // describe('chain') (v0.3.0): `dbl` is `map(multiply(2))`.
+  method {:test} ChainMapsAFunctionOverANestedListAndFlattensTheResult() {
+    var dbl := (l: seq<int>) => mapSeq((x: int) => x * 2, l);
+    expect chain(dbl, [[1, 2, 3], [1], [0, 10, -3, 5, 7]]) == [2, 4, 6, 2, 0, 20, -6, 10, 14];
+    expect chain(dbl, [[1, 2, 3], []]) == [2, 4, 6];
   }
 
   // ---- test.indexof.js (v0.2.2; indexOf and lastIndexOf moved here from
@@ -463,6 +491,24 @@ module RamdafTests.Ramda.List {
     expect flatten([Leaf(1), Leaf(2), Leaf(3), Leaf(4), Leaf(5)]) == [1, 2, 3, 4, 5];
   }
 
+  // describe('unnest') (v0.3.0)
+  method {:test} UnnestOnlyFlattensOneLayerDeepOfANestedList() {
+    // [1, [2], [3, [4, 5], 6, [[[7], 8]]], 9, 10]
+    var nest := [Leaf(1), Node([Leaf(2)]),
+                 Node([Leaf(3), Node([Leaf(4), Leaf(5)]), Leaf(6), Node([Node([Node([Leaf(7)]), Leaf(8)])])]),
+                 Leaf(9), Leaf(10)];
+    // [1, 2, 3, [4, 5], 6, [[[7], 8]], 9, 10]
+    expect unnest(nest) == [Leaf(1), Leaf(2), Leaf(3), Node([Leaf(4), Leaf(5)]), Leaf(6),
+                            Node([Node([Node([Leaf(7)]), Leaf(8)])]), Leaf(9), Leaf(10)];
+    // [[[[3]], 2, 1], 0, [[-1, -2], -3]]
+    var nest2 := [Node([Node([Node([Leaf(3)])]), Leaf(2), Leaf(1)]), Leaf(0),
+                  Node([Node([Leaf(-1), Leaf(-2)]), Leaf(-3)])];
+    // [[[3]], 2, 1, 0, [-1, -2], -3]
+    expect unnest(nest2) == [Node([Node([Leaf(3)])]), Leaf(2), Leaf(1), Leaf(0),
+                             Node([Leaf(-1), Leaf(-2)]), Leaf(-3)];
+    expect unnest([Leaf(1), Leaf(2), Leaf(3), Leaf(4), Leaf(5)]) == [Leaf(1), Leaf(2), Leaf(3), Leaf(4), Leaf(5)];
+  }
+
   // ---- test.range.js ----
 
   method {:test} RangeReturnsListOfNumbers() {
@@ -539,6 +585,25 @@ module RamdafTests.Ramda.List {
     expect zip(a, c) == [(1, 10), (2, 20)];
   }
 
+  // describe('zipObj') (v0.3.0)
+  method {:test} ZipObjCombinesAnArrayOfKeysWithAnArrayOfValues() {
+    expect zipObj(["a", "b", "c"], [1, 2, 3]) == map["a" := 1, "b" := 2, "c" := 3];
+  }
+
+  method {:test} ZipObjIgnoresExtraValues() {
+    expect zipObj(["a", "b", "c"], [1, 2, 3, 4, 5, 6, 7]) == map["a" := 1, "b" := 2, "c" := 3];
+  }
+
+  method {:test} ZipObjLastOneInWinsWhenThereAreDuplicateKeys() {
+    expect zipObj(["a", "b", "c", "a"], [Num(1), Num(2), Num(3), Str("LAST")]) ==
+      map["a" := Str("LAST"), "b" := Num(2), "c" := Num(3)];
+  }
+
+  // describe('fromPairs') (v0.3.0)
+  method {:test} FromPairsCombinesTwoElementArraysIntoAnObject() {
+    expect fromPairs([("a", 1), ("b", 2), ("c", 3)]) == map["a" := 1, "b" := 2, "c" := 3];
+  }
+
   // ---- test.product.js ----
 
   method {:test} XprodReturnsAnEmptyListIfEitherInputListIsEmpty() {
@@ -575,7 +640,27 @@ module RamdafTests.Ramda.List {
   }
 
 
-  // ---- test.partition.js ----
+  // ---- test.partition.js (v0.3.0: partition splits a list by a predicate;
+  // its v0.1.4 to v0.2.4 grouping tests moved to test.groupBy.js, below) ----
+
+  // `function(n) { return n % 2; }`: the remainder is truthy exactly when it
+  // is nonzero.
+  method {:test} PartitionSplitsAListIntoTwoListsAccordingToAPredicate() {
+    var pred := (n: int) => n % 2 != 0;
+    var none: seq<int> := [];
+    expect partition(pred, none) == ([], []);
+    expect partition(pred, [0, 2, 4, 6]) == ([], [0, 2, 4, 6]);
+    expect partition(pred, [1, 3, 5, 7]) == ([1, 3, 5, 7], []);
+    expect partition(pred, [0, 1, 2, 3]) == ([1, 3], [0, 2]);
+  }
+
+  // `partition(Boolean)`: JS truthiness (Support.Truthy) of mixed values.
+  method {:test} PartitionIsCurried() {
+    var polarize := (l: seq<Js>) => partition(Truthy, l);
+    expect polarize([Bool(true), Num(0), Num(1), Null]) == ([Bool(true), Num(1)], [Num(0), Null]);
+  }
+
+  // ---- test.groupBy.js (v0.3.0; test.partition.js's tests until v0.2.4) ----
 
   function Student(name: string, score: int): map<string, Js> { map["name" := Str(name), "score" := Num(score)] }
   function grade(score: int): string
@@ -584,11 +669,11 @@ module RamdafTests.Ramda.List {
   function byGrade(s: map<string, Js>): string
   { grade(if "score" in s && s["score"].Num? then s["score"].n else 0) }
 
-  method {:test} PartitionSplitsTheListIntoGroups() {
+  method {:test} GroupBySplitsTheListIntoGroupsAccordingToTheGroupingFunction() {
     var students := [Student("Abby", 84), Student("Brad", 73), Student("Chris", 89), Student("Dianne", 99),
                      Student("Eddy", 58), Student("Fred", 67), Student("Gillian", 91), Student("Hannah", 78),
                      Student("Irene", 85), Student("Jack", 69)];
-    expect partition(byGrade, students) == map[
+    expect groupBy(byGrade, students) == map[
       "A" := [Student("Dianne", 99), Student("Gillian", 91)],
       "B" := [Student("Abby", 84), Student("Chris", 89), Student("Irene", 85)],
       "C" := [Student("Brad", 73), Student("Hannah", 78)],
@@ -600,8 +685,8 @@ module RamdafTests.Ramda.List {
   // `prop("type")`; every record here has a string type.
   function TypeOf(o: map<string, Js>): string { if "type" in o && o["type"].Str? then o["type"].s else "undefined" }
 
-  method {:test} PartitionIsAutomaticallyCurried() {
-    var splitByType := (l: seq<map<string, Js>>) => partition(TypeOf, l);
+  method {:test} GroupByIsAutomaticallyCurried() {
+    var splitByType := (l: seq<map<string, Js>>) => groupBy(TypeOf, l);
     expect splitByType([Typed("A", 10), Typed("B", 20), Typed("A", 30), Typed("A", 40), Typed("C", 50), Typed("B", 60)]) ==
       map["A" := [Typed("A", 10), Typed("A", 30), Typed("A", 40)],
           "B" := [Typed("B", 20), Typed("B", 60)],

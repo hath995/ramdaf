@@ -1,10 +1,11 @@
-// Ramdaf: Ramda v0.2.4 "Core Functions" (ramda.js lines 716-964), `clone`
-// (lines 712-714) and `size`. (v0.2.0 removed `cloneDeep`.)
+// Ramdaf: Ramda v0.3.0 "Core Functions" (ramda.js lines 722-967), `clone`
+// (lines 718-720), and `size` with its alias `length` (lines 1785-1788).
+// (v0.2.0 removed `cloneDeep`.)
 
 module Ramdaf.Core {
   export
     reveals clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr,
-            append, push, concat, identity, I, times, repeatN, size
+            append, push, concat, identity, I, times, repeatN, size, length
 
   // `clone(list)` is `_slice(list)` (`list.concat()` before v0.2.0), a
   // shallow copy. Dafny sequences are values, so the copy is the list itself.
@@ -71,4 +72,6 @@ module Ramdaf.Core {
   { seq(n, _ => value) }
 
   function size<T>(list: seq<T>): nat { |list| }
+  // v0.3.0: `aliasFor('size').is('length')`.
+  function length<T>(list: seq<T>): nat { size(list) }
 }

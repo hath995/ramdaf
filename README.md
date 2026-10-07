@@ -100,7 +100,8 @@ For each Ramda tag, in order:
 | a property that is absent or `undefined` | `None` of `Ramdaf.Prelude.Option<V>` |
 | a documented "no value" result (`find` miss → `undefined`, `nth` out of range → `undefined`, `maxWith([])` → `undefined`) | `Option<T>` |
 | `where`'s spec object, whose properties are functions or values | `map<string, Ramdaf.Prelude.SpecVal<V>>`: `Pred(fn)` for a function, `Val(v)` for a value |
-| nested arrays (`flatten`'s input) | `Ramdaf.Prelude.Tree<T>`: `Leaf(v)` or `Node(children)` |
+| nested arrays (the input of `flatten` and `unnest`) | `Ramdaf.Prelude.Tree<T>`: `Node(children)` for an array, `Leaf(v)` for any other element (an array-like element is not flattened; see "Deviations") |
+| a two-element array used as a pair (`zip`'s and `xprod`'s elements, `partition`'s result, `fromPairs`' elements) | `(A, B)` |
 | number | `int`, or `real` for `divide`/`divideBy` |
 | string | `string` (a sequence of Unicode code points) |
 | predicate, "truthy" result | `T -> bool` |
@@ -110,22 +111,22 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.2.4)
+## Modules and exports (v0.3.0)
 
 | Module | Exports |
 |---|---|
-| `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, concat, identity, I, times, repeatN, size |
-| `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, always, constant, alwaysZero, alwaysFalse, alwaysTrue |
-| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, mapObjIdx (`mapObj.idx`), filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, indexOfFrom (`indexOf.from`), lastIndexOf, lastIndexOfFrom (`lastIndexOf.from`), join, slice, sliceFrom (`slice.from`), remove, insert, insertAll (`insert.all`), nth, partition |
+| `Ramdaf.Core` | clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr, append, push, concat, identity, I, times, repeatN, size, length |
+| `Ramdaf.Functions` | compose, pipe, sequence, flip, fork, distributeTo, always, constant, K, alwaysZero, alwaysFalse, alwaysTrue |
+| `Ramdaf.List` | foldl, reduce, foldlIdx (`foldl.idx`), reduceIdx (`reduce.idx`), foldr, reduceRight, foldrIdx (`foldr.idx`), reduceRightIdx (`reduceRight.idx`), unfoldr, mapSeq (`map`), mapIdx (`map.idx`), mapObj, mapObjIdx (`mapObj.idx`), filter, filterIdx (`filter.idx`), reject, rejectIdx (`reject.idx`), takeWhile, take, skipUntil, skip, drop, find, findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse, range, indexOf, indexOfFrom (`indexOf.from`), lastIndexOf, lastIndexOfFrom (`lastIndexOf.from`), join, slice, sliceFrom (`slice.from`), remove, insert, insertAll (`insert.all`), nth, partition, ap, of, empty, chain, flatMap, unnest, flattenShallow, flattenDeep, zipObj, fromPairs |
 | `Ramdaf.Sort` | comparator; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | eq, prop, get, props, keys, keysIn, values, valuesIn, pick, pickAll, omit, pickWith, mixin, eqProps, where, propEq |
 | `Ramdaf.Logic` | and, or, not, allPredicates, anyPredicates |
-| `Ramdaf.Math` | add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy, sum, product, lt, lte, gt, gte, max, maxWith, minWith, min |
+| `Ramdaf.Math` | add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy, mathMod, sum, product, lt, lte, gt, gte, max, maxWith, minWith, min |
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 132 of Ramda v0.2.4's 159 export names, plus 12 of the 14 functions
-stored as properties of exports (`map.idx` and the like). The other 27 names
+That is 146 of Ramda v0.3.0's 172 export names, plus 12 of the 14 functions
+stored as properties of exports (`map.idx` and the like). The other 26 names
 and the 2 properties `each.idx`/`forEach.idx` are listed under "Not portable".
 
 ### Support declarations
@@ -142,36 +143,39 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.2.4 does not export `keyValue`; it is a local `var` in `ramda.js`,
-and Ramdaf does not export it either. (`containsWith` was internal until
-v0.1.5 exported it, and `uniqWith` until v0.2.0; both are in List. Until
-v0.2.3 the `*With` functions in Data carried `uniqWith`'s recursion
-themselves; since v0.2.4 they call `List.uniqWith`, as Ramda does.)
+Ramda v0.3.0 does not export `keyValue`, nor its new helpers
+`isArrayLike`, `makeFlat`, `checkForMethod` and `isInteger`; they are local
+to `ramda.js`, and Ramdaf does not export them either. (`containsWith` was
+internal until v0.1.5 exported it, and `uniqWith` until v0.2.0; both are in
+List. Until v0.2.3 the `*With` functions in Data carried `uniqWith`'s
+recursion themselves; since v0.2.4 they call `List.uniqWith`, as Ramda
+does.)
 
 ## Not portable
 
-These Ramda v0.2.4 exports are not ported, rather than faked:
+These Ramda v0.3.0 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
 | `curry` | Ramdaf functions are uncurried, and Dafny has no partial application to curry into. |
 | `nAry`, `arity`, `unary`, `binary` | Change a function's reported arity (`fn.length`), which Dafny functions do not have (`unary(fn)` is `nAry(1, fn)`, `binary(fn)` is `nAry(2, fn)`; v0.2.0). |
 | `invoker`, `func` | Call a method looked up by name on an object at run time. |
-| `useWith`, `use` | Variadic argument transformers. |
+| `useWith` (`disperseTo`) | Variadic argument transformers. (v0.3.0 removed `use(fn).over(...)` and added the alias `disperseTo`.) |
 | `lPartial` (`applyLeft`), `rPartial` (`applyRight`) | Variadic partial application. |
 | `memoize`, `once` | Rely on hidden mutable state, and `memoize`'s cache is keyed by `String(arg)`. |
 | `wrap` | Variadic wrapper (`wrapper(fn, ...arguments)`). |
 | `construct` | Calls JS constructors with `new`. |
-| `tap` (`K`) | Its purpose is a side effect (`fn(x)`), which a pure function cannot have. |
+| `tap` | Its purpose is a side effect (`fn(x)`), which a pure function cannot have. (Until v0.2.4 `K` was an alias of `tap`; v0.3.0 made it an alias of `always`.) |
 | `each` (`forEach`), `each.idx` (`forEach.idx`) | Call `fn` on each element for its side effect and return the list itself. |
 | `installTo` | Copies the library onto a global or host object. |
 | `isAtom` | Tests the run-time type of an arbitrary value. |
+| `is` | Tests a value's prototype chain at run time: `is(ctor, val)` is `val != null && Object(val) instanceof ctor` (v0.3.0). (`is` is also a Dafny keyword.) |
 | `match` | Regular expressions. |
-| `path`, `pathOn`, `pathWith` | Walk an arbitrary JS value along a list of property names (v0.2.0): object properties, array indices (`path('a.e.f.1', obj)` → `101`, Ramda's own test) and string characters, returning whatever value is there (an object, an array or a primitive). The mapping has no type for such a heterogeneous nested value: a `map<string, V>` is homogeneous, and `Tree<T>` has no keys. A nested-object datatype would cover only the object case and leave most of Ramda's `path` tests untranscribable. |
+| `path`, `pathOn` | Walk an arbitrary JS value along a list of property names (v0.2.0; v0.3.0 removed `pathWith`): object properties, array indices (`path('a.e.f.1', obj)` → `101`, Ramda's own test) and string characters, returning whatever value is there (an object, an array or a primitive). The mapping has no type for such a heterogeneous nested value: a `map<string, V>` is homogeneous, and `Tree<T>` has no keys. A nested-object datatype would cover only the object case and leave most of Ramda's `path` tests untranscribable. |
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.2.4 (node) | Ramdaf |
+| Function | Ramda v0.3.0 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car`, `first`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
 | `take` | `take(-1, l)` throws `RangeError`. (Before v0.1.5, `take(5, [1, 2])` → `[1, 2, <3 empty items>]`, and Ramdaf required `n <= \|list\|`; v0.1.5 clamps to `[1, 2]`.) | `n: nat` |
@@ -182,7 +186,10 @@ These Ramda v0.2.4 exports are not ported, rather than faked:
 | `max`, `min` | `max([])` → `-Infinity`, `min([])` → `Infinity` | `requires \|list\| > 0` |
 | `divide`, `divideBy` | `divide(1, 0)` → `Infinity` | `requires` a nonzero divisor |
 | `modulo`, `moduloBy` | `modulo(1, 0)` → `NaN` | `requires` a nonzero divisor |
+| `mathMod` | (v0.3.0) `NaN` unless m is an integer of at least 1 and p an integer: the code tests the dividend, though its documentation names the modulus, so `mathMod(-17, 5)` and `mathMod(0, 5)` → `NaN` (and `mathMod(17, -5)` → `-3`); `mathMod(17, 0)` → `NaN` | `requires 1 <= m`, `requires p != 0` |
 | `findLast`, `findLastIndex` | on `[]` the `while (--idx)` loop runs idx through -1, -2, … calling `fn(undefined)` until it is truthy (forever for `x => false`; `findLastIndex(x => x === undefined, [])` → `-1`) | `requires \|list\| > 0` |
+| `zipObj` | (v0.3.0) a key without a value gets `undefined` and is still an own property: `zipObj(['a', 'b'], [1])` → `{a: 1, b: undefined}`, whose `Object.keys` are `['a', 'b']` (Ramda's test "extra keys are undefined") | `requires \|keys\| <= \|values\|` |
+| `fromPairs` | (v0.3.0) an element that is not an array, or is empty, is skipped (`fromPairs([['a', 1], 'x', [], {}])` → `{a: 1}`); a one-element array gives an `undefined` value (`fromPairs([['a']])` → `{a: undefined}`), and elements past the second are ignored | not expressible: the elements are typed pairs `(string, V)` |
 | `where` | a spec or test property whose value is `undefined`: since v0.2.3 `where({x: undefined}, {})` → `true` (it was `false`), `where({x: undefined}, {x: undefined})` → `true`, `where({x: f}, {x: undefined})` calls `f(undefined)`; and `where(spec, null)` → `false` | not expressible: an undefined property is an absent one, and the test object is a `map` |
 
 ## Deviations
@@ -191,21 +198,27 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.2.4 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.3.0 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys`, `keysIn` | `keys({b: 1, a: 2})` → `['b', 'a']`, in insertion order | `{"a", "b"}`, a `set<string>` | A `map` has no key order. |
 | `values`, `valuesIn` | `values({a: 1, b: 1})` → `[1, 1]`, in key order | `multiset{1, 1}` | A `map` has no key order. |
 | `unfoldr` | loops until `fn` returns a falsy value, possibly forever | extra `fuel: nat` parameter; stops after `fuel` elements | Dafny functions must terminate. |
 | `compose`, `pipe`/`sequence` | variadic: `compose(a, b, c, d)` | binary: `compose(a, compose(b, compose(c, d)))`. There is no unary form; `compose(f)` is `f`. | Dafny functions have fixed arity. |
-| `always`, `alwaysZero`, `alwaysFalse`, `alwaysTrue` | ignore however many arguments they get | take exactly one argument of any type (`always(7)(())`) | Fixed arity. |
-| `and`, `or`, `not`, `fork` | forward any number of arguments | unary functions (pass a tuple) | Fixed arity. |
-| `fork` | takes any number of functions after `after`: `fork(after, f1, f2, f3)` | exactly two, `fork(after, f1, f2)` | Fixed arity. |
+| `always`, `constant`, `K`, `alwaysZero`, `alwaysFalse`, `alwaysTrue` | ignore however many arguments they get | take exactly one argument of any type (`always(7)(())`) | Fixed arity. |
+| `and`, `or`, `not`, `fork`, `distributeTo` | forward any number of arguments | unary functions (pass a tuple) | Fixed arity. |
+| `fork`, `distributeTo` | takes any number of functions after `after`: `fork(after, f1, f2, f3)` | exactly two, `fork(after, f1, f2)` | Fixed arity. |
+| `of` | `of(x, container)` dispatches to `container.of(x)` (Fantasy-land) and ignores any other container: `of(1, [9])` → `[1]` | `of(x)`: no container parameter | Fixed arity; no Dafny value has an `of` method. |
 | `mapIdx`, `filterIdx`, `rejectIdx`, `foldlIdx`/`reduceIdx`, `foldrIdx`/`reduceRightIdx` | call `fn(x, idx, list)` (folds: `fn(acc, x, idx, list)`), and a function that declares fewer parameters ignores the rest: `map.idx(times2, l)` | the callback takes all three (four) | Fixed arity. |
 | `allPredicates`, `anyPredicates` | `allPredicates(preds, v)` applies at once; the result reports the longest predicate's arity | `allPredicates(preds)(v)`; no arity | Fixed arity. |
-| `add`, `subtract`, `multiply`, `sum`, `product`, `lt`, `lte`, `gt`, `gte`, `max`, `min`, `subtractN`, `modulo`, `moduloBy` | JS numbers (doubles) and coercion: `lt("abc", "xyz")` → `true`, `max([-4.3, -1.1])` → `-1.1` | `int` (`divide`/`divideBy`: `real`) | Typed. |
-| `partition`, `groupBy` | uses whatever `fn` returns as a key, converted to a string: `partition(x => x > 2, [1, 3])` → `{false: [1], true: [3]}` | `fn: T -> string` | Typed. |
+| `add`, `subtract`, `multiply`, `sum`, `product`, `lt`, `lte`, `gt`, `gte`, `max`, `min`, `subtractN`, `modulo`, `moduloBy`, `mathMod` | JS numbers (doubles) and coercion: `lt("abc", "xyz")` → `true`, `max([-4.3, -1.1])` → `-1.1` | `int` (`divide`/`divideBy`: `real`) | Typed. |
+| `groupBy` | uses whatever `fn` returns as a key, converted to a string: `groupBy(x => x > 2, [1, 3])` → `{false: [1], true: [3]}` (`partition` did so from v0.1.4 to v0.2.4) | `fn: T -> string` | Typed. |
 | `join` | converts elements to strings: `join("~", [1, 2, 3, 4])` → `"1~2~3~4"` | `seq<string>` elements | Typed. |
+| `zipObj`, `fromPairs` | convert keys to strings: `zipObj([1, 2], ['x', 'y'])` → `{"1": 'x', "2": 'y'}` | `string` keys | Typed. |
+| `empty` | takes any argument: `empty(5)`, `empty({})` and `empty()` → `[]` | `empty(x: seq<T>): seq<T>` | Typed: the result's element type comes from the argument. |
+| `chain`, `flatMap` | keep a result of `f` that is not array-like as one element: `chain(x => x * 2, [1, 2])` → `[2, 4]`, `chain(x => 'ab', [1, 2])` → `['ab', 'ab']` | `f: A -> seq<B>`; a string result is a sequence of characters and is concatenated: `chain(x => "ab", [1, 2]) == "abab"` | Typed; a Dafny `string` is a `seq<char>`. |
+| `flatten`, `flattenDeep`, `unnest`, `flattenShallow` | since v0.3.0 flatten every array-like element (`isArrayLike`: an object with a numeric `length`, or a function, whose `length` is its arity; never a string): `flatten([{length: 0}])` → `[]`, `flatten([{length: 2, 0: 'a', 1: 'b'}])` → `['a', 'b']`, `flatten([x => x])` → `[undefined]` | only a `Node` is flattened: `flatten([Leaf(map["length" := 0])])` is `[map["length" := 0]]` | `Tree<T>` marks nesting by constructor. |
+| `groupBy`, `countBy`, `zipObj`, `fromPairs` | a key that names an `Object.prototype` member is not an ordinary property: `groupBy(x => 'hasOwnProperty', [1])` → `{hasOwnProperty: [undefined, 1]}`, `countBy(x => '__proto__', [1, 2])` → `{}`, `zipObj(['__proto__', 'a'], [1, 2])` → `{a: 2}`, and `groupBy(x => '__proto__', [1, 2])` throws `RangeError` (`groupBy` and `countBy` did all this before v0.3.0 as well) | every key is ordinary: `map["hasOwnProperty" := [1]]`, `map["__proto__" := 2]`, `map["__proto__" := 1, "a" := 2]`; the throw is not modeled | A `map` has no prototype. |
 | `sortBy`, `maxWith`, `minWith` | compare keys with JS `<`/`>`, so string keys work: `sortBy(s => s, ["b", "a", "c"])` → `["a", "b", "c"]` | `int` keys | Dafny cannot order arbitrary key types, and overloading by key type is not possible. |
 | `sort` | an inconsistent comparator gives an engine-defined order: `sort(() => -1, [1, 2, 3])` → `[3, 2, 1]` | The postconditions say nothing for inconsistent comparators; the implementation (stable insertion sort) gives `[1, 2, 3]`. | ECMAScript leaves it unspecified. |
 | string functions | count UTF-16 code units: `charCodeAt(0, "😀")` → `55357`, `"😀".length` → `2` | count code points: `0x1F600`, `1` | A Dafny `string` is a sequence of Unicode scalar values. |
@@ -214,16 +227,18 @@ a signature (an arity or an operand type) is enforced by the types.
 ## Tests
 
 ```
-tests/support.dfy   Js (a JS value type for mixed arrays/objects), NumStr
+tests/support.dfy   Js (a JS value type for mixed arrays/objects), NumStr, Truthy
 tests/ramda/*.dfy   Ramda's test/test.*.js for the release, transcribed
 tests/edge/*.dfy    node-checked edge cases and Deviation* pins
 ```
 
 The suite transcribes every `it` in the release's Ramda test files that the
 encoding can express. Each file header lists what it skips: arity checks,
-side-effect counting, JS coercion, reference equality, string-keyed
-`sortBy`, and the unportable functions' files (`test.each.js`,
-`test.maybe.js`, `test.partial.js`, `test.wrap.js`, `test.expose.js`).
+side-effect counting, JS coercion, reference equality, method dispatch on
+non-array objects, array-like objects, string-keyed `sortBy`, and the
+unportable functions' files (`test.each.js`, `test.maybe.js`,
+`test.partial.js`, `test.wrap.js`, `test.expose.js`, `test.curry.js`,
+`test.path.js`, `test.is.js`).
 
 ## Progress
 
@@ -240,7 +255,7 @@ side-effect counting, JS coercion, reference equality, string-keyed
 | v0.2.2 | 2014-06-30 | ported | — |
 | v0.2.3 | 2014-07-09 | ported | — |
 | v0.2.4 | 2014-07-18 | ported | — |
-| v0.3.0 | 2014-08-10 | pending | — |
+| v0.3.0 | 2014-08-10 | ported | — |
 | v0.4.0 | 2014-08-28 | pending | — |
 | v0.4.1 | 2014-08-31 | pending | — |
 | v0.4.2 | 2014-09-01 | pending | — |
@@ -662,6 +677,87 @@ side-effect counting, JS coercion, reference equality, string-keyed
   `union`, `unionWith`, `difference`, `differenceWith`, `intersection`,
   `intersectionWith`, `takeWhile`, `remove`, `insert` and `insertAll`
   changed results (`casestudy/expected/v0.2.4.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.3.0 (2014-08-10)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node; most of the
+  diff is new JSDoc and names for anonymous functions, and the code changes
+  are these):
+  - `partition` becomes a split by a predicate, "like its Haskell
+    namesake": `partition(pred, list)` returns `[passing, failing]`, reading
+    `pred`'s result for truthiness (`partition(x => x % 2, [0, 1, 2, 3])` →
+    `[[1, 3], [0, 2]]`, was `{0: [0, 2], 1: [1, 3]}`). Its key-grouping body
+    becomes `groupBy`'s, which was an alias of `partition` since v0.2.0;
+    `groupBy`'s results are unchanged, each group in list order.
+  - New: `ap(fns, vs)` (every function over every value, the functions
+    outermost), `of(x)` (`[x]`), `empty(x)` (`[]`), `chain(f, list)`
+    (`unnest(map(f, list))`) with the alias `flatMap`, `unnest` (one level of
+    `flatten`) with the alias `flattenShallow`, `zipObj(keys, values)` and
+    `fromPairs(pairs)` (a later duplicate key wins), `mathMod(m, p)`
+    (`((m % p) + p) % p`, `NaN` unless m is an integer of at least 1 and p a
+    nonzero integer: the code tests the dividend, against its documentation,
+    so `mathMod(-17, 5)` is `NaN` and `mathMod(17, -5)` is `-3`), `is`, and
+    the aliases `length` (`size`), `flattenDeep` (`flatten`), `distributeTo`
+    (`fork`) and `disperseTo` (`useWith`). `ap`, `of`, `empty` and `chain`
+    dispatch to Fantasy-land methods of non-array arguments.
+  - `K` moves from `tap` to `always`: `K(5, f)` was `5`; `K(5)` is now a
+    function that returns `5`.
+  - `nth` becomes an alias of `prop` (`obj[p]`), which on a list is the
+    same lookup: its results are unchanged.
+  - `flatten` is `makeFlat(true)`, which flattens every array-like element,
+    not only arrays: `flatten([{length: 0}])` → `[]` (was `[{length: 0}]`).
+    Arrays give the same results.
+  - Removed: `use` (`useWith` and its new alias `disperseTo` remain) and
+    `pathWith`.
+  - Not visible in this encoding: `curry2`/`curry3` replace the remaining
+    hand currying (a call with no arguments now throws); `compose()` throws,
+    `compose(f)` is `f`, and a composition reports its rightmost function's
+    arity; `checkForMethod` replaces the in-body method dispatch, so
+    `pluck`, `reject` and `reject.idx` no longer dispatch to a non-array's
+    `map`/`filter`; `take` is rewritten on `_slice` with the same results;
+    `where` sorts its spec with `groupBy` instead of `partition`.
+- **Ramdaf:**
+  - `partition(pred: T -> bool, list)` returns the pair
+    `(filter(pred, list), reject(pred, list))`. `groupBy` (Data) takes over
+    partition's old body and postconditions instead of calling it.
+  - Added `length` (Core, next to `size`), `K` and `distributeTo`
+    (Functions, with `always` and `fork`), `ap`, `of`, `empty`, `chain`,
+    `flatMap`, `unnest`, `flattenShallow`, `flattenDeep`, `zipObj` and
+    `fromPairs` (List), and `mathMod` (Math). `unnest` uses the `Tree`
+    encoding, like `flatten`; `chain` takes `f: A -> seq<B>`; `empty` is
+    `seq<T> -> seq<T>`; `of` has no `container` parameter.
+  - `nth` keeps its own body (`prop` takes a map); `nth`, `flatten` and
+    `compose` change only in their comments.
+  - "Not portable": `use`, `pathWith` and `K` leave; `is` and `disperseTo`
+    join.
+  - "Outside the modeled domain" gains `mathMod` (`1 <= m`, `p != 0`),
+    `zipObj` (no more keys than values) and `fromPairs` (untyped elements,
+    not expressible). The mapping gains a pair row, and the `Tree` row says
+    only an array is a `Node`.
+  - New deviations: `of` (no container), `empty`, `chain`/`flatMap` (a
+    string result is concatenated), keys converted to strings in `zipObj` and
+    `fromPairs`, array-like elements in `flatten`/`unnest` (a `Leaf` is never
+    flattened), and keys that name `Object.prototype` members in `groupBy`,
+    `countBy`, `zipObj` and `fromPairs` (for `groupBy` and `countBy` an
+    omission of the earlier ports). The always-family and `fork` rows gain
+    `K` and `distributeTo` (and the overlooked `constant`), the int row
+    `mathMod`.
+  - Tests: the rewritten test.partition.js (with a `Truthy` helper in
+    `tests/support.dfy` for `partition(Boolean)`), the new test.groupBy.js
+    (partition's old tests, retargeted), test.core.js's `length`,
+    test.list.js's `of`, `empty` and `chain`, test.flatten.js's `unnest`,
+    test.functionBasics.js's `ap`, test.math.js's `mathMod` and test.zip.js's
+    `zipObj` and `fromPairs`. Not transcribed: compose's arity, no-argument
+    and one-argument cases, the array-like and method-dispatch cases,
+    `zipObj`'s extra keys, `fromPairs`' skipped elements, `mathMod`'s
+    non-integer and `NaN` cases, and test.is.js. The old partition edge
+    cases move to `groupBy`; new edge cases cover the new functions, with
+    `Deviation*` pins for array-like leaves, string results of `chain` and
+    prototype-named keys.
+- **Expected tier: major.** `partition` changed signature and meaning;
+  `groupBy`'s revealed body was rewritten with the same results
+  (compatible); 14 names were added (`casestudy/expected/v0.3.0.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

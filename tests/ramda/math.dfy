@@ -1,6 +1,10 @@
-// Ramda v0.2.4 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.3.0 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
-// cases of max/min are not expressible (README "Deviations").
+// cases of max/min are not expressible (README "Deviations"). Not
+// transcribed: mathMod's "requires integer arguments" (string and fractional
+// arguments, which give NaN), and the first two asserts of its "behaves
+// differently than JS modulo": `mathMod(-17, 5)` is NaN (a dividend below 1
+// is outside the domain, README), and 17.2 is fractional.
 
 module RamdafTests.Ramda.Math {
   import opened Ramdaf.Prelude
@@ -62,6 +66,16 @@ module RamdafTests.Ramda.Math {
   }
   method {:test} ModuloByPreservesJsModuloForNegativeNumbers() {
     expect moduloBy(4, -5) == -1;
+  }
+
+  // describe('mathMod') (v0.3.0): the third assert of "behaves differently
+  // than JS modulo" (`17 % -5` is 2, `mathMod(17, -5)` is -3).
+  method {:test} MathModBehavesDifferentlyThanJsModulo() {
+    expect mathMod(17, -5) != modulo(17, -5);
+  }
+  method {:test} MathModIsCurried() {
+    var f := (p: int) requires p != 0 => mathMod(29, p);
+    expect f(6) == 5;
   }
 
   // describe('sum'), describe('product')

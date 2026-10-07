@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against ramda.js v0.2.4 under node;
+// Edge cases for Sort and Data, checked against ramda.js v0.3.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -76,6 +76,19 @@ module RamdafTests.Edge.Data {
     expect countBy(parity, empty) == map[];
   }
 
+  // groupBy's cases from v0.1.4 to v0.2.4, when partition grouped by key
+  // (v0.3.0 gave groupBy partition's body; the results are unchanged).
+  method {:test} GroupByEdges() {
+    var empty: seq<int> := [];
+    expect groupBy((x: int) => "k", empty) == map[];
+    // `String(x > 2)`: a predicate's results as keys
+    expect groupBy((x: int) => if x > 2 then "true" else "false", [1, 3, 2, 4]) == map["false" := [1, 2], "true" := [3, 4]];
+    expect groupBy((s: string) => s, ["b", "a", "b"]) == map["b" := ["b", "b"], "a" := ["a"]];
+    // `String(x % 3)`
+    expect groupBy((x: int) => if x % 3 == 0 then "0" else if x % 3 == 1 then "1" else "2", [1, 2, 3, 4, 5, 6]) ==
+      map["0" := [3, 6], "1" := [1, 4], "2" := [2, 5]];
+  }
+
   method {:test} ProjectMissingIsUndefined() {
     expect project(["a", "z"], [map["a" := 1, "b" := 2]]) == [map["a" := Some(1), "z" := None]];
   }
@@ -97,5 +110,19 @@ module RamdafTests.Edge.Data {
     expect |union(ro, so)| == 6;
     expect |intersection(ro, so)| == 2;
     expect |difference(ro, so)| == 2;
+  }
+
+  // node: groupBy(x => 'hasOwnProperty', [1]) is {hasOwnProperty: [undefined, 1]}
+  // (`acc[key] || []` finds the inherited function, and `append` copies its
+  // length-1 "elements" first), countBy(x => '__proto__', [1, 2]) is {} (the
+  // count is assigned to the prototype, which ignores it) and
+  // countBy(x => 'hasOwnProperty', [1, 2]) is
+  // {hasOwnProperty: 'function hasOwnProperty() { [native code] }11'}. A
+  // map's keys are all ordinary. (So at v0.2.4 as well: an omission of the
+  // earlier ports.)
+  method {:test} DeviationPrototypeKeysAreOrdinaryInGroupByAndCountBy() {
+    expect groupBy((x: int) => "hasOwnProperty", [1]) == map["hasOwnProperty" := [1]];
+    expect countBy((x: int) => "__proto__", [1, 2]) == map["__proto__" := 2];
+    expect countBy((x: int) => "hasOwnProperty", [1, 2]) == map["hasOwnProperty" := 2];
   }
 }

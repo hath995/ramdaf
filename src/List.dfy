@@ -1,5 +1,6 @@
-// Ramdaf: Ramda v0.2.4 "List Functions" (ramda.js lines 1357-2359), except
-// `comparator`/`sort` (Sort.dfy) and `size` (Core.dfy).
+// Ramdaf: Ramda v0.3.0 "List Functions" (ramda.js lines 1368-2836), except
+// `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
+// (Data.dfy).
 
 module Ramdaf.List {
   import opened Prelude
@@ -11,7 +12,9 @@ module Ramdaf.List {
             findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith,
             uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
             range, indexOf, indexOfFrom, lastIndexOf, lastIndexOfFrom, join, slice, sliceFrom,
-            remove, insert, insertAll, nth, partition
+            remove, insert, insertAll, nth, partition,
+            ap, of, empty, chain, flatMap, unnest, flattenShallow, flattenDeep,
+            zipObj, fromPairs
     provides Prelude
 
   // `acc = fn(acc, list[idx])` for idx ascending.
@@ -82,6 +85,36 @@ module Ramdaf.List {
     ensures mapObjIdx(fn, obj).Keys == obj.Keys
     ensures forall k :: k in obj ==> mapObjIdx(fn, obj)[k] == fn(obj[k], k, obj)
   { map k | k in obj :: fn(obj[k], k, obj) }
+
+  // `R.ap(fns, vs)` (v0.3.0): `foldl(function(acc, fn) { return concat(acc,
+  // map(fn, vs)); }, [], fns)`, every function applied to every value, the
+  // functions outermost (`ap([f, g], [1, 2])` is `[f(1), f(2), g(1), g(2)]`).
+  // A non-array vs with an `ap` method is dispatched to (Fantasy-land); no
+  // Dafny value has one.
+  function ap<A, B>(fns: seq<A -> B>, vs: seq<A>): seq<B>
+  { foldl((acc: seq<B>, fn: A -> B) => acc + mapSeq(fn, vs), [], fns) }
+
+  // `R.of(x, container)` (v0.3.0): `[x]`, unless container has an `of`
+  // method, which is then called (Fantasy-land); any other container is
+  // ignored (`of(1, [9])` is `[1]`). The port drops container (README
+  // "Deviations").
+  function of<T>(x: T): seq<T> { [x] }
+
+  // `R.empty(x)` (v0.3.0): `[]`, unless x has an `empty` method, which is
+  // then called (Fantasy-land). JS takes any argument (`empty(5)` is `[]`);
+  // here it is a list, whose element type the result shares (README
+  // "Deviations").
+  function empty<T>(x: seq<T>): seq<T> { [] }
+
+  // `R.chain(f, list)` (v0.3.0): `unnest(map(f, list))`, f mapped over the
+  // list and its results concatenated, one level deep. A non-array list with
+  // a `chain` method is dispatched to. f returns a list here; JS keeps a
+  // result that is not array-like (a number, a string) as one element
+  // (README "Deviations"). The body concatenates the mapped lists.
+  function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
+  { foldl((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
+  // v0.3.0: `aliasFor('chain').is('flatMap')`.
+  function flatMap<A, B>(f: A -> seq<B>, list: seq<A>): seq<B> { chain(f, list) }
 
   function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures |filter(fn, list)| <= |list|
@@ -373,10 +406,24 @@ module Ramdaf.List {
     ensures |pluck(p, list)| == |list|
   { mapSeq((obj: map<string, V>) => if p in obj then Some(obj[p]) else None, list) }
 
-  // Depth-first, left-to-right concatenation of the leaves.
+  // Depth-first, left-to-right concatenation of the leaves. (v0.3.0's
+  // `makeFlat(true)` flattens every array-like element, an object with a
+  // numeric `length` included, where the loop before it flattened arrays
+  // only; a Leaf is never flattened, README "Deviations".)
   function flatten<T>(list: seq<Tree<T>>): seq<T>
   { if |list| == 0 then []
     else (match list[0] case Leaf(v) => [v] case Node(c) => flatten(c)) + flatten(list[1..]) }
+  // v0.3.0: `aliasFor('flatten').is('flattenDeep')`.
+  function flattenDeep<T>(list: seq<Tree<T>>): seq<T> { flatten(list) }
+
+  // `makeFlat(false)` (v0.3.0): one level of nesting removed, a Node's
+  // children spliced in and a Leaf kept (`unnest([1, [2], [[3]]])` is
+  // `[1, 2, [3]]`).
+  function unnest<T>(list: seq<Tree<T>>): seq<Tree<T>>
+  { if |list| == 0 then []
+    else (match list[0] case Leaf(_) => [list[0]] case Node(c) => c) + unnest(list[1..]) }
+  // v0.3.0: `aliasFor('unnest').is('flattenShallow')`.
+  function flattenShallow<T>(list: seq<Tree<T>>): seq<Tree<T>> { unnest(list) }
 
   // `rv[i] = fn(a[i], b[i])` for i below `Math.min(a.length, b.length)`
   // (v0.2.0; before, i ran to a.length and read `undefined` past the end of
@@ -392,6 +439,28 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |zip(a, b)| ==> zip(a, b)[i] == (a[i], b[i])
   { var n := if |a| <= |b| then |a| else |b|;
     seq(n, i requires 0 <= i < n => (a[i], b[i])) }
+
+  // `R.zipObj(keys, values)` (v0.3.0): `out[keys[i]] = values[i]` for i
+  // ascending, so a later duplicate key wins and extra values are ignored.
+  // An extra key gets an undefined value, which is still an own property
+  // (`zipObj(['a', 'b'], [1])` has the keys a and b), so keys may not
+  // outnumber values. JS converts keys to strings, and a key such as
+  // `__proto__` is not an ordinary property (README "Deviations"). The body
+  // sets the last key on the object built from the others, which is the loop.
+  function zipObj<V>(keys: seq<string>, values: seq<V>): map<string, V>
+    requires |keys| <= |values|
+  { if |keys| == 0 then map[]
+    else zipObj(keys[..|keys| - 1], values)[keys[|keys| - 1] := values[|keys| - 1]] }
+
+  // `R.fromPairs(pairs)` (v0.3.0): `out[pairs[i][0]] = pairs[i][1]` for each
+  // element that is a non-empty array, i ascending, so a later duplicate key
+  // wins. The pairs are typed here, so the elements JS skips (non-arrays,
+  // empty arrays) and one-element arrays (an undefined value) cannot be
+  // written (README "Outside the modeled domain"); a key such as `__proto__`
+  // is not an ordinary property in JS (README "Deviations").
+  function fromPairs<V>(pairs: seq<(string, V)>): map<string, V>
+  { if |pairs| == 0 then map[]
+    else fromPairs(pairs[..|pairs| - 1])[pairs[|pairs| - 1].0 := pairs[|pairs| - 1].1] }
 
   // Every pair, the first list's index outermost.
   function xprodWith<A, B, C>(fn: (A, B) -> C, a: seq<A>, b: seq<B>): seq<C>
@@ -540,16 +609,17 @@ module Ramdaf.List {
   { var i := if 0 <= index < |list| then index else |list|;
     list[..i] + elts + list[i..] }
 
-  // `list[n]`: undefined (None) out of range.
+  // `list[n]`: undefined (None) out of range. (Since v0.3.0 `nth` is an alias
+  // of `prop`, `aliasFor("prop").is("nth").and("get")`, whose `obj[p]` is the
+  // same lookup on a list; prop takes a map here, so nth keeps its body.)
   function nth<T>(n: int, list: seq<T>): Option<T>
   { if 0 <= n < |list| then Some(list[n]) else None }
 
-  // `foldl(function(acc, elt) { var key = fn(elt); acc[key] = append(elt, acc[key] || []); ... }, {}, list)`:
-  // the elements grouped by the key fn gives them, each group in list order.
-  // (Not a split into two lists: Ramda's own test groups students by grade.)
-  function partition<T>(fn: T -> string, list: seq<T>): map<string, seq<T>>
-    ensures partition(fn, list).Keys == set i | 0 <= i < |list| :: fn(list[i])
-    ensures forall k :: k in partition(fn, list) ==> partition(fn, list)[k] == filter(x => fn(x) == k, list)
-  { var keys := set i | 0 <= i < |list| :: fn(list[i]);
-    map k | k in keys :: filter(x => fn(x) == k, list) }
+  // `foldl(function(acc, elt) { acc[pred(elt) ? 0 : 1].push(elt); return acc; }, [[], []], list)`
+  // (v0.3.0, "like its Haskell namesake"): the pair of the elements that
+  // satisfy pred and those that fail it, each in list order. From v0.1.4 to
+  // v0.2.4 partition grouped the elements by the string key fn returned,
+  // which groupBy (Data.dfy) now does.
+  function partition<T>(pred: T -> bool, list: seq<T>): (seq<T>, seq<T>)
+  { (filter(pred, list), reject(pred, list)) }
 }

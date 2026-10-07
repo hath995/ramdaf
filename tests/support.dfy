@@ -1,5 +1,6 @@
 // Test support: a JS value type for transcribing Ramda tests whose arrays and
-// objects mix types, and integer-to-string conversion (JS `'' + n`).
+// objects mix types, integer-to-string conversion (JS `'' + n`) and JS
+// truthiness.
 
 module RamdafTests.Support {
   datatype Js =
@@ -17,6 +18,19 @@ module RamdafTests.Support {
     if n < 0 then "-" + NumStr(-n)
     else if n < 10 then [('0' as int + n) as char]
     else NumStr(n / 10) + NumStr(n % 10)
+  }
+
+  // JS truthiness, `Boolean(v)`: undefined, null, false, 0 and "" are falsy.
+  function Truthy(v: Js): bool
+  {
+    match v
+    case Undefined => false
+    case Null => false
+    case Bool(b) => b
+    case Num(n) => n != 0
+    case Str(s) => s != ""
+    case Arr(_) => true
+    case Obj(_) => true
   }
 
   // `o.x` for a test object, 0 when absent.

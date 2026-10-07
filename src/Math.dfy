@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.2.4 "Arithmetic Functions" (ramda.js lines 2856-3046).
+// Ramdaf: Ramda v0.3.0 "Arithmetic Functions" (ramda.js lines 3271-3592).
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 
@@ -7,7 +7,7 @@ module Ramdaf.Math {
 
   export
     reveals add, multiply, subtract, subtractN, divide, divideBy, modulo, moduloBy,
-            sum, product, lt, lte, gt, gte, max, maxWith, minWith, min
+            sum, product, lt, lte, gt, gte, max, maxWith, minWith, min, mathMod
     provides Prelude
 
   function add(a: int, b: int): int { a + b }
@@ -52,6 +52,17 @@ module Ramdaf.Math {
   function moduloBy(a: int, b: int): int
     requires a != 0
   { modulo(b, a) }
+
+  // `if (!isInteger(m) || m < 1) return NaN; if (!isInteger(p)) return NaN;
+  // return ((m % p) + p) % p;` (v0.3.0), with JS's truncated `%` (modulo
+  // here). The code tests the dividend m, not the modulus its documentation
+  // names: `mathMod(-17, 5)` is NaN (the doc says 3) and `mathMod(17, -5)` is
+  // -3 (the doc says NaN). So m must be at least 1, and p nonzero (`m % 0` is
+  // NaN). `mathMod(10, -5)` is -0 in JS, which `===` equals 0.
+  function mathMod(m: int, p: int): int
+    requires 1 <= m
+    requires p != 0
+  { modulo(modulo(m, p) + p, p) }
 
   // `foldl(add, 0)`. (In v0.2.0 and v0.2.1 the partially applied foldl kept
   // its accumulator between calls; v0.2.2's curry3 starts each call afresh.)

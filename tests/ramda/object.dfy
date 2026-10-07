@@ -1,4 +1,4 @@
-// Ramda v0.2.4 test/test.objectBasics.js, test/test.keysvals.js and
+// Ramda v0.3.0 test/test.objectBasics.js, test/test.keysvals.js and
 // test/test.tapeq.js, transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument
 // is a map); v0.2.4's where cases on prototypes ("matches inherited props",

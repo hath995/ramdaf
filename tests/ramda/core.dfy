@@ -1,4 +1,4 @@
-// Ramda v0.2.4 test/test.core.js and test/test.clone.js, transcribed. Not
+// Ramda v0.3.0 test/test.core.js and test/test.clone.js, transcribed. Not
 // transcribed: describe('isAtom') (not portable, README); head's and last's
 // "returns undefined for an empty list" and "for no arguments" (the empty list
 // is outside their domain, README "Outside the modeled domain"); tail's
@@ -75,6 +75,14 @@ module RamdafTests.Ramda.Core {
   // describe('size')
   method {:test} SizeCountsTheElements() {
     expect size(["a", "b", "c", "d"]) == 4;
+  }
+
+  // v0.3.0: "should be aliased by `length`" (its `strictEqual(R.length,
+  // size)` checks function identity, which Dafny functions do not have; the
+  // alias is compared by its results).
+  method {:test} SizeIsAliasedByLength() {
+    expect length([2, 4, 6, 8, 10]) == 5;
+    expect length([2, 4, 6, 8, 10]) == size([2, 4, 6, 8, 10]);
   }
 
   // describe('sort')

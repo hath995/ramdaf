@@ -1,7 +1,8 @@
-// Ramdaf: Ramda v0.2.4 "Data Analysis and Grouping Functions" (ramda.js lines
-// 3190-3354), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy), and
-// `groupBy`, which v0.2.0 defines in "List Functions" as an alias of
-// `partition` but which stays here (functions do not move between modules).
+// Ramdaf: Ramda v0.3.0 "Data Analysis and Grouping Functions" (ramda.js lines
+// 3776-3980), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy), and
+// `groupBy`, which v0.3.0 defines in "List Functions" (line 2816; from v0.2.0
+// to v0.2.4 an alias of `partition` there) but which stays here (functions do
+// not move between modules).
 //
 // The set functions are `uniq`/`uniqWith` of a combined or filtered list, as
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
@@ -82,17 +83,25 @@ module Ramdaf.Data {
     assert forall i :: 0 <= i < |r| ==> r[i] in results;
     r }
 
-  // For each key fn produces, how many elements produce it.
+  // For each key fn produces, how many elements produce it. In JS a key that
+  // names an `Object.prototype` member (`__proto__`, `hasOwnProperty`) is not
+  // an ordinary property; here every key is (README "Deviations").
   function countBy<T>(fn: T -> string, list: seq<T>): map<string, nat>
   { var keys := set i | 0 <= i < |list| :: fn(list[i]);
     map k | k in keys :: |List.filter(x => fn(x) == k, list)| }
 
-  // v0.2.0: `aliasFor("partition").is("groupBy")`. partition groups by the
-  // string key fn returns, exactly as groupBy did, so the results are
-  // unchanged: for each key fn produces, the elements that produce it, in
-  // list order.
+  // `foldl(function(acc, elt) { var key = fn(elt); acc[key] = append(elt, acc[key] || []); ... }, {}, list)`
+  // (v0.3.0, which makes groupBy its own function again with the body that
+  // partition, its original since v0.2.0, had; partition now splits by a
+  // predicate): for each key fn produces, the elements that produce it, in
+  // list order. The results are unchanged. As for countBy, a key that names
+  // an `Object.prototype` member is an ordinary key here (README
+  // "Deviations").
   function groupBy<T>(fn: T -> string, list: seq<T>): map<string, seq<T>>
-  { List.partition(fn, list) }
+    ensures groupBy(fn, list).Keys == set i | 0 <= i < |list| :: fn(list[i])
+    ensures forall k :: k in groupBy(fn, list) ==> groupBy(fn, list)[k] == List.filter(x => fn(x) == k, list)
+  { var keys := set i | 0 <= i < |list| :: fn(list[i]);
+    map k | k in keys :: List.filter(x => fn(x) == k, list) }
 
   // `useWith(map, pickAll, identity)`: `map(pickAll(names), list)`.
   function project<V>(names: seq<string>, list: seq<map<string, V>>): seq<map<string, Option<V>>>

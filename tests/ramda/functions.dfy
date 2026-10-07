@@ -1,15 +1,22 @@
-// Ramda v0.2.4 test/test.always.js, test/test.compose.js and
+// Ramda v0.3.0 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
 // compose/pipe's "passes context to functions" (`this`, v0.2.3, which also
-// dropped the single-function cases); use/useWith, once,
-// memoize, construct, unary and binary (not portable, README). test.each.js,
-// test.maybe.js, test.partial.js, test.wrap.js, test.expose.js, and v0.2.2's
-// new test.curry.js and test.path.js test functions that are not portable.
-// (v0.1.3 moved test.lazy.js out of test/.)
+// dropped the single-function cases); v0.3.0's compose cases "returns a
+// function with arity == rightmost argument" (arity), "throws if given no
+// arguments" and "returns argument if given exactly one argument" (compose is
+// binary here, and the latter checks function identity); ap's "dispatches to
+// the passed object's ap method" (method dispatch on a non-array object) and
+// the `typeof` check of its "is curried"; useWith, once, memoize, construct,
+// unary and binary (not portable, README; v0.3.0 dropped the use-over
+// describe with `use`). test.each.js, test.maybe.js, test.partial.js,
+// test.wrap.js, test.expose.js, v0.2.2's new test.curry.js and test.path.js,
+// and v0.3.0's new test.is.js test functions that are not portable. (v0.1.3
+// moved test.lazy.js out of test/.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions
+  import opened Ramdaf.List
   import opened Ramdaf.Math
   import opened Support
 
@@ -103,5 +110,19 @@ module RamdafTests.Ramda.Functions {
     var f := (x: string, y: string) => x + " " + y;
     var g := (y: string) => flip(f)("a", y);
     expect g("b") == "b a";
+  }
+
+  // ---- test.functionBasics.js: describe('ap') (v0.3.0) ----
+
+  function mult2(x: int): int { x * 2 }
+  function plus3(x: int): int { x + 3 }
+
+  method {:test} ApAppliesAListOfFunctionsToAListOfValues() {
+    expect ap([mult2, plus3], [1, 2, 3]) == [2, 4, 6, 4, 5, 6];
+  }
+
+  method {:test} ApIsCurried() {
+    var val := (vs: seq<int>) => ap([mult2, plus3], vs);
+    expect val([1, 2, 3]) == [2, 4, 6, 4, 5, 6];
   }
 }
