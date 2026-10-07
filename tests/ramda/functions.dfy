@@ -1,4 +1,4 @@
-// Ramda v0.12.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.13.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
@@ -30,7 +30,8 @@
 // dissocPath.js, invariants.js (arity under partial application) and
 // internal/_curry2.js and internal/_curry3.js; v0.12.0 removed installTo.js
 // with the function and added the unportable invoke.js, into.js and
-// transduce.js.)
+// transduce.js; v0.13.0 added isNaN.js and retitled the "is automatically
+// curried" `it`s "is curried".)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions

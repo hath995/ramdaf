@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.12.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.13.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {

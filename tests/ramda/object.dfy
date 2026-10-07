@@ -1,4 +1,4 @@
-// Ramda v0.12.0 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.13.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, merge.js, assoc.js, keys.js, keysIn.js, values.js, valuesIn.js,
 // eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js, invertObj.js,

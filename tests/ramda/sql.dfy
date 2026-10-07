@@ -1,4 +1,4 @@
-// Ramda v0.12.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.13.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js and sortBy.js (until v0.8.0 test.sql.js, whose copy of the
 // groupBy describe v0.9.0 dropped), transcribed. Not transcribed:

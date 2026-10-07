@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.12.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.13.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "String Functions" section; from v0.9.0 on, the functions
 // with `@category String` (`nthChar`, `nthCharCode`; v0.9.0 renamed
 // `toUpperCase` and `toLowerCase` to `toUpper` and `toLower`). The
