@@ -1,4 +1,4 @@
-// Ramda v0.16.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.17.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date

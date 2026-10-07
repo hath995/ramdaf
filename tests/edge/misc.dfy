@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.16.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.17.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -27,7 +27,7 @@ module RamdafTests.Edge.Misc {
     var none: map<string, int> := map[];
     expect eqProps("x", none, none) == true;
     expect eqProps("x", map["x" := 1], none) == false;
-    expect propEq(1, "nope", map["foo" := 1]) == false;
+    expect propEq("nope", 1, map["foo" := 1]) == false;
     expect prop("nope", map["a" := 1]) == None;
     expect keys(none) == {};
   }
@@ -631,7 +631,8 @@ module RamdafTests.Edge.Misc {
   // node: identical(negate(0), 0), identical(multiply(-1, 0), 0) and
   // identical(modulo(-4, 2), 0) are false (`Object.is`; with `eq` from
   // v0.9.0 to v0.14.0 and in v0.15.1), as each left side is -0;
-  // and `propEq(negate(0), 'a', {a: 0})` (`propEq('a', …)` until v0.15.1), `eqProps('a', {a: negate(0)}, {a:
+  // and `propEq('a', negate(0), {a: 0})` (`propEq(negate(0), 'a', {a: 0})`
+  // in v0.16.0), `eqProps('a', {a: negate(0)}, {a:
   // 0})` and `whereEq({a: 0}, {a: negate(0)})` are false since v0.14.0
   // (`Object.is`, since v0.15.0 `R.equals`, which compares numbers with
   // identical; true until v0.13.0, with `===`). An int has no -0.
@@ -639,7 +640,7 @@ module RamdafTests.Edge.Misc {
     expect D.identical(negate(0), 0) == true;
     expect D.identical(multiply(-1, 0), 0) == true;
     expect D.identical(modulo(-4, 2), 0) == true;
-    expect propEq(negate(0), "a", map["a" := 0]) == true;
+    expect propEq("a", negate(0), map["a" := 0]) == true;
     expect eqProps("a", map["a" := negate(0)], map["a" := 0]) == true;
     expect whereEq(map["a" := 0], map["a" := negate(0)]) == true;
   }

@@ -126,7 +126,7 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0 and `{'@@functional/placeholder': true}` since v0.15.0, which also curries `concat` and `contains` this way, and since v0.10.0 `merge`) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) Since v0.11.0 `op` is gone and every curried function takes the placeholder in any position: `f(R.__, b)` is still `x => f(x, b)`, while `f(R.__)` is `f` itself, so `subtract(R.__)(5)` is `x => 5 - x` (from v0.6.0 to v0.10.0 `op` made it `x => x - 5`). |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type. (Since v0.11.0 a curried Ramda function called with no arguments returns itself, `identity()` is `identity`; the functions Ramda returns, such as `always(7)`, `T` and `cond(…)`'s result, are not curried, and they are the ones called this way.) |
 
-## Modules and exports (v0.16.0)
+## Modules and exports (v0.17.0)
 
 | Module | Exports |
 |---|---|
@@ -140,7 +140,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | nthChar, nthCharCode, toUpper, toLower, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project, equals, identical |
 
-That is 174 of Ramda v0.16.0's 218 export names (since v0.9.0 Ramda has no
+That is 174 of Ramda v0.17.0's 218 export names (since v0.9.0 Ramda has no
 functions stored as properties of exports). The other 44 names are listed
 under "Not portable".
 
@@ -167,7 +167,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.15.1 does not export the helpers `_makeFlat`, `_checkForMethod` and
+Ramda v0.17.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
 `_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
@@ -205,7 +205,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.16.0 exports are not ported, rather than faked:
+These Ramda v0.17.0 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -233,7 +233,7 @@ These Ramda v0.16.0 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.16.0 (node) | Ramdaf |
+| Function | Ramda v0.17.0 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`, and since v0.16.0 `head('')` and `last('')` → `''`, not a character; `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `repeat` (`repeatN` until v0.8.0), `times` | `new Array(n)` throws `RangeError` for a negative n: `repeat(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3) | `n: nat` |
@@ -259,7 +259,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.16.0 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.17.0 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `identical` (`eq` until v0.14.0 and in v0.15.1) | `identical` (`Object.is`) compares arrays and objects by reference: `identical([], [])` → `false`. (Until v0.14.0 `===` or `Object.is` also made `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq` (v0.14.0; `where`'s value entries before) and `dropRepeats` (v0.14.0) compare by reference: for `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(Ro, So).length` → `0` and `difference(…)` → `4`. Since v0.15.0 they compare with `R.equals`, deep equality, as here, except that in v0.15.0 alone `uniq` kept a JS `Set`, which compares by reference (unless an object has an `equals` method), so `uniq([{a: 1}, {a: 1}])` kept both and `union(Ro, So).length` was still `8`; v0.15.1 makes `uniq` `uniqWith(equals)` again.) | Structural `==`: `true` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets | A `map` has no key order. |
@@ -272,7 +272,7 @@ a signature (an arity or an operand type) is enforced by the types.
 | `allPass`, `anyPass` (`allPredicates`, `anyPredicates` until v0.8.0) | `allPass(preds, v)` applies at once; the result reports the longest predicate's arity | `allPass(preds)(v)`; no arity | Fixed arity. |
 | `allPass`, `anyPass` | since v0.9.0 the one-argument form of an empty list throws, as the result's arity is `max([])`, `-Infinity`: `allPass([])` and `anyPass([])` → `Error: First argument to arity must be a non-negative integer no greater than ten` (since v0.16.0 "…to _arity…"), while `allPass([], 5)` → `true` and `anyPass([], 5)` → `false` | `allPass([])(5) == true`, `anyPass([])(5) == false`: the two-argument values | The port has no reported arity; the two-argument form defines the value. |
 | `add`, `subtract`, `multiply`, `sum`, `product`, `lt`, `lte`, `gt`, `gte`, `max`, `min`, `modulo`, `mathMod`, `inc`, `dec`, `negate` | JS numbers (doubles) and coercion: `lt("abc", "xyz")` → `true`, `max(-4.3, -1.1)` → `-1.1` (`max([-4.3, -1.1])` until v0.15.1), `max('a', 'b')` (v0.16.0) → `'b'`, `inc('1')` (v0.9.0) → `'11'` | `int` (`divide`: `real`) | Typed. |
-| `identical`, `equals`, `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `uniqBy`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq`, `dropRepeats` | `identical` (v0.15.0; `eq` from v0.9.0 to v0.14.0 and in v0.15.1) is `Object.is`, and `equals` (v0.15.0; `eqDeep` from v0.9.0 to v0.14.0 and in v0.15.1) compares numbers with it: `-0` differs from `0` and `NaN` equals itself, and JS arithmetic on representable input makes `-0`: `identical(negate(0), 0)`, `identical(multiply(-1, 0), 0)`, `identical(modulo(-4, 2), 0)` and `equals([negate(0)], [0])` → `false` (all `true` in v0.8.0). Since v0.14.0 the others compare with `Object.is` too (since v0.15.0 through `R.equals`: `uniq` looked `0` and `-0` up with it in v0.15.0 and is `uniqWith(equals)` since v0.15.1; `===` until v0.13.0): `contains(negate(0), [0])` and `propEq(negate(0), 'a', {a: 0})` (`propEq('a', negate(0), {a: 0})` until v0.15.1) → `false`, `indexOf(negate(0), [0])` → `-1`, `isSet([0, negate(0)])` → `true`, `uniq([0, negate(0)])` and `dropRepeats` of it → `[0, -0]`, `uniqBy(identity, [negate(0), 0])` (v0.16.0) → `[-0, 0]`, `intersection([0], [negate(0)])` → `[]` | `true`: an `int` has no `-0` | Typed: doubles are `int` here. |
+| `identical`, `equals`, `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `uniqBy`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq`, `dropRepeats` | `identical` (v0.15.0; `eq` from v0.9.0 to v0.14.0 and in v0.15.1) is `Object.is`, and `equals` (v0.15.0; `eqDeep` from v0.9.0 to v0.14.0 and in v0.15.1) compares numbers with it: `-0` differs from `0` and `NaN` equals itself, and JS arithmetic on representable input makes `-0`: `identical(negate(0), 0)`, `identical(multiply(-1, 0), 0)`, `identical(modulo(-4, 2), 0)` and `equals([negate(0)], [0])` → `false` (all `true` in v0.8.0). Since v0.14.0 the others compare with `Object.is` too (since v0.15.0 through `R.equals`: `uniq` looked `0` and `-0` up with it in v0.15.0 and is `uniqWith(equals)` since v0.15.1; `===` until v0.13.0): `contains(negate(0), [0])` and `propEq('a', negate(0), {a: 0})` (`propEq(negate(0), 'a', {a: 0})` in v0.16.0) → `false`, `indexOf(negate(0), [0])` → `-1`, `isSet([0, negate(0)])` → `true`, `uniq([0, negate(0)])` and `dropRepeats` of it → `[0, -0]`, `uniqBy(identity, [negate(0), 0])` (v0.16.0) → `[-0, 0]`, `intersection([0], [negate(0)])` → `[]` | `true`: an `int` has no `-0` | Typed: doubles are `int` here. |
 | `isNil`, `defaultTo` | test any value for `null` or `undefined`: `isNil(null)` and `isNil(undefined)` → `true`, `isNil(0)`, `isNil('')`, `isNil([])` → `false` (v0.9.0); `defaultTo(d, v)` (v0.10.0) is `v == null ? d : v`, and the default and the value may differ in type: `defaultTo(42, null)` → `42`, `defaultTo(42, 'a real value')` → `'a real value'` | take an `Option<T>`: `isNil(None) == true`, `isNil(Some(v)) == false`, `defaultTo<T>(d: T, v: Option<T>): T` (`defaultTo(d, None) == d`, `defaultTo(d, Some(v)) == v`); `None`, the port's `undefined`, stands for `null` too | Typed: a Dafny value is never `null`, and one `T` cannot hold both a value and `null` (nor a default of another type). |
 | `groupBy` | uses whatever `fn` returns as a key, converted to a string: `groupBy(x => x > 2, [1, 3])` → `{false: [1], true: [3]}` (`partition` did so from v0.1.4 to v0.2.4) | `fn: T -> string` | Typed. |
 | `both`, `either` (`and`, `or` until v0.11.0) | since v0.7.0 return the deciding operand, `f(x) && g(x)` (`\|\|`), not a boolean: `either(x => 0, x => 'b')(1)` → `'b'` (was `true`), so `either(prop('a'), always('d'))` is a default-value combinator | `T -> bool` predicates and a `bool` result | Typed. |
@@ -311,7 +311,7 @@ also lists what it skips: arity checks, side-effect counting, calls with no
 arguments, `null` or `undefined` in place of a list, JS coercion, reference
 equality, method dispatch on non-array objects, array-like objects,
 prototypes, string-keyed `sortBy`, and the unportable functions' files
-(v0.16.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
+(v0.17.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
 `constructN.js`, `curry.js`, `curryN.js`, `forEach.js`,
 `functions.js`, `functionsIn.js`, `into.js`,
 `invoker.js`, `is.js`, `isArrayLike.js`, `lift.js`, `liftN.js`, `pipeK.js`, `propIs.js`,
@@ -368,7 +368,7 @@ and is not transcribed.
 | v0.15.0 | 2015-06-14 | ported | — |
 | v0.15.1 | 2015-06-21 | ported | — |
 | v0.16.0 | 2015-07-12 | ported | — |
-| v0.17.0 | 2015-07-19 | pending | — |
+| v0.17.0 | 2015-07-19 | ported | — |
 | v0.17.1 | 2015-07-21 | pending | — |
 | v0.18.0 | 2015-10-11 | pending | — |
 | v0.19.0 | 2015-12-21 | pending | — |
@@ -2094,6 +2094,24 @@ and is not transcribed.
   `propEq` changed type; `commute`, `replace` and `split` have rewritten
   revealed bodies with the same results (compatible); 14 symbols were added
   (`casestudy/expected/v0.16.0.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.17.0 (2015-07-19)
+
+- **Ramda** (the whitespace-insensitive `src/` and `test/` diff, behaviour
+  checked in node with a differential run of the ported exports): one code
+  change, b5f7ba1e "revert change to R.propEq argument order": `propEq(name,
+  val, obj)` again, still `propSatisfies(equals(val), name, obj)`
+  (`propEq('b', 2, {b: 2})` → `true`, `false` in v0.16.0). propEq.js
+  returns to its v0.15.1 `it`s, and the `find` family's JSDoc examples
+  follow.
+- **Ramdaf:** `propEq(name: string, val: V, obj)` again (breaking: the
+  parameter types change back); its tests and edges follow, and so does
+  the signed-zero row's example; the headers cite v0.17.0 (the internal
+  helpers' paragraph still cited v0.15.1, an omission of the v0.16.0
+  port).
+- **Expected tier: major.** `propEq` changed signature
+  (`casestudy/expected/v0.17.0.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

@@ -1,4 +1,4 @@
-// Ramda v0.16.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.17.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js, sortBy.js, equals.js and identical.js (until v0.8.0
 // test.sql.js, whose copy of the groupBy describe v0.9.0 dropped; eq.js and
@@ -68,21 +68,23 @@ module RamdafTests.Ramda.Sql {
       map["name" := Some(Str("Alois")), "age" := Some(Num(15))]];
   }
 
-  // describe('propEq'): v0.16.0 moves the value first, `propEq(val, name,
-  // obj)`, over `abby` and `fred` (Kids()[0] and Kids()[1]); its "is curried"
-  // is `propEq('Abby')('name')(abby)`. (Until v0.15.1 "determines whether a
-  // particular property matches a given value for a specific object" and
-  // "is curried", over the four kids, filtered `R.propEq('hair', 'brown')`.)
+  // describe('propEq'): v0.17.0 restores `propEq(name, val, obj)` and the
+  // v0.15.1 `it`s over the four kids (v0.16.0 alone moved the value first,
+  // over `abby` and `fred`); "is curried" filters with `R.propEq('hair')`
+  // applied to 'brown' and with `R.propEq('hair', 'brown')`.
   method {:test} PropEqDeterminesWhetherAParticularPropertyMatchesAGivenValue() {
     var kids := Kids();
-    expect propEq(Str("Abby"), "name", kids[0]) == true;
-    expect propEq(Str("brown"), "hair", kids[1]) == true;
-    expect propEq(Str("blond"), "hair", kids[1]) == false;
+    expect propEq("name", Str("Abby"), kids[0]) == true;
+    expect propEq("hair", Str("brown"), kids[1]) == true;
+    expect propEq("hair", Str("blond"), kids[1]) == false;
   }
 
   method {:test} PropEqIsCurried() {
-    var isAbby := (name: string) => (o: map<string, Js>) => propEq(Str("Abby"), name, o);
-    expect isAbby("name")(Kids()[0]) == true;
+    var kids := Kids();
+    var hairMatch := (v: Js) => (o: map<string, Js>) => propEq("hair", v, o);
+    var brunette := hairMatch(Str("brown"));
+    expect filter(brunette, kids) == [kids[1], kids[2]];
+    expect filter((o: map<string, Js>) => propEq("hair", Str("brown"), o), kids) == [kids[1], kids[2]];
   }
 
   function R(): seq<int> { [1, 2, 3, 4] }

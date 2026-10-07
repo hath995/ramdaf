@@ -1,4 +1,4 @@
-// Ramdaf: a Dafny port of Ramda v0.16.0 (2015-07-12).
+// Ramdaf: a Dafny port of Ramda v0.17.0 (2015-07-19).
 // Support datatypes shared by the area modules. These are not Ramda exports;
 // they are the encodings the README's "JS -> Dafny mapping" names.
 

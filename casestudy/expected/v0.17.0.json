@@ -1,0 +1,7 @@
+{
+  "ramda": "v0.17.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Object.propEq", "kind": "breaking", "why": "v0.17.0 reverts propEq's argument order (b5f7ba1e) to propEq(name, val, obj): the parameter types change from (V, string, map) to (string, V, map); propEq('b', 2, {b: 2}) went from false to true"}
+  ]
+}
