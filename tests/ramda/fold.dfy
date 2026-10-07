@@ -1,4 +1,4 @@
-// Ramda v0.7.0 test/test.fold.js, transcribed. Not transcribed: the "should
+// Ramda v0.7.2 test/test.fold.js, transcribed. Not transcribed: the "should
 // correctly report the arity of curried versions" cases (Dafny functions have
 // no arity) and the "throws on zero arguments" cases (v0.5.0; no-argument
 // calls). The alias `it`s assert `strictEqual` on the function objects, which

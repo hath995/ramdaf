@@ -111,7 +111,7 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.7.0)
+## Modules and exports (v0.7.2)
 
 | Module | Exports |
 |---|---|
@@ -125,7 +125,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project |
 
-That is 142 of Ramda v0.7.0's 176 export names, plus 12 of the 13 functions
+That is 142 of Ramda v0.7.2's 176 export names, plus 12 of the 13 functions
 stored as properties of exports (`map.idx` and the like). The other 34 names
 and the property `forEach.idx` are listed under "Not portable".
 
@@ -143,7 +143,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.7.0 does not export `keyValue`, nor the helpers `makeFlat`,
+Ramda v0.7.2 does not export `keyValue`, nor the helpers `makeFlat`,
 `checkForMethod` and `isInteger` (v0.3.0) or `pairWith` and
 `functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); they are local to `ramda.js`, and Ramdaf does
@@ -156,7 +156,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.7.0 exports are not ported, rather than faked:
+These Ramda v0.7.2 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -176,7 +176,7 @@ These Ramda v0.7.0 exports are not ported, rather than faked:
 | `tap` | Its purpose is a side effect (`fn(x)`), which a pure function cannot have. (Until v0.2.4 `K` was an alias of `tap`; v0.3.0 made it an alias of `always`. v0.7.0 reversed the arguments to `tap(fn, x)`.) |
 | `forEach`, `forEach.idx` | Call `fn` on each element for its side effect and return the list itself. (Until v0.4.0 the definitions were `each` and `each.idx`, with `forEach` as the alias; v0.4.1 removed `each`.) |
 | `installTo` | Copies the library onto a global or host object. |
-| `isArrayLike` | Tests the run-time type of an arbitrary value (v0.5.0 exports the predicate behind `flatten`; v0.5.0 also removed `isAtom`, which was here for the same reason). |
+| `isArrayLike` | Tests the run-time type of an arbitrary value (v0.5.0 exports the predicate behind `flatten`, whose rule v0.7.2 narrows to objects owning their extreme indices; v0.5.0 also removed `isAtom`, which was here for the same reason). |
 | `is` | Tests a value's constructor and prototype chain at run time: `is(ctor, val)` is `val != null && val.constructor === ctor \|\| val instanceof ctor` (v0.4.0; v0.3.0 had `val != null && Object(val) instanceof ctor`). (`is` is also a Dafny keyword.) |
 | `functions`, `functionsIn` | List the property names whose values are functions (`typeof obj[key] === 'function'`; `functionsIn` includes inherited ones; v0.4.0): a run-time type test on each value, which a `map<string, V>` of one value type cannot make. |
 | `match` | Regular expressions. |
@@ -184,7 +184,7 @@ These Ramda v0.7.0 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.7.0 (node) | Ramdaf |
+| Function | Ramda v0.7.2 (node) | Ramdaf |
 |---|---|---|
 | `head`, `car`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` | `requires \|list\| > 0` |
 | `take` | `take(-1, l)` throws `RangeError`. (Before v0.1.5, `take(5, [1, 2])` → `[1, 2, <3 empty items>]`, and Ramdaf required `n <= \|list\|`; v0.1.5 clamps to `[1, 2]`.) | `n: nat` |
@@ -206,7 +206,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.7.0 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.7.2 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order | `{"a", "b"}` and `{("a", 2), ("b", 1)}`, sets | A `map` has no key order. |
@@ -228,7 +228,7 @@ a signature (an arity or an operand type) is enforced by the types.
 | `zipObj`, `fromPairs`, `createMapEntry` | convert keys to strings: `zipObj([1, 2], ['x', 'y'])` → `{"1": 'x', "2": 'y'}`, `createMapEntry(1, 'x')` → `{"1": 'x'}` | `string` keys | Typed. |
 | `empty` | takes any argument: `empty(5)`, `empty({})` and `empty()` → `[]` | `empty(x: seq<T>): seq<T>` | Typed: the result's element type comes from the argument. |
 | `chain` | keeps a result of `f` that is not array-like as one element: `chain(x => x * 2, [1, 2])` → `[2, 4]`, `chain(x => 'ab', [1, 2])` → `['ab', 'ab']` | `f: A -> seq<B>`; a string result is a sequence of characters and is concatenated: `chain(x => "ab", [1, 2]) == "abab"` | Typed; a Dafny `string` is a `seq<char>`. |
-| `flatten`, `unnest` | since v0.3.0 flatten every array-like element (v0.4.0's `isArrayLike`: an array, or an object other than a `String` with a numeric `length` of at least 0, or with `nodeType === 1` and a truthy `length`; v0.3.0 also counted a function, whose `length` is its arity): `flatten([{length: 0}])` → `[]`, `flatten([{length: 2, 0: 'a', 1: 'b'}])` → `['a', 'b']`, `flatten([{nodeType: 1, length: -1}])` → `[]` | only a `Node` is flattened: `flatten([Leaf(map["length" := 0])])` is `[map["length" := 0]]` | `Tree<T>` marks nesting by constructor. |
+| `flatten`, `unnest` | since v0.3.0 flatten every array-like element. Since v0.7.2 that is an array, an `arguments` object, or another object (not a `String`) whose `length` is 0, or is positive with own properties `0` and `length - 1`, or (with `nodeType === 1`) is truthy: `flatten([{length: 0}])` → `[]`, `flatten([{length: 2, 0: 'a', 1: 'b'}])` → `['a', 'b']`, `flatten([{nodeType: 1, length: -1}])` → `[]`. (v0.3.0 also counted a function, whose `length` is its arity, until v0.4.0; and v0.3.0 to v0.7.1 counted any object with a numeric `length` of at least 0, so `flatten([{length: 2}])` was `[undefined, undefined]`, where node and the port now agree on `[{length: 2}]`.) | only a `Node` is flattened: `flatten([Leaf(map["length" := 0])])` is `[map["length" := 0]]` | `Tree<T>` marks nesting by constructor. |
 | `groupBy`, `countBy`, `zipObj`, `fromPairs`, `createMapEntry`, `cloneObj`, `mixin` | a key that names an `Object.prototype` member is not an ordinary property: `groupBy(x => 'hasOwnProperty', [1])` → `{hasOwnProperty: [undefined, 1]}`, `countBy(x => '__proto__', [1, 2])` → `{}`, `zipObj(['__proto__', 'a'], [1, 2])` → `{a: 2}`, `createMapEntry('__proto__', 1)` (v0.7.0) has no own key, and `groupBy(x => '__proto__', [1, 2])` throws `RangeError` (`groupBy` and `countBy` did all this before v0.3.0 as well). Every function that copies properties by assignment drops an own `__proto__` property, which only `JSON.parse` or `Object.defineProperty` can create: `cloneObj` (v0.5.0) and `mixin` of `JSON.parse('{"__proto__": 5, "a": 1}')` → `{a: 1}`, and `mapObj`, `mapObj.idx`, `pick`, `pickAll`, `pickWith`, `omit` and `project` likewise | every key is ordinary: `map["hasOwnProperty" := [1]]`, `map["__proto__" := 2]`, `map["__proto__" := 1, "a" := 2]`, and the copies keep `"__proto__"`; the throw is not modeled | A `map` has no prototype. |
 | `sortBy`, `maxWith`, `minWith` | compare keys with JS `<`/`>`, so string keys work: `sortBy(s => s, ["b", "a", "c"])` → `["a", "b", "c"]` | `int` keys | Dafny cannot order arbitrary key types, and overloading by key type is not possible. |
 | `sort` | an inconsistent comparator gives an engine-defined order: `sort(() => -1, [1, 2, 3])` → `[3, 2, 1]` | The postconditions say nothing for inconsistent comparators; the implementation (stable insertion sort) gives `[1, 2, 3]`. | ECMAScript leaves it unspecified. |
@@ -278,7 +278,7 @@ examples through `dox` and is not transcribed.
 | v0.6.0 | 2014-10-04 | ported | — |
 | v0.7.0 | 2014-10-22 | ported | — |
 | v0.7.1 | 2014-10-22 | ported | — |
-| v0.7.2 | 2014-10-24 | pending | — |
+| v0.7.2 | 2014-10-24 | ported | — |
 | v0.8.0 | 2014-11-19 | pending | — |
 | v0.9.0 | 2015-01-24 | pending | — |
 | v0.9.1 | 2015-01-27 | pending | — |
@@ -1097,6 +1097,29 @@ examples through `dox` and is not transcribed.
   changed line is the unported `version` string).
 - **Expected tier: patch.** Nothing changed (`casestudy/expected/v0.7.1.json`,
   with no changes).
+- **lem:** — (not yet published from this history).
+
+### v0.7.2 (2014-10-24)
+
+- **Ramda** (full `ramda.js` diff, behaviour checked in node):
+  - `isArrayLike` (and so `flatten`, `unnest` and `chain`) counts an object
+    with a positive `length` only when it owns the indices 0 and
+    `length - 1` ("fixes #482"): `flatten([{length: 2}])` → `[{length: 2}]`
+    (was `[undefined, undefined]`), `flatten([{0: 'zero', length: 2}])`
+    keeps the object; `{length: 0}`, full array-likes and arrays are
+    unchanged.
+  - Not visible in this encoding: the `op` sections ignore extra arguments
+    (`subtract(R.__, 3)(10, 99)` → `7`, was `-89`; "fixes #388"), which
+    needs the placeholder and more arguments than a section takes;
+    `R.version` becomes `'0.7.2'`.
+- **Ramdaf:** no source change beyond comments. Node moved only on
+  array-like objects, which the mapping encodes as leaves, so the
+  flatten-family deviation narrows: its row now gives v0.7.2's rule, and a
+  new edge test shows the leaves node now keeps too. test.curry.js's new
+  `op` describe and test.is.js's `isArrayLike` change test unportable
+  functions.
+- **Expected tier: patch.** No Dafny-visible change
+  (`casestudy/expected/v0.7.2.json`, with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

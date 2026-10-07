@@ -1,4 +1,4 @@
-// Ramda v0.7.0 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.7.2 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). `subtract`,
 // `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` are

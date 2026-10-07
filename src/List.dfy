@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.7.0 "List Functions" (ramda.js lines 1526-3395), except
+// Ramdaf: Ramda v0.7.2 "List Functions" (ramda.js lines 1528-3397), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
 // (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
 // `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
@@ -440,7 +440,9 @@ module Ramdaf.List {
   // numeric `length` included, where the loop before it flattened arrays
   // only; v0.4.0's `isArrayLike` no longer counts a function, whose `length`
   // is its arity, but adds an object with `nodeType === 1` and a truthy
-  // `length`. A Leaf is never flattened, README "Deviations".)
+  // `length`, and v0.7.2's counts an object with a positive `length` only
+  // when it owns the indices 0 and `length - 1`. A Leaf is never flattened,
+  // README "Deviations".)
   function flatten<T>(list: seq<Tree<T>>): seq<T>
   { if |list| == 0 then []
     else (match list[0] case Leaf(v) => [v] case Node(c) => flatten(c)) + flatten(list[1..]) }

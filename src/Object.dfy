@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.7.0 "Object Functions" (ramda.js lines 3396-4152) and `propEq`
-// (line 5297). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.7.2 "Object Functions" (ramda.js lines 3398-4154) and `propEq`
+// (line 5299). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
 // properties (`pick`, `pickAll`, `pickWith`, `omit`, `mixin`, `cloneObj`)
 // drop an own `__proto__` property in JS, as the assignment sets the

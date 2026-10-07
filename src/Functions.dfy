@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.7.0 "Function functions" (ramda.js lines 1068-1525) and the
-// `always` family (lines 3637-3641, 4223-4255). (v0.4.1 removed the aliases
+// Ramdaf: Ramda v0.7.2 "Function functions" (ramda.js lines 1070-1527) and the
+// `always` family (lines 3639-3643, 4225-4257). (v0.4.1 removed the aliases
 // `sequence`, `distributeTo`, `constant` and `K`; v0.4.2 renamed `fork` to
 // `converge`.)
 // compose/pipe are variadic in JS; the port is binary (nest for more functions).

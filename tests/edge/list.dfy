@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.7.0's own suite does not cover, each checked against
-// ramda.js v0.7.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.7.2's own suite does not cover, each checked against
+// ramda.js v0.7.2 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -227,6 +227,17 @@ module RamdafTests.Edge.List {
     expect concat("ab", "cd") == "abcd";
     var empty: seq<int> := [];
     expect concat(empty, [1]) == [1];
+  }
+
+  // Since v0.7.2 an object with a positive `length` is array-like only when
+  // it owns the indices 0 and `length - 1`, so these leaves stay whole in
+  // node too (node: [{length: 2}] and [{0: 7, length: 2}]; v0.3.0 to v0.7.1
+  // gave [undefined, undefined] and [7, undefined]).
+  method {:test} SparseArrayLikeLeavesAreKept() {
+    var len2 := map["length" := 2];
+    expect flatten([Leaf(len2)]) == [len2];
+    var zero7 := map["0" := 7, "length" := 2];
+    expect unnest([Leaf(zero7)]) == [Leaf(zero7)];
   }
 
   // Since v0.4.0 a function element is a leaf again (v0.3.0 expanded it into

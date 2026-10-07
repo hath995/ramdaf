@@ -1,4 +1,4 @@
-// Ramda v0.7.0 test/test.objectBasics.js, test/test.keysvals.js,
+// Ramda v0.7.2 test/test.objectBasics.js, test/test.keysvals.js,
 // test/test.tapeq.js and test/test.zip.js's toPairs and toPairsIn describes,
 // transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument

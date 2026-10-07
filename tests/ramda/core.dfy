@@ -1,4 +1,4 @@
-// Ramda v0.7.0 test/test.core.js and test/test.clone.js, transcribed. Not
+// Ramda v0.7.2 test/test.core.js and test/test.clone.js, transcribed. Not
 // transcribed: head's and last's
 // "returns undefined for an empty list" and "for no arguments" (the empty list
 // is outside their domain, README "Outside the modeled domain"); tail's

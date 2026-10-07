@@ -1,4 +1,4 @@
-// Ramda v0.7.0 test/test.booleans.js, test/test.allany.js and
+// Ramda v0.7.2 test/test.booleans.js, test/test.allany.js and
 // test/test.cond.js, transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression"), which detect a call by its side effect, the "reports its

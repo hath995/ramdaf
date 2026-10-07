@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.7.0 "Arithmetic Functions" (ramda.js lines 4441-4889).
+// Ramdaf: Ramda v0.7.2 "Arithmetic Functions" (ramda.js lines 4443-4891).
 // (v0.5.0 removed `subtractN`, `divideBy` and `moduloBy`.)
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
