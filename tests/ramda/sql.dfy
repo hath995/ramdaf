@@ -1,6 +1,7 @@
-// Ramda v0.18.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.19.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
-// countBy.js, sortBy.js, equals.js, identical.js and eqBy.js (until v0.8.0
+// countBy.js, sortBy.js, equals.js, identical.js, eqBy.js,
+// symmetricDifference.js and symmetricDifferenceWith.js (until v0.8.0
 // test.sql.js, whose copy of the groupBy describe v0.9.0 dropped; eq.js and
 // eqDeep.js, restored in v0.15.1, went with the functions in v0.16.0),
 // transcribed. Not transcribed:
@@ -29,8 +30,10 @@
 // - identical.js's `[] !== []`, `-0`, NaN and `new Number(0)` lines and its
 //   "is curried", which compares two arrays by reference (README
 //   "Deviations");
-// - eqBy.js's (v0.18.0) "has R.equals semantics" (`-0`, NaN and `Just`
-//   objects with an `equals` method).
+// - eqBy.js's (v0.18.0) and symmetricDifference.js's (v0.19.0) "has
+//   R.equals semantics" (`-0`, NaN and `Just` objects with an `equals`
+//   method), and equals.js's v0.19.0 "considers equivalent Error objects
+//   equal" (no Error values).
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -352,5 +355,55 @@ module RamdafTests.Ramda.Sql {
     expect eqBy(Abs, -5, 5) == true;
     expect eqBy(Abs, -5, -5) == true;
     expect eqBy(Abs, 42, 99) == false;
+  }
+
+  // ---- symmetricDifference.js, symmetricDifferenceWith.js (v0.19.0) ----
+
+  function SdM(): seq<int> { [1, 2, 3, 4] }
+  function SdM2(): seq<int> { [1, 2, 3, 4, 1, 2, 3, 4] }
+  function SdN(): seq<int> { [3, 4, 5, 6] }
+  function SdN2(): seq<int> { [3, 3, 4, 4, 5, 5, 6, 6] }
+  function SdZ(): seq<int> { [3, 4, 5, 6, 10] }
+  function SdZ2(): seq<int> { [1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8] }
+
+  method {:test} SymmetricDifferenceFindsTheElementsInEitherListButNotBoth() {
+    expect symmetricDifference(SdM(), SdN()) == [1, 2, 5, 6];
+  }
+
+  method {:test} SymmetricDifferenceDoesNotAllowDuplicatesInTheOutput() {
+    expect symmetricDifference(SdM2(), SdN2()) == [1, 2, 5, 6];
+  }
+
+  method {:test} SymmetricDifferenceWorksForArraysOfDifferentLengths() {
+    expect symmetricDifference(SdZ(), SdZ2()) == [10, 1, 2, 7, 8];
+    expect symmetricDifference(SdZ2(), SdZ()) == [1, 2, 7, 8, 10];
+  }
+
+  method {:test} SymmetricDifferenceWillNotCreateASparseArray() {
+    expect |symmetricDifference(SdM2(), [3])| == 3;
+  }
+
+  method {:test} SymmetricDifferenceReturnsAnEmptyArrayIfThereAreNoDifferentElements() {
+    expect symmetricDifference(SdM2(), SdM()) == [];
+    expect symmetricDifference(SdM(), SdM2()) == [];
+  }
+
+  method {:test} SymmetricDifferenceIsCurried() {
+    var sd123 := (l: seq<int>) => symmetricDifference([1, 2, 3], l);
+    expect sd123([1, 3]) == [2];
+  }
+
+  // `Ro2`/`So2` are Ro/So twice; `eqA` compares the `a` properties
+  method {:test} SymmetricDifferenceWithCombinesTwoListsIntoTheElementsUniqueToEither() {
+    expect symmetricDifferenceWith(EqA, Ro(), So()) == [A(1), A(2), A(5), A(6)];
+  }
+
+  method {:test} SymmetricDifferenceWithDoesNotAllowDuplicatesInTheOutput() {
+    expect symmetricDifferenceWith(EqA, Ro() + Ro(), So() + So()) == [A(1), A(2), A(5), A(6)];
+  }
+
+  // `identical = (a, b) => a === b`
+  method {:test} SymmetricDifferenceWithDoesNotReturnASparseArray() {
+    expect |symmetricDifferenceWith((a: int, b: int) => a == b, [1, 3, 2, 1, 3, 1, 2, 3], [3])| == 2;
   }
 }

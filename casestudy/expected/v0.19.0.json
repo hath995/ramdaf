@@ -1,0 +1,27 @@
+{
+  "ramda": "v0.19.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.containsWith", "kind": "removed", "why": "v0.19.0 removed R.containsWith, deprecated since v0.18.0"},
+    {"symbol": "Ramdaf.List.createMapEntry", "kind": "removed", "why": "v0.19.0 removed R.createMapEntry, deprecated since v0.18.0 for objOf"},
+    {"symbol": "Ramdaf.List.isSet", "kind": "removed", "why": "v0.19.0 removed R.isSet, deprecated since v0.18.0 for allUniq"},
+    {"symbol": "Ramdaf.List.mapObj", "kind": "removed", "why": "v0.19.0 removed R.mapObj, deprecated since v0.18.0 (R.map maps objects)"},
+    {"symbol": "Ramdaf.List.uniqWith", "kind": "compatible", "why": "knock-on of the containsWith removal: the revealed body and postcondition write it out (Ramda's uniqWith calls the private _containsWith), with the same results"},
+    {"symbol": "Ramdaf.Data.unionWith", "kind": "compatible", "why": "knock-on: the revealed body calls uniqWith, whose revealed body was rewritten with the same results"},
+    {"symbol": "Ramdaf.Data.differenceWith", "kind": "compatible", "why": "v0.19.0's differenceWith calls the private _containsWith instead of R.containsWith: the revealed body writes it out, with the same results"},
+    {"symbol": "Ramdaf.Data.intersectionWith", "kind": "compatible", "why": "knock-on of the containsWith removal (written out in the revealed body) and of uniqWith's rewritten body, with the same results"},
+    {"symbol": "Ramdaf.Object.merge", "kind": "compatible", "why": "v0.19.0's merge is mergeWith((l, r) => r): the revealed body calls mergeWith, with the same results"},
+    {"symbol": "Ramdaf.List.indexBy", "kind": "added", "why": "new in v0.19.0 (@category List): each element under the key fn gives it, the last winning"},
+    {"symbol": "Ramdaf.List.sequence", "kind": "added", "why": "new in v0.19.0 (@category List): reduceRight((acc, x) => ap(map(prepend, x), acc), of([]), traversable), over arrays"},
+    {"symbol": "Ramdaf.List.traverse", "kind": "added", "why": "new in v0.19.0 (@category List): sequence(of, map(f, traversable))"},
+    {"symbol": "Ramdaf.List.splitAt", "kind": "added", "why": "new in v0.19.0 (@category List): [slice(0, index, list), slice(index, length(list), list)], a pair"},
+    {"symbol": "Ramdaf.List.splitWhen", "kind": "added", "why": "new in v0.19.0 (@category List): the elements before the first that satisfies pred, and the rest, a pair"},
+    {"symbol": "Ramdaf.List.transpose", "kind": "added", "why": "new in v0.19.0 (@category List): row j holds the j-th elements of the inner lists long enough to have one"},
+    {"symbol": "Ramdaf.List.without", "kind": "added", "why": "new in v0.19.0 (@category List): reject(flip(_contains)(xs), list)"},
+    {"symbol": "Ramdaf.Data.symmetricDifference", "kind": "added", "why": "new in v0.19.0 (@category Relation): concat(difference(l1, l2), difference(l2, l1))"},
+    {"symbol": "Ramdaf.Data.symmetricDifferenceWith", "kind": "added", "why": "new in v0.19.0 (@category Relation): concat(differenceWith(pred, l1, l2), differenceWith(pred, l2, l1))"},
+    {"symbol": "Ramdaf.Object.mergeWith", "kind": "added", "why": "new in v0.19.0 (@category Object): mergeWithKey((_, l, r) => fn(l, r), l, r)"},
+    {"symbol": "Ramdaf.Object.mergeWithKey", "kind": "added", "why": "new in v0.19.0 (@category Object): the own properties of both, fn(k, l[k], r[k]) where both have k"},
+    {"symbol": "Ramdaf.Functions.juxt", "kind": "added", "why": "new in v0.19.0 (@category Function): a function applying every function to its arguments; unary here"}
+  ]
+}

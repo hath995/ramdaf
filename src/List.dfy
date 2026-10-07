@@ -1,11 +1,12 @@
-// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.19.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
 // `mapAccumRight`, `mergeAll`, `aperture`, `none`, `adjust`, `update`,
 // `intersperse`, `dropRepeats`, `dropRepeatsWith`, `lensIndex`, `dropLast`,
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
-// `allUniq`, `pair` and the renamed functions below; since v0.16.0 the
+// `allUniq`, `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
+// `splitWhen`, `transpose`, `without` and the renamed functions below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
@@ -23,23 +24,26 @@
 // `rejectIndexed`, `reduceIndexed` and `reduceRightIndexed`, deprecated
 // since v0.15.0 for `addIndex`, which is not portable. v0.18.0 renamed
 // `isSet` to `allUniq`, keeping `isSet` as a deprecated alias, and made
-// `createMapEntry` a deprecated alias of the new `objOf` (Object.dfy).)
+// `createMapEntry` a deprecated alias of the new `objOf` (Object.dfy);
+// v0.19.0 removed `isSet`, `createMapEntry`, `containsWith` and `mapObj`,
+// deprecated in v0.18.0.)
 
 module Ramdaf.List {
   import opened Prelude
 
   export
     reveals reduce, reduceRight, unfold, mapSeq,
-            mapObj, mapObjIndexed, filter, reject,
+            mapObjIndexed, filter, reject,
             takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex,
-            all, any, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten,
+            all, any, contains, uniq, uniqWith, pluck, flatten,
             zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice,
             remove, insert, insertAll, partition,
             ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scan,
-            createMapEntry, repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none,
+            repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none,
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
-            allUniq, pair
+            allUniq, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
+            without
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -97,7 +101,8 @@ module Ramdaf.List {
 
   // `map` is a Dafny keyword, so Ramda's `map` is named mapSeq. Since v0.18.0
   // (0481c5da, 35acea0d) JS `map(fn, functor)` also maps an object's values
-  // (`map(dec, {x: 4})` is `{x: 3}`, which mapObj does here) and composes
+  // (`map(dec, {x: 4})` is `{x: 3}`, which mapObj did until v0.18.0, and
+  // mapObjIndexed does with its key argument ignored) and composes
   // with a function (`map(f, g)` is `compose(f, g)`); the port's takes a
   // list (README "Deviations").
   function mapSeq<A, B>(fn: A -> B, list: seq<A>): seq<B>
@@ -105,22 +110,11 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |list| ==> mapSeq(fn, list)[i] == fn(list[i])
   { seq(|list|, i requires 0 <= i < |list| => fn(list[i])) }
 
-  // `_reduce(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`
-  // (`foldl` until v0.8.0 and `_foldl` in v0.9.x, the same function):
-  // fn applied to every own property. `@deprecated since v0.18.0`, when
-  // `map` began to map objects. (In JS an own `__proto__` property is
-  // dropped, as the assignment sets the prototype, and since v0.12.0 a
-  // truthy `@@transducer/reduced` result (`__transducers_reduced__` until
-  // v0.13.0) ends the fold; README "Deviations".)
-  function mapObj<V, W>(fn: V -> W, obj: map<string, V>): map<string, W>
-    ensures mapObj(fn, obj).Keys == obj.Keys
-    ensures forall k :: k in obj ==> mapObj(fn, obj)[k] == fn(obj[k])
-  { map k | k in obj :: fn(obj[k]) }
-
   // `R.mapObjIndexed` (v0.9.0, which renamed `mapObj.idx`, added in v0.2.2,
   // with the same code): `fn(obj[key], key, obj)` for every own property
   // (an own `__proto__` dropped in JS, and `@@transducer/reduced` ending the
-  // fold since v0.12.0, as for mapObj). Since v0.14.0 its JSDoc says
+  // fold since v0.12.0, as for `mapObj`, which v0.19.0 removed). Since
+  // v0.14.0 its JSDoc says
   // `@category Object`; functions do not move between modules.
   function mapObjIndexed<V, W>(fn: (V, string, map<string, V>) -> W, obj: map<string, V>): map<string, W>
     ensures mapObjIndexed(fn, obj).Keys == obj.Keys
@@ -183,6 +177,7 @@ module Ramdaf.List {
   // [12, 14]]`). JS dispatches `ap` and `map` to any Fantasy-land functor,
   // with of building the result's functor; here they are arrays (README
   // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`.
+  // `@deprecated since v0.19.0`, for `traverse`, which computes the same.
   function commuteMap<A, B>(fn: seq<A> -> seq<B>, of: seq<B> -> seq<seq<B>>, list: seq<seq<A>>): seq<seq<B>>
   { reduceRight((acc: seq<seq<B>>, x: seq<A>) => ap(mapSeq((y: B) => ((l: seq<B>) => [y] + l), fn(x)), acc),
                 of([]), list) }
@@ -192,10 +187,14 @@ module Ramdaf.List {
   // results on arrays): commuteMap with no transformation (`commute(of, [[1,
   // 2], [3, 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]` since v0.18.0, and
   // was `[[1, 3], [2, 3], [1, 4], [2, 4]]`). `R.identity` (Core) is written
-  // out as `xs => xs`.
+  // out as `xs => xs`. `@deprecated since v0.19.0`, for `sequence`.
   function commute<A>(of: seq<A> -> seq<seq<A>>, list: seq<seq<A>>): seq<seq<A>>
   { commuteMap((xs: seq<A>) => xs, of, list) }
 
+  // The elements that satisfy fn, in order. (Since v0.19.0 JS `filter` also
+  // takes an object, giving its own properties that satisfy fn:
+  // `filter(x => x > 1, {a: 1, b: 2})` is `{b: 2}`; here a list, README
+  // "Deviations".)
   function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures |filter(fn, list)| <= |list|
     ensures forall i :: 0 <= i < |filter(fn, list)| ==> fn(filter(fn, list)[i])
@@ -208,7 +207,8 @@ module Ramdaf.List {
 
   // `filter(not(fn), list)` (since v0.10.0 the exported `filter`, which
   // dispatches to a `filter` method of a non-array object; v0.9.x called the
-  // private `_filter`; the same on lists)
+  // private `_filter`; the same on lists; since v0.19.0 an object too, as
+  // for filter)
   function reject<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |reject(fn, list)| ==> !fn(reject(fn, list)[i])
     ensures forall i :: 0 <= i < |reject(fn, list)| ==> reject(fn, list)[i] in list
@@ -340,11 +340,6 @@ module Ramdaf.List {
   // which only add the placeholder form `contains(__, list)`).
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
 
-  // `pred(x, list[idx])` for some idx (exported since v0.1.5;
-  // `@deprecated since v0.18.0`).
-  function containsWith<T>(pred: (T, T) -> bool, x: T, list: seq<T>): bool
-  { exists i :: 0 <= i < |list| && pred(x, list[i]) }
-
   // `var result = []; ... if (!contains(item, result)) result.push(item);`
   // for each item in order (v0.2.4; until v0.2.3 a foldr from the right kept
   // the LAST occurrences): each element at its FIRST occurrence, in list
@@ -357,7 +352,9 @@ module Ramdaf.List {
   // object with an `equals` method were looked up with `R.equals`); the
   // results on Dafny values are the same (README "Deviations" on `-0`), and
   // the body keeps its own recursion, as `head` and `last` did when v0.8.0
-  // wrote them on `nth`.
+  // wrote them on `nth`. Since v0.19.0 `R.uniq = uniqBy(identity)`, whose
+  // JS `Set` keeps a repeated `-0` (`uniq([-0, -0])` is `[-0, -0]`; README
+  // "Deviations").
   function {:isolate_assertions} uniq<T(==)>(list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |uniq(list)| ==> uniq(list)[i] in list
     ensures forall i :: 0 <= i < |list| ==> list[i] in uniq(list)
@@ -425,26 +422,22 @@ module Ramdaf.List {
   function allUniq<T(==)>(list: seq<T>): bool
   { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
 
-  // `R.isSet = allUniq` (v0.18.0, `@deprecated since v0.18.0`, `@see
-  // R.allUniq`), so the body calls allUniq. Until v0.17.1 isSet held the
-  // code: since v0.2.4 `indexOf(list, list[i], i + 1) < 0` for every i (since
-  // v0.14.0 with `Object.is` and since v0.15.0 with `R.equals`), and until
-  // v0.2.3 `uniq(list).length === list.length`, the same result.
-  function isSet<T(==)>(list: seq<T>): bool { allUniq(list) }
-
-  // `var result = []; ... if (!containsWith(pred, item, result)) result.push(item);`
+  // `var result = []; ... if (!_containsWith(pred, item, result)) result.push(item);`
   // for each item in order (v0.2.4; exported since v0.2.0, and until v0.2.3
   // a foldr from the right that kept the LAST representative): item is kept
   // when `pred(item, r)` fails for every r already kept, so each class keeps
   // its FIRST representative (`uniqWith((a, b) => a % 3 == b % 3, [1, 2, 3, 4])`
-  // is `[1, 2, 3]`). The body recurses on all but the last element.
+  // is `[1, 2, 3]`). The body recurses on all but the last element. The
+  // private `_containsWith` (until v0.18.0 also the exported `containsWith`,
+  // which the body and the postcondition named) is written out as `exists
+  // j :: … pred(x, acc[j])`.
   function uniqWith<T>(pred: (T, T) -> bool, list: seq<T>): seq<T>
     ensures |list| == 0 ==> uniqWith(pred, list) == []
     ensures |list| > 0 ==>
+      var acc := uniqWith(pred, list[..|list| - 1]);
       uniqWith(pred, list) ==
-        (if containsWith(pred, list[|list| - 1], uniqWith(pred, list[..|list| - 1]))
-         then uniqWith(pred, list[..|list| - 1])
-         else uniqWith(pred, list[..|list| - 1]) + [list[|list| - 1]])
+        (if exists j :: 0 <= j < |acc| && pred(list[|list| - 1], acc[j]) then acc
+         else acc + [list[|list| - 1]])
     ensures forall i :: 0 <= i < |uniqWith(pred, list)| ==> uniqWith(pred, list)[i] in list
     ensures forall i, j :: 0 <= i < j < |uniqWith(pred, list)| ==>
       !pred(uniqWith(pred, list)[j], uniqWith(pred, list)[i])
@@ -456,7 +449,7 @@ module Ramdaf.List {
          var x := list[|list| - 1];
          var acc := uniqWith(pred, init);
          assert forall y | y in list :: y == x || y in init;
-         if containsWith(pred, x, acc) then acc
+         if exists j :: 0 <= j < |acc| && pred(x, acc[j]) then acc
          else var r := acc + [x];
               assert forall j :: 0 <= j < |acc| ==> r[j] == acc[j];
               assert forall y | y in acc :: y in r;
@@ -528,16 +521,6 @@ module Ramdaf.List {
   function fromPairs<V>(pairs: seq<(string, V)>): map<string, V>
   { if |pairs| == 0 then map[]
     else fromPairs(pairs[..|pairs| - 1])[pairs[|pairs| - 1].0 := pairs[|pairs| - 1].1] }
-
-  // `R.createMapEntry(key, val)` (v0.7.0): `var obj = {}; obj[key] = val;
-  // return obj;`, the object with the one property. Defined in "List
-  // Functions", hence here. Since v0.18.0 (de2cc7e6, "rename
-  // R.createMapEntry") it is `objOf` (Object.dfy), which holds the code, and
-  // `@deprecated since v0.18.0`; `R.objOf` is Object's, which List does not
-  // import, so its body is written out (the same body as before). JS converts the key to a string, and a
-  // `__proto__` key sets the prototype instead of a property (README
-  // "Deviations").
-  function createMapEntry<V>(key: string, val: V): map<string, V> { map[key := val] }
 
   // `R.lens(getter, setter)` (v0.8.0; defined in "List Functions", hence
   // here, though since v0.16.0 its JSDoc says `@category Object`): since
@@ -844,6 +827,8 @@ module Ramdaf.List {
   // xs.length - n : 0, xs)`, all but the last n elements: the whole list
   // for n <= 0 and [] for n at least the length (`dropLast(1, [1, 2, 3])` is
   // `[1, 2]`); on a JS string `take` gives a string, the same seq here.
+  // (Since v0.19.0 `_dispatchable('dropLast', _xdropLast, _dropLast)` with
+  // that body: a transformer makes it a transducer.)
   function dropLast<T>(n: int, list: seq<T>): seq<T>
   { take(if n < |list| then |list| - n else 0, list) }
 
@@ -852,7 +837,8 @@ module Ramdaf.List {
   // 1);`, the list without its longest suffix whose elements satisfy pred
   // (`dropLastWhile(x => x > 2, [1, 3, 2, 4, 5])` is `[1, 3, 2]`). On a JS
   // string `_slice` gives an array of characters, the same seq here. The
-  // body recurses on all but the last element, as the loop does.
+  // body recurses on all but the last element, as the loop does. (Since
+  // v0.19.0 it is dispatchable, a transducer, as dropLast is.)
   function dropLastWhile<T>(pred: T -> bool, list: seq<T>): seq<T>
     ensures dropLastWhile(pred, list) <= list
   { if |list| == 0 || !pred(list[|list| - 1]) then list
@@ -891,7 +877,12 @@ module Ramdaf.List {
   // `R.equals`, which on Dafny values is `==`): the first element for each
   // value of fn, in list order (`uniqBy(Math.abs, [-1, -5, 2, 10, 1, 2])` is
   // `[-1, -5, 2, 10]`). The body recurses on all but the last element, as
-  // the loop does.
+  // the loop does. Since v0.19.0 JS keeps the results of fn that are
+  // primitives in a `Set` (`SameValueZero`), with its own flag for a first
+  // `-0`, so a repeated `-0` is kept again (`uniqBy(x => x * 0, [-1, -2])`
+  // is `[-1, -2]`; README "Deviations"), and a `null` result of fn pushes
+  // `null` in place of the element (`uniqBy(x => null, [1, 2])` is `[null]`),
+  // which no key here can be (README "Outside the modeled domain").
   function uniqBy<T, U(==)>(fn: T -> U, list: seq<T>): seq<T>
   { if |list| == 0 then []
     else var r := uniqBy(fn, list[..|list| - 1]);
@@ -900,4 +891,77 @@ module Ramdaf.List {
   // `R.pair(fst, snd)` (v0.18.0, `@category List`): `[fst, snd]`, a
   // two-element array, which is a pair here (README "JS -> Dafny mapping").
   function pair<A, B>(fst: A, snd: B): (A, B) { (fst, snd) }
+
+  // `R.indexBy(fn, list)` (v0.19.0, `@category List`): `acc[fn(elem)] = elem`
+  // over the list, each element under the key fn gives it, a later element
+  // with the same key winning (`indexBy(prop('id'), [{id: 'xyz'}, {id:
+  // 'abc'}])` is `{abc: {id: 'abc'}, xyz: {id: 'xyz'}}`). JS converts the key
+  // to a string, and a `__proto__` key sets the prototype instead of a
+  // property (README "Deviations"). The body sets
+  // the last element on the object built from the others, which is the loop.
+  function indexBy<T>(fn: T -> string, list: seq<T>): map<string, T>
+  { if |list| == 0 then map[]
+    else indexBy(fn, list[..|list| - 1])[fn(list[|list| - 1]) := list[|list| - 1]] }
+
+  // `R.sequence(of, traversable)` (v0.19.0, `@category List`):
+  // `traversable.sequence(of)` for a traversable with a `sequence` method,
+  // and otherwise `reduceRight(function(acc, x) { return ap(map(prepend, x),
+  // acc); }, of([]), traversable)`, a list of applicatives turned into an
+  // applicative of a list: for arrays every way of picking one element of
+  // each list, the last list's varying fastest (`sequence(of, [[1, 2], [3,
+  // 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]`; `commute`, deprecated, is the
+  // same). JS takes any Fantasy-land applicative; here arrays (README
+  // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`.
+  function sequence<A>(of: seq<A> -> seq<seq<A>>, traversable: seq<seq<A>>): seq<seq<A>>
+  { reduceRight((acc: seq<seq<A>>, x: seq<A>) => ap(mapSeq((y: A) => ((l: seq<A>) => [y] + l), x), acc),
+                of([]), traversable) }
+
+  // `R.traverse(of, f, traversable)` (v0.19.0, `@category List`):
+  // `sequence(of, map(f, traversable))`, f mapped over the traversable and
+  // the results sequenced (`commuteMap`, deprecated, with its arguments in
+  // another order).
+  function traverse<A, B>(of: seq<B> -> seq<seq<B>>, f: A -> seq<B>, traversable: seq<A>): seq<seq<B>>
+  { sequence(of, mapSeq(f, traversable)) }
+
+  // `R.splitAt(index, array)` (v0.19.0, `@category List`): `[slice(0, index,
+  // array), slice(index, length(array), array)]`, the pair of the list
+  // before and from index, a negative index counting from the end
+  // (`splitAt(-1, 'foobar')` is `['fooba', 'r']`; a JS string gives
+  // strings, the same seq here). `R.length` (Core) is written out as
+  // `|list|`.
+  function splitAt<T>(index: int, list: seq<T>): (seq<T>, seq<T>)
+  { (slice(0, index, list), slice(index, |list|, list)) }
+
+  // `R.splitWhen(pred, list)` (v0.19.0, `@category List`): `while (idx < len
+  // && !pred(list[idx])) { prefix.push(list[idx]); idx += 1; } return [prefix,
+  // _slice(list, idx)];`, the pair of the elements before the first one
+  // that satisfies pred and the rest from it (`splitWhen(equals(2), [1, 2,
+  // 3])` is `[[1], [2, 3]]`). The body finds that index with findIndex (-1
+  // when no element satisfies pred).
+  function splitWhen<T>(pred: T -> bool, list: seq<T>): (seq<T>, seq<T>)
+  { var i := findIndex(pred, list);
+    if i == -1 then (list, []) else (list[..i], list[i..]) }
+
+  // `R.transpose(outerlist)` (v0.19.0, `@category List`): for each inner list
+  // in order, `result[j].push(innerlist[j])` for each of its indices j
+  // (creating `result[j]` when it is undefined), so row j of the result
+  // holds the j-th elements of the inner lists long enough to have one
+  // (`transpose([[10, 11], [20], [], [30, 31, 32]])` is `[[10, 20, 30], [11,
+  // 31], [32]]`). The body takes the result for all but the last inner list
+  // and pushes the last one's elements, which is the loop.
+  function transpose<T>(outerlist: seq<seq<T>>): seq<seq<T>>
+  { if |outerlist| == 0 then []
+    else var r := transpose(outerlist[..|outerlist| - 1]);
+         var inner := outerlist[|outerlist| - 1];
+         var n := if |r| < |inner| then |inner| else |r|;
+         seq(n, j requires 0 <= j < n =>
+           (if j < |r| then r[j] else []) + (if j < |inner| then [inner[j]] else [])) }
+
+  // `R.without(xs, list)` (v0.19.0, `@category List`):
+  // `reject(flip(_contains)(xs), list)`, the elements of list that are not
+  // in xs (`R.equals`, `==` here:
+  // README "Deviations" on `-0`); a transformer in list position makes it a
+  // transducer. The private `_contains` is `contains`.
+  function without<T(==)>(xs: seq<T>, list: seq<T>): seq<T>
+  { reject((x: T) => contains(x, xs), list) }
 }

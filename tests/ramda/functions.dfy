@@ -1,5 +1,5 @@
-// Ramda v0.18.0 test/always.js, T.js, F.js, compose.js, pipe.js,
-// converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
+// Ramda v0.19.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// converge.js, flip.js, ap.js and juxt.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -45,7 +45,10 @@
 // compose.js and pipe.js; v0.18.0 rewrote compose's and pipe's "performs
 // right-to-left (left-to-right) function composition" again, retitled ap's
 // "applies a list of functions to a list of values" "interprets [a] as an
-// applicative", and passes converge's functions as one list, a pair here.)
+// applicative", and passes converge's functions as one list, a pair here;
+// v0.19.0 removed functions.js and functionsIn.js with the functions and
+// added the unportable lensPath.js and pathSatisfies.js.) juxt.js's
+// (v0.19.0) calls with no values pass `()`, and with several a tuple.
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -165,5 +168,47 @@ module RamdafTests.Ramda.Functions {
   method {:test} ApIsCurried() {
     var val := (vs: seq<int>) => ap([mult2, plus3], vs);
     expect val([1, 2, 3]) == [2, 4, 6, 4, 5, 6];
+  }
+
+  // ---- juxt.js (v0.19.0): `hello() = 'hello'`, `bye() = 'bye'` ----
+  function Hello(u: ()): string { "hello" }
+  function Bye(u: ()): string { "bye" }
+
+  method {:test} JuxtWorksWithNoFunctionsAndNoValues() {
+    var none: seq<(()) -> int> := [];
+    expect juxt(none)(()) == [];
+  }
+
+  method {:test} JuxtWorksWithNoFunctionsAndSomeValues() {
+    var none: seq<((int, int)) -> int> := [];
+    expect juxt(none)((2, 3)) == [];
+  }
+
+  method {:test} JuxtWorksWith1FunctionAndNoValues() {
+    expect juxt([Hello])(()) == ["hello"];
+  }
+
+  // `R.add(3)`
+  method {:test} JuxtWorksWith1FunctionAnd1Value() {
+    expect juxt([(x: int) => add(3, x)])(2) == [5];
+  }
+
+  // `R.multiply` on two values
+  method {:test} JuxtWorksWith1FunctionAndSomeValues() {
+    expect juxt([(t: (int, int)) => multiply(t.0, t.1)])((2, 3)) == [6];
+  }
+
+  method {:test} JuxtWorksWithSomeFunctionsAndNoValues() {
+    expect juxt([Hello, Bye])(()) == ["hello", "bye"];
+  }
+
+  // `R.multiply(2)`, `R.add(3)`
+  method {:test} JuxtWorksWithSomeFunctionsAnd1Value() {
+    expect juxt([(x: int) => multiply(2, x), (x: int) => add(3, x)])(2) == [4, 5];
+  }
+
+  // `R.add`, `R.multiply` on two values
+  method {:test} JuxtWorksWithSomeFunctionsAndSomeValues() {
+    expect juxt([(t: (int, int)) => add(t.0, t.1), (t: (int, int)) => multiply(t.0, t.1)])((2, 3)) == [5, 6];
   }
 }

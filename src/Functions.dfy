@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.19.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
-// the functions with `@category Function` (`composeK`, `pipeK`). (v0.4.1
+// the functions with `@category Function` (`composeK`, `pipeK`, `juxt`). (v0.4.1
 // removed the aliases `sequence`, `distributeTo`, `constant` and `K`;
 // v0.4.2 renamed `fork` to `converge`; v0.9.0 renamed `alwaysTrue` and
 // `alwaysFalse` to `T` and `F` and removed `alwaysZero`; v0.16.0 removed
@@ -14,7 +14,7 @@ module Ramdaf.Functions {
   import List
 
   export
-    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK
+    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt
     provides List
 
   // `compose(f, g)(x) == f(g(x))`
@@ -81,4 +81,14 @@ module Ramdaf.Functions {
   // left-to-right Kleisli composition (`pipeK(f, g)` is `composeK(g, f)`).
   function pipeK<A, B, C>(f: A -> seq<B>, g: B -> seq<C>): seq<A> -> seq<C>
   { composeK(g, f) }
+
+  // `R.juxt(fns)` (v0.19.0, `@category Function`): `function() { return
+  // map(apply(__, arguments), fns); }`, a function that applies every
+  // function to its arguments and lists the results in order (`juxt([add(3),
+  // multiply(2)])(2)` is `[5, 4]`). JS forwards any number of arguments; the
+  // result here is unary (tuple the arguments for more, `()` for none), and
+  // `R.map` is `List.mapSeq` with the application written out (`R.apply` is
+  // not portable, README).
+  function juxt<A, B>(fns: seq<A -> B>): A -> seq<B>
+  { x => List.mapSeq((f: A -> B) => f(x), fns) }
 }

@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.18.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.19.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -570,8 +570,10 @@ module RamdafTests.Edge.Misc {
   // v0.9.0 to v0.14.0 `evolve({toString: x => typeof x}, {})` passed the
   // inherited member to the transformation, {toString: 'function'}; since
   // v0.15.0 it is {}, as here.) Since v0.18.0 `objOf('__proto__', 1)` has
-  // no own key (createMapEntry's assignment, in List's pin). A map's keys
-  // are all ordinary, and `{}` has no `toString`.
+  // no own key (createMapEntry's assignment, until v0.18.0), and since
+  // v0.19.0 the keys of `mergeWith((a, b) => b, <the JSON object>, {})`,
+  // and of `mergeWithKey` of it and `JSON.parse('{"__proto__": 6}')`, are
+  // ['a']. A map's keys are all ordinary, and `{}` has no `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
@@ -587,6 +589,28 @@ module RamdafTests.Edge.Misc {
     expect whereEq(map["__proto__" := 1], none) == false;
     expect set_(lensProp<int, int>("__proto__"), 1, map["__proto__" := 0, "a" := 1]) == map["__proto__" := 1, "a" := 1];
     expect objOf("__proto__", 1) == map["__proto__" := 1];
+    expect mergeWith((a: int, b: int) => b, o, none) == o;
+    expect mergeWithKey((k: string, a: int, b: int) => b, o, map["__proto__" := 6]) == map["__proto__" := 6, "a" := 1];
+  }
+
+  // mergeWith and mergeWithKey (v0.19.0): fn only where both objects have
+  // the key (node: {a: 1, b: 5}, {}, {toString: 'toString'},
+  // {hasOwnProperty: 12}).
+  method {:test} MergeWithEdges() {
+    var none: map<string, int> := map[];
+    expect mergeWith((a: int, b: int) => a + b, map["a" := 1, "b" := 2], map["b" := 3]) == map["a" := 1, "b" := 5];
+    expect mergeWith((a: int, b: int) => a + b, none, none) == none;
+    expect mergeWithKey((k: string, a: string, b: string) => k, map["toString" := "1"], map["toString" := "2"]) ==
+      map["toString" := "toString"];
+    expect mergeWith((a: int, b: int) => a * 10 + b, map["hasOwnProperty" := 1], map["hasOwnProperty" := 2]) ==
+      map["hasOwnProperty" := 12];
+  }
+
+  // juxt (v0.19.0) applies every function to the argument (node: [6], []).
+  method {:test} JuxtEdges() {
+    var none: seq<int -> int> := [];
+    expect juxt([(x: int) => x * 2])(3) == [6];
+    expect juxt(none)(3) == [];
   }
 
   // node: identical([], []) is false (two distinct array objects; eq([],

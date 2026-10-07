@@ -1,8 +1,9 @@
-// Ramda v0.18.0 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.19.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
 // valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
-// invertObj.js, dissoc.js, lenses.js and objOf.js (v0.9.x mixin.js; until
+// invertObj.js, dissoc.js, lenses.js, objOf.js, mergeWith.js,
+// mergeWithKey.js and lensProp.js (v0.9.x mixin.js; until
 // v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
 // describes), transcribed. Not
@@ -54,7 +55,17 @@
 // checks the appropriate property" with "is curried, op-style"; v0.12.0
 // removed propOf.js and prop's "is aliased by `get`" with the functions;
 // v0.16.0 removed lensOn.js and lensProp.js, whose lenses lenses.js now
-// covers with `view`, `over` and `set`.) v0.15.0 deleted eq.js with `eq` (identical.js, in
+// covers with `view`, `over` and `set`; v0.19.0 brings lensProp.js back,
+// and adds `pets` to lenses.js's alice and two `lensPath` `it`s, not
+// transcribed, as lensPath is not portable, README.) Of v0.19.0's
+// mergeWith.js and mergeWithKey.js, "reports only own properties"
+// (prototypes) and the `notStrictEqual` half of "is not destructive"
+// (reference identity) are not transcribed; of lensProp.js, "returns
+// undefined if the specified property does not exist", "adds the property
+// to the object if it doesn't exist" and "applies function to undefined and
+// adds the property" are outside the lens's domain (README "Outside the
+// modeled domain"), and "can be composed" runs over `{a: {b: 1}}` alone (its
+// `c: 2` cannot share the map's value type, as in lenses.js). v0.15.0 deleted eq.js with `eq` (identical.js, in
 // tests/ramda/sql.dfy, has its asserts), replaced evolve's "invokes function
 // with undefined if object does not contain the key" with "does not invoke
 // function if object does not contain the key", and where.js's `R.eq`
@@ -543,7 +554,8 @@ module RamdafTests.Ramda.Object {
   // `R.toString`s, structurally) ----
 
   // `alice = {name: 'Alice Jones', address: ['22 Walnut St', 'San
-  // Francisco', 'CA']}`, a Js object here; `nameLens = R.lens(R.prop('name'),
+  // Francisco', 'CA'], pets: {dog: 'joker', cat: 'batman'}}` (`pets` since
+  // v0.19.0), a Js object here; `nameLens = R.lens(R.prop('name'),
   // R.assoc('name'))`, whose getter is defined where the object has a name
   // (`prop` of an absent name is undefined, outside the lens's domain);
   // `headLens = R.lensIndex(0)`, applied to `alice.address`; `R.toUpper` on
@@ -552,17 +564,20 @@ module RamdafTests.Ramda.Object {
   // precondition).
   function Uc(v: Js): Js { if v.Str? then Str(S.toUpper(v.s)) else v }
   function AliceAddress(): seq<string> { ["22 Walnut St", "San Francisco", "CA"] }
+  function Address(): Js { Arr([Str("22 Walnut St"), Str("San Francisco"), Str("CA")]) }
+  function Pets(): Js { Obj(map["dog" := Str("joker"), "cat" := Str("batman")]) }
   function Alice(): map<string, Js>
-  { map["name" := Str("Alice Jones"), "address" := Arr([Str("22 Walnut St"), Str("San Francisco"), Str("CA")])] }
+  { map["name" := Str("Alice Jones"), "address" := Address(), "pets" := Pets()] }
   function NameLens(): Lens<map<string, Js>, Js, Js>
   { lens((o: map<string, Js>) requires "name" in o => o["name"], (v: Js, o: map<string, Js>) => assoc("name", v, o)) }
 
   method {:test} ViewOverAndSetMayBeAppliedToALensCreatedByLensProp() {
+    assert "name" in Alice();  // witness for the lens's domain (v0.19.0's pets)
     expect view(NameLens(), Alice()) == Str("Alice Jones");
     expect over(NameLens(), Uc, Alice()) ==
-      map["name" := Str("ALICE JONES"), "address" := Arr([Str("22 Walnut St"), Str("San Francisco"), Str("CA")])];
+      map["name" := Str("ALICE JONES"), "address" := Address(), "pets" := Pets()];
     expect set_(NameLens(), Str("Alice Smith"), Alice()) ==
-      map["name" := Str("Alice Smith"), "address" := Arr([Str("22 Walnut St"), Str("San Francisco"), Str("CA")])];
+      map["name" := Str("Alice Smith"), "address" := Address(), "pets" := Pets()];
   }
 
   method {:test} ViewOverAndSetMayBeAppliedToALensCreatedByLensIndex() {
@@ -592,5 +607,83 @@ module RamdafTests.Ramda.Object {
     expect objOf("foo", 42) == map["foo" := 42];
     var objOfFoo := (v: int) => objOf("foo", v);
     expect objOfFoo(42) == map["foo" := 42];
+  }
+
+  // ---- mergeWith.js, mergeWithKey.js (v0.19.0): `last(x, y) = y` (and
+  // `last(k, x, y) = y`) ----
+
+  method {:test} MergeWithTakesTwoObjectsAndMergesTheirOwnProperties() {
+    expect mergeWith((x: int, y: int) => y, map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) ==
+      map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  method {:test} MergeWithAppliesTheFunctionToTheValuesOfKeysInBothObjects() {
+    expect mergeWith((a: string, b: string) => a + b, map["x" := "a", "y" := "c"], map["x" := "b", "z" := "d"]) ==
+      map["x" := "ab", "y" := "c", "z" := "d"];
+  }
+
+  method {:test} MergeWithIsNotDestructive() {
+    expect mergeWith((x: int, y: int) => y, map["w" := 1, "x" := 2], map["x" := 5]) == map["w" := 1, "x" := 5];
+  }
+
+  // `mergeWith(last)({w: 1, x: 2})({y: 3, z: 4})`
+  method {:test} MergeWithIsCurried() {
+    var m := (l: map<string, int>) => ((r: map<string, int>) => mergeWith((x: int, y: int) => y, l, r));
+    expect m(map["w" := 1, "x" := 2])(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  method {:test} MergeWithKeyTakesTwoObjectsAndMergesTheirOwnProperties() {
+    expect mergeWithKey((k: string, x: int, y: int) => y, map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) ==
+      map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  method {:test} MergeWithKeyAppliesTheFunctionToTheKeyAndTheValuesOfKeysInBothObjects() {
+    expect mergeWithKey((k: string, a: string, b: string) => k + a + b, map["a" := "b", "x" := "d"], map["a" := "c", "y" := "e"]) ==
+      map["a" := "abc", "x" := "d", "y" := "e"];
+  }
+
+  method {:test} MergeWithKeyIsNotDestructive() {
+    expect mergeWithKey((k: string, x: int, y: int) => y, map["w" := 1, "x" := 2], map["x" := 5]) == map["w" := 1, "x" := 5];
+  }
+
+  method {:test} MergeWithKeyIsCurried() {
+    var m := (l: map<string, int>) => ((r: map<string, int>) => mergeWithKey((k: string, x: int, y: int) => y, l, r));
+    expect m(map["w" := 1, "x" := 2])(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
+  }
+
+  // ---- lensProp.js (v0.19.0, again): `testObj = {a: 1, b: 2, c: 3}` ----
+  function TestObj(): map<string, int> { map["a" := 1, "b" := 2, "c" := 3] }
+
+  method {:test} LensPropViewFocusesTheSpecifiedObjectProperty() {
+    expect view(lensProp<int, int>("a"), TestObj()) == 1;
+  }
+
+  method {:test} LensPropSetSetsTheValueOfTheObjectPropertySpecified() {
+    expect set_(lensProp<int, int>("a"), 0, TestObj()) == map["a" := 0, "b" := 2, "c" := 3];
+  }
+
+  // `R.inc`
+  method {:test} LensPropOverAppliesFunctionToTheValueOfTheSpecifiedObjectProperty() {
+    expect over(lensProp<int, int>("a"), (x: int) => x + 1, TestObj()) == map["a" := 2, "b" := 2, "c" := 3];
+  }
+
+  // over `{a: {b: 1}}` alone (JS's `c: 2` cannot share the map's value type)
+  method {:test} LensPropCanBeComposed() {
+    var nestedObj := map["a" := map["b" := 1]];
+    var composedLens := Funcs.compose(lensProp<map<string, int>, int>("a"), lensProp<int, int>("b"));
+    expect view(composedLens, nestedObj) == 1;
+  }
+
+  // "well behaved lens"
+  method {:test} LensPropSetOfGetIsIdentity() {
+    expect set_(lensProp<int, int>("a"), view(lensProp<int, int>("a"), TestObj()), TestObj()) == TestObj();
+  }
+
+  method {:test} LensPropGetOfSetIsTheValue() {
+    expect view(lensProp<int, int>("a"), set_(lensProp<int, int>("a"), 0, TestObj())) == 0;
+  }
+
+  method {:test} LensPropGetOfSetOfSetIsTheLastValue() {
+    expect view(lensProp<int, int>("a"), set_(lensProp<int, int>("a"), 11, set_(lensProp<int, int>("a"), 10, TestObj()))) == 11;
   }
 }

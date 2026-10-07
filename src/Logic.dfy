@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.19.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
 // `propSatisfies`, `when`, `unless`).
@@ -36,17 +36,20 @@ module Ramdaf.Logic {
   // v0.1.4 renamed `andFn`, `orFn` and `notFn` to `and`, `or` and `not`, and
   // v0.12.0 renamed those to `both`, `either` and `complement`, with the same
   // code. JS forwards any number of arguments to the predicates; the port's
-  // predicates are unary (tuple the arguments for more). Since v0.18.0
-  // (c6ee5614, "Simplify logical functions") they are `lift(and)`,
+  // predicates are unary (tuple the arguments for more). In v0.18.0
+  // (c6ee5614, "Simplify logical functions") they were `lift(and)`,
   // `lift(or)` and `lift(not)`: on functions the same results, though the
-  // second predicate is called even when the first decides (which a pure
-  // predicate cannot observe) and the result is curried to the longer
-  // predicate's arity; they also lift the operators over any other
-  // applicative, such as lists (`both([true, false], [true])` is `[true,
+  // second predicate was called even when the first decided (which a pure
+  // predicate cannot observe) and the result was curried to the longer
+  // predicate's arity; they also lifted the operators over any other
+  // applicative, such as lists (`both([true, false], [true])` was `[true,
   // false]`), which these predicate types exclude (README "Deviations").
+  // v0.19.0 makes both and either the short-circuiting function combinators
+  // again (`_curry2`, `function _both() { return f.apply(this, arguments) &&
+  // g.apply(this, arguments); }`); complement is still `lift(not)`.
 
   // `R.both(f, g)` (v0.12.0, `and` until v0.11.0): `f(...) && g(...)`,
-  // short-circuited from v0.7.0 to v0.17.1 (before, `!!(...)`). JS returns the deciding
+  // short-circuited since v0.7.0 except in v0.18.0 (before, `!!(...)`). JS returns the deciding
   // operand, not a boolean; with boolean predicates that is the same bool
   // (README "Deviations").
   function both<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) && g(x) }

@@ -1,4 +1,4 @@
-// Ramda v0.18.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
+// Ramda v0.19.0 test/reduce.js and reduceRight.js (v0.9.x foldl.js and
 // foldr.js; until v0.8.0 test.fold.js), transcribed (reduceIndexed.js and
 // reduceRightIndexed.js, foldlIndexed.js and foldrIndexed.js in v0.9.x, went
 // with the functions in v0.16.0). Not transcribed:
@@ -64,7 +64,8 @@ module RamdafTests.Ramda.Fold {
     expect reduceRight(avg, 0.0, empty) == 0.0;
   }
 
-  // (v0.5.0 adds `foldr(R.add, '')` on strings)
+  // (v0.5.0 adds `foldr(R.add, '')` on strings; since v0.19.0
+  // `reduceRight(R.concat, '')`, the same here)
   method {:test} ReduceRightIsAutomaticallyCurried() {
     var something := (l: seq<real>) => reduceRight(avg, 54.0, l);
     expect something([12.0, 4.0, 10.0, 6.0]) == 12.0;

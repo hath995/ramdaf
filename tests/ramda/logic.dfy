@@ -1,11 +1,13 @@
-// Ramda v0.18.0 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.19.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
 // defaultTo.js, propSatisfies.js, when.js and unless.js (until v0.8.0
 // test.booleans.js, test.allany.js and test.cond.js), transcribed. (v0.16.0
 // passes cond's pairs as one list, `R.cond([[p, f], …])`, the port's form
 // all along.) Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression", "short-circuits on first false value"), which detect a call by
-// its side effect, the "reports its arity" cases, and the "throws on zero
+// its side effect (since v0.19.0 both's and either's call the combined
+// function, which v0.18.0's `lift` versions did not short-circuit), the
+// "reports its arity" cases, and the "throws on zero
 // arguments" cases (no-argument calls, until v0.10.0; the `typeof` checks of "is curried"
 // hold by construction, and so does cond's "returns a function"). The
 // multi-parameter predicates take their arguments as a tuple. cond's

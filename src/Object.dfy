@@ -1,11 +1,12 @@
-// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.19.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
-// `objOf`). A JS object is a map<string, V>; a missing property is JS
+// `objOf`, `mergeWith`, `mergeWithKey`). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
 // properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`, `assoc`,
-// `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter, `objOf`) drop an own
+// `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter, `objOf`,
+// `mergeWithKey`) drop an own
 // `__proto__` property in JS, as the assignment sets the prototype instead; a
 // map's keys are all ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to
 // `pickBy`, and `props` to `propOf`, reusing the name `props` for a new
@@ -23,7 +24,7 @@ module Ramdaf.Object {
     reveals prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
             assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq,
-            view, over, set_, objOf
+            view, over, set_, objOf, mergeWith, mergeWithKey
     provides Prelude
 
   // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
@@ -170,18 +171,21 @@ module Ramdaf.Object {
     ensures forall k :: k in pickBy(test, obj) ==> pickBy(test, obj)[k] == obj[k]
   { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
 
-  // `R.merge(a, b)` (v0.10.0, "rename R.mixin", with the same body):
-  // `_extend(_extend({}, a), b)` (`mixin` since v0.2.4; before, `pickAll(keys(a),
-  // a)` with b's properties copied over it), the own properties of a, then
-  // of b: b's value wins where both have the key (Dafny's right-biased map
-  // union). It was `op`-curried in v0.10.0 and is `_curry2` since v0.11.0,
+  // `R.merge(a, b)` (v0.10.0, "rename R.mixin", with the same body): since
+  // v0.19.0 `mergeWith(function(l, r) { return r; })`, so the body calls
+  // mergeWith (from v0.16.0 to v0.18.0 its own `keys` loops, and
+  // `_extend(_extend({}, a), b)` before, `mixin`'s body since v0.2.4;
+  // before that, `pickAll(keys(a), a)` with b's properties copied over it),
+  // the own properties of a, then of b: b's value wins where both have the
+  // key (until v0.18.0 the body was Dafny's right-biased map union, `a + b`,
+  // with the same results). It was `op`-curried in v0.10.0 and is `_curry2` since v0.11.0,
   // which only add the placeholder form `merge(__, b)`. (Not the list
   // `merge` that v0.2.4 removed from Core.)
   function merge<V>(a: map<string, V>, b: map<string, V>): map<string, V>
     ensures merge(a, b).Keys == a.Keys + b.Keys
     ensures forall k :: k in b ==> merge(a, b)[k] == b[k]
     ensures forall k :: k in a && k !in b ==> merge(a, b)[k] == a[k]
-  { a + b }
+  { mergeWith((l: V, r: V) => r, a, b) }
 
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal;
   // in v0.14.0 `_eq`, `Object.is`, and since v0.15.0 `R.equals`, deep
@@ -207,10 +211,12 @@ module Ramdaf.Object {
   { forall k :: k in spec ==> spec[k](prop(k, test)) }
 
   // `R.whereEq(spec, testObj)` (v0.14.0, `@category Object`):
-  // `where(mapObj(equals, spec), testObj)` (since v0.15.0; `eq`, `Object.is`,
-  // in v0.14.0), every spec property equal to the test object's; an absent
-  // test property is undefined, which no spec value here equals. `R.mapObj`
-  // is List's, which Object does not import, so the spec of predicates is
+  // `where(map(equals, spec), testObj)` (since v0.19.0; `mapObj(equals,
+  // spec)` from v0.15.0, and with `eq`, `Object.is`, in v0.14.0), every
+  // spec property equal to the test object's; an absent test property is
+  // undefined, which no spec value here equals. `R.map` over an object
+  // (`R.mapObj` until v0.18.0) has no function here (List's mapSeq takes a
+  // list, and Object does not import List), so the spec of predicates is
   // written out as a map comprehension, and `R.equals` (Data's, which
   // imports Object) as `==`. A spec property whose value is undefined cannot be
   // written (README "Outside the modeled domain"), and `mapObj`'s copy drops
@@ -349,4 +355,25 @@ module Ramdaf.Object {
   // property. JS converts the key to a string, and a `__proto__` key sets the
   // prototype instead of a property (README "Deviations").
   function objOf<V>(key: string, val: V): map<string, V> { map[key := val] }
+
+  // `R.mergeWithKey(fn, l, r)` (v0.19.0, `@category Object`): `for (k in l)
+  // if (_has(k, l)) result[k] = _has(k, r) ? fn(k, l[k], r[k]) : l[k];`,
+  // then `for (k in r) if (_has(k, r) && !_has(k, result)) result[k] =
+  // r[k];`: the own properties of both, fn of the key and both values where
+  // both have the key (`mergeWithKey((k, l, r) => k + l + r, {a: 'b', x:
+  // 'd'}, {a: 'c', y: 'e'})` is `{a: 'abc', x: 'd', y: 'e'}`). The result is
+  // built by assignment, so in JS an own `__proto__` property of either is
+  // dropped (README "Deviations").
+  function mergeWithKey<V>(fn: (string, V, V) -> V, l: map<string, V>, r: map<string, V>): map<string, V>
+    ensures mergeWithKey(fn, l, r).Keys == l.Keys + r.Keys
+  { map k | k in l.Keys + r.Keys ::
+      if k in l && k in r then fn(k, l[k], r[k]) else if k in l then l[k] else r[k] }
+
+  // `R.mergeWith(fn, l, r)` (v0.19.0, `@category Object`):
+  // `mergeWithKey(function(_, _l, _r) { return fn(_l, _r); }, l, r)`, fn of
+  // both values where both have the key (`mergeWith(concat, {a: [1], b:
+  // [2]}, {b: [3], c: [4]})` is `{a: [1], b: [2, 3], c: [4]}`).
+  function mergeWith<V>(fn: (V, V) -> V, l: map<string, V>, r: map<string, V>): map<string, V>
+    ensures mergeWith(fn, l, r).Keys == l.Keys + r.Keys
+  { mergeWithKey((_: string, x: V, y: V) => fn(x, y), l, r) }
 }

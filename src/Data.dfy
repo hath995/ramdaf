@@ -1,13 +1,15 @@
-// Ramdaf: Ramda v0.18.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.19.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
-// `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
-// defined in "List Functions" (from v0.2.0 to v0.2.4 an alias of `partition`
-// there) but which stays here (functions do not move between modules); from
-// v0.9.0 on, the functions with `@category Relation` (`equals`,
-// `identical` and `eqBy`; v0.15.0 removed `eqDeep`, v0.9.0, which `equals` replaces,
-// and `eq`, then in Object.dfy; v0.15.1 restored both, deprecated, with
-// `eq` here by `@category Relation`, and v0.16.0 removed them again).
+// `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
+// from v0.3.0 to v0.8.0 was defined in "List Functions" (from v0.2.0 to
+// v0.2.4 an alias of `partition` there) but which stays here (functions do
+// not move between modules); from v0.9.0 on, the functions with `@category
+// Relation` (`equals`, `identical`, `eqBy`, `symmetricDifference` and
+// `symmetricDifferenceWith`; v0.15.0 removed `eqDeep`, v0.9.0, which
+// `equals` replaces, and `eq`, then in Object.dfy; v0.15.1 restored both,
+// deprecated, with `eq` here by `@category Relation`, and v0.16.0 removed
+// them again).
 //
 // The set functions are `uniq`/`uniqWith` of a combined or filtered list, as
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
@@ -30,7 +32,7 @@ module Ramdaf.Data {
   export
     reveals union, unionWith, difference, differenceWith,
             intersection, intersectionWith, countBy, groupBy, project, equals, identical,
-            eqBy
+            eqBy, symmetricDifference, symmetricDifferenceWith
     provides Prelude, List, Object
 
   // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
@@ -69,9 +71,13 @@ module Ramdaf.Data {
          assert forall i :: 0 <= i < |init| ==> init[i] == first[i];
          if x !in second && x !in out then out + [x] else out }
 
-  // `if (!containsPred(first[idx], second) && !containsPred(first[idx], out))
-  // out[out.length] = first[idx]` with `containsPred = R.containsWith(pred)`
-  // (v0.14.0; `out.push(first[idx])` from v0.7.0 to v0.10.0; before, it was
+  // `if (!_containsWith(pred, first[idx], second) && !_containsWith(pred,
+  // first[idx], out)) out.push(first[idx])` (v0.19.0, with the private
+  // `_containsWith`, written out here as `exists j :: … pred(x, list[j])`;
+  // from v0.14.0 to v0.18.0 `out[out.length] = first[idx]` with
+  // `containsPred = R.containsWith(pred)`, the exported function the body
+  // called, which v0.19.0 removed; `out.push(first[idx])` from v0.7.0 to
+  // v0.10.0; before, it was
   // `uniqWith(pred)(reject(flip(containsWith(pred))(second), first))`, with
   // the same results): x is kept unless `pred(x, y)` holds for some y in
   // second or for some element already kept. From v0.11.0 to v0.13.0 (commit
@@ -91,7 +97,8 @@ module Ramdaf.Data {
          var x := first[|first| - 1];
          var out := differenceWith(pred, init, second);
          assert forall y | y in init :: y in first;
-         if !List.containsWith(pred, x, second) && !List.containsWith(pred, x, out) then
+         if !(exists j :: 0 <= j < |second| && pred(x, second[j])) &&
+            !(exists j :: 0 <= j < |out| && pred(x, out[j])) then
            var r := out + [x];
            assert forall k :: 0 <= k < |out| ==> r[k] == out[k];
            r
@@ -110,14 +117,15 @@ module Ramdaf.Data {
   { List.uniq(List.filter(x => x in list1, list2)) }
 
   // `uniqWith(pred, results)`, where results are the elements x of list1 with
-  // `pred(x, y)` for some y in list2 (`containsWith(pred, x, list2)`).
+  // `pred(x, y)` for some y in list2 (`_containsWith(pred, x, list2)`, the
+  // exported `containsWith` until v0.18.0, written out here).
   function intersectionWith<T>(pred: (T, T) -> bool, list1: seq<T>, list2: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |intersectionWith(pred, list1, list2)| ==>
       intersectionWith(pred, list1, list2)[i] in list1 &&
       exists j :: 0 <= j < |list2| && pred(intersectionWith(pred, list1, list2)[i], list2[j])
     ensures forall i, j :: 0 <= i < j < |intersectionWith(pred, list1, list2)| ==>
       !pred(intersectionWith(pred, list1, list2)[j], intersectionWith(pred, list1, list2)[i])
-  { var results := List.filter(x => List.containsWith(pred, x, list2), list1);
+  { var results := List.filter(x => exists j :: 0 <= j < |list2| && pred(x, list2[j]), list1);
     var r := List.uniqWith(pred, results);
     assert forall i :: 0 <= i < |r| ==> r[i] in results;
     r }
@@ -183,4 +191,19 @@ module Ramdaf.Data {
   // `R.equals` compares numbers with `identical`, so `eqBy(x => x * 0, -1,
   // 1)` is false in JS (-0 and 0; README "Deviations").
   function eqBy<T, U(==)>(f: T -> U, x: T, y: T): bool { equals(f(x), f(y)) }
+
+  // `R.symmetricDifference(list1, list2)` (v0.19.0, `@category Relation`):
+  // `concat(difference(list1, list2), difference(list2, list1))`, the
+  // elements of either list that are not in the other, each once
+  // (`symmetricDifference([1, 2, 3, 4], [7, 6, 5, 4, 3])` is `[1, 2, 7, 6,
+  // 5]`). `R.concat` (Core) is written out as `+`.
+  function symmetricDifference<T(==)>(list1: seq<T>, list2: seq<T>): seq<T>
+  { difference(list1, list2) + difference(list2, list1) }
+
+  // `R.symmetricDifferenceWith(pred, list1, list2)` (v0.19.0, `@category
+  // Relation`): `concat(differenceWith(pred, list1, list2),
+  // differenceWith(pred, list2, list1))`, as symmetricDifference with pred
+  // for equality.
+  function symmetricDifferenceWith<T>(pred: (T, T) -> bool, list1: seq<T>, list2: seq<T>): seq<T>
+  { differenceWith(pred, list1, list2) + differenceWith(pred, list2, list1) }
 }

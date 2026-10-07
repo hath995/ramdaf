@@ -1,14 +1,14 @@
-// Ramda v0.18.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.19.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
-// lastIndexOf.js, contains.js, containsWith.js, allUniq.js, uniq.js,
-// uniqWith.js, map.js, mapObj.js, mapObjIndexed.js, find.js,
-// findIndex.js, findLast.js, findLastIndex.js, flatten.js, unnest.js,
-// range.js, reverse.js, unfold.js, zip.js, zipWith.js, zipObj.js,
-// fromPairs.js, xprod.js, partition.js, groupBy.js, createMapEntry.js,
+// lastIndexOf.js, contains.js, allUniq.js, uniq.js, uniqWith.js, map.js,
+// mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
+// flatten.js, unnest.js, range.js, reverse.js, unfold.js, zip.js,
+// zipWith.js, zipObj.js, fromPairs.js, xprod.js, partition.js, groupBy.js,
 // scan.js, mapAccum.js, mapAccumRight.js, commute.js, commuteMap.js,
 // mergeAll.js, aperture.js, none.js, adjust.js, update.js,
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
-// uniqBy.js and pair.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
+// splitWhen.js, transpose.js, without.js and lensIndex.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -69,7 +69,24 @@
 // "Deviations"), nor are aperture's "can act as a transducer" and
 // commute's and commuteMap's "traverses left to right" (sanctuary's
 // `Either`). (v0.18.0 renamed isSet.js to allUniq.js with the function, and
-// rewrote containsWith.js, without its "is curried", and reverse.js.)
+// rewrote containsWith.js, without its "is curried", and reverse.js;
+// v0.19.0 removed containsWith.js, createMapEntry.js and mapObj.js with the
+// functions.) v0.19.0's new files: indexBy's key function `prop('id')` is a
+// total function on the test objects here; sequence's and traverse's
+// "operates on a list of applicatives", "traverses left to right" and
+// "dispatches to `sequence` method" use sanctuary's Maybe and Either and an
+// `Id` object (README "Deviations"), and without's "can act as a
+// transducer" (`into`) and "has R.equals semantics" (`-0`, NaN, `Just`;
+// its `[[1]]` line is transcribed alone) are not transcribed; transpose's
+// mixed and null/undefined rows are Js values; lensIndex.js's "returns
+// undefined if the specified index does not exist" is outside the lens's
+// domain (README "Outside the modeled domain"), and its "can be composed"
+// nests a list inside a list of numbers, which one element type cannot
+// hold; its other `it`s run over Js values, as `set` stores a number among
+// objects. Not transcribed either: the "filters objects" `it`s of filter
+// and reject (a list here, README "Deviations"), and the "finds function,
+// compared by identity" `it`s of indexOf and lastIndexOf (Dafny functions
+// have no equality).
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -362,10 +379,11 @@ module RamdafTests.Ramda.List {
     expect lastIndexOf('x', "banana") == -1;
   }
 
-  // v0.5.0: "returns -1 for an empty array" calls `lastIndexOf('x', 2, [])`
-  // and `lastIndexOf('x', -5, [])`, three arguments to the binary curried
-  // function, so JS searches the number 2 (or -5) as the list and gets -1;
-  // the evident intent, the empty list, gives the same -1.
+  // "returns -1 for an empty array": since v0.19.0 `lastIndexOf('x', [])`
+  // (from v0.5.0 to v0.18.0 `lastIndexOf('x', 2, [])` and `lastIndexOf('x',
+  // -5, [])`, three arguments to the binary curried function, so JS searched
+  // the number 2 (or -5) as the list and got -1; this line was transcribed
+  // as their evident intent, the empty list, with the same -1).
   method {:test} LastIndexOfReturnsMinusOneForAnEmptyArray() {
     var empty: seq<string> := [];
     expect lastIndexOf("x", empty) == -1;
@@ -410,18 +428,6 @@ module RamdafTests.Ramda.List {
     expect isDigit("0") == true;
     expect isDigit("1") == true;
     expect isDigit("x") == false;
-  }
-
-  // describe('containsWith') (v0.18.0 rewrote it: `absEq` compares
-  // absolute values; until v0.17.1 `eqA` compared objects' `a` properties,
-  // with an "is curried" `it`)
-  function AbsEq(a: int, b: int): bool { (if a < 0 then -a else a) == (if b < 0 then -b else b) }
-
-  method {:test} ContainsWithDeterminesIfAnElementIsInTheListByThePredicate() {
-    expect containsWith(AbsEq, 5, [1, 2, 3]) == false;
-    expect containsWith(AbsEq, 5, [4, 5, 6]) == true;
-    expect containsWith(AbsEq, 5, [-1, -2, -3]) == false;
-    expect containsWith(AbsEq, 5, [-4, -5, -6]) == true;
   }
 
   // describe('allUniq') (v0.18.0; describe('isSet') until v0.17.1)
@@ -514,11 +520,6 @@ module RamdafTests.Ramda.List {
     var mdouble := (l: seq<int>) => mapSeq((x: int) => x * 2, l);
     var mdec := (l: seq<int>) => mapSeq((x: int) => x - 1, l);
     expect mdec(mdouble([10, 20, 30])) == [19, 39, 59];
-  }
-
-  // describe('mapObj')
-  method {:test} MapObjRunsTheFunctionOverEachProperty() {
-    expect mapObj((n: int) => n * n, map["a" := 1, "b" := 2, "c" := 3]) == map["a" := 1, "b" := 4, "c" := 9];
   }
 
   // describe('mapObjIndexed') (describe('mapObj.idx') from v0.2.2 to v0.8.0)
@@ -821,18 +822,6 @@ module RamdafTests.Ramda.List {
   // describe('fromPairs') (v0.3.0)
   method {:test} FromPairsCombinesTwoElementArraysIntoAnObject() {
     expect fromPairs([("a", 1), ("b", 2), ("c", 3)]) == map["a" := 1, "b" := 2, "c" := 3];
-  }
-
-  // ---- createMapEntry.js (v0.7.0; until v0.8.0 test.createMapEntry.js, whose
-  // describe was 'mapEntry') ----
-
-  method {:test} CreateMapEntryCreatesAnObjectContainingASingleKeyValuePair() {
-    expect createMapEntry("foo", 42) == map["foo" := 42];
-  }
-
-  method {:test} CreateMapEntryIsAutomaticallyCurried() {
-    var foo := (v: int) => createMapEntry("foo", v);
-    expect foo(42) == map["foo" := 42];
   }
 
   // ---- scan.js (v0.10.0; scanl.js from v0.7.0 to v0.9.1). Not
@@ -1251,5 +1240,178 @@ module RamdafTests.Ramda.List {
     expect pair("foo", "bar") == ("foo", "bar");
     var pairFoo := (b: string) => pair("foo", b);
     expect pairFoo("bar") == ("foo", "bar");
+  }
+
+  // ---- indexBy.js (v0.19.0) ----
+
+  // `R.prop('id')`, total on these objects; `R.toUpper` is String's
+  function Id(o: map<string, string>): string { if "id" in o then o["id"] else "undefined" }
+  function IdList(): seq<map<string, string>>
+  { [map["id" := "xyz", "title" := "A"], map["id" := "abc", "title" := "B"]] }
+
+  method {:test} IndexByIndexesListByTheGivenProperty() {
+    expect indexBy(Id, IdList()) ==
+      map["abc" := map["id" := "abc", "title" := "B"], "xyz" := map["id" := "xyz", "title" := "A"]];
+  }
+
+  method {:test} IndexByIndexesListByTheGivenPropertyUpperCase() {
+    expect indexBy((o: map<string, string>) => S.toUpper(Id(o)), IdList()) ==
+      map["ABC" := map["id" := "abc", "title" := "B"], "XYZ" := map["id" := "xyz", "title" := "A"]];
+  }
+
+  method {:test} IndexByIsCurried() {
+    var byId := (l: seq<map<string, string>>) => indexBy(Id, l);
+    expect byId(IdList()) ==
+      map["abc" := map["id" := "abc", "title" := "B"], "xyz" := map["id" := "xyz", "title" := "A"]];
+  }
+
+  // ---- sequence.js, traverse.js (v0.19.0): their list `it`s; `R.of` is
+  // List.of ----
+
+  method {:test} SequenceOperatesOnAListOfLists() {
+    var none: seq<seq<int>> := [];
+    var empty: seq<int> := [];
+    expect sequence(of, none) == [[]];
+    expect sequence(of, [empty, [1, 2, 3, 4]]) == [];
+    expect sequence(of, [[1], [2, 3, 4]]) == [[1, 2], [1, 3], [1, 4]];
+    expect sequence(of, [[1, 2], [3, 4]]) == [[1, 3], [1, 4], [2, 3], [2, 4]];
+    expect sequence(of, [[1, 2, 3], [4]]) == [[1, 4], [2, 4], [3, 4]];
+    expect sequence(of, [[1, 2, 3, 4], empty]) == [];
+  }
+
+  // `R.map(R.add(10))` as Plus10Map (commuteMap's, above)
+  method {:test} TraverseOperatesOnAListOfLists() {
+    var none: seq<seq<int>> := [];
+    var empty: seq<int> := [];
+    expect traverse(of, Plus10Map, none) == [[]];
+    expect traverse(of, Plus10Map, [empty, [1, 2, 3, 4]]) == [];
+    expect traverse(of, Plus10Map, [[1], [2, 3, 4]]) == [[11, 12], [11, 13], [11, 14]];
+    expect traverse(of, Plus10Map, [[1, 2], [3, 4]]) == [[11, 13], [11, 14], [12, 13], [12, 14]];
+    expect traverse(of, Plus10Map, [[1, 2, 3], [4]]) == [[11, 14], [12, 14], [13, 14]];
+    expect traverse(of, Plus10Map, [[1, 2, 3, 4], empty]) == [];
+  }
+
+  // ---- splitAt.js, splitWhen.js (v0.19.0) ----
+
+  method {:test} SplitAtSplitsAnArrayAtAGivenIndex() {
+    expect splitAt(1, [1, 2, 3]) == ([1], [2, 3]);
+  }
+
+  method {:test} SplitAtSplitsAStringAtAGivenIndex() {
+    expect splitAt(5, "hello world") == ("hello", " world");
+  }
+
+  // `splitAtThree = splitAt(3)`
+  method {:test} SplitAtIsCurried() {
+    var splitAtThree := (s: string) => splitAt(3, s);
+    expect splitAtThree("foobar") == ("foo", "bar");
+  }
+
+  method {:test} SplitAtCanHandleIndexGreaterThanArrayLength() {
+    var empty: seq<int> := [];
+    expect splitAt(4, [1, 2]) == ([1, 2], empty);
+  }
+
+  method {:test} SplitAtCanSupportNegativeIndex() {
+    expect splitAt(-1, "foobar") == ("fooba", "r");
+  }
+
+  // `R.equals(2)` and `R.T` as lambdas
+  method {:test} SplitWhenSplitsAnArrayAtTheFirstInstanceToSatisfyThePredicate() {
+    expect splitWhen((x: int) => x == 2, [1, 2, 3]) == ([1], [2, 3]);
+  }
+
+  method {:test} SplitWhenRetainsAllOriginalElements() {
+    var empty: seq<int> := [];
+    expect splitWhen((x: int) => Funcs.T(x), [1, 1, 1]) == (empty, [1, 1, 1]);
+  }
+
+  method {:test} SplitWhenIsCurried() {
+    var splitWhenFoo := (l: seq<string>) => splitWhen((x: string) => x == "foo", l);
+    var empty: seq<string> := [];
+    expect splitWhenFoo(["foo", "bar", "baz"]) == (empty, ["foo", "bar", "baz"]);
+  }
+
+  method {:test} SplitWhenOnlySplitsOnce() {
+    expect splitWhen((x: int) => x == 2, [1, 2, 3, 1, 2, 3]) == ([1], [2, 3, 1, 2, 3]);
+  }
+
+  // ---- transpose.js (v0.19.0) ----
+
+  method {:test} TransposeReturnsAnArrayOfTwoArrays() {
+    var input := [[Str("a"), Num(1)], [Str("b"), Num(2)], [Str("c"), Num(3)]];
+    expect transpose(input) == [[Str("a"), Str("b"), Str("c")], [Num(1), Num(2), Num(3)]];
+  }
+
+  method {:test} TransposeSkipsElementsWhenRowsAreShorter() {
+    var empty: seq<int> := [];
+    expect transpose([[10, 11], [20], empty, [30, 31, 32]]) == [[10, 20, 30], [11, 31], [32]];
+  }
+
+  method {:test} TransposeCopesWithEmptyArrays() {
+    var none: seq<seq<int>> := [];
+    expect transpose(none) == [];
+  }
+
+  method {:test} TransposeCopesWithTrueFalseNullAndUndefinedElements() {
+    var actual := transpose([[Bool(true), Bool(false), Undefined, Null], [Null, Undefined, Bool(false), Bool(true)]]);
+    expect actual == [[Bool(true), Null], [Bool(false), Undefined], [Undefined, Bool(false)], [Null, Bool(true)]];
+  }
+
+  // ---- without.js (v0.19.0) ----
+
+  method {:test} WithoutReturnsAnArrayNotContainingValuesInTheFirstArgument() {
+    expect without([1, 2], [1, 2, 1, 4, 5]) == [4, 5];
+  }
+
+  // `withoutOnes = without([1])`
+  method {:test} WithoutIsCurried() {
+    var withoutOnes := (l: seq<int>) => without([1], l);
+    expect withoutOnes([1, 2, 3, 5, 1]) == [2, 3, 5];
+  }
+
+  // "has R.equals semantics": its `[[1]]` line
+  method {:test} WithoutHasEqualsSemantics() {
+    expect |without([[1]], [[1]])| == 0;
+  }
+
+  // ---- lensIndex.js (v0.19.0, again; v0.14.0 to v0.15.1 had one): over Js
+  // values, `testList = [{a: 1}, {b: 2}, {c: 3}]`, as set stores a number
+  // among objects; `R.keys` gives an array of the key names ----
+  function TestList(): seq<Js>
+  { [Obj(map["a" := Num(1)]), Obj(map["b" := Num(2)]), Obj(map["c" := Num(3)])] }
+  // `R.keys` on testList's one-key objects
+  function KeysOf(v: Js): Js
+  { if !v.Obj? then Arr([])
+    else if v.props.Keys == {"a"} then Arr([Str("a")])
+    else if v.props.Keys == {"b"} then Arr([Str("b")])
+    else if v.props.Keys == {"c"} then Arr([Str("c")])
+    else Arr([]) }
+
+  method {:test} LensIndexViewFocusesListElementAtTheSpecifiedIndex() {
+    expect O.view(lensIndex<Js, Js>(0), TestList()) == Obj(map["a" := Num(1)]);
+  }
+
+  method {:test} LensIndexSetSetsTheListValueAtTheSpecifiedIndex() {
+    expect O.set_(lensIndex<Js, Js>(0), Num(0), TestList()) ==
+      [Num(0), Obj(map["b" := Num(2)]), Obj(map["c" := Num(3)])];
+  }
+
+  method {:test} LensIndexOverAppliesFunctionToTheValueAtTheSpecifiedListIndex() {
+    expect O.over(lensIndex<Js, Js>(2), (v: Js) => KeysOf(v), TestList()) ==
+      [Obj(map["a" := Num(1)]), Obj(map["b" := Num(2)]), Arr([Str("c")])];
+  }
+
+  // "well behaved lens"
+  method {:test} LensIndexSetOfGetIsIdentity() {
+    expect O.set_(lensIndex<Js, Js>(0), O.view(lensIndex<Js, Js>(0), TestList()), TestList()) == TestList();
+  }
+
+  method {:test} LensIndexGetOfSetIsTheValue() {
+    expect O.view(lensIndex<Js, Js>(0), O.set_(lensIndex<Js, Js>(0), Num(0), TestList())) == Num(0);
+  }
+
+  method {:test} LensIndexGetOfSetOfSetIsTheLastValue() {
+    expect O.view(lensIndex<Js, Js>(0), O.set_(lensIndex<Js, Js>(0), Num(11), O.set_(lensIndex<Js, Js>(0), Num(10), TestList()))) == Num(11);
   }
 }

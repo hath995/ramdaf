@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.18.0's own suite does not cover, each checked against
-// dist/ramda.js v0.18.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.19.0's own suite does not cover, each checked against
+// dist/ramda.js v0.19.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -156,10 +156,9 @@ module RamdafTests.Edge.List {
     expect length("abc") == 3;
   }
 
+  // (mapObj's lines went with it in v0.19.0)
   method {:test} MapObjEdges() {
     var none: map<string, int> := map[];
-    expect mapObj((v: int) => v + 1, none) == map[];
-    expect mapObj((v: int) => v * 2, map["a" := 1]) == map["a" := 2];
     expect mapObjIndexed((v: int, k: string, o: map<string, int>) => k + NumStr(v), map["a" := 1, "b" := 2]) ==
       map["a" := "a1", "b" := "b2"];
     expect mapObjIndexed((v: int, k: string, o: map<string, int>) => |o| + v, map["a" := 1, "b" := 2]) ==
@@ -167,30 +166,9 @@ module RamdafTests.Edge.List {
     expect mapObjIndexed((v: int, k: string, o: map<string, int>) => v, none) == map[];
   }
 
-  method {:test} ContainsWithEdges() {
-    var empty: seq<int> := [];
-    expect containsWith((a: int, b: int) => a == b + 1, 3, [1, 2]) == true;
-    expect containsWith((a: int, b: int) => a == b + 1, 5, [1, 2]) == false;
-    expect containsWith((a: int, b: int) => true, 1, empty) == false;
-    expect containsWith((a: int, b: int) => a % 10 == b % 10, 12, [2, 3]) == true;
-  }
-
-  // isSet(list) is `uniq(list).length === list.length` (since v0.18.0 isSet
-  // is allUniq, below).
-  method {:test} IsSetEdges() {
-    var empty: seq<int> := [];
-    expect isSet(empty) == true;
-    expect isSet([1, 2, 1]) == false;
-    expect isSet(["a", "b"]) == true;
-    expect isSet([3, 3]) == false;
-    var lists := [[1, 2, 1, 3, 2], [4, 5], [6, 6, 6], empty];
-    for i := 0 to |lists| {
-      expect isSet(lists[i]) == (|uniq(lists[i])| == |lists[i]|);
-    }
-  }
-
-  // allUniq (v0.18.0, isSet's code) compares with `R.equals` (node: true,
-  // false, true, false, false for `[[1], [1]]`).
+  // allUniq (v0.18.0, isSet's code; isSet, its alias, went in v0.19.0)
+  // compares with `R.equals` (node: true, false, true, false, false for
+  // `[[1], [1]]`), and is `uniq(list).length === list.length`.
   method {:test} AllUniqEdges() {
     var empty: seq<int> := [];
     expect allUniq(empty) == true;
@@ -200,7 +178,7 @@ module RamdafTests.Edge.List {
     expect allUniq([[1], [1]]) == false;
     var lists := [[1, 2, 1, 3, 2], [4, 5], [6, 6, 6], empty];
     for i := 0 to |lists| {
-      expect allUniq(lists[i]) == isSet(lists[i]);
+      expect allUniq(lists[i]) == (|uniq(lists[i])| == |lists[i]|);
     }
   }
 
@@ -588,14 +566,6 @@ module RamdafTests.Edge.List {
     expect mergeAll([empty, empty]) == map[];
   }
 
-  // createMapEntry (v0.7.0)
-  method {:test} CreateMapEntryEdges() {
-    expect createMapEntry("", 1) == map["" := 1];
-    expect createMapEntry("a", Undefined) == map["a" := Undefined];
-    // `createMapEntry(1, 'x')`: JS converts the key 1 to "1"
-    expect createMapEntry("1", "x") == map["1" := "x"];
-  }
-
   method {:test} FlattenEdges() {
     var empty: seq<Tree<int>> := [];
     expect flatten(empty) == [];
@@ -724,8 +694,9 @@ module RamdafTests.Edge.List {
   }
 
   // node: zipObj(['__proto__', 'a'], [1, 2]) is {a: 2} and
-  // fromPairs([['__proto__', 5], ['a', 1]]) is {a: 1}, and since v0.7.0
-  // createMapEntry('__proto__', 1) has no own key: assigning
+  // fromPairs([['__proto__', 5], ['a', 1]]) is {a: 1} (and from v0.7.0 to
+  // v0.18.0 createMapEntry('__proto__', 1) had no own key; since v0.19.0
+  // the keys of indexBy(x => '__proto__', [1]) are []): assigning
   // `__proto__` sets the prototype (a primitive is ignored) instead of a
   // property. Likewise the keys of mergeAll([JSON.parse('{"__proto__": 5,
   // "a": 1}'), {b: 2}]) (v0.10.0) are ['a', 'b']. A map's keys are all
@@ -733,7 +704,7 @@ module RamdafTests.Edge.List {
   method {:test} DeviationPrototypeKeysAreOrdinaryInListBuilders() {
     expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
-    expect createMapEntry("__proto__", 1) == map["__proto__" := 1];
+    expect indexBy((x: int) => "__proto__", [1]) == map["__proto__" := 1];
     expect mergeAll([map["__proto__" := 5, "a" := 1], map["b" := 2]]) == map["__proto__" := 5, "a" := 1, "b" := 2];
   }
 
@@ -743,23 +714,22 @@ module RamdafTests.Edge.List {
   // and `value` until v0.13.0): `reduce((acc, x) => assoc('x', x, acc),
   // {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2, 3])` is 9,
   // `mergeAll([{'@@transducer/reduced': 1, '@@transducer/value': 7}, {a:
-  // 2}])` is 7, and `mapObj(x => x, {'@@transducer/reduced': 1,
-  // '@@transducer/value': 5, z: 3})` and `mapObjIndexed` of it are
-  // undefined. Here the key is ordinary.
+  // 2}])` is 7, and `mapObjIndexed((x, k, o) => x, {'@@transducer/reduced':
+  // 1, '@@transducer/value': 5, z: 3})` is undefined (and so was `mapObj`'s
+  // until v0.18.0). Here the key is ordinary.
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
     var marked := map["@@transducer/reduced" := 1, "@@transducer/value" := 9];
     expect reduce((acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2, 3]) == marked["x" := 3];
     var m7 := map["@@transducer/reduced" := 1, "@@transducer/value" := 7];
     expect mergeAll([m7, map["a" := 2]]) == m7["a" := 2];
     var o := map["@@transducer/reduced" := 1, "@@transducer/value" := 5, "z" := 3];
-    expect mapObj((x: int) => x, o) == o;
     expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
   }
 
   // node: since v0.14.0 the v0.12.0 marker `__transducers_reduced__` is an
   // ordinary key, as here: the folds run to the end (`reduce` gives
   // {__transducers_reduced__: 1, value: 9, x: 3}, `mergeAll` {…, a: 2}, and
-  // `mapObj` and `mapObjIndexed` the object; in v0.12.0 and v0.13.0 9, 7 and
+  // `mapObjIndexed` (and `mapObj` until v0.18.0) the object; in v0.12.0 and v0.13.0 9, 7 and
   // undefined).
   method {:test} OldReducedMarkerIsAnOrdinaryKey() {
     var marked := map["__transducers_reduced__" := 1, "value" := 9];
@@ -767,26 +737,30 @@ module RamdafTests.Edge.List {
     var m7 := map["__transducers_reduced__" := 1, "value" := 7];
     expect mergeAll([m7, map["a" := 2]]) == m7["a" := 2];
     var o := map["__transducers_reduced__" := 1, "value" := 5, "z" := 3];
-    expect mapObj((x: int) => x, o) == o;
     expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
   }
 
   // node: since v0.14.0 `contains`, `indexOf`, `lastIndexOf` and `isSet`
   // (`_indexOf`), `uniq` (`uniqWith(eq)`) and `dropRepeats` (`_eq`) compare
   // with `Object.is`: `contains(negate(0), [0])` is false, `indexOf` and
-  // `lastIndexOf` of it -1, `isSet([0, negate(0)])` true (and since
-  // v0.18.0 `allUniq`, which isSet now is), and `uniq` and
+  // `lastIndexOf` of it -1, `allUniq([0, negate(0)])` true (`isSet` from
+  // v0.14.0 to v0.18.0), and `uniq` and
   // `dropRepeats` of that list [0, -0] (with `===` until v0.13.0: true, 0,
   // 0, false, [0]); since v0.16.0 `uniqBy(identity, [negate(0), 0])` is
-  // [-0, 0] (`_contains`, `R.equals`). An int has no -0.
+  // [-0, 0] (`_contains`, `R.equals`); since v0.19.0 `uniq` is
+  // `uniqBy(identity)`, whose `Set` keeps a repeated -0: `uniq([negate(0),
+  // negate(0)])` is [-0, -0], `uniqBy(x => x * 0, [-1, -2])` [-1, -2], and
+  // `without([0], [negate(0)])` (v0.19.0) [-0]. An int has no -0.
   method {:test} DeviationListSearchesSignedZero() {
     var z := M.negate(0);
     expect contains(z, [0]) == true;
     expect indexOf(z, [0]) == 0;
     expect lastIndexOf(z, [0]) == 0;
-    expect isSet([0, z]) == false;
     expect allUniq([0, z]) == false;
     expect uniq([0, z]) == [0];
+    expect uniq([z, z]) == [z];
+    expect uniqBy((x: int) => x * 0, [-1, -2]) == [-1];
+    expect without([0], [z]) == [];
     expect dropRepeats([0, z]) == [0];
     expect uniqBy((x: int) => x, [z, 0]) == [z];
   }
@@ -795,5 +769,52 @@ module RamdafTests.Edge.List {
   method {:test} PairEdges() {
     expect pair(1, [2]) == (1, [2]);
     expect pair("a", pair(1, 2)) == ("a", (1, 2));
+  }
+
+  // indexBy (v0.19.0): a later element with the same key wins (node:
+  // {a: {id: 'a', v: 2}, b: {id: 'b'}}, {}, {toString: 2}).
+  method {:test} IndexByEdges() {
+    var none: seq<int> := [];
+    expect indexBy((x: (string, int)) => x.0, [("a", 1), ("b", 0), ("a", 2)]) ==
+      map["a" := ("a", 2), "b" := ("b", 0)];
+    expect indexBy((x: int) => "k", none) == map[];
+    expect indexBy((x: int) => "toString", [1, 2]) == map["toString" := 2];
+  }
+
+  // splitAt and splitWhen (v0.19.0) (node: [[], [1, 2]] twice, [[], []],
+  // [[], []], [[1], []]).
+  method {:test} SplitAtSplitWhenEdges() {
+    var empty: seq<int> := [];
+    expect splitAt(0, [1, 2]) == (empty, [1, 2]);
+    expect splitAt(-5, [1, 2]) == (empty, [1, 2]);
+    expect splitAt(1, empty) == (empty, empty);
+    expect splitWhen((x: int) => true, empty) == (empty, empty);
+    expect splitWhen((x: int) => false, [1]) == ([1], empty);
+  }
+
+  // transpose (v0.19.0) (node: [[1, 3], [2, 4]], [], [[1, 2], [3]]).
+  method {:test} TransposeEdges() {
+    var empty: seq<int> := [];
+    expect transpose([[1, 2], [3, 4]]) == [[1, 3], [2, 4]];
+    expect transpose([empty, empty]) == [];
+    expect transpose([[1], empty, [2, 3]]) == [[1, 2], [3]];
+  }
+
+  // without (v0.19.0) (node: [1, 2], [], [2]).
+  method {:test} WithoutEdges() {
+    var empty: seq<int> := [];
+    expect without(empty, [1, 2]) == [1, 2];
+    expect without([1], empty) == [];
+    expect without([1, 1], [1, 2, 1]) == [2];
+  }
+
+  // sequence and traverse (v0.19.0) (node: [[1, 2], [1, 3]], [[1], [1]],
+  // [[1, 2], [1, -2], [-1, 2], [-1, -2]], [[]]).
+  method {:test} SequenceTraverseEdges() {
+    var none: seq<int> := [];
+    expect sequence(of, [[1], [2, 3]]) == [[1, 2], [1, 3]];
+    expect sequence((x: seq<int>) => [x, x], [[1]]) == [[1], [1]];
+    expect traverse(of, (x: int) => [x, -x], [1, 2]) == [[1, 2], [1, -2], [-1, 2], [-1, -2]];
+    expect traverse(of, (x: int) => [x], none) == [[]];
   }
 }
