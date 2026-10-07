@@ -121,7 +121,7 @@ For each Ramda tag, in order:
 | a documented "no value" result (`find` miss → `undefined`, `maxBy([])` → `undefined` (until v0.16.0 made `maxBy` binary), `nth` out of range → `undefined` (until v0.4.1 removed `nth`, and again since v0.8.0; on a string `''` since v0.16.0, `nth(3, 'abc')`), `cond` when no predicate matches → `undefined` (v0.8.0)) | `Option<T>` |
 | `where`'s spec object, whose properties are predicates on the test object's property (since v0.14.0; until v0.13.0 functions or values) | `map<string, Option<V> -> bool>`: each predicate gets the property, `None` when it is absent (until v0.13.0 `map<string, Ramdaf.Prelude.SpecVal<V>>`, `Pred(fn)` for a function and `Val(v)` for a value; v0.14.0 moved the values to `whereEq` and removed `SpecVal`) |
 | nested arrays (the input of `flatten` and `unnest`) | `Ramdaf.Prelude.Tree<T>`: `Node(children)` for an array, `Leaf(v)` for any other element (an array-like element is not flattened; see "Deviations") |
-| a two-element array used as a pair (`zip`'s and `xprod`'s elements, `partition`'s result, `fromPairs`' elements, `cond`'s `[predicate, transformer]` pairs, the `[accumulator, element]` arrays of `mapAccum` and `mapAccumRight` (`mapAccumL` and `mapAccumR` in v0.9.x) and their results, `pair`'s result (v0.18.0), `converge`'s list of two branching functions (v0.18.0; see "Deviations"), the lists of two functions of `pipeWith` and `composeWith` (v0.26.0; see "Deviations"), and the results of `splitAt` and `splitWhen` (v0.19.0)) | `(A, B)` |
+| a two-element array used as a pair (`zip`'s and `xprod`'s elements, `partition`'s result, `fromPairs`' elements, `cond`'s `[predicate, transformer]` pairs, the `[accumulator, element]` arrays of `mapAccum` and `mapAccumRight` (`mapAccumL` and `mapAccumR` in v0.9.x) and their results, `pair`'s result (v0.18.0), `converge`'s list of two branching functions (v0.18.0; see "Deviations"), the lists of two functions of `pipeWith` and `composeWith` (v0.26.0; see "Deviations") and of `flow`'s pipeline (v0.30.0), and the results of `splitAt` and `splitWhen` (v0.19.0)) | `(A, B)` |
 | a lens (v0.16.0, "composable lenses": `lens`'s, `lensIndex`'s and `lensProp`'s result), a van Laarhoven lens `Functor f => (a -> f a) -> s -> f s`: a function that takes a function from the focus to a functor and returns one from the whole to the functor, run by `view` (with a `Const` functor), `over` (with an `Identity` functor) and `set`, and composed with `compose` | `Ramdaf.Prelude.Lens<S, V, X>`, the type `(V --> Functor<X, V>) -> (S --> Functor<X, S>)`, with the datatype `Prelude.Functor<X, T> = Const(c: X) \| Identity(v: T)` for the two functors and `Prelude.map_` for their `map`; X is the type a `Const` carries (`view` takes a lens with X the focus type). The arrows from values are partial: a getter or setter that throws or is `undefined` on part of its domain gives the lens a precondition there (see "Outside the modeled domain"). From v0.8.0 to v0.15.1 a lens was a function `l` with the properties `l.set` and `l.map` (`lensOn`'s bound lens, v0.11.0, one of no arguments), the records `Prelude.Lens<A, V>(get, set_, map_)` and `Prelude.LensOn<V, B>(get, set_, map_)` |
 | number | `int`, or `real` for `divide` and for the results of `mean` and `median` (v0.14.0) |
 | string | `string` (a sequence of Unicode code points) |
@@ -132,21 +132,21 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0 and `{'@@functional/placeholder': true}` since v0.15.0, which also curries `concat` and `contains` this way, and since v0.10.0 `merge`) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) Since v0.11.0 `op` is gone and every curried function takes the placeholder in any position: `f(R.__, b)` is still `x => f(x, b)`, while `f(R.__)` is `f` itself, so `subtract(R.__)(5)` is `x => 5 - x` (from v0.6.0 to v0.10.0 `op` made it `x => x - 5`). |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type. (Since v0.11.0 a curried Ramda function called with no arguments returns itself, `identity()` is `identity`; the functions Ramda returns, such as `always(7)`, `T` and `cond(…)`'s result, are not curried, and they are the ones called this way.) |
 
-## Modules and exports (v0.29.1)
+## Modules and exports (v0.30.0)
 
 | Module | Exports |
 |---|---|
 | `Ramdaf.Core` | clone, isEmpty, prepend, nth, head, last, tail, append, concat, identity, times, length, isNil, isNotNil |
-| `Ramdaf.Functions` | compose, pipe, flip, converge, always, T, F, juxt, applySpec, o, applyTo, thunkify, pipeWith, composeWith, on, promap |
+| `Ramdaf.Functions` | compose, pipe, flip, converge, always, T, F, juxt, applySpec, o, applyTo, thunkify, pipeWith, composeWith, on, promap, flow |
 | `Ramdaf.List` | reduce, reduceRight, unfold, mapSeq (`map`), mapObjIndexed, filter, reject, takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex, all, any, uniq, uniqWith, pluck, flatten, zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice, remove, insert, insertAll, partition, ap, of, empty, chain, unnest, zipObj, fromPairs, scan, repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none, adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex, dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose, without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes, move, count, collectBy, splitWhenever, dropRepeatsBy, swap |
 | `Ramdaf.Sort` | comparator, ascend, descend, sortWith; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn, values, valuesIn, pick, pickAll, omit, pickBy, eqProps, where, assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq, view, over, set_ (`set`), objOf, mergeWith, mergeWithKey, mergeLeft, mergeRight, modify_ (`modify`), whereAny |
-| `Ramdaf.Logic` | and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo, propSatisfies, when, unless, until, xor |
+| `Ramdaf.Logic` | and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo, propSatisfies, when, unless, until, xor, isNotEmpty |
 | `Ramdaf.Math` | add, multiply, subtract, divide, modulo, mathMod, sum, product, lt, lte, gt, gte, max, maxBy, minBy, min, inc, dec, negate, mean, median |
 | `Ramdaf.String` | toUpper, toLower, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, countBy, groupBy, project, equals, identical, eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin |
 
-That is 210 of Ramda v0.29.1's 267 export names (since v0.9.0 Ramda has no
+That is 212 of Ramda v0.30.0's 269 export names (since v0.9.0 Ramda has no
 functions stored as properties of exports). The other 55 names are listed
 under "Not portable".
 
@@ -173,7 +173,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.29.1 does not export the helpers `_makeFlat`, `_checkForMethod` and
+Ramda v0.30.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
 `_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
@@ -222,7 +222,8 @@ and `_modify` (behind `assoc`, `dissoc` and `modify`), `_isTypedArray`,
 `_promap`, `_xpromap`, `_xuniqBy` and `_xuniqWith`; v0.29.0 deletes `_of`
 and adds `_arrayReduce`, `_createReduce`, `_xArrayReduce`, `_xReduce` and
 `_xscan`, as `_reduce` becomes a plain loop and `_xReduce` the transducer
-fold).
+fold; v0.30.0 adds `_nth`, `_path` and `_placeholder`, the code of `nth`,
+`path` and `__`).
 Since v0.9.0 they are the modules `src/internal/_*.js` (since v0.25.0
 `source/internal/_*.js`; until v0.8.0 local to `ramda.js`), and Ramdaf does not export them either. (`isArrayLike`, private since v0.3.0, was exported from v0.5.0 to
 v0.23.0, not portable, and is private again since v0.24.0 as
@@ -234,12 +235,12 @@ does.)
 
 ## Not portable
 
-These Ramda v0.29.1 exports are not ported, rather than faked:
+These Ramda v0.30.0 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
 | `curry`, `curryN`, `uncurryN` | Ramdaf functions are uncurried, and Dafny has no partial application to curry into. (v0.5.0 moved `curry`'s arity argument to the new `curryN(n, fn)`.) `uncurryN(n, fn)` (v0.14.0) goes the other way, a function of n arguments that applies the curried `fn` to them a few at a time, by each intermediate function's `length` (`uncurryN(2, a => b => a + b)(1, 2)` → `3`): n fixes the result's arity at run time. |
-| `__` | The currying placeholder, the object `{'@@functional/placeholder': true}` (v0.15.0, which recognises any object with that property; `{ramda: 'placeholder'}` from v0.9.0 to v0.14.0; until v0.8.0 a non-enumerable `undefined`). Since v0.11.0 every curried function accepts it in any argument position (`subtract(R.__, 5)`, `has(R.__, obj)`). Until v0.10.0 it served `op` (v0.5.0), which v0.11.0 removed: `op(fn)` made a binary function from one with exactly two parameters (v0.6.0; before, at least two); in v0.5.0 its one-argument call fixed the second parameter, with the placeholder `R._` for the first, and from v0.6.0 one argument fixed the first parameter and the placeholder as the first argument the second (v0.9.0 curried `concat` and `contains`, and v0.10.0 `merge`, the same way). The uncurried port has no partial application (see the mapping). (`version`, the release string from v0.5.0 to v0.8.0, was listed here as release metadata until v0.9.0 removed it.) |
+| `__` | The currying placeholder, the object `{'@@functional/placeholder': true}` (v0.15.0, which recognised any object with that property until v0.30.0 (e02ae048) recognised only that object itself; `{ramda: 'placeholder'}` from v0.9.0 to v0.14.0; until v0.8.0 a non-enumerable `undefined`). Since v0.11.0 every curried function accepts it in any argument position (`subtract(R.__, 5)`, `has(R.__, obj)`). Until v0.10.0 it served `op` (v0.5.0), which v0.11.0 removed: `op(fn)` made a binary function from one with exactly two parameters (v0.6.0; before, at least two); in v0.5.0 its one-argument call fixed the second parameter, with the placeholder `R._` for the first, and from v0.6.0 one argument fixed the first parameter and the placeholder as the first argument the second (v0.9.0 curried `concat` and `contains`, and v0.10.0 `merge`, the same way). The uncurried port has no partial application (see the mapping). (`version`, the release string from v0.5.0 to v0.8.0, was listed here as release metadata until v0.9.0 removed it.) |
 | `nAry`, `unary`, `binary` | Change a function's reported arity (`fn.length`), which Dafny functions do not have (`unary(fn)` is `nAry(1, fn)`, `binary(fn)` is `nAry(2, fn)`; v0.2.0; `arity`, deprecated in v0.15.0, was here until v0.16.0 removed it). |
 | `invoker` | Calls a JS method on an object at run time: `func` (deprecated in v0.12.0, removed in v0.14.0) looked it up by name, `invoke(methodName, args, obj)` (v0.12.0 to v0.15.1; v0.13.0 moved `obj` last; deprecated in v0.15.0, removed in v0.16.0) was `obj[methodName].apply(obj, args)`, and so, since v0.8.0, does `invokerN(n, 'name', ...args)` (since v0.15.0 `invoker(arity, method)` takes no initial arguments), which calls the last argument's own method `name` and which v0.9.0 renames `invoker` (from v0.6.0 to v0.7.2 `invoker(method)` and `invokerN(n, method)` took the method itself; until v0.5.0 `invoker` took a name and a prototype; v0.8.0 removed that `invoker`). |
 | `bind` | Fixes the `this` of a JS function (v0.6.0; since v0.11.0 the result keeps `fn`'s arity); Dafny functions have no `this`. |
@@ -263,7 +264,7 @@ These Ramda v0.29.1 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.29.1 (node) | Ramdaf |
+| Function | Ramda v0.30.0 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`, and since v0.16.0 `head('')` and `last('')` → `''`, not a character; `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `repeat` (`repeatN` until v0.8.0), `times` | `new Array(n)` throws `RangeError` for a negative n: `repeat(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3; since v0.19.1 `times` throws its own `RangeError: n must be a non-negative number`, for NaN too) | `n: nat` |
@@ -290,13 +291,13 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.29.1 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.30.0 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `identical` (`eq` until v0.14.0 and in v0.15.1) | `identical` (`Object.is`) compares arrays and objects by reference: `identical([], [])` → `false`. (Until v0.14.0 `===` or `Object.is` also made `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq` (v0.14.0; `where`'s value entries before) and `dropRepeats` (v0.14.0) compare by reference: for `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(Ro, So).length` → `0` and `difference(…)` → `4`. Since v0.15.0 they compare with `R.equals`, deep equality, as here, except that in v0.15.0 alone `uniq` kept a JS `Set`, which compares by reference (unless an object has an `equals` method), so `uniq([{a: 1}, {a: 1}])` kept both and `union(Ro, So).length` was still `8`; v0.15.1 makes `uniq` `uniqWith(equals)` again.) | Structural `==`: `true` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert`, `collectBy` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}`; `collectBy(fn, list)` (v0.28.0) lists its groups in `for…in` order of their tags, integer-like tags first and ascending: `collectBy(x => String(x % 3), [5, 4, 3, 2])` → `[[3], [4], [5, 2]]` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets; `collectBy`'s groups in the order their tags first occur, `[[5, 2], [4], [3]]` | A `map` has no key order. |
 | `values`, `valuesIn` | `values({a: 1, b: 1})` → `[1, 1]`, in key order | `multiset{1, 1}` | A `map` has no key order. |
 | `unfold` (`unfoldr` until v0.9.1), `until` | `unfold` loops until `fn` returns a falsy value, and `until(pred, fn, init)` (v0.20.0) applies fn until pred holds (`until(x => x < 0, x => x + 1, 0)`), possibly forever | extra `fuel: nat` parameter; `unfold` stops after `fuel` elements and `until` after `fuel` applications of fn, returning the value reached | Dafny functions must terminate. |
-| `compose`, `pipe`, `composeK` and `pipeK` (until v0.27.2), `pipeWith`, `composeWith` | variadic: `compose(a, b, c, d)`, and so `composeK(h, g, f)` (v0.16.0; `pipeWith(xf, [f, g, h])` (v0.26.0) takes a list of any number, `[]` giving `identity` and `[f]` f's results; since v0.16.0 lenses compose with `compose` too, and from v0.14.0 to v0.15.1 `composeL(l1, l2, l3)` and `pipeL` composed them) | binary: `compose(a, compose(b, compose(c, d)))`, `composeK(h, composeK(g, f))`. There is no unary or nullary form; `compose(f)` and `pipe(f)` give `f`'s results in node too (since v0.11.0 through a wrapper with `f`'s arity; `f` itself from v0.3.0 and v0.4.0 to v0.10.0), and `composeK()` was `identity` until v0.22.1 (since v0.23.0 it throws Error, as does `pipeK()`); `pipeWith(xf, (f, g))` and `composeWith(xf, (g, f))` take exactly two, as a pair. | Dafny functions have fixed arity. |
+| `compose`, `pipe`, `composeK` and `pipeK` (until v0.27.2), `pipeWith`, `composeWith`, `flow` | variadic: `compose(a, b, c, d)`, and so `composeK(h, g, f)` (v0.16.0; `pipeWith(xf, [f, g, h])` (v0.26.0) takes a list of any number, `[]` giving `identity` and `[f]` f's results, and so does `flow(seed, [f, g, h])` (v0.30.0), `flow(seed, [])` giving seed; since v0.16.0 lenses compose with `compose` too, and from v0.14.0 to v0.15.1 `composeL(l1, l2, l3)` and `pipeL` composed them) | binary: `compose(a, compose(b, compose(c, d)))`, `composeK(h, composeK(g, f))`. There is no unary or nullary form; `compose(f)` and `pipe(f)` give `f`'s results in node too (since v0.11.0 through a wrapper with `f`'s arity; `f` itself from v0.3.0 and v0.4.0 to v0.10.0), and `composeK()` was `identity` until v0.22.1 (since v0.23.0 it throws Error, as does `pipeK()`); `pipeWith(xf, (f, g))`, `composeWith(xf, (g, f))` and `flow(seed, (f, g))` take exactly two, as a pair (`flow(seed, (f, pipe(g, h)))` for three). | Dafny functions have fixed arity. |
 | `always`, `T`, `F` (`alwaysTrue`, `alwaysFalse` and `alwaysZero` until v0.8.0) | ignore however many arguments they get | take exactly one argument of any type (`always(7)(())`) | Fixed arity. |
 | `both`, `either`, `complement` (`and`, `or`, `not` until v0.11.0), `converge`, `ifElse` (and its alias `if_` in v0.8.0), `cond`, `juxt` (v0.19.0), `applySpec` (v0.20.0), `thunkify` (v0.26.0) | forward any number of arguments (`juxt([add, multiply])(2, 3)` → `[5, 6]`, `applySpec({sum: add})(1, 2)` → `{sum: 3}`, `thunkify(add)(1, 2)()` → `3`); since v0.20.0 `juxt` and `applySpec` are curried to the longest function's arity (`juxt([multiply, add])(2)(3)` → `[6, 5]`), and `thunkify(fn)` to fn's | unary functions (pass a tuple, or `()` for none) | Fixed arity. |
 | `converge` (`fork` until v0.4.1) | since v0.18.0 takes a list of any number of branching functions, `converge(after, [f1, f2, f3])` (`converge(a => [a], [x => x + 1])(5)` → `[6]`; since v0.20.0 `converge(after, [])` is a function of no arguments that calls after with none, where until v0.19.1 it threw, as the result's arity was `-Infinity`), and its result is curried to the longest function's arity (since v0.14.0). Until v0.17.1 the functions were separate arguments, `converge(after, f1, f2, f3)` (its v0.4.2 documentation names three), and from v0.11.0 it was `curryN(3, …)`, so `converge(after, f)` waited for another function | exactly two, as a pair: `converge(after, (f1, f2))` (until v0.17.1 `converge(after, f1, f2)`) | Fixed arity. |
@@ -312,7 +313,7 @@ a signature (an arity or an operand type) is enforced by the types.
 | `replace` | the pattern may be a RegExp (`replace(/\d+/g, 'num', '1 2 three')` → `'num num three'`, every match with the `g` flag) and the replacement a function (`replace('a', x => x.toUpperCase(), 'banana')` → `'bAnana'`); other values are converted to strings (`replace(1, 'x', 'a1b')` → `'axb'`) | string pattern and replacement only | Typed; regular expressions are not portable (as for `match`). |
 | `join` | converts elements to strings: `join("~", [1, 2, 3, 4])` → `"1~2~3~4"` | `seq<string>` elements | Typed. |
 | `zipObj`, `fromPairs`, `createMapEntry` (until v0.18.0), `objOf`, `assoc`, `invert`, `invertObj` | convert keys to strings: `zipObj([1, 2], ['x', 'y'])` → `{"1": 'x', "2": 'y'}`, `createMapEntry(1, 'x')`, `objOf(1, 'x')` (v0.18.0) and `assoc(1, 'x', {})` (v0.8.0) → `{"1": 'x'}`, and `invert({a: 1, b: 1})` (v0.9.0) → `{"1": ['a', 'b']}` (the values become keys) | `string` keys (and `string` values for `invert` and `invertObj`) | Typed. |
-| `empty` | takes any argument: since v0.16.0 `empty({a: 1})` → `{}`, `empty('abc')` → `''` and `empty(5)` → `undefined` (and since v0.18.0 an `arguments` object gives an empty one), and `x.constructor.empty()` is called when there is one (until v0.15.1 `empty(5)`, `empty({})` and `empty()` → `[]`) | `empty(x: seq<T>): seq<T>` (a Dafny string's empty value is `""`) | Typed: the result's element type comes from the argument. |
+| `empty`, `isEmpty`, `isNotEmpty` | take any argument: since v0.16.0 `empty({a: 1})` → `{}`, `empty('abc')` → `''` and `empty(5)` → `undefined` (and since v0.18.0 an `arguments` object gives an empty one), and `x.constructor.empty()` is called when there is one (until v0.15.1 `empty(5)`, `empty({})` and `empty()` → `[]`); `isEmpty(x)`, since v0.18.0 `x != null && equals(x, empty(x))`, and `isNotEmpty` (v0.30.0), its negation, test any value likewise: `isEmpty({})` → `true`, `isEmpty(null)` and `isEmpty(0)` → `false` (an omission of the earlier ports, recorded in v0.30.0) | `empty(x: seq<T>): seq<T>` (a Dafny string's empty value is `""`), `isEmpty` and `isNotEmpty` take a `seq<T>` | Typed: the result's element type comes from the argument, and one Dafny signature per function. |
 | `chain` | keeps a result of `f` that is not array-like as one element: `chain(x => x * 2, [1, 2])` → `[2, 4]`, `chain(x => 'ab', [1, 2])` → `['ab', 'ab']` | `f: A -> seq<B>`; a string result is a sequence of characters and is concatenated: `chain(x => "ab", [1, 2]) == "abab"` | Typed; a Dafny `string` is a `seq<char>`. |
 | `commute`, `commuteMap` (until v0.19.1), `sequence`, `traverse`, `composeK`, `pipeK` (until v0.27.2), `of` | work on a Fantasy-land functor, with `of` building the result's functor (v0.8.0; `sequence(of, t)` and `traverse(of, f, t)`, v0.19.0, also dispatch to a traversable's `sequence` method; the documentation points at `Maybe` and `Either`; since v0.29.0 their first argument may be a type representative, whose `fantasy-land/of` or `of` method is then `of`, and they dispatch to a traversable's `fantasy-land/traverse` or `traverse` method instead); `of(Ctor, val)` (v0.29.0) calls the constructor's `fantasy-land/of` or `of` method (`of(Array, 42)` is `Array.of(42)`, `of(S.Maybe, 100)` → `S.Just(100)`), and gives `[val]` for a Ctor with neither; since v0.9.0 the private `_map` and `_ap` call only the `ap` method of `of`'s result, so a functor's `map` is no longer used; `composeK` and `pipeK` (v0.16.0) chain any monad through its `chain` method (Ramda's tests use an `Identity` object: `composeK(h, g, f)(new Identity(8)).value` → `50` until v0.22.1; since v0.23.0 the last function is applied to a plain value, `composeK(h, g, f)(x)` is `chain(h, chain(g, f(x)))`) | arrays only: `fn: seq<A> -> seq<B>`, `of: seq<B> -> seq<seq<B>>` (a function), and `composeK` chains lists with `List.chain`; `of(Ctor, val)` ignores Ctor, of any type, and gives `[val]` | Typed; no Dafny value has methods. |
 | `lens`, `lensIndex`, `lensProp` | since v0.16.0 return a van Laarhoven lens, a function of a functor-valued function, which `view`, `over` and `set` run with their own `Const` and `Identity` objects and whose `R.map` dispatches to any functor's `map` method; `over`'s function may return a value of another type (`over(lensProp('x'), String, {x: 1})` → `{x: '1'}`). (From v0.8.0 to v0.15.1 a lens was a function `l` with the properties `l.set` and `l.map`, `l(a)` being `get(a)`, and `composeL`, `pipeL` and `lensOn` built such lenses.) | `Prelude.Lens<S, V, X>`, the same function over the one datatype `Prelude.Functor<X, T>` (`Const(c)`, `Identity(v)`), with `over`'s `f: V -> V` (until v0.15.1 the records `Prelude.Lens` and `Prelude.LensOn`, `l.get(a)`, `l.set_(v, a)`, `l.map_(fn, a)`) | Dafny has no type quantified over functors, and no value has methods; typed. |
@@ -345,7 +346,7 @@ also lists what it skips: arity checks, side-effect counting, calls with no
 arguments, `null` or `undefined` in place of a list, JS coercion, reference
 equality, method dispatch on non-array objects, array-like objects,
 prototypes, string-keyed `sortBy`, and the unportable functions' files
-(v0.29.1: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `construct.js`,
+(v0.30.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `construct.js`,
 `constructN.js`, `curry.js`, `curryN.js`, `forEach.js`,
 `into.js`, `lensPath.js`, `pathSatisfies.js`,
 `invoker.js`, `is.js`, `lift.js`, `liftN.js`, `propIs.js`, `modifyPath.js`, `partialObject.js`, `unwind.js`,
@@ -439,7 +440,7 @@ and is not transcribed.
 | v0.28.0 | 2022-01-15 | ported | — |
 | v0.29.0 | 2023-04-02 | ported | — |
 | v0.29.1 | 2023-10-04 | ported | — |
-| v0.30.0 | 2024-04-27 | pending | — |
+| v0.30.0 | 2024-04-27 | ported | — |
 | v0.30.1 | 2024-06-02 | pending | — |
 | v0.31.0 | 2025-06-22 | pending | — |
 | v0.31.1 | 2025-06-22 | pending | — |
@@ -3018,6 +3019,35 @@ and is not transcribed.
     curry.js's placeholder `it`s and modifyPath.js's empty path.
 - **Expected tier: patch.** No Dafny-visible change
   (`casestudy/expected/v0.29.1.json`, with no changes).
+- **lem:** — (not yet published from this history).
+
+### v0.30.0 (2024-04-27)
+
+- **Ramda** (every `source/` module compared in normalised form, the
+  `test/` diff, behaviour checked in node with a differential run of the
+  ported exports, which finds no change in them):
+  - New: `flow(seed, pipeline)` (`@category Function`), the seed passed
+    through the functions left to right (`flow(9, [Math.sqrt, negate,
+    inc])` → `-2`), and `isNotEmpty` (`@category Logic`), `!isEmpty(x)`.
+  - Not visible in this encoding: `intersperse`, `mapAccum`,
+    `mapAccumRight`, `range`, `scan`, `times`, `xprod`, `zip` and `zipWith`
+    preallocate their arrays; the private `_nth` and `_path` behind `nth`,
+    `head`, `last`, `lensIndex`'s getter, `prop`, `props` and the path
+    functions; the placeholder is recognised by identity alone.
+- **Ramdaf:**
+  - Added `flow` (Functions; the pipeline a pair, as `pipeWith`'s, the
+    `_reduce` of `applyTo` written out) and `isNotEmpty` (Logic, by
+    `@category`; `isEmpty`, Core's, written out).
+  - "Not portable": the `__` row records the identity test.
+  - Deviations: `flow` joins the fixed-arity row (and the mapping's pair
+    row); `isEmpty` and `isNotEmpty` join the `empty` row, which records
+    `isEmpty`'s non-list arguments (an omission since v0.18.0).
+  - Comments only: `nth`, `head`, `last`, `times`, `lensIndex`, `props`;
+    the headers cite v0.30.0.
+  - Tests: flow.js's pipelines as nested pairs and isNotEmpty.js's string
+    and array lines; new edges cover both.
+- **Expected tier: patch.** `flow` and `isNotEmpty` were added
+  (`casestudy/expected/v0.30.0.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

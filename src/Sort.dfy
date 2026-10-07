@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.29.1 `source/comparator.js`, `source/sort.js`,
+// Ramdaf: Ramda v0.30.0 `source/comparator.js`, `source/sort.js`,
 // `source/sortBy.js`, `source/ascend.js`, `source/descend.js` and
 // `source/sortWith.js` (v0.23.0; sorting goes in Sort whatever the
 // `@category`). (From v0.9.0 to v0.24.1 the modules were `src/<fn>.js`.)

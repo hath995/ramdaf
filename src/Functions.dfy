@@ -1,8 +1,8 @@
-// Ramdaf: Ramda v0.29.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.30.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
 // the functions with `@category Function` (`juxt`, `applySpec`, `o`,
-// `applyTo`, `thunkify`, `pipeWith`, `composeWith`, `on`, `promap`). (v0.4.1
+// `applyTo`, `thunkify`, `pipeWith`, `composeWith`, `on`, `promap`, `flow`). (v0.4.1
 // removed the aliases `sequence`, `distributeTo`, `constant` and `K`;
 // v0.4.2 renamed `fork` to `converge`; v0.9.0 renamed `alwaysTrue` and
 // `alwaysFalse` to `T` and `F` and removed `alwaysZero`; v0.16.0 removed
@@ -18,7 +18,7 @@ module Ramdaf.Functions {
 
   export
     reveals compose, pipe, flip, converge, always, T, F, juxt, applySpec, o, applyTo,
-            thunkify, pipeWith, composeWith, on, promap
+            thunkify, pipeWith, composeWith, on, promap, flow
     provides List
 
   // `compose(f, g)(x) == f(g(x))`
@@ -174,4 +174,15 @@ module Ramdaf.Functions {
   // profunctor is a function (README "Deviations").
   function promap<A, B, C, D>(f: A -> B, g: C -> D, profunctor: B -> C): A -> D
   { x => g(profunctor(f(x))) }
+
+  // `R.flow(seed, pipeline)` (v0.30.0, 84e04c1e, `@category Function`):
+  // `_curry2(function flow(seed, pipeline) { return _reduce(applyTo, seed,
+  // pipeline); })`, the seed passed through the functions of the pipeline
+  // left to right (`flow(9, [Math.sqrt, R.negate, R.inc])` is -2), so each
+  // function takes the previous one's result. JS takes a list of any number
+  // of functions (`flow(seed, [])` is seed); here exactly two, as a pair, as
+  // for pipeWith (README "JS -> Dafny mapping"; nest more with `pipe`), and
+  // the `_reduce` of `applyTo` is written out for the two.
+  function flow<A, B, C>(seed: A, pipeline: (A -> B, B -> C)): C
+  { applyTo(applyTo(seed, pipeline.0), pipeline.1) }
 }

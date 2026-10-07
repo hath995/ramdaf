@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.29.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.30.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`
@@ -47,21 +47,24 @@ module Ramdaf.Core {
   // undefined (documented: `nth(-99, list)`), here None. Since v0.16.0
   // ("support strings in index and slice functions") a JS string gives
   // `list.charAt(idx)`, the character, and '' out of range (`nth(3, 'abc')`),
-  // also None here (README "JS -> Dafny mapping"). (v0.1.0 to v0.4.0
+  // also None here (README "JS -> Dafny mapping"). (Since v0.30.0, 2bcbc933,
+  // the code is the private `_nth`, `nth = _curry2(_nth)`.) (v0.1.0 to v0.4.0
   // had another `nth` in List, from v0.3.0 an alias of `prop`; v0.4.1
   // removed it.)
   function nth<T>(n: int, list: seq<T>): Option<T>
   { var i := if n < 0 then |list| + n else n;
     if 0 <= i < |list| then Some(list[i]) else None }
 
-  // `arr[0]` (since v0.8.0 `nth(0)`): `head([])` is undefined (not an
+  // `arr[0]` (since v0.8.0 `nth(0)`, since v0.30.0 the private `_nth(0,
+  // list)`, the same): `head([])` is undefined (not an
   // element; `head('')` is '' since v0.16.0, not a character), so the empty
   // list is excluded.
   function head<T>(list: seq<T>): T
     requires |list| > 0
   { list[0] }
 
-  // `arr[arr.length - 1]` (since v0.8.0 `nth(-1)`): `last([])` is undefined
+  // `arr[arr.length - 1]` (since v0.8.0 `nth(-1)`, since v0.30.0 `_nth(-1,
+  // list)`): `last([])` is undefined
   // (`last('')` '' since v0.16.0), so the empty list is excluded.
   function last<T>(list: seq<T>): T
     requires |list| > 0
@@ -110,8 +113,9 @@ module Ramdaf.Core {
   // since v0.9.0 `new Array(Number(n))`, which only changes non-numbers):
   // fn applied to 0, 1, ..., n - 1. `new Array(n)` throws RangeError for a
   // negative n (since v0.19.1 times throws it first, "n must be a
-  // non-negative number", for a negative n or NaN), so n is a nat. (Since
-  // v0.29.0, 3141d1a7, the list is built with `push`, the same list.)
+  // non-negative number", for a negative n or NaN), so n is a nat. (In
+  // v0.29.x, 3141d1a7, the list was built with `push`, and since v0.30.0,
+  // ddd97361, it is `Array(len)` filled by index: the same list.)
   function times<T>(fn: nat -> T, n: nat): seq<T>
     ensures |times(fn, n)| == n
     ensures forall i :: 0 <= i < n ==> times(fn, n)[i] == fn(i)

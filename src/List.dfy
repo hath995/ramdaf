@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.29.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.30.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -839,7 +839,8 @@ module Ramdaf.List {
   // `R.lensIndex(n)` (v0.14.0, `@category List`; `@category Object` in
   // v0.16.0's JSDoc): since v0.15.1 `_curry1(lens(nth(n), update(n)))`
   // (77d7863a), a lens on the element at n, since v0.16.0 a van Laarhoven
-  // lens (see `lens`), so it takes the functor's carried type X. The getter is `nth(n)`, a negative n counting from the end; out of
+  // lens (see `lens`), so it takes the functor's carried type X. The getter is `nth(n)` (since v0.30.0 `function(val) { return
+  // _nth(n, val); }`, the same), a negative n counting from the end; out of
   // range it is undefined, which no element holds, so it requires the index
   // in the list (`R.nth` is Core's, which List does not import, so it is
   // written out), and so does the lens, which applies its function to the

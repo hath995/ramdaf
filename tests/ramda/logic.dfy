@@ -1,6 +1,6 @@
-// Ramda v0.29.1 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.30.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
-// defaultTo.js, propSatisfies.js, when.js, unless.js, until.js and xor.js (until v0.8.0
+// defaultTo.js, propSatisfies.js, when.js, unless.js, until.js, xor.js and isNotEmpty.js (until v0.8.0
 // test.booleans.js, test.allany.js and test.cond.js), transcribed. (v0.16.0
 // passes cond's pairs as one list, `R.cond([[p, f], …])`, the port's form
 // all along.) Not transcribed: the short-circuit cases ("does not evaluate the second
@@ -419,5 +419,26 @@ module RamdafTests.Ramda.Logic {
     expect x(true)(false) == true;
     expect x(false)(true) == true;
     expect x(false)(false) == false;
+  }
+
+  // ---- isNotEmpty.js (v0.30.0): its string and array lines and `['']`;
+  // null, undefined, typed arrays, objects, `arguments` objects, 0 and NaN
+  // are not lists (README "Deviations") ----
+
+  method {:test} IsNotEmptyReturnsFalseForEmptyString() {
+    expect isNotEmpty("") == false;
+    expect isNotEmpty(" ") == true;
+  }
+
+  method {:test} IsNotEmptyReturnsFalseForEmptyArray() {
+    var none: seq<seq<int>> := [];
+    expect isNotEmpty(none) == false;
+    var nested: seq<seq<int>> := [[]];
+    expect isNotEmpty(nested) == true;
+  }
+
+  // "returns true for every other value": its `['']` line
+  method {:test} IsNotEmptyReturnsTrueForEveryOtherValue() {
+    expect isNotEmpty([""]) == true;
   }
 }

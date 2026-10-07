@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.29.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.30.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`, `objOf`,
@@ -45,8 +45,9 @@ module Ramdaf.Object {
   // JS, as for prop). (Until v0.7.2 `props` was the function that v0.8.0
   // renamed `propOf` and v0.12.0 removed.) Since v0.27.0 it is
   // `ps.map(function(p) { return path([p], obj); })`, which reads an integer
-  // name with `nth` and gives undefineds for a nil obj; the names here are
-  // strings, so the results are the same.
+  // name with `nth` and gives undefineds for a nil obj, and since v0.30.0
+  // `ps.map(function(p) { return prop(p, obj); })`, as here; the names here
+  // are strings, so the results are the same.
   function props<V>(ps: seq<string>, obj: map<string, V>): seq<Option<V>>
     ensures |props(ps, obj)| == |ps|
   { seq(|ps|, i requires 0 <= i < |ps| => prop(ps[i], obj)) }

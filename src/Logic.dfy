@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.29.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.30.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
-// `propSatisfies`, `when`, `unless`, `until`, `xor`).
+// `propSatisfies`, `when`, `unless`, `until`, `xor`, `isNotEmpty`).
 // (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
 // reused the name `cond` for a new function; v0.9.0 renamed `allPredicates`
 // and `anyPredicates` to `allPass` and `anyPass` and removed `if`; v0.12.0
@@ -13,7 +13,7 @@ module Ramdaf.Logic {
 
   export
     reveals and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo,
-            propSatisfies, when, unless, until, xor
+            propSatisfies, when, unless, until, xor, isNotEmpty
     provides Prelude
 
   // `R.and(a, b)` (v0.12.0): `a && b`. From v0.1.4 to v0.11.0 `and` was the
@@ -158,4 +158,15 @@ module Ramdaf.Logic {
   // (`xor(1, '')` is true); the operands here are bool, as for and, or and
   // not (README "Deviations"), and `!a ^ !b` on bools is `!a != !b`.
   function xor(a: bool, b: bool): bool { !a != !b }
+
+  // `R.isNotEmpty(x)` (v0.30.0, 246fbaca, `@category Logic`; its JSDoc says
+  // `@since v0.29.2`): `_curry1(function isNotEmpty(x) { return !isEmpty(x);
+  // })`, false for a value that is its type's empty value and true
+  // otherwise (`isNotEmpty([1, 2, 3])` is true, `isNotEmpty('')` false).
+  // `R.isEmpty` is Core's (by the pre-v0.9.0 section rule; its JSDoc says
+  // `@category Logic` too), which Logic does not import, so it is written
+  // out as `|list| == 0`. JS takes any value (`isNotEmpty({})` is false,
+  // `isNotEmpty(null)` true); here a list, as for isEmpty (README
+  // "Deviations").
+  function isNotEmpty<T>(list: seq<T>): bool { !(|list| == 0) }
 }

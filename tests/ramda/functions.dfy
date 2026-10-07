@@ -1,6 +1,6 @@
-// Ramda v0.29.1 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.30.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js, ap.js, juxt.js, applySpec.js, o.js, applyTo.js,
-// thunkify.js, pipeWith.js, composeWith.js and promap.js (until v0.8.0 test.always.js,
+// thunkify.js, pipeWith.js, composeWith.js, promap.js and flow.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -354,5 +354,24 @@ module RamdafTests.Ramda.Functions {
     var decodeString := promap((s: string) => S.split("", s), (l: seq<string>) => join("", l),
                                (l: seq<string>) => mapSeq(decodeChar, l));
     expect decodeString("ziuli") == "ramda";
+  }
+
+  // ---- flow.js (v0.30.0): "applies the first argument to a left-to-right
+  // composed function"; its three-function pipelines are pairs, the first
+  // two functions composed with `pipe` (the pipeline is a pair, README
+  // "Deviations"); `Math.sqrt` of the perfect squares 4 and 9, `R.multiply`
+  // and `R.map` curried as lambdas. "is a binary function" (typeof, length)
+  // is not transcribed. ----
+
+  function Sqrt(n: nat): nat { if n == 4 then 2 else if n == 9 then 3 else 0 }
+
+  method {:test} FlowAppliesTheFirstArgumentToALeftToRightComposedFunction() {
+    var multiplyBy := (a: nat) => ((b: int) => multiply(a, b));
+    var mapWith := (f: int -> int) => ((l: seq<int>) => mapSeq(f, l));
+    var f2 := flow(4, (pipe(Sqrt, multiplyBy), mapWith));
+    var f3 := flow(9, (pipe(Sqrt, multiplyBy), mapWith));
+    expect f2([1, 2, 3]) == [2, 4, 6];
+    expect f3([1, 2, 3]) == [3, 6, 9];
+    expect flow(9, (pipe(Sqrt, (n: nat) => negate(n)), inc)) == -2;
   }
 }

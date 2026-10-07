@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.29.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.30.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -843,5 +843,20 @@ module RamdafTests.Edge.Misc {
                     map["a" := 1, "b" := 1]) == false;
     expect on((a: int, b: int) => a == b, (x: int) => x % 3, 1, 4) == true;
     expect promap((x: int) => x * 2, (x: int) => x - 1, (x: int) => x + 10)(3) == 15;
+  }
+
+  // flow and isNotEmpty (v0.30.0) (node: 4, '2!', 2, and with one function
+  // `flow(5, [identity])` 5, here `(identity, identity)`; false, true,
+  // false, true).
+  method {:test} FlowIsNotEmptyEdges() {
+    expect flow(1, ((x: int) => x + 1, (x: int) => x * 2)) == 4;
+    expect flow(2, (NumStr, (s: string) => s + "!")) == "2!";
+    expect flow(3, ((x: int) => [x, x], (l: seq<int>) => |l|)) == 2;
+    expect flow(5, ((x: int) => identity(x), (x: int) => identity(x))) == 5;
+    var none: seq<int> := [];
+    expect isNotEmpty(none) == false;
+    expect isNotEmpty([0]) == true;
+    expect isNotEmpty("") == false;
+    expect isNotEmpty(" ") == true;
   }
 }

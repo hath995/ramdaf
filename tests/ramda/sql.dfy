@@ -1,4 +1,4 @@
-// Ramda v0.29.1 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.30.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, difference.js, differenceWith.js,
 // countBy.js, sortBy.js, equals.js, identical.js, eqBy.js,
 // symmetricDifference.js, symmetricDifferenceWith.js, clamp.js and

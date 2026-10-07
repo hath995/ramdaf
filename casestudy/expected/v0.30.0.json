@@ -1,0 +1,8 @@
+{
+  "ramda": "v0.30.0",
+  "tier": "patch",
+  "changes": [
+    {"symbol": "Ramdaf.Functions.flow", "kind": "added", "why": "new in v0.30.0 (@category Function): the seed passed through the pipeline's functions left to right"},
+    {"symbol": "Ramdaf.Logic.isNotEmpty", "kind": "added", "why": "new in v0.30.0 (@category Logic): !isEmpty(x)"}
+  ]
+}
