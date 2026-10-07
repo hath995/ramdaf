@@ -127,7 +127,7 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0 and `{'@@functional/placeholder': true}` since v0.15.0, which also curries `concat` and `contains` this way, and since v0.10.0 `merge`) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) Since v0.11.0 `op` is gone and every curried function takes the placeholder in any position: `f(R.__, b)` is still `x => f(x, b)`, while `f(R.__)` is `f` itself, so `subtract(R.__)(5)` is `x => 5 - x` (from v0.6.0 to v0.10.0 `op` made it `x => x - 5`). |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type. (Since v0.11.0 a curried Ramda function called with no arguments returns itself, `identity()` is `identity`; the functions Ramda returns, such as `always(7)`, `T` and `cond(…)`'s result, are not curried, and they are the ones called this way.) |
 
-## Modules and exports (v0.24.0)
+## Modules and exports (v0.24.1)
 
 | Module | Exports |
 |---|---|
@@ -141,7 +141,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | toUpper, toLower, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project, equals, identical, eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin |
 
-That is 196 of Ramda v0.24.0's 246 export names (since v0.9.0 Ramda has no
+That is 196 of Ramda v0.24.1's 246 export names (since v0.9.0 Ramda has no
 functions stored as properties of exports). The other 50 names are listed
 under "Not portable".
 
@@ -168,7 +168,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.24.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
+Ramda v0.24.1 does not export the helpers `_makeFlat`, `_checkForMethod` and
 `_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
@@ -220,7 +220,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.24.0 exports are not ported, rather than faked:
+These Ramda v0.24.1 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -231,7 +231,7 @@ These Ramda v0.24.0 exports are not ported, rather than faked:
 | `bind` | Fixes the `this` of a JS function (v0.6.0; since v0.11.0 the result keeps `fn`'s arity); Dafny functions have no `this`. |
 | `useWith` | Argument transformers of a run-time number: `useWith(fn, [t1, …, tn])` (since v0.18.0 a list, and the transformers get the result's `this`; until v0.17.1 separate arguments, `useWith(fn, t1, …, tn)`) is a function of n arguments, each passed through its transformer, the rest passed on, curried to n. (v0.3.0 removed `use(fn).over(...)` and added the alias `disperseTo`, which v0.4.1 removed.) |
 | `partial`, `partialRight` | Partial application of a run-time number of arguments: since v0.18.0 `partial(fn, [a, b])` takes them as a list (until v0.17.1 `partial(fn, a, b)`), and the result takes the rest, any number. (v0.4.1 removed their aliases `applyLeft` and `applyRight`; v0.10.0 renamed `lPartial` and `rPartial` to `partial` and `partialRight`.) |
-| `memoize`, `memoizeWith`, `once`, `addIndex` | Rely on hidden mutable state: `addIndex(fn)` (v0.15.0) makes an indexed version of a list function such as `map` (`addIndex(map)((x, i) => x + i, [10, 20])` → `[10, 21]`) by counting the calls of the callback it passes in, so it needs `fn` to call it once per element in order, and the callback's type changes with `fn`'s; and `memoize`'s cache is keyed by `R.toString` of the arguments (v0.14.0; from v0.10.0 to v0.13.0 by each argument's string and type tag, `42::[object Number]`, and `String(arg)` before), which no generic Dafny function can compute; since v0.24.0 `memoize` is `memoizeWith(toString)`, and `memoizeWith(mFn, fn)` keys the cache by `mFn(...args)`. |
+| `memoize`, `memoizeWith`, `once`, `addIndex` | Rely on hidden mutable state: `addIndex(fn)` (v0.15.0) makes an indexed version of a list function such as `map` (`addIndex(map)((x, i) => x + i, [10, 20])` → `[10, 21]`) by counting the calls of the callback it passes in, so it needs `fn` to call it once per element in order, and the callback's type changes with `fn`'s; and `memoize`'s cache is keyed by `R.toString` of the arguments (v0.14.0; from v0.10.0 to v0.13.0 by each argument's string and type tag, `42::[object Number]`, and `String(arg)` before), which no generic Dafny function can compute; since v0.24.0 `memoizeWith(mFn, fn)` keys the cache by `mFn(...args)`, and `memoize` is `memoizeWith` of `toString(arguments)` (v0.24.1; in v0.24.0 `memoizeWith(toString)`, keyed by the first argument alone, so `memoize((x, y) => x + y)` gave `3` for `(1, 2)` and then for `(1, 3)`). |
 | `apply`, `unapply`, `nthArg`, `call` | Variadic (and so was `wrap(fn, wrapper)`, whose result called `wrapper(fn, ...arguments)`; deprecated in v0.22.0 and removed in v0.23.0, it had its own row). `apply` spreads a list of run-time length into a function's positional arguments, `fn.apply(this, args)` (v0.7.0), and passes `this`; `unapply(fn)` (v0.8.0), its inverse, collects any number of arguments into one list for `fn` (`unapply(JSON.stringify)(1, 2, 3)` → `'[1,2,3]'`; a Dafny `unapply(fn: seq<A> -> B)` would be `fn` itself); `nthArg(n)` (`argN` in v0.8.0) returns a function of any number of arguments that returns the nth (`nthArg(1)('a', 'b')` → `'b'`; since v0.9.0 a negative n counts from the end); `call(fn, ...args)` (v0.9.0) is `fn.apply(this, args)`. |
 | `composeP`, `pipeP` | Promise-aware composition (v0.8.0; `pCompose` and `pPipe` until v0.9.1): each intermediate result is tested at run time for a `then` method, and a promise's value is passed on inside `then`, asynchronously. Dafny has no promises or run-time type tests, and without them `pCompose` would be `compose`. |
 | `lift`, `liftN` | Lift a function of a run-time arity over lists (v0.7.0): `liftN(n, fn)` takes n lists, and `lift(fn)` reads `fn.length`. Dafny functions have no run-time arity. |
@@ -248,7 +248,7 @@ These Ramda v0.24.0 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.24.0 (node) | Ramdaf |
+| Function | Ramda v0.24.1 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`, and since v0.16.0 `head('')` and `last('')` → `''`, not a character; `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `repeat` (`repeatN` until v0.8.0), `times` | `new Array(n)` throws `RangeError` for a negative n: `repeat(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3; since v0.19.1 `times` throws its own `RangeError: n must be a non-negative number`, for NaN too) | `n: nat` |
@@ -273,7 +273,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.24.0 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.24.1 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `identical` (`eq` until v0.14.0 and in v0.15.1) | `identical` (`Object.is`) compares arrays and objects by reference: `identical([], [])` → `false`. (Until v0.14.0 `===` or `Object.is` also made `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq` (v0.14.0; `where`'s value entries before) and `dropRepeats` (v0.14.0) compare by reference: for `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(Ro, So).length` → `0` and `difference(…)` → `4`. Since v0.15.0 they compare with `R.equals`, deep equality, as here, except that in v0.15.0 alone `uniq` kept a JS `Set`, which compares by reference (unless an object has an `equals` method), so `uniq([{a: 1}, {a: 1}])` kept both and `union(Ro, So).length` was still `8`; v0.15.1 makes `uniq` `uniqWith(equals)` again.) | Structural `==`: `true` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets | A `map` has no key order. |
@@ -325,7 +325,7 @@ also lists what it skips: arity checks, side-effect counting, calls with no
 arguments, `null` or `undefined` in place of a list, JS coercion, reference
 equality, method dispatch on non-array objects, array-like objects,
 prototypes, string-keyed `sortBy`, and the unportable functions' files
-(v0.24.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
+(v0.24.1: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
 `constructN.js`, `curry.js`, `curryN.js`, `forEach.js`,
 `into.js`, `lensPath.js`, `pathSatisfies.js`,
 `invoker.js`, `is.js`, `lift.js`, `liftN.js`, `pipeK.js`, `propIs.js`,
@@ -402,7 +402,7 @@ and is not transcribed.
 | v0.22.1 | 2016-08-07 | ported | — |
 | v0.23.0 | 2016-12-29 | ported | — |
 | v0.24.0 | 2017-05-26 | ported | — |
-| v0.24.1 | 2017-06-01 | pending | — |
+| v0.24.1 | 2017-06-01 | ported | — |
 | v0.25.0 | 2017-10-09 | pending | — |
 | v0.26.0 | 2018-11-17 | pending | — |
 | v0.26.1 | 2018-11-27 | pending | — |
@@ -2651,6 +2651,21 @@ and is not transcribed.
     `o`.
 - **Expected tier: major.** `groupWith` changed its results; four symbols
   were added (`casestudy/expected/v0.24.0.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.24.1 (2017-06-01)
+
+- **Ramda** (the `src/` and `test/` diff, behaviour checked in node with a
+  differential run of the ported exports, which finds no change): c5ddc1ff
+  keys the unportable `memoize`'s cache by all the arguments,
+  `memoizeWith(function() { return toString(arguments); })` (v0.24.0's
+  `memoizeWith(toString)` used the first argument alone); the JSDoc of the
+  private `_isArrayLike` and of `transduce` changes.
+- **Ramdaf:** no source or test change; the headers cite v0.24.1, and the
+  `memoize` row records v0.24.0's key. Not transcribed: memoize.js's "works
+  with 2 arguments" and transduce.js's new line (not portable).
+- **Expected tier: patch.** No Dafny-visible change
+  (`casestudy/expected/v0.24.1.json`, with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
