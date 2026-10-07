@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.29.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.29.1 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -1193,17 +1193,19 @@ module Ramdaf.List {
   // an array `swapList`: `result = list.slice()`, a negative index counting
   // from the end (`length + index`), the copy itself when either index is
   // then below 0 or above the length, or the two are equal, and otherwise
-  // `[].concat(result.slice(0, positiveMin)).concat(result[positiveMax])
+  // `[].concat(result.slice(0, positiveMin)).concat([result[positiveMax]])
   // .concat(result.slice(positiveMin + 1, positiveMax))
-  // .concat(result[positiveMin]).concat(result.slice(positiveMax + 1,
+  // .concat([result[positiveMin]]).concat(result.slice(positiveMax + 1,
   // length))`: the elements at the two indices exchanged (`swap(0, 2, ['a',
   // 'b', 'c', 'd', 'e', 'f'])` is `['c', 'b', 'a', 'd', 'e', 'f']`, `swap(-1,
   // 0, …)` exchanges the ends). An index equal to the length passes the test
   // and reads undefined, which no element holds (`swap(0, 3, ['a', 'b',
   // 'c'])` is `[undefined, 'b', 'c', 'a']`), so that case is excluded
-  // (README "Outside the modeled domain"). `concat` spreads an element that
-  // is an array (`swap(0, 1, [[1, 2], [3]])` is `[3, 1, 2]`), which a
-  // generic T cannot tell apart (README "Deviations"). A JS string is
+  // (README "Outside the modeled domain"). Since v0.29.1 (165d2ae6, "make
+  // swap work when swapped items are arrays") each element is wrapped in an
+  // array before `concat`, so an element that is an array is exchanged
+  // whole, as here; in v0.29.0 `concat` spread it (`swap(0, 1, [[1, 2],
+  // [3]])` was `[3, 1, 2]`). A JS string is
   // swapped the same way and joined (`swap(0, 2, 'foo')` is 'oof'), here
   // the same seq; an object gets two own properties exchanged on a clone
   // (`swap('a', 'b', {a: 1, b: 2})` is `{a: 2, b: 1}`), which this list

@@ -1,4 +1,4 @@
-// Ramda v0.29.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.29.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -1486,5 +1486,10 @@ module RamdafTests.Ramda.List {
 
   method {:test} SwapSwapsCharactersInStringFromOneIndexToAnother() {
     expect swap(0, 2, "foo") == "oof";
+  }
+
+  // (v0.29.1)
+  method {:test} SwapWorksWithListsOfArrays() {
+    expect swap(0, -1, [["a", "A"], ["b", "B"]]) == [["b", "B"], ["a", "A"]];
   }
 }

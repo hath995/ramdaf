@@ -1,4 +1,4 @@
-// Ramda v0.29.0 test/toUpper.js, toLower.js, trim.js, split.js and
+// Ramda v0.29.1 test/toUpper.js, toLower.js, trim.js, split.js and
 // replace.js (until v0.8.0 test.stringBasics.js and test.replace.js),
 // transcribed. (v0.14.0 removed charAt.js and charCodeAt.js, v0.16.0
 // substring.js, substringFrom.js, substringTo.js, strIndexOf.js and

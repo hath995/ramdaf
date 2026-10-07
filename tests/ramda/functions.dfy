@@ -1,4 +1,4 @@
-// Ramda v0.29.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.29.1 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js, ap.js, juxt.js, applySpec.js, o.js, applyTo.js,
 // thunkify.js, pipeWith.js, composeWith.js and promap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no

@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.29.0's own suite does not cover, each checked against
-// dist/ramda.js v0.29.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.29.1's own suite does not cover, each checked against
+// dist/ramda.js v0.29.1 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -1004,11 +1004,11 @@ module RamdafTests.Edge.List {
     expect swap(2, 0, "abc") == "cba";
   }
 
-  // node: swap (v0.29.0) builds its result with `concat`, which spreads an
-  // element that is an array: `swap(0, 1, [[1, 2], [3]])` is [3, 1, 2] and
-  // `swap(0, 1, [[], 1])` [1]; here the elements are exchanged whole
-  // (README "Deviations").
-  method {:test} DeviationSwapSpreadsArrayElements() {
+  // node: since v0.29.1 swap wraps each element before `concat`, so
+  // `swap(0, 1, [[1, 2], [3]])` is [[3], [1, 2]] and `swap(0, 1, [[], 1])`
+  // [1, []], as here (in v0.29.0 `concat` spread an element that was an
+  // array: [3, 1, 2] and [1]).
+  method {:test} SwapExchangesArrayElementsWhole() {
     expect swap(0, 1, [[1, 2], [3]]) == [[3], [1, 2]];
     expect swap(0, 1, [Arr([]), Num(1)]) == [Num(1), Arr([])];
   }
