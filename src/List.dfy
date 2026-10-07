@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.27.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.1 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -1092,7 +1092,8 @@ module Ramdaf.List {
   // true); here a string's element is a character (README "Deviations").
   function includes<T(==)>(a: T, list: seq<T>): bool { a in list }
 
-  // `R.move(from, to, list)` (v0.26.1, `@category List`): `result =
+  // `R.move(from, to, list)` (v0.26.1, `@category List`; since v0.27.1 its
+  // JSDoc says `@since v0.27.1`): `result =
   // list.slice()`, a negative index counting from the end (`length +
   // from`), `item = result.splice(positiveFrom, 1)`, and then the list
   // itself when either index is outside it, and otherwise

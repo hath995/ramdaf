@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.27.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.1 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
 // `propSatisfies`, `when`, `unless`, `until`, `xor`).
@@ -151,7 +151,8 @@ module Ramdaf.Logic {
     decreases fuel
   { if pred(init) || fuel == 0 then init else until(pred, fn, fn(init), fuel - 1) }
 
-  // `R.xor(a, b)` (v0.27.0, `@category Logic`): `Boolean(!a ^ !b)`, true
+  // `R.xor(a, b)` (v0.27.0, `@category Logic`; its JSDoc says `@since
+  // v0.27.1` since v0.27.1): `Boolean(!a ^ !b)`, true
   // when exactly one of a and b is truthy (`xor(true, false)` is true,
   // `xor(true, true)` false). JS takes any values by their truthiness
   // (`xor(1, '')` is true); the operands here are bool, as for and, or and

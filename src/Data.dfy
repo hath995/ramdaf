@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.27.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.1 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
