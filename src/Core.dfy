@@ -1,10 +1,10 @@
-// Ramdaf: Ramda v0.4.0 "Core Functions" (ramda.js lines 740-1001), `clone`
-// (lines 736-738), and `size` with its alias `length` (lines 1885-1889).
-// (v0.2.0 removed `cloneDeep`.)
+// Ramdaf: Ramda v0.4.1 "Core Functions" (ramda.js lines 753-1056), `clone`
+// (lines 749-751), and `size` with its alias `length` (lines 1958-1968).
+// (v0.2.0 removed `cloneDeep`, and v0.4.1 the `first` alias of `head`.)
 
 module Ramdaf.Core {
   export
-    reveals clone, isEmpty, prepend, cons, head, car, first, last, tail, cdr,
+    reveals clone, isEmpty, prepend, cons, head, car, last, tail, cdr,
             append, push, concat, identity, I, times, repeatN, size, length
 
   // `clone(list)` is `_slice(list)` (`list.concat()` before v0.2.0), a
@@ -22,9 +22,6 @@ module Ramdaf.Core {
     requires |list| > 0
   { list[0] }
   function car<T>(list: seq<T>): T
-    requires |list| > 0
-  { head(list) }
-  function first<T>(list: seq<T>): T
     requires |list| > 0
   { head(list) }
 

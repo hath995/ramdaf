@@ -1,11 +1,11 @@
-// Ramdaf: Ramda v0.4.0 "Function functions" (ramda.js lines 1002-1452) and the
-// `always` family (lines 3255-3261, 3788-3818).
+// Ramdaf: Ramda v0.4.1 "Function functions" (ramda.js lines 1057-1478) and the
+// `always` family (lines 3391-3395, 3919-3951). (v0.4.1 removed the aliases
+// `sequence`, `distributeTo`, `constant` and `K`.)
 // compose/pipe are variadic in JS; the port is binary (nest for more functions).
 
 module Ramdaf.Functions {
   export
-    reveals compose, pipe, sequence, flip, fork, distributeTo,
-            always, constant, K, alwaysZero, alwaysFalse, alwaysTrue
+    reveals compose, pipe, flip, fork, always, alwaysZero, alwaysFalse, alwaysTrue
 
   // `compose(f, g)(x) == f(g(x))`
   // (v0.1.1 dropped the `fog` alias. Since v0.3.0 JS `compose(f)` returns f
@@ -16,7 +16,6 @@ module Ramdaf.Functions {
   // `pipe(f, g)(x) == g(f(x))` (since v0.4.0 JS `pipe(f)` is f itself, as
   // `compose(f)` is)
   function pipe<A, B, C>(f: A -> B, g: B -> C): A -> C { x => g(f(x)) }
-  function sequence<A, B, C>(f: A -> B, g: B -> C): A -> C { pipe(f, g) }
 
   // `flip(fn)(a, b) == fn(b, a)`
   function flip<A, B, C>(fn: (A, B) -> C): (B, A) -> C { (b, a) => fn(a, b) }
@@ -27,18 +26,10 @@ module Ramdaf.Functions {
   // arguments for more).
   function fork<A, B, C, D>(after: (B, C) -> D, f1: A -> B, f2: A -> C): A -> D
   { x => after(f1(x), f2(x)) }
-  // v0.3.0: `aliasFor('fork').is('distributeTo')`.
-  function distributeTo<A, B, C, D>(after: (B, C) -> D, f1: A -> B, f2: A -> C): A -> D
-  { fork(after, f1, f2) }
 
   // JS `always(v)` ignores however many arguments it gets; the port's result
   // takes one argument of any type.
   function always<T, U>(val: T): U -> T { _ => val }
-  // v0.2.0: `aliasFor("always").is("constant")`.
-  function constant<T, U>(val: T): U -> T { always(val) }
-  // v0.3.0: `aliasFor("always").is("constant").and("K")`. (Until v0.2.4 `K`
-  // was an alias of `tap`, which is not portable.)
-  function K<T, U>(val: T): U -> T { always(val) }
 
   // `alwaysZero = always(0)` etc.: the functions themselves, applied to one
   // argument of any type.

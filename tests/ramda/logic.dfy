@@ -1,4 +1,4 @@
-// Ramda v0.4.0 test/test.booleans.js and test/test.allany.js, transcribed.
+// Ramda v0.4.1 test/test.booleans.js and test/test.allany.js, transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
 // expression"), which detect a call by its side effect, and the "reports its
 // arity" cases. The multi-parameter predicates take their arguments as a
@@ -90,28 +90,29 @@ module RamdafTests.Ramda.Logic {
 
   // ---- test.allany.js ----
 
-  // describe('all')
-  method {:test} AllTrueWhenAllSatisfy() { expect all(even, [2, 4, 6, 8, 10, 12]) == true; }
-  method {:test} AllFalseWhenAnyFails() { expect all(even, [2, 4, 6, 8, 9, 10]) == false; }
-  method {:test} AllTrueForTheEmptyList() {
+  // describe('every') (until v0.4.0 describe('all'); v0.4.1 renamed `all` to
+  // `every` and dropped "should be aliased by `every`")
+  method {:test} EveryTrueWhenAllSatisfy() { expect every(even, [2, 4, 6, 8, 10, 12]) == true; }
+  method {:test} EveryFalseWhenAnyFails() { expect every(even, [2, 4, 6, 8, 9, 10]) == false; }
+  method {:test} EveryTrueForTheEmptyList() {
     var empty: seq<int> := [];
-    expect all((x: int) => true, empty) == true;
+    expect every((x: int) => true, empty) == true;
   }
   // v0.2.2 (the call count is not asserted)
-  method {:test} AllIsAutomaticallyCurried() {
-    var allEven := (l: seq<int>) => all(even, l);
+  method {:test} EveryIsAutomaticallyCurried() {
+    var allEven := (l: seq<int>) => every(even, l);
     expect allEven([2, 4, 6, 7, 8, 10]) == false;
   }
-  method {:test} AllIsAliasedByEvery() { expect every(even, [2, 4, 6, 8, 10]) == true; }
 
-  // describe('any') (`n % 2 === 1`)
+  // describe('some') (until v0.4.0 describe('any'); v0.4.1 renamed `any` to
+  // `some` and dropped "should be aliased by `some`") (`n % 2 === 1`)
   function oddJs(n: int): bool { n % 2 == 1 }
 
-  method {:test} AnyTrueWhenOneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 11, 12]) == true; }
-  method {:test} AnyFalseWhenNoneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 12]) == false; }
+  method {:test} SomeTrueWhenOneSatisfies() { expect some(oddJs, [2, 4, 6, 8, 10, 11, 12]) == true; }
+  method {:test} SomeFalseWhenNoneSatisfies() { expect some(oddJs, [2, 4, 6, 8, 10, 12]) == false; }
   // v0.2.2 (the call count is not asserted)
-  method {:test} AnyIsAutomaticallyCurried() {
-    var anyOdd := (l: seq<int>) => any(oddJs, l);
+  method {:test} SomeIsAutomaticallyCurried() {
+    var anyOdd := (l: seq<int>) => some(oddJs, l);
     expect anyOdd([2, 4, 6, 7, 8, 10]) == true;
   }
 
@@ -120,25 +121,24 @@ module RamdafTests.Ramda.Logic {
   function alliterative(p: map<string, string>): bool
   { "first" in p && "last" in p && |p["first"]| > 0 && |p["last"]| > 0 && p["first"][0] == p["last"][0] }
 
-  method {:test} AnyWorksWithMoreComplexObjects() {
+  method {:test} SomeWorksWithMoreComplexObjects() {
     var people := [Person("Paul", "Grenier"), Person("Mike", "Hurley"), Person("Will", "Klein")];
-    expect any(alliterative, people) == false;
+    expect some(alliterative, people) == false;
     people := people + [Person("Scott", "Sauyet")];
-    expect any(alliterative, people) == true;
+    expect some(alliterative, people) == true;
   }
 
   function Teen(name: string, age: int): map<string, Js> { map["name" := Str(name), "age" := Num(age)] }
   function atLeast(age: int): map<string, Js> -> bool
   { (p: map<string, Js>) => "age" in p && p["age"].Num? && p["age"].n >= age }
 
-  method {:test} AnyCanUseAConfigurableFunction() {
+  method {:test} SomeCanUseAConfigurableFunction() {
     var teens := [Teen("Alice", 14), Teen("Betty", 18), Teen("Cindy", 17)];
-    expect any(atLeast(16), teens) == true;
-    expect any(atLeast(21), teens) == false;
+    expect some(atLeast(16), teens) == true;
+    expect some(atLeast(21), teens) == false;
   }
-  method {:test} AnyFalseForTheEmptyList() {
+  method {:test} SomeFalseForTheEmptyList() {
     var empty: seq<int> := [];
-    expect any((x: int) => true, empty) == false;
+    expect some((x: int) => true, empty) == false;
   }
-  method {:test} AnyIsAliasedBySome() { expect some(oddJs, [2, 4, 6, 8, 10, 11, 12]) == true; }
 }

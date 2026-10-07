@@ -1,4 +1,4 @@
-// Ramda v0.4.0 test/test.always.js, test/test.compose.js and
+// Ramda v0.4.1 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
 // compose/pipe's "passes context to functions" (`this`, v0.2.3, which also
@@ -10,12 +10,13 @@
 // if given no arguments" (v0.4.0; no-argument call); ap's "dispatches to the
 // passed object's ap method" (method dispatch on a non-array object) and the
 // `typeof` check of its "is curried"; useWith, once, memoize, construct,
-// constructN (v0.4.0), unary and binary (not portable, README; v0.3.0 dropped
-// the use-over describe with `use`). test.each.js, test.maybe.js,
+// constructN (v0.4.0), unary, binary and nAry (v0.4.1) (not portable, README;
+// v0.3.0 dropped the use-over describe with `use`). test.each.js, test.maybe.js,
 // test.partial.js, test.wrap.js, test.expose.js, v0.2.2's new test.curry.js
 // and test.path.js, v0.3.0's new test.is.js and v0.4.0's new
 // test.functions.js and test.functionsIn.js test functions that are not
-// portable. (v0.1.3 moved test.lazy.js out of test/.)
+// portable. (v0.1.3 moved test.lazy.js out of test/, and v0.4.1 removed
+// test.always.js's "should be aliased by `constant`" with `constant`.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions
@@ -37,12 +38,6 @@ module RamdafTests.Ramda.Functions {
     expect always(map["a" := 1, "b" := 2])(()) == map["a" := 1, "b" := 2];
     var obj := map["a" := 1, "b" := 2];
     expect always(obj)(()) == obj;
-  }
-  // v0.2.0: "should be aliased by `constant`" asserts `constant === always`;
-  // Dafny functions have no identity, so the alias is compared by its results.
-  method {:test} AlwaysIsAliasedByConstant() {
-    expect constant(42)(()) == always(42)(());
-    expect constant("abc")(10) == always("abc")(10);
   }
 
   // describe('alwaysZero'), describe('alwaysFalse'), describe('alwaysTrue')
@@ -85,7 +80,6 @@ module RamdafTests.Ramda.Functions {
   // `pipe(a, b, c, d)`, nested
   method {:test} PipeRunsLeftToRight() {
     expect pipe(a, pipe(b, pipe(c, d)))("") == "ABCD";
-    expect sequence(a, sequence(b, sequence(c, d)))("") == "ABCD";
   }
 
   method {:test} PipeFirstFunctionIsPassedMultipleArgs() {

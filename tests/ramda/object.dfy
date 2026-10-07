@@ -1,4 +1,4 @@
-// Ramda v0.4.0 test/test.objectBasics.js, test/test.keysvals.js,
+// Ramda v0.4.1 test/test.objectBasics.js, test/test.keysvals.js,
 // test/test.tapeq.js and test/test.zip.js's toPairs and toPairsIn describes,
 // transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument
@@ -14,8 +14,10 @@
 // "should not return properties from the prototype chain", toPairs "only
 // iterates the object's own properties" and toPairsIn "iterates properties
 // on the object's prototype chain": a map has no prototype. Also skipped:
-// v0.4.0's prop "should throw when called with no arguments" (no-argument
-// call). toPairs and toPairsIn return a set (a map has no key order, README
+// the no-argument cases, prop's "should throw when called with no
+// arguments" (v0.4.0) and propOrDefault's, where's and eq's "throws if given
+// no arguments" (v0.4.1); and eq's "is curried" (v0.4.1), which relies on
+// `[] !== []`, reference inequality (README "Deviations"). toPairs and toPairsIn return a set (a map has no key order, README
 // "Deviations").
 
 module RamdafTests.Ramda.Object {

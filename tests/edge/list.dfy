@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.4.0's own suite does not cover, each checked against
-// ramda.js v0.4.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.4.1's own suite does not cover, each checked against
+// ramda.js v0.4.1 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -14,7 +14,7 @@ module RamdafTests.Edge.List {
     expect tail(empty) == [];
     expect tail([1, 2]) == [2];
     expect head([5]) == 5;
-    expect first([1, 2, 3]) == 1;
+    expect car([1, 2, 3]) == 1;
     expect last([1, 2, 3]) == 3;
     expect last([5]) == 5;
     expect isEmpty([0]) == false;
@@ -122,18 +122,16 @@ module RamdafTests.Edge.List {
     expect ap([(x: int) => "f" + NumStr(x), (x: int) => "g" + NumStr(x)], [1, 2]) == ["f1", "f2", "g1", "g2"];
   }
 
-  // chain/flatMap (v0.3.0) flatten the mapped results one level only.
+  // chain (v0.3.0) flattens the mapped results one level only.
   method {:test} ChainEdges() {
     var none: seq<int> := [];
     expect chain((x: int) => none, [1, 2]) == [];
     expect chain((x: int) => [x, x], [1, 2]) == [1, 1, 2, 2];
     expect chain((x: int) => [[x]], [1, 2]) == [[1], [2]];
     expect chain((x: int) => [Num(x), Arr([Num(x)])], [1, 2]) == [Num(1), Arr([Num(1)]), Num(2), Arr([Num(2)])];
-    expect flatMap((x: int) => [x, x], [1]) == [1, 1];
   }
 
-  // unnest/flattenShallow (v0.3.0) remove one level of nesting;
-  // flattenDeep is flatten.
+  // unnest (v0.3.0) removes one level of nesting.
   method {:test} UnnestEdges() {
     var none: seq<Tree<int>> := [];
     expect unnest(none) == [];
@@ -141,9 +139,8 @@ module RamdafTests.Edge.List {
     expect unnest([Node([Node([Leaf(1)])])]) == [Node([Leaf(1)])];
     expect unnest([Leaf(1)]) == [Leaf(1)];
     expect unnest([Leaf("ab")]) == [Leaf("ab")];
-    expect flattenShallow([Leaf(1), Node([Leaf(2), Node([Leaf(3)])])]) == [Leaf(1), Leaf(2), Node([Leaf(3)])];
-    expect flattenDeep([Leaf(1), Node([Leaf(2), Node([Leaf(3)])])]) == [1, 2, 3];
-    expect flattenDeep(none) == [];
+    expect unnest([Leaf(1), Node([Leaf(2), Node([Leaf(3)])])]) == [Leaf(1), Leaf(2), Node([Leaf(3)])];
+    expect flatten([Leaf(1), Node([Leaf(2), Node([Leaf(3)])])]) == [1, 2, 3];
   }
 
   // zipObj and fromPairs (v0.3.0): a later duplicate key wins.
@@ -264,7 +261,7 @@ module RamdafTests.Edge.List {
     expect take(2, [1, 2, 3]) == [1, 2];
     expect skip(0, [1, 2]) == [1, 2];
     expect skip(2, [1, 2]) == [];
-    expect drop(1, [1, 2]) == [2];
+    expect skip(1, [1, 2]) == [2];
   }
 
   // Since v0.2.0 zip and zipWith stop at the shorter list.
@@ -333,12 +330,6 @@ module RamdafTests.Edge.List {
     expect lastIndexOfFrom(1, -3, [1, 2, 3]) == 0;
   }
 
-  method {:test} NthEdges() {
-    expect nth(-1, [1, 2]) == None;
-    expect nth(9, [1, 2]) == None;
-    expect nth(0, [1, 2]) == Some(1);
-  }
-
   method {:test} JoinEdges() {
     var empty: seq<string> := [];
     expect join(",", empty) == "";
@@ -389,8 +380,12 @@ module RamdafTests.Edge.List {
     expect lastIndexOf(2, [1, 2, 3, 2]) == 3;
     expect xprod(empty, [1]) == [];
     expect xprod([1], empty) == [];
-    expect all((x: int) => x > 0, empty) == true;
-    expect any((x: int) => x > 0, empty) == false;
+    expect every((x: int) => x > 0, empty) == true;
+    expect some((x: int) => x > 0, empty) == false;
+    // `every(x => x > 0)([1, 2])`, `some(x => x > 1, [1, 2])`
+    var allPos := (l: seq<int>) => every((x: int) => x > 0, l);
+    expect allPos([1, 2]) == true;
+    expect some((x: int) => x > 1, [1, 2]) == true;
     expect reject((x: int) => x > 1, [1, 2, 3]) == [1];
     expect contains(3, [1, 2]) == false;
     expect mapSeq((x: int) => x * x, empty) == [];

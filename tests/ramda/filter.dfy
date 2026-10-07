@@ -1,8 +1,9 @@
-// Ramda v0.4.0 test/test.filter.js, transcribed ("automatically curried" cases
+// Ramda v0.4.1 test/test.filter.js, transcribed ("automatically curried" cases
 // apply the partially applied function in full). The "should start at the
 // right arg" cases use a predicate that would fail the test if called; here
 // it is a predicate whose result does not matter (the list is empty), and
-// `undefined` elements are Js values.
+// `undefined` elements are Js values. (v0.4.1 removed skip's "should be
+// aliased by `drop`" with `drop`.)
 
 module RamdafTests.Ramda.Filter {
   import opened Ramdaf.List
@@ -125,10 +126,5 @@ module RamdafTests.Ramda.Filter {
     var skip2 := (l: seq<string>) requires 2 <= |l| => skip(2, l);
     expect skip2(["a", "b", "c", "d", "e"]) == ["c", "d", "e"];
     expect skip2(["x", "y", "z"]) == ["z"];
-  }
-
-  // "should be aliased by `drop`"
-  method {:test} SkipIsAliasedByDrop() {
-    expect drop(1, ["a", "b", "c"]) == ["b", "c"];
   }
 }

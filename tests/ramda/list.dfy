@@ -1,4 +1,4 @@
-// Ramda v0.4.0 test/test.list.js, test/test.indexof.js,
+// Ramda v0.4.1 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js,
@@ -16,7 +16,8 @@
 // fromPairs "skips empty Arrays and non-Array elements" (the elements are
 // typed pairs, README "Outside the modeled domain"). test.zip.js's v0.4.0
 // toPairs and toPairsIn describes test Object functions and are transcribed
-// in tests/ramda/object.dfy.
+// in tests/ramda/object.dfy. (v0.4.1 removed test.list.js's describe('nth')
+// with the function.)
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -102,24 +103,6 @@ module RamdafTests.Ramda.List {
   method {:test} InsertAllShouldBeCurried() {
     var ins := (elts: seq<string>, l: seq<string>) => insertAll(8, elts, l);
     expect ins(["p", "q", "r"], ["a", "b", "c", "d", "e"]) == ["a", "b", "c", "d", "e", "p", "q", "r"];
-  }
-
-  // describe('nth')
-  method {:test} NthReturnsTheObjectAtPositionN() {
-    var list := [Str("x"), Num(1), Obj(map["a" := Num(1), "b" := Num(2)]), Arr([Num(4), Num(5), Num(6)]), Bool(true)];
-    expect nth(4, list) == Some(Bool(true));
-    expect nth(0, list) == Some(Str("x"));
-    expect nth(3, list) == Some(Arr([Num(4), Num(5), Num(6)]));
-  }
-
-  // "returns null if n is out of the list's range" (v0.2.3 asserts undefined)
-  method {:test} NthReturnsNoneOutOfRange() {
-    expect nth(4, [1, 2, 3]) == None;
-  }
-
-  method {:test} NthIsAutomaticallyCurried() {
-    var get3rd := (l: seq<int>) => nth(2, l);
-    expect get3rd([3, 4, 5, 6, 7, 8]) == Some(5);
   }
 
   // describe('times') (v0.2.3)

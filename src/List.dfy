@@ -1,6 +1,8 @@
-// Ramdaf: Ramda v0.4.0 "List Functions" (ramda.js lines 1453-3077), except
+// Ramdaf: Ramda v0.4.1 "List Functions" (ramda.js lines 1479-3206), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
-// (Data.dfy).
+// (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
+// `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
+// aliases `every`/`some`.)
 
 module Ramdaf.List {
   import opened Prelude
@@ -8,13 +10,12 @@ module Ramdaf.List {
   export
     reveals foldl, reduce, foldlIdx, reduceIdx, foldr, reduceRight, foldrIdx,
             reduceRightIdx, unfoldr, mapSeq, mapIdx, mapObj, mapObjIdx, filter, filterIdx,
-            reject, rejectIdx, takeWhile, take, skipUntil, skip, drop, find,
-            findIndex, findLast, findLastIndex, all, every, any, some, contains, containsWith,
+            reject, rejectIdx, takeWhile, take, skipUntil, skip, find,
+            findIndex, findLast, findLastIndex, every, some, contains, containsWith,
             uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
             range, indexOf, indexOfFrom, lastIndexOf, lastIndexOfFrom, join, slice, sliceFrom,
-            remove, insert, insertAll, nth, partition,
-            ap, of, empty, chain, flatMap, unnest, flattenShallow, flattenDeep,
-            zipObj, fromPairs
+            remove, insert, insertAll, partition,
+            ap, of, empty, chain, unnest, zipObj, fromPairs
     provides Prelude
 
   // `acc = fn(acc, list[idx])` for idx ascending. Since v0.4.0 `reduce` holds
@@ -32,31 +33,44 @@ module Ramdaf.List {
       foldl(fn, acc, list) == fn(foldl(fn, acc, list[..|list| - 1]), list[|list| - 1])
   { reduce(fn, acc, list) }
 
-  // `foldl.idx` (alias `reduce.idx`; v0.4.0 still defines it as
-  // `R.foldl.idx`): `acc = fn(acc, list[idx], idx, list)` for idx ascending.
-  // The body folds over (element, index) pairs.
+  // `reduce.idx` (v0.4.1 defines it as `R.reduce.idx` and sets
+  // `R.foldl.idx = R.reduce.idx`; until v0.4.0 `foldl.idx` held it):
+  // `acc = fn(acc, list[idx], idx, list)` for idx ascending. The body folds
+  // over (element, index) pairs. The two keep the same contract.
+  function reduceIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> reduceIdx(fn, acc, list) == acc
+  { reduce((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
   function foldlIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
     ensures |list| == 0 ==> foldlIdx(fn, acc, list) == acc
-  { foldl((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
-  function reduceIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A { foldlIdx(fn, acc, list) }
+  { reduceIdx(fn, acc, list) }
 
   // `acc = fn(acc, list[idx])` for idx descending: since v0.1.1 the
   // accumulator comes first, as in foldl, and the fold runs from the right, so
-  // foldr(fn, acc, [x0, ..., xn]) is fn(... fn(fn(acc, xn), xn-1) ..., x0).
+  // reduceRight(fn, acc, [x0, ..., xn]) is fn(... fn(fn(acc, xn), xn-1) ..., x0).
+  // Since v0.4.1 `reduceRight` holds the definition and `foldr` is the alias
+  // (`var foldr = R.foldr = R.reduceRight`); until v0.4.0 it was the other way
+  // round. The two keep the same contract.
+  function reduceRight<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
+    ensures |list| > 0 ==>
+      reduceRight(fn, acc, list) == reduceRight(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
+  { if |list| == 0 then acc
+    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
+         fn(reduceRight(fn, acc, list[1..]), list[0]) }
   function foldr<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
       foldr(fn, acc, list) == foldr(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
-  { if |list| == 0 then acc
-    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         fn(foldr(fn, acc, list[1..]), list[0]) }
-  function reduceRight<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A { foldr(fn, acc, list) }
+  { reduceRight(fn, acc, list) }
 
-  // `foldr.idx` (alias `reduceRight.idx`): `acc = fn(acc, list[idx], idx, list)`
-  // for idx descending. The body folds over (element, index) pairs.
+  // `reduceRight.idx` (v0.4.1 defines it and sets `R.foldr.idx =
+  // R.reduceRight.idx`; until v0.4.0 `foldr.idx` held it):
+  // `acc = fn(acc, list[idx], idx, list)` for idx descending. The body folds
+  // over (element, index) pairs. The two keep the same contract.
+  function reduceRightIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> reduceRightIdx(fn, acc, list) == acc
+  { reduceRight((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
   function foldrIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
     ensures |list| == 0 ==> foldrIdx(fn, acc, list) == acc
-  { foldr((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
-  function reduceRightIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A { foldrIdx(fn, acc, list) }
+  { reduceRightIdx(fn, acc, list) }
 
   // JS loops until `fn` returns a falsy value (None here), possibly forever;
   // Dafny functions must terminate, so at most `fuel` elements are produced.
@@ -120,8 +134,6 @@ module Ramdaf.List {
   // (README "Deviations"). The body concatenates the mapped lists.
   function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
   { foldl((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
-  // v0.3.0: `aliasFor('chain').is('flatMap')`.
-  function flatMap<A, B>(f: A -> seq<B>, list: seq<A>): seq<B> { chain(f, list) }
 
   function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures |filter(fn, list)| <= |list|
@@ -235,9 +247,6 @@ module Ramdaf.List {
     requires n <= |list|
     ensures skip(n, list) == list[n..]
   { list[n..] }
-  function drop<T>(n: nat, list: seq<T>): seq<T>
-    requires n <= |list|
-  { skip(n, list) }
 
   // The first element satisfying fn; JS returns undefined when none does.
   function find<T>(fn: T -> bool, list: seq<T>): Option<T>
@@ -292,13 +301,14 @@ module Ramdaf.List {
          assert forall j :: 1 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
          r }
 
-  function all<T>(fn: T -> bool, list: seq<T>): bool
+  // v0.4.1 renames `all` to `every` (`R.every = curry2(every)`; `every` was
+  // its alias), so the body is the one `all` had: fn holds for every element.
+  function every<T>(fn: T -> bool, list: seq<T>): bool
   { forall i :: 0 <= i < |list| ==> fn(list[i]) }
-  function every<T>(fn: T -> bool, list: seq<T>): bool { all(fn, list) }
 
-  function any<T>(fn: T -> bool, list: seq<T>): bool
+  // v0.4.1 renames `any` to `some` likewise: fn holds for some element.
+  function some<T>(fn: T -> bool, list: seq<T>): bool
   { exists i :: 0 <= i < |list| && fn(list[i]) }
-  function some<T>(fn: T -> bool, list: seq<T>): bool { any(fn, list) }
 
   // `list.indexOf(a) > -1` (JS `===`; see README on equality).
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
@@ -422,8 +432,6 @@ module Ramdaf.List {
   function flatten<T>(list: seq<Tree<T>>): seq<T>
   { if |list| == 0 then []
     else (match list[0] case Leaf(v) => [v] case Node(c) => flatten(c)) + flatten(list[1..]) }
-  // v0.3.0: `aliasFor('flatten').is('flattenDeep')`.
-  function flattenDeep<T>(list: seq<Tree<T>>): seq<T> { flatten(list) }
 
   // `makeFlat(false)` (v0.3.0): one level of nesting removed, a Node's
   // children spliced in and a Leaf kept (`unnest([1, [2], [[3]]])` is
@@ -431,8 +439,6 @@ module Ramdaf.List {
   function unnest<T>(list: seq<Tree<T>>): seq<Tree<T>>
   { if |list| == 0 then []
     else (match list[0] case Leaf(_) => [list[0]] case Node(c) => c) + unnest(list[1..]) }
-  // v0.3.0: `aliasFor('unnest').is('flattenShallow')`.
-  function flattenShallow<T>(list: seq<Tree<T>>): seq<Tree<T>> { unnest(list) }
 
   // `rv[i] = fn(a[i], b[i])` for i below `Math.min(a.length, b.length)`
   // (v0.2.0; before, i ran to a.length and read `undefined` past the end of
@@ -617,12 +623,6 @@ module Ramdaf.List {
       insertAll(index, elts, list) == list[..i] + elts + list[i..]
   { var i := if 0 <= index < |list| then index else |list|;
     list[..i] + elts + list[i..] }
-
-  // `list[n]`: undefined (None) out of range. (Since v0.3.0 `nth` is an alias
-  // of `prop`, `aliasFor("prop").is("nth").and("get")`, whose `obj[p]` is the
-  // same lookup on a list; prop takes a map here, so nth keeps its body.)
-  function nth<T>(n: int, list: seq<T>): Option<T>
-  { if 0 <= n < |list| then Some(list[n]) else None }
 
   // `foldl(function(acc, elt) { acc[pred(elt) ? 0 : 1].push(elt); return acc; }, [[], []], list)`
   // (v0.3.0, "like its Haskell namesake"): the pair of the elements that

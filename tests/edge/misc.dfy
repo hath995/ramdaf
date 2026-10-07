@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.4.0 under node; the methods named Deviation* pin documented
+// ramda.js v0.4.1 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -246,13 +246,6 @@ module RamdafTests.Edge.Misc {
     expect flip((a: int, b: int) => a - b)(1, 2) == 1;
     expect compose((x: int) => x + 1, (x: int) => 2 * x)(3) == 7;
     expect pipe((x: int) => 2 * x, (x: int) => x + 1)(3) == 7;
-  }
-
-  // v0.3.0: K is an alias of always (it was tap's), and distributeTo of fork.
-  method {:test} KAndDistributeToEdges() {
-    expect K(5)(()) == 5;
-    expect K(5)(7) == 5;
-    expect distributeTo((a: int, b: int) => a * b, (x: int) => add(1, x), (x: int) => add(3, x))(2) == 15;
   }
 
   // fork applies both functions to the same argument, then combines them.

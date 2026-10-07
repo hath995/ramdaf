@@ -1,4 +1,4 @@
-// Ramdaf: a Dafny port of Ramda v0.4.0 (2014-08-28).
+// Ramdaf: a Dafny port of Ramda v0.4.1 (2014-08-31).
 // Support datatypes shared by the area modules. These are not Ramda exports;
 // they are the encodings the README's "JS -> Dafny mapping" names.
 
@@ -7,8 +7,9 @@ module Ramdaf.Prelude {
     reveals Option, Tree, SpecVal
 
   // A Ramda result that is a documented "no value" sentinel instead of an
-  // element (`find` miss -> undefined, `nth` out of range -> undefined, a
-  // missing property -> undefined, `maxWith([])` -> undefined) becomes None.
+  // element (`find` miss -> undefined, a missing property -> undefined,
+  // `maxWith([])` -> undefined; until v0.4.1 removed it, `nth` out of range ->
+  // undefined) becomes None.
   datatype Option<T> = None | Some(value: T)
 
   // JS nested heterogeneous arrays (the input of `flatten` and `unnest`)

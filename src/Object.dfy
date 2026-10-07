@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.4.0 "Object Functions" (ramda.js lines 3078-3722) and `propEq`
-// (line 4708). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.4.1 "Object Functions" (ramda.js lines 3207-3850) and `propEq`
+// (line 4882). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None.
 
 module Ramdaf.Object {
