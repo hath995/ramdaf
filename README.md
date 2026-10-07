@@ -453,7 +453,7 @@ and is not transcribed.
 | v0.31.0 | 2025-06-22 | ported | — |
 | v0.31.1 | 2025-06-22 | ported | — |
 | v0.31.2 | 2025-06-22 | ported | — |
-| v0.31.3 | 2025-06-22 | pending | — |
+| v0.31.3 | 2025-06-22 | ported | — |
 | v0.32.0 | 2025-10-10 | pending | — |
 
 "—" means not yet published from this history. The un-prefixed
@@ -3141,6 +3141,17 @@ and is not transcribed.
   v0.31.1.
 - **Ramdaf:** no source or test change; this entry and the manifest only.
 - **Expected tier: patch.** Nothing changed (`casestudy/expected/v0.31.2.json`,
+  with no changes).
+- **lem:** — (not yet published from this history).
+
+### v0.31.3 (2025-06-22)
+
+- **Ramda:** packaging only. `package.json`, `package-lock.json` and the
+  version in `dist/ramda.js`'s first comment line move to 0.31.3, and the
+  README's CDN links to 0.31.2; its clean script no longer deletes dist/; `source/` and `test/` are byte-identical to
+  v0.31.2.
+- **Ramdaf:** no source or test change; this entry and the manifest only.
+- **Expected tier: patch.** Nothing changed (`casestudy/expected/v0.31.3.json`,
   with no changes).
 - **lem:** — (not yet published from this history).
 
