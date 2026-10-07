@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.31.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.32.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
 // `propSatisfies`, `when`, `unless`, `until`, `xor`, `isNotEmpty`).

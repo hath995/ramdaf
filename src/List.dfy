@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.31.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.32.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -563,7 +563,9 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |list| ==> reverse(list)[i] == list[|list| - 1 - i]
   { seq(|list|, i requires 0 <= i < |list| => list[|list| - 1 - i]) }
 
-  // from (inclusive) to to (exclusive); empty when from >= to.
+  // from (inclusive) to to (exclusive); empty when from >= to. (Since v0.32.0,
+  // 3cade363, JS sizes the result `Math.ceil(to - from)`, so fractional
+  // bounds work, `range(1, 5.5)` is `[1, 2, 3, 4, 5]`; on ints the same.)
   function range(from: int, to: int): seq<int>
     ensures |range(from, to)| == if from >= to then 0 else to - from
     ensures forall i :: 0 <= i < |range(from, to)| ==> range(from, to)[i] == from + i

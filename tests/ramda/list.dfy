@@ -1,4 +1,4 @@
-// Ramda v0.31.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.32.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -641,9 +641,12 @@ module RamdafTests.Ramda.List {
 
   // ---- range.js ----
 
+  // (v0.32.0 adds `range(-3, 2)` and two fractional lines, `range(1, 5.5)`
+  // and `range(1.5, 5.5)`, which are not ints)
   method {:test} RangeReturnsListOfNumbers() {
     expect range(0, 5) == [0, 1, 2, 3, 4];
     expect range(4, 7) == [4, 5, 6];
+    expect range(-3, 2) == [-3, -2, -1, 0, 1];
   }
 
   method {:test} RangeIsEmptyUnlessFromIsBelowTo() {

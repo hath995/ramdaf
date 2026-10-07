@@ -132,7 +132,7 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0 and `{'@@functional/placeholder': true}` since v0.15.0, which also curries `concat` and `contains` this way, and since v0.10.0 `merge`) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) Since v0.11.0 `op` is gone and every curried function takes the placeholder in any position: `f(R.__, b)` is still `x => f(x, b)`, while `f(R.__)` is `f` itself, so `subtract(R.__)(5)` is `x => 5 - x` (from v0.6.0 to v0.10.0 `op` made it `x => x - 5`). |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type. (Since v0.11.0 a curried Ramda function called with no arguments returns itself, `identity()` is `identity`; the functions Ramda returns, such as `always(7)`, `T` and `cond(…)`'s result, are not curried, and they are the ones called this way.) |
 
-## Modules and exports (v0.31.0)
+## Modules and exports (v0.32.0)
 
 | Module | Exports |
 |---|---|
@@ -146,7 +146,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | toUpper, toLower, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, countBy, groupBy, project, equals, identical, eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin |
 
-That is 215 of Ramda v0.31.0's 272 export names (since v0.9.0 Ramda has no
+That is 215 of Ramda v0.32.0's 272 export names (since v0.9.0 Ramda has no
 functions stored as properties of exports). The other 57 names are listed
 under "Not portable".
 
@@ -173,7 +173,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.31.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
+Ramda v0.32.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
 `_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
@@ -239,7 +239,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.31.0 exports are not ported, rather than faked:
+These Ramda v0.32.0 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -269,7 +269,7 @@ These Ramda v0.31.0 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.31.0 (node) | Ramdaf |
+| Function | Ramda v0.32.0 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`, and from v0.16.0 to v0.30.1 `head('')` and `last('')` → `''`, not a character (`undefined` again since v0.31.0); `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `repeat` (`repeatN` until v0.8.0), `times` | `new Array(n)` throws `RangeError` for a negative n: `repeat(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3; since v0.19.1 `times` throws its own `RangeError: n must be a non-negative number`, for NaN too) | `n: nat` |
@@ -298,7 +298,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.31.0 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.32.0 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `identical` (`eq` until v0.14.0 and in v0.15.1) | `identical` (`Object.is`) compares arrays and objects by reference: `identical([], [])` → `false`. (Until v0.14.0 `===` or `Object.is` also made `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq` (v0.14.0; `where`'s value entries before) and `dropRepeats` (v0.14.0) compare by reference: for `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(Ro, So).length` → `0` and `difference(…)` → `4`. Since v0.15.0 they compare with `R.equals`, deep equality, as here, except that in v0.15.0 alone `uniq` kept a JS `Set`, which compares by reference (unless an object has an `equals` method), so `uniq([{a: 1}, {a: 1}])` kept both and `union(Ro, So).length` was still `8`; v0.15.1 makes `uniq` `uniqWith(equals)` again.) | Structural `==`: `true` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert`, `collectBy` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}`; `collectBy(fn, list)` (v0.28.0) lists its groups in `for…in` order of their tags, integer-like tags first and ascending: `collectBy(x => String(x % 3), [5, 4, 3, 2])` → `[[3], [4], [5, 2]]` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets; `collectBy`'s groups in the order their tags first occur, `[[5, 2], [4], [3]]` | A `map` has no key order. |
@@ -353,7 +353,7 @@ also lists what it skips: arity checks, side-effect counting, calls with no
 arguments, `null` or `undefined` in place of a list, JS coercion, reference
 equality, method dispatch on non-array objects, array-like objects,
 prototypes, string-keyed `sortBy`, and the unportable functions' files
-(v0.31.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `construct.js`,
+(v0.32.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `construct.js`,
 `constructN.js`, `curry.js`, `curryN.js`, `forEach.js`,
 `into.js`, `lensPath.js`, `pathSatisfies.js`,
 `invoker.js`, `is.js`, `lift.js`, `liftN.js`, `propIs.js`, `modifyPath.js`, `partialObject.js`, `unwind.js`,
@@ -454,7 +454,7 @@ and is not transcribed.
 | v0.31.1 | 2025-06-22 | ported | — |
 | v0.31.2 | 2025-06-22 | ported | — |
 | v0.31.3 | 2025-06-22 | ported | — |
-| v0.32.0 | 2025-10-10 | pending | — |
+| v0.32.0 | 2025-10-10 | ported | — |
 
 "—" means not yet published from this history. The un-prefixed
 `0.26.0`/`0.26.1` tags duplicate the `v`-prefixed ones and are skipped.
@@ -3148,11 +3148,29 @@ and is not transcribed.
 
 - **Ramda:** packaging only. `package.json`, `package-lock.json` and the
   version in `dist/ramda.js`'s first comment line move to 0.31.3, and the
-  README's CDN links to 0.31.2; its clean script no longer deletes dist/; `source/` and `test/` are byte-identical to
+  README's CDN links to 0.31.2; `package.json`'s `clean` script no longer
+  deletes `dist/` (69dfa7ff); `source/` and `test/` are byte-identical to
   v0.31.2.
 - **Ramdaf:** no source or test change; this entry and the manifest only.
 - **Expected tier: patch.** Nothing changed (`casestudy/expected/v0.31.3.json`,
   with no changes).
+- **lem:** — (not yet published from this history).
+
+### v0.32.0 (2025-10-10)
+
+- **Ramda** (the `source/` and `test/` diff, behaviour checked in node
+  with a differential run of the ported exports, which finds no change):
+  - `range` sizes its result `Math.ceil(to - from)` (3cade363), so
+    fractional bounds work (`range(1.5, 4)` → `[1.5, 2.5, 3.5]`, where it
+    threw RangeError); integer ranges are unchanged.
+  - Not visible in this encoding: JSDoc of `head`, `last`, `pipeWith`,
+    `rebuild` and `type`; `package.json`'s `exports` entries.
+- **Ramdaf:** no source change but `range`'s comment; the headers cite
+  v0.32.0 (the library source is not byte-identical, so not D2's case);
+  range.js's new `range(-3, 2)` line is transcribed, its fractional lines
+  are not; the v0.31.3 entry's wording is fixed.
+- **Expected tier: patch.** No Dafny-visible change
+  (`casestudy/expected/v0.32.0.json`, with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
