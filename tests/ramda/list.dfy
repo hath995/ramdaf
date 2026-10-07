@@ -1,4 +1,4 @@
-// Ramda v0.20.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.21.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, allUniq.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -8,7 +8,8 @@
 // mergeAll.js, aperture.js, none.js, adjust.js, update.js,
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
-// splitWhen.js, transpose.js, without.js, lensIndex.js and reduceBy.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js and
+// groupWith.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -92,7 +93,10 @@
 // with other filterables" (an object and a sanctuary `Just`: a list here,
 // README "Deviations") and reduceBy's "correctly reports the arity of
 // curried versions" are not transcribed; reduceBy's students and `{type,
-// val}` records are groupBy's.
+// val}` records are groupBy's (v0.21.0 moves its key function third).
+// groupWith.js's (v0.21.0) `R.equals` is `==`, `R.complement(R.equals)`,
+// `R.T` and `R.F` are binary lambdas, and `R.unnest` of the groups is
+// `chain(identity)` (since v0.18.0), here `chain(g => g, …)`.
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -1404,20 +1408,50 @@ module RamdafTests.Ramda.List {
                      Student("Eddy", 58), Student("Fred", 67), Student("Gillian", 91), Student("Hannah", 78),
                      Student("Irene", 85), Student("Jack", 69)];
     var none: seq<string> := [];
-    expect reduceBy(byGrade, CollectNames, none, students) ==
+    expect reduceBy(CollectNames, none, byGrade, students) ==
       map["A" := ["Dianne", "Gillian"], "B" := ["Abby", "Chris", "Irene"], "C" := ["Brad", "Hannah"],
           "D" := ["Fred", "Jack"], "F" := ["Eddy"]];
   }
 
   method {:test} ReduceByReturnsAnEmptyObjectIfGivenAnEmptyArray() {
     var none: seq<map<string, Js>> := [];
-    expect reduceBy(TypeOf, SumValues, 0, none) == map[];
+    expect reduceBy(SumValues, 0, TypeOf, none) == map[];
   }
 
-  // `splitByType = R.reduceBy(byType)`, `sumByType = splitByType(sumValues, 0)`
+  // `reduceToSumsBy = R.reduceBy(sumValues, 0)`, `sumByType =
+  // reduceToSumsBy(byType)` (v0.21.0; in v0.20.x `splitByType =
+  // R.reduceBy(byType)`, `sumByType = splitByType(sumValues, 0)`)
   method {:test} ReduceByIsCurried() {
-    var sumByType := (l: seq<map<string, Js>>) => reduceBy(TypeOf, SumValues, 0, l);
+    var reduceToSumsBy := (keyFn: map<string, Js> -> string) => ((l: seq<map<string, Js>>) => reduceBy(SumValues, 0, keyFn, l));
+    var sumByType := reduceToSumsBy(TypeOf);
     expect sumByType([Typed("A", 10), Typed("B", 20), Typed("A", 30), Typed("A", 40), Typed("C", 50), Typed("B", 60)]) ==
       map["A" := 80, "B" := 80, "C" := 50];
+  }
+
+  // ---- groupWith.js (v0.21.0) ----
+
+  method {:test} GroupWithSplitsTheListIntoGroupsAccordingToTheGroupingFunction() {
+    expect groupWith((a: int, b: int) => a == b, [1, 2, 2, 3]) == [[1], [2, 2], [3]];
+    expect groupWith((a: int, b: int) => a == b, [1, 1, 1, 1]) == [[1, 1, 1, 1]];
+    expect groupWith((a: int, b: int) => a == b, [1, 2, 3, 4]) == [[1], [2], [3], [4]];
+  }
+
+  method {:test} GroupWithReturnsAnEmptyArrayIfGivenAnEmptyArray() {
+    var empty: seq<int> := [];
+    expect groupWith((a: int, b: int) => a == b, empty) == [];
+  }
+
+  method {:test} GroupWithCanBeTurnedIntoTheOriginalListThroughConcatenation() {
+    var list := [1, 1, 2, 3, 4, 4, 5, 5];
+    expect chain((g: seq<int>) => g, groupWith((a: int, b: int) => a == b, list)) == list;
+    expect chain((g: seq<int>) => g, groupWith((a: int, b: int) => a != b, list)) == list;
+    expect chain((g: seq<int>) => g, groupWith((a: int, b: int) => true, list)) == list;
+    expect chain((g: seq<int>) => g, groupWith((a: int, b: int) => false, list)) == list;
+  }
+
+  // `R.groupWith(R.equals)('Mississippi')`
+  method {:test} GroupWithAlsoWorksOnStrings() {
+    var byEquals := (s: string) => groupWith((a: char, b: char) => a == b, s);
+    expect byEquals("Mississippi") == ["M", "i", "ss", "i", "ss", "i", "pp", "i"];
   }
 }

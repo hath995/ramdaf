@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.20.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.21.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -6,7 +6,7 @@
 // `intersperse`, `dropRepeats`, `dropRepeatsWith`, `lensIndex`, `dropLast`,
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
 // `allUniq`, `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
-// `splitWhen`, `transpose`, `without`, `reduceBy` and the renamed functions below; since v0.16.0 the
+// `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith` and the renamed functions below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
@@ -44,7 +44,7 @@ module Ramdaf.List {
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             allUniq, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
-            without, reduceBy
+            without, reduceBy, groupWith
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -889,10 +889,14 @@ module Ramdaf.List {
   // `R.indexBy(fn, list)` (v0.19.0, `@category List`): `acc[fn(elem)] = elem`
   // over the list, each element under the key fn gives it, a later element
   // with the same key winning (`indexBy(prop('id'), [{id: 'xyz'}, {id:
-  // 'abc'}])` is `{abc: {id: 'abc'}, xyz: {id: 'xyz'}}`). JS converts the key
-  // to a string, and a `__proto__` key sets the prototype instead of a
-  // property (README "Deviations"). The body sets
-  // the last element on the object built from the others, which is the loop.
+  // 'abc'}])` is `{abc: {id: 'abc'}, xyz: {id: 'xyz'}}`). Since v0.21.0 it
+  // is `reduceBy(function(acc, elem) { return elem; }, null)`, the same
+  // loop; the body keeps its own recursion, as reduceBy's `null` starting
+  // value has no counterpart in a generic T. JS converts the key to a
+  // string, a `__proto__` key sets the prototype instead of a property, and
+  // its `_reduce` ends at a reduced marker key (README "Deviations"). The
+  // body sets the last element on the object built from the others, which
+  // is the loop.
   function indexBy<T>(fn: T -> string, list: seq<T>): map<string, T>
   { if |list| == 0 then map[]
     else indexBy(fn, list[..|list| - 1])[fn(list[|list| - 1]) := list[|list| - 1]] }
@@ -959,21 +963,39 @@ module Ramdaf.List {
   function without<T(==)>(xs: seq<T>, list: seq<T>): seq<T>
   { reject((x: T) => contains(x, xs), list) }
 
-  // `R.reduceBy(keyFn, valueFn, valueAcc, list)` (v0.20.0, `@category
-  // List`): `_reduce(function(acc, elt) { var key = keyFn(elt); acc[key] =
-  // valueFn(_has(key, acc) ? acc[key] : valueAcc, elt); return acc; }, {},
-  // list)`, the elements grouped by the key keyFn gives them, each group
-  // folded with valueFn from valueAcc, in list order ("a more general
-  // groupBy": `reduceBy(x => x % 2 ? 'odd' : 'even', add, 0, [1, 2, 3])` is
-  // `{odd: 4, even: 2}`). `_reduce` is `reduce`'s body, so the body calls
+  // `R.reduceBy(valueFn, valueAcc, keyFn, list)` (v0.20.0, `@category
+  // List`; since v0.21.0 in this order, where v0.20.x took `reduceBy(keyFn,
+  // valueFn, valueAcc, list)`): `_reduce(function(acc, elt) { var key =
+  // keyFn(elt); acc[key] = valueFn(_has(key, acc) ? acc[key] : valueAcc,
+  // elt); return acc; }, {}, list)`, the elements grouped by the key keyFn
+  // gives them, each group folded with valueFn from valueAcc, in list order
+  // ("a more general groupBy": `reduceBy(add, 0, x => x % 2 ? 'odd' :
+  // 'even', [1, 2, 3])` is `{odd: 4, even: 2}`; v0.21.0 writes `countBy`,
+  // `groupBy` and `indexBy` with it). `_reduce` is `reduce`'s body, so the body calls
   // `reduce`, and `R.has` (`_has`, an own property; Object's, which List does
   // not import) is written out as `key in acc`. JS converts the key to a
   // string (README "Deviations"), a `__proto__` key sets the prototype
   // instead of a property, and `_reduce` ends at a reduced marker key
   // (README "Deviations"); a mutable valueAcc is one object shared by every
   // group in JS, which an immutable Dafny value cannot be.
-  function reduceBy<T, A>(keyFn: T -> string, valueFn: (A, T) -> A, valueAcc: A, list: seq<T>): map<string, A>
+  function reduceBy<T, A>(valueFn: (A, T) -> A, valueAcc: A, keyFn: T -> string, list: seq<T>): map<string, A>
   { reduce((acc: map<string, A>, elt: T) =>
              acc[keyFn(elt) := valueFn(if keyFn(elt) in acc then acc[keyFn(elt)] else valueAcc, elt)],
            map[], list) }
+
+  // `R.groupWith(fn, list)` (v0.21.0, `@category List`): `while (idx < len) {
+  // nextidx = idx + 1; while (nextidx < len && fn(list[idx],
+  // list[nextidx])) { nextidx += 1; } res.push(list.slice(idx, nextidx));
+  // idx = nextidx; }`, the list cut into consecutive groups, each running
+  // from its first element through the elements right after it that fn
+  // relates to that first element (`groupWith(equals, [1, 2, 2, 3])` is
+  // `[[1], [2, 2], [3]]`; `groupWith((a, b) => b - a <= 1, [1, 2, 3, 4])` is
+  // `[[1, 2], [3, 4]]`). On a JS string the groups are strings, the same
+  // seqs here. The inner loop is `takeWhile` on the rest of the list, and
+  // the body recurses on what follows the group, as the outer loop does.
+  function groupWith<T>(fn: (T, T) -> bool, list: seq<T>): seq<seq<T>>
+    decreases |list|
+  { if |list| == 0 then []
+    else var group := [list[0]] + takeWhile((x: T) => fn(list[0], x), list[1..]);
+         [group] + groupWith(fn, list[|group|..]) }
 }

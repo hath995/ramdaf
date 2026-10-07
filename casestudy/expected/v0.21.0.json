@@ -1,0 +1,9 @@
+{
+  "ramda": "v0.21.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.reduceBy", "kind": "breaking", "why": "v0.21.0 moves the key function third: reduceBy(valueFn, valueAcc, keyFn, list), was reduceBy(keyFn, valueFn, valueAcc, list)"},
+    {"symbol": "Ramdaf.Data.countBy", "kind": "compatible", "why": "v0.21.0's countBy is reduceBy((acc, elem) => acc + 1, 0): the revealed body calls List.reduceBy, with the same counts"},
+    {"symbol": "Ramdaf.List.groupWith", "kind": "added", "why": "new in v0.21.0 (@category List): consecutive groups of the elements fn relates to each group's first element"}
+  ]
+}

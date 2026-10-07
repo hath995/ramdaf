@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.20.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.21.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`

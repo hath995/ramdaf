@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.20.1 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.21.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -212,18 +212,29 @@ module RamdafTests.Edge.Data {
     expect |difference(ro, so)| == 2;
   }
 
-  // node: groupBy(x => 'hasOwnProperty', [1]) is {hasOwnProperty: [undefined, 1]}
-  // (`acc[key] || []` finds the inherited function, and `append` copies its
-  // length-1 "elements" first), and countBy(x => '__proto__', [1, 2]) is {}
-  // (the count is assigned to the prototype, which ignores it). A map's keys
-  // are all ordinary. (So at v0.2.4 as well: an omission of the earlier
-  // ports. Until v0.9.0 countBy(x => 'hasOwnProperty', [1, 2]) was
-  // {hasOwnProperty: 'function hasOwnProperty() { [native code] }11'} too;
-  // since v0.9.1 node agrees with the port there, CountByOfPrototypeNamedKeys
-  // above.)
+  // node: countBy(x => '__proto__', [1, 2]) is {} (the count is assigned to
+  // the prototype, which ignores it), and groupBy(x => '__proto__', [1, 2])
+  // has no own key (since v0.11.0; its prototype is the group, [1, 2], and
+  // since v0.21.0 [2], as each element starts a new group; until v0.10.0 it
+  // threw RangeError). A map's keys are all ordinary. (So at v0.2.4 as well:
+  // an omission of the earlier ports. Until v0.20.1 groupBy(x =>
+  // 'hasOwnProperty', [1]) was {hasOwnProperty: [undefined, 1]}, as `acc[key]
+  // || []` found the inherited function, and `append` copied its length-1
+  // "elements" first: GroupByOfPrototypeNamedKeys below. Until v0.9.0
+  // countBy(x => 'hasOwnProperty', [1, 2]) was {hasOwnProperty: 'function
+  // hasOwnProperty() { [native code] }11'} too; since v0.9.1 node agrees
+  // with the port there, CountByOfPrototypeNamedKeys above.)
   method {:test} DeviationPrototypeKeysAreOrdinaryInGroupByAndCountBy() {
-    expect groupBy((x: int) => "hasOwnProperty", [1]) == map["hasOwnProperty" := [1]];
     expect countBy((x: int) => "__proto__", [1, 2]) == map["__proto__" := 2];
+    expect groupBy((x: int) => "__proto__", [1, 2]) == map["__proto__" := [1, 2]];
+  }
+
+  // Since v0.21.0 groupBy is reduceBy over own groups, so a key that names
+  // an inherited member starts its own group (node: {hasOwnProperty: [1]},
+  // {toString: [1, 2]}), as here.
+  method {:test} GroupByOfPrototypeNamedKeys() {
+    expect groupBy((x: int) => "hasOwnProperty", [1]) == map["hasOwnProperty" := [1]];
+    expect groupBy((x: int) => "toString", [1, 2]) == map["toString" := [1, 2]];
   }
 
   // equals (v0.15.0; eqDeep, v0.9.0 to v0.14.0 and, deprecated, its alias
@@ -303,9 +314,13 @@ module RamdafTests.Edge.Data {
   // v0.14.0 (with `__transducers_reduced__` from v0.12.0 to v0.13.0): the
   // group array is truthy, so `_reduce` takes the accumulator for the
   // transducer protocol's "reduced" marker and returns its
-  // `@@transducer/value`. Here the key is ordinary.
+  // `@@transducer/value`; since v0.21.0 countBy is reduceBy, and
+  // countBy(x => '@@transducer/reduced', [1, 2]) is undefined likewise (its
+  // count 1 is truthy; `{'@@transducer/reduced': 2}` until v0.20.1, as
+  // here). Here the key is ordinary.
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
     expect groupBy((x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := [1, 2]];
+    expect countBy((x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 2];
   }
 
   // node: groupBy(x => '__transducers_reduced__', [1, 2]) is

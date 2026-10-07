@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.20.1's own suite does not cover, each checked against
-// dist/ramda.js v0.20.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.21.0's own suite does not cover, each checked against
+// dist/ramda.js v0.21.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -682,14 +682,14 @@ module RamdafTests.Edge.List {
   // `__proto__` sets the prototype (a primitive is ignored) instead of a
   // property. Likewise the keys of mergeAll([JSON.parse('{"__proto__": 5,
   // "a": 1}'), {b: 2}]) (v0.10.0) are ['a', 'b'], and those of
-  // reduceBy(x => '__proto__', add, 0, [1, 2]) (v0.20.0) are []. A map's
+  // reduceBy(add, 0, x => '__proto__', [1, 2]) (v0.20.0) are []. A map's
   // keys are all ordinary.
   method {:test} DeviationPrototypeKeysAreOrdinaryInListBuilders() {
     expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
     expect indexBy((x: int) => "__proto__", [1]) == map["__proto__" := 1];
     expect mergeAll([map["__proto__" := 5, "a" := 1], map["b" := 2]]) == map["__proto__" := 5, "a" := 1, "b" := 2];
-    expect reduceBy((x: int) => "__proto__", M.add, 0, [1, 2]) == map["__proto__" := 3];
+    expect reduceBy(M.add, 0, (x: int) => "__proto__", [1, 2]) == map["__proto__" := 3];
   }
 
   // node: since v0.12.0 `_reduce` stops when the accumulator has a truthy
@@ -699,16 +699,20 @@ module RamdafTests.Edge.List {
   // {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2, 3])` is 9,
   // `mapObjIndexed((x, k, o) => x, {'@@transducer/reduced': 1,
   // '@@transducer/value': 5, z: 3})` is undefined (and so was `mapObj`'s
-  // until v0.18.0), and `reduceBy(x => '@@transducer/reduced', add, 0, [1,
+  // until v0.18.0), and `reduceBy(add, 0, x => '@@transducer/reduced', [1,
   // 2])` (v0.20.0), whose group value 1 is truthy, is undefined (the
-  // `@@transducer/value` it reads). Here the key is ordinary. (`mergeAll`
+  // `@@transducer/value` it reads), as is `indexBy(x =>
+  // '@@transducer/reduced', [1, 2])` (since v0.19.0, an omission of the
+  // v0.19.0 port; countBy's line is in tests/edge/data.dfy). Here the key is
+  // ordinary. (`mergeAll`
   // gave 7 from v0.12.0 to v0.19.1: MergeAllCopiesTheReducedMarker.)
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
     var marked := map["@@transducer/reduced" := 1, "@@transducer/value" := 9];
     expect reduce((acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2, 3]) == marked["x" := 3];
     var o := map["@@transducer/reduced" := 1, "@@transducer/value" := 5, "z" := 3];
     expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
-    expect reduceBy((x: int) => "@@transducer/reduced", M.add, 0, [1, 2]) == map["@@transducer/reduced" := 3];
+    expect reduceBy(M.add, 0, (x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 3];
+    expect indexBy((x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 2];
   }
 
   // node: since v0.20.0 `mergeAll` copies with the private `_objectAssign`,
@@ -812,15 +816,30 @@ module RamdafTests.Edge.List {
     expect traverse(of, (x: int) => [x], none) == [[]];
   }
 
-  // reduceBy (v0.20.0): groups folded from valueAcc in list order; a
-  // `toString` key is an own property (`_has`), as here (node: {}, {odd: 4,
-  // even: 2}, {toString: 3}, {k: [3, 1, 2]}).
+  // reduceBy (v0.20.0; since v0.21.0 `reduceBy(valueFn, valueAcc, keyFn,
+  // list)`): groups folded from valueAcc in list order; a `toString` key is
+  // an own property (`_has`), as here (node: {}, {odd: 4, even: 2},
+  // {toString: 3}, {k: [3, 1, 2]}).
   method {:test} ReduceByEdges() {
     var none: seq<int> := [];
     var nothing: seq<int> := [];
-    expect reduceBy((x: int) => "a", M.add, 0, none) == map[];
-    expect reduceBy((x: int) => if x % 2 != 0 then "odd" else "even", M.add, 0, [1, 2, 3]) == map["odd" := 4, "even" := 2];
-    expect reduceBy((x: int) => "toString", M.add, 0, [1, 2]) == map["toString" := 3];
-    expect reduceBy((x: int) => "k", (a: seq<int>, x: int) => a + [x], nothing, [3, 1, 2]) == map["k" := [3, 1, 2]];
+    expect reduceBy(M.add, 0, (x: int) => "a", none) == map[];
+    expect reduceBy(M.add, 0, (x: int) => if x % 2 != 0 then "odd" else "even", [1, 2, 3]) == map["odd" := 4, "even" := 2];
+    expect reduceBy(M.add, 0, (x: int) => "toString", [1, 2]) == map["toString" := 3];
+    expect reduceBy((a: seq<int>, x: int) => a + [x], nothing, (x: int) => "k", [3, 1, 2]) == map["k" := [3, 1, 2]];
+  }
+
+  // groupWith (v0.21.0): each group's first element is compared with the
+  // ones after it, so the relation need not be symmetric or transitive
+  // (node: [[1, 2], [3, 4]], [[1, 2], [0, 3, 1]], [[1, 2]], [[1], [2]], [],
+  // ['aa', 'b', 'a']).
+  method {:test} GroupWithEdges() {
+    var empty: seq<int> := [];
+    expect groupWith((a: int, b: int) => b - a <= 1, [1, 2, 3, 4]) == [[1, 2], [3, 4]];
+    expect groupWith((a: int, b: int) => a < b, [1, 2, 0, 3, 1]) == [[1, 2], [0, 3, 1]];
+    expect groupWith((a: int, b: int) => true, [1, 2]) == [[1, 2]];
+    expect groupWith((a: int, b: int) => false, [1, 2]) == [[1], [2]];
+    expect groupWith((a: int, b: int) => true, empty) == [];
+    expect groupWith((a: char, b: char) => a == b, "aaba") == ["aa", "b", "a"];
   }
 }

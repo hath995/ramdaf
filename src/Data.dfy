@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.20.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.21.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
@@ -6,7 +6,7 @@
 // v0.2.4 an alias of `partition` there) but which stays here (functions do
 // not move between modules); from v0.9.0 on, the functions with `@category
 // Relation` (`equals`, `identical`, `eqBy`, `symmetricDifference`,
-// `symmetricDifferenceWith` and `clamp`, whose v0.20.0 JSDoc misspells the
+// `symmetricDifferenceWith` and `clamp`, whose v0.20.x JSDoc misspelt the
 // category `Relaction`; v0.15.0 removed `eqDeep`, v0.9.0, which
 // `equals` replaces, and `eq`, then in Object.dfy; v0.15.1 restored both,
 // deprecated, with `eq` here by `@category Relation`, and v0.16.0 removed
@@ -152,20 +152,29 @@ module Ramdaf.Data {
       r[i] in filteredList && exists j :: 0 <= j < |lookupList| && pred(r[i], lookupList[j]);
     r }
 
-  // `var key = fn(list[idx]); counts[key] = (has(key, counts) ? counts[key] :
-  // 0) + 1;` for idx ascending (v0.9.1, "ignore inherited properties in
-  // R.countBy"): for each key fn produces, how many elements produce it.
-  // Until v0.9.0 `counts[key] || 0` read an inherited `Object.prototype`
-  // member, so `countBy(x => 'toString', [1, 2])` was `{toString: 'function
-  // toString() { [native code] }11'}`; node now gives 2, as the port always
-  // did. A `__proto__` key is still not an ordinary property in JS (the count
-  // is dropped); here every key is (README "Deviations").
+  // `R.countBy(fn, list)`: since v0.21.0 `reduceBy(function(acc, elem) {
+  // return acc + 1; }, 0)`, so the body calls `List.reduceBy`: for each key
+  // fn produces, how many elements produce it. From v0.9.1 ("ignore
+  // inherited properties in R.countBy") to v0.20.1 it was its own loop,
+  // `counts[key] = (has(key, counts) ? counts[key] : 0) + 1`, with the same
+  // counts (and the body was the comprehension of each key's `List.filter`
+  // count). Until v0.9.0 `counts[key] || 0` read an inherited
+  // `Object.prototype` member, so `countBy(x => 'toString', [1, 2])` was
+  // `{toString: 'function toString() { [native code] }11'}`; node now gives
+  // 2, as the port always did. A `__proto__` key is still not an ordinary
+  // property in JS (the count is dropped), and since v0.21.0 reduceBy's
+  // `_reduce` ends at a reduced marker key; here every key is ordinary
+  // (README "Deviations").
   function countBy<T>(fn: T -> string, list: seq<T>): map<string, nat>
-  { var keys := set i | 0 <= i < |list| :: fn(list[i]);
-    map k | k in keys :: |List.filter(x => fn(x) == k, list)| }
+  { List.reduceBy<T, nat>((acc: nat, elem: T) => acc + 1, 0, fn, list) }
 
   // `foldl(function(acc, elt) { var key = fn(elt); acc[key] = append(elt, acc[key] || []); ... }, {}, list)`
-  // (`_foldl` in v0.9.x, `_reduce` since v0.10.0; v0.3.0, which makes groupBy its own function again with the body that
+  // (`_foldl` in v0.9.x, `_reduce` from v0.10.0 to v0.20.1; since v0.21.0
+  // `reduceBy(function(acc, item) { if (acc == null) { acc = []; }
+  // acc.push(item); return acc; }, null)`, the same groups, which no longer
+  // reads an inherited member for a key such as `hasOwnProperty`; the body
+  // keeps its comprehension, which the postconditions are proved on;
+  // v0.3.0, which makes groupBy its own function again with the body that
   // partition, its original since v0.2.0, had; partition now splits by a
   // predicate): for each key fn produces, the elements that produce it, in
   // list order. The results are unchanged. As for countBy, a key that names
@@ -229,7 +238,8 @@ module Ramdaf.Data {
   function symmetricDifferenceWith<T>(pred: (T, T) -> bool, list1: seq<T>, list2: seq<T>): seq<T>
   { differenceWith(pred, list1, list2) + differenceWith(pred, list2, list1) }
 
-  // `R.clamp(min, max, value)` (v0.20.0, `@category Relaction`, sic):
+  // `R.clamp(min, max, value)` (v0.20.0, `@category Relation`; `Relaction`
+  // until v0.20.1):
   // `value < min ? min : value > max ? max : value`, value restricted to the
   // range [min, max] (`clamp(1, 10, -1)` is 1). For `min > max` it throws
   // Error ("min must not be greater than max in clamp(min, max, value)"), so
