@@ -1,4 +1,4 @@
-// Ramda v0.17.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.17.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapObjIndexed.js, find.js,

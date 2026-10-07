@@ -1,4 +1,4 @@
-// Ramda v0.17.0 test/nthChar.js, nthCharCode.js, toUpper.js, toLower.js,
+// Ramda v0.17.1 test/nthChar.js, nthCharCode.js, toUpper.js, toLower.js,
 // trim.js, split.js and replace.js (until v0.8.0 test.stringBasics.js and
 // test.replace.js), transcribed. (v0.14.0 removed charAt.js and
 // charCodeAt.js, and v0.16.0 substring.js, substringFrom.js, substringTo.js,
