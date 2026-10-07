@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.19.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.19.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`
@@ -102,7 +102,8 @@ module Ramdaf.Core {
   // `var arr = new Array(n); while (++i < n) { arr[i] = fn(i); }` (v0.2.3;
   // since v0.9.0 `new Array(Number(n))`, which only changes non-numbers):
   // fn applied to 0, 1, ..., n - 1. `new Array(n)` throws RangeError for a
-  // negative n, so n is a nat.
+  // negative n (since v0.19.1 times throws it first, "n must be a
+  // non-negative number", for a negative n or NaN), so n is a nat.
   function times<T>(fn: nat -> T, n: nat): seq<T>
     ensures |times(fn, n)| == n
     ensures forall i :: 0 <= i < n ==> times(fn, n)[i] == fn(i)
