@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.30.1's own suite does not cover, each checked against
-// dist/ramda.js v0.30.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.31.0's own suite does not cover, each checked against
+// dist/ramda.js v0.31.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -690,7 +690,9 @@ module RamdafTests.Edge.List {
   // reduceBy(add, 0, x => '__proto__', [1, 2]) (v0.20.0) are []. A map's
   // keys are all ordinary. And `collectBy(x => 'toString', [1])` (v0.28.0)
   // throws `TypeError: o[tag].push is not a function`, as `o.toString` is the
-  // inherited function, which the port does not model.
+  // inherited function, which the port does not model. Since v0.31.0 the
+  // keys of `rebuild((k, v) => [[k, v]], JSON.parse('{"__proto__": 5, "a":
+  // 1}'))` are ['a'].
   method {:test} DeviationPrototypeKeysAreOrdinaryInListBuilders() {
     expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
@@ -698,6 +700,7 @@ module RamdafTests.Edge.List {
     expect mergeAll([map["__proto__" := 5, "a" := 1], map["b" := 2]]) == map["__proto__" := 5, "a" := 1, "b" := 2];
     expect reduceBy(M.add, 0, (x: int) => "__proto__", [1, 2]) == map["__proto__" := 3];
     expect collectBy((x: int) => "toString", [1]) == [[1]];
+    expect rebuild((k: string, v: int) => [(k, v)], map["__proto__" := 5, "a" := 1]) == map["__proto__" := 5, "a" := 1];
   }
 
   // node: since v0.12.0 `_reduce` stops when the accumulator has a truthy
@@ -1011,5 +1014,14 @@ module RamdafTests.Edge.List {
   method {:test} SwapExchangesArrayElementsWhole() {
     expect swap(0, 1, [[1, 2], [3]]) == [[3], [1, 2]];
     expect swap(0, 1, [Arr([]), Num(1)]) == [Num(1), Arr([])];
+  }
+
+  // rebuild (v0.31.0) (node: {a: 2}, {}, {}): within one property a later
+  // pair wins.
+  method {:test} RebuildEdges() {
+    var none: map<string, int> := map[];
+    expect rebuild((k: string, v: int) => [(k, v), (k, v + 1)], map["a" := 1]) == map["a" := 2];
+    expect rebuild((k: string, v: int) => [], map["a" := 1]) == none;
+    expect rebuild((k: string, v: int) => [(k, v)], none) == none;
   }
 }

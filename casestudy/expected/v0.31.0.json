@@ -1,0 +1,9 @@
+{
+  "ramda": "v0.31.0",
+  "tier": "patch",
+  "changes": [
+    {"symbol": "Ramdaf.List.rebuild", "kind": "added", "why": "new in v0.31.0 (@category List): every property converted to pairs, folded into one object"},
+    {"symbol": "Ramdaf.Object.mapKeys", "kind": "added", "why": "new in v0.31.0 (@category Object): the keys converted by fn"},
+    {"symbol": "Ramdaf.Object.renameKeys", "kind": "added", "why": "new in v0.31.0 (@category Object): the keys the mapping owns renamed"}
+  ]
+}

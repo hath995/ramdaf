@@ -1,4 +1,4 @@
-// Ramda v0.30.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.31.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -10,7 +10,7 @@
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
 // splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js,
 // groupWith.js, reduceWhile.js, startsWith.js, endsWith.js, move.js, count.js,
-// splitWhenever.js, dropRepeatsBy.js and swap.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// splitWhenever.js, dropRepeatsBy.js, swap.js and rebuild.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -1491,5 +1491,35 @@ module RamdafTests.Ramda.List {
   // (v0.29.1)
   method {:test} SwapWorksWithListsOfArrays() {
     expect swap(0, -1, [["a", "A"], ["b", "B"]]) == [["b", "B"], ["a", "A"]];
+  }
+
+  // ---- rebuild.js (v0.31.0): `k.toUpperCase()` is String.toUpper, `isOdd =
+  // n => n % 2 == 1`, and the pairs are tuples. Each test first checks the
+  // precondition (`Disjoint`), which `expect` then gives the verifier ----
+
+  function ABC(): map<string, int> { map["a" := 1, "b" := 2, "c" := 3] }
+
+  predicate Disjoint(convert: (string, int) -> seq<(string, int)>, obj: map<string, int>)
+  { forall k1, k2, x ::
+      k1 in obj && k2 in obj && x in fromPairs(convert(k1, obj[k1])) && x in fromPairs(convert(k2, obj[k2]))
+      ==> k1 == k2 }
+
+  method {:test} RebuildChangesKeysAndValues() {
+    var convert := (k: string, v: int) => [(S.toUpper(k), v * v)];
+    expect Disjoint(convert, ABC());
+    expect rebuild(convert, ABC()) == map["A" := 1, "B" := 4, "C" := 9];
+  }
+
+  method {:test} RebuildCanSkipParticularEntries() {
+    var convert := (k: string, v: int) => if v % 2 == 1 then [(S.toUpper(k), v * v)] else [];
+    expect Disjoint(convert, ABC());
+    expect rebuild(convert, ABC()) == map["A" := 1, "C" := 9];
+  }
+
+  method {:test} RebuildCanIncludeMultipleEntriesForASingleInput() {
+    var convert := (k: string, v: int) =>
+      if v % 2 == 1 then [(S.toUpper(k), v * v)] else [(k + "1", v * v), (k + "2", v * v)];
+    expect Disjoint(convert, ABC());
+    expect rebuild(convert, ABC()) == map["A" := 1, "b1" := 4, "b2" := 4, "C" := 9];
   }
 }

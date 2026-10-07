@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.30.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.31.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -8,7 +8,7 @@
 // `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
 // `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith`, `reduceWhile`,
 // `startsWith`, `endsWith`, `includes`, `move`, `count`, `collectBy`,
-// `splitWhenever`, `dropRepeatsBy`, `swap` and the renamed functions
+// `splitWhenever`, `dropRepeatsBy`, `swap`, `rebuild` and the renamed functions
 // below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
@@ -49,7 +49,7 @@ module Ramdaf.List {
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
             without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes, move,
-            count, collectBy, splitWhenever, dropRepeatsBy, swap
+            count, collectBy, splitWhenever, dropRepeatsBy, swap, rebuild
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -1225,4 +1225,27 @@ module Ramdaf.List {
     else if positiveIndexA == positiveIndexB then list
     else list[..positiveMin] + [list[positiveMax]] + list[positiveMin + 1..positiveMax] +
          [list[positiveMin]] + list[positiveMax + 1..] }
+
+  // `R.rebuild(convert, obj)` (v0.31.0, 2040b693, `@category List`):
+  // `_fromPairs(_chain(function(pair) { return convert(pair[0], pair[1]); },
+  // _toPairs(obj)))`, every own property's key and value converted to a list
+  // of [key, value] pairs, all of them assigned to a new object in property
+  // order, so a later pair wins (`rebuild((k, v) => [[k.toUpperCase(), v *
+  // v]], {a: 1, b: 2, c: 3})` is `{A: 1, B: 4, C: 9}`; a property may give no
+  // pair or several). A map has no property order, so pairs from two
+  // properties must not share a key (`rebuild((k, v) => [['z', v]], {a: 1,
+  // b: 2})` is `{z: 2}`, and `{z: 1}` for `{b: 2, a: 1}`): README "Outside
+  // the modeled domain". Within one property the pairs are folded with
+  // `fromPairs`, a later pair winning as in node, and the properties'
+  // objects are joined. JS converts the keys to strings, and a key
+  // `__proto__` sets the prototype instead of a property (README
+  // "Deviations").
+  function rebuild<V, W>(convert: (string, V) -> seq<(string, W)>, obj: map<string, V>): map<string, W>
+    requires forall k1, k2, x ::
+               k1 in obj && k2 in obj && x in fromPairs(convert(k1, obj[k1])) && x in fromPairs(convert(k2, obj[k2]))
+               ==> k1 == k2
+  { var keys := set k, y | k in obj && y in fromPairs(convert(k, obj[k])) :: y;
+    map x | x in keys ::
+      var k :| k in obj && x in fromPairs(convert(k, obj[k]));
+      fromPairs(convert(k, obj[k]))[x] }
 }

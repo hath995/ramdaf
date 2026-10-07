@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.30.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.31.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -566,8 +566,9 @@ module RamdafTests.Edge.Misc {
   // since v0.26.0 so do `mergeRight(<the JSON object>, {})` and `mergeLeft({},
   // <it>)` (`Object.assign`; an omission of the v0.26.0 port, recorded in
   // v0.28.0), and since v0.28.0 `modify('a', x => x + 1, <it>)` (`merge`'s
-  // line until v0.27.2). A map's keys are all ordinary, and `{}` has no
-  // `toString`.
+  // line until v0.27.2), and since v0.31.0 `mapKeys(k => k, <it>)` and
+  // `renameKeys({}, <it>)` (`_rebuild`'s `_fromPairs`). A map's keys are all
+  // ordinary, and `{}` has no `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
@@ -588,6 +589,9 @@ module RamdafTests.Edge.Misc {
     expect mergeWith((a: int, b: int) => b, o, none) == o;
     expect mergeWithKey((k: string, a: int, b: int) => b, o, map["__proto__" := 6]) == map["__proto__" := 6, "a" := 1];
     expect applySpec(map["__proto__" := (x: int) => 5, "a" := (x: int) => 1])(0) == map["__proto__" := 5, "a" := 1];
+    expect mapKeys((k: string) => k, o) == o;
+    var noNames: map<string, string> := map[];
+    expect renameKeys(noNames, o) == o;
   }
 
   // mergeWith and mergeWithKey (v0.19.0): fn only where both objects have
@@ -858,5 +862,34 @@ module RamdafTests.Edge.Misc {
     expect isNotEmpty([0]) == true;
     expect isNotEmpty("") == false;
     expect isNotEmpty(" ") == true;
+  }
+
+  // mapKeys and renameKeys (v0.31.0) (node: {'a!': 1}, {}, {x: 1, b: 2},
+  // {a: 1}, {}): renameKeys renames only the keys the mapping owns. Each
+  // call's precondition is checked first and handed to the verifier with
+  // `expect`.
+  predicate Renames(mapping: map<string, string>, obj: map<string, int>)
+  { forall k1, k2 ::
+      k1 in obj && k2 in obj &&
+      (if k1 in mapping then mapping[k1] else k1) == (if k2 in mapping then mapping[k2] else k2)
+      ==> k1 == k2 }
+
+  method {:test} MapKeysEdges() {
+    var none: map<string, int> := map[];
+    var bang := (k: string) => k + "!";
+    expect forall k1, k2 :: k1 in map["a" := 1] && k2 in map["a" := 1] && bang(k1) == bang(k2) ==> k1 == k2;
+    expect mapKeys(bang, map["a" := 1]) == map["a!" := 1];
+    expect mapKeys((k: string) => k, none) == none;
+  }
+
+  method {:test} RenameKeysEdges() {
+    var none: map<string, int> := map[];
+    var m1, o1 := map["a" := "x", "z" := "y"], map["a" := 1, "b" := 2];
+    expect Renames(m1, o1);
+    expect renameKeys(m1, o1) == map["x" := 1, "b" := 2];
+    var m2, o2 := map["toString" := "x"], map["a" := 1];
+    expect Renames(m2, o2);
+    expect renameKeys(m2, o2) == map["a" := 1];
+    expect renameKeys(map["a" := "x"], none) == none;
   }
 }

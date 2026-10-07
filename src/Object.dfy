@@ -1,9 +1,9 @@
-// Ramdaf: Ramda v0.30.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.31.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`, `objOf`,
 // `mergeWith`, `mergeWithKey`, `mergeLeft`, `mergeRight`, `modify_`
-// (`modify`), `whereAny`). A JS object is a map<string, V>; a missing property is JS
+// (`modify`), `whereAny`, `mapKeys`, `renameKeys`). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
 // properties (`pick`, `pickAll`, `pickBy`, `omit`, `assoc`, `evolve`,
 // `invertObj`, `dissoc`, `lensProp`'s setter, `objOf`, `mergeWithKey`,
@@ -27,7 +27,7 @@ module Ramdaf.Object {
             values, valuesIn, pick, pickAll, omit, pickBy, eqProps, where,
             assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq,
             view, over, set_, objOf, mergeWith, mergeWithKey, mergeLeft, mergeRight, modify_,
-            whereAny
+            whereAny, mapKeys, renameKeys
     provides Prelude
 
   // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
@@ -428,4 +428,35 @@ module Ramdaf.Object {
   // `Object.prototype` member for such a name: README "Deviations").
   function whereAny<V>(spec: map<string, Option<V> -> bool>, test: map<string, V>): bool
   { exists k :: k in spec && spec[k](prop(k, test)) }
+
+  // `R.mapKeys(fn, obj)` (v0.31.0, 2040b693, `@category Object`): the
+  // private `_mapKeys`, `_rebuild(function(k, v) { return [[fn(k), v]]; },
+  // obj)`, obj with each own key k replaced by fn(k) (`mapKeys(toUpper, {a:
+  // 1, b: 2})` is `{A: 1, B: 2}`). "If multiple keys map to the same new
+  // key, the last one processed will dominate", in property order, which a
+  // map does not have, so fn must be injective on obj's keys (README
+  // "Outside the modeled domain"). `R.rebuild` is List's, which Object does
+  // not import, so it is written out as a map comprehension. The result is
+  // built by assignment, so in JS a key `__proto__` sets the prototype
+  // instead of a property (README "Deviations").
+  function mapKeys<V>(fn: string -> string, obj: map<string, V>): map<string, V>
+    requires forall k1, k2 :: k1 in obj && k2 in obj && fn(k1) == fn(k2) ==> k1 == k2
+  { map k | k in obj :: fn(k) := obj[k] }
+
+  // `R.renameKeys(mapping, obj)` (v0.31.0, `@category Object`):
+  // `_mapKeys(function(key) { return _has(key, mapping) ? mapping[key] : key;
+  // }, obj)`, obj with each key that mapping owns renamed to mapping's value
+  // and the others kept (`renameKeys({a: 'alpha'}, {a: 1, c: 3})` is
+  // `{alpha: 1, c: 3}`). The private `_mapKeys` is mapKeys's body, so the
+  // body calls `mapKeys`, and `_has` is written out as `key in mapping`. Two
+  // keys renamed alike collide, and the last in property order wins
+  // (`renameKeys({a: 'b'}, {a: 1, b: 2})` is `{b: 2}`), so the renaming must
+  // be injective on obj's keys (README "Outside the modeled domain"). JS
+  // converts mapping's values to keys; here they are strings.
+  function renameKeys<V>(mapping: map<string, string>, obj: map<string, V>): map<string, V>
+    requires forall k1, k2 ::
+               k1 in obj && k2 in obj &&
+               (if k1 in mapping then mapping[k1] else k1) == (if k2 in mapping then mapping[k2] else k2)
+               ==> k1 == k2
+  { mapKeys((key: string) => if key in mapping then mapping[key] else key, obj) }
 }

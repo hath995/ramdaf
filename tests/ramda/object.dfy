@@ -1,10 +1,10 @@
-// Ramda v0.30.1 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.31.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, whereEq.js, assoc.js, keys.js, keysIn.js, values.js,
 // valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
 // invertObj.js, dissoc.js, lenses.js, objOf.js, mergeWith.js,
-// mergeWithKey.js, lensProp.js, mergeLeft.js, mergeRight.js, modify.js and
-// whereAny.js (merge.js until v0.27.2; v0.9.x mixin.js; until
+// mergeWithKey.js, lensProp.js, mergeLeft.js, mergeRight.js, modify.js,
+// whereAny.js, mapKeys.js and renameKeys.js (merge.js until v0.27.2; v0.9.x mixin.js; until
 // v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
 // describes), transcribed. (v0.26.0 removed the "is curried" `it`s of the
@@ -693,5 +693,37 @@ module RamdafTests.Ramda.Object {
   method {:test} WhereAnyIsFalseForAnEmptySpec() {
     var empty: map<string, Option<int> -> bool> := map[];
     expect whereAny(empty, map["a" := 1]) == false;
+  }
+
+  // ---- mapKeys.js and renameKeys.js (v0.31.0): `R.toUpper` is
+  // String.toUpper; mapKeys's "keeps the last key-value pair processed if
+  // multiple invocations return the same key" is outside the domain (README
+  // "Outside the modeled domain"). Each test first checks the precondition
+  // (`InjectiveOn`), which `expect` then gives the verifier ----
+
+  predicate InjectiveOn(fn: string -> string, obj: map<string, int>)
+  { forall k1, k2 :: k1 in obj && k2 in obj && fn(k1) == fn(k2) ==> k1 == k2 }
+
+  function Renaming(mapping: map<string, string>): string -> string
+  { (key: string) => if key in mapping then mapping[key] else key }
+
+  method {:test} MapKeysConvertsTheKeysOfAnObjectViaTheSuppliedFunction() {
+    var obj := map["a" := 1, "b" := 2, "c" := 3, "d" := 4];
+    expect InjectiveOn(S.toUpper, obj);
+    expect mapKeys(S.toUpper, obj) == map["A" := 1, "B" := 2, "C" := 3, "D" := 4];
+  }
+
+  method {:test} RenameKeysConvertsFoundKeysToNewOnes() {
+    var mapping := map["a" := "alpha", "b" := "bravo", "c" := "charlie"];
+    var obj := map["a" := 1, "b" := 2, "c" := 3];
+    expect InjectiveOn(Renaming(mapping), obj);
+    expect renameKeys(mapping, obj) == map["alpha" := 1, "bravo" := 2, "charlie" := 3];
+  }
+
+  method {:test} RenameKeysIgnoresKeysNotFoundInTheMapping() {
+    var mapping := map["a" := "alpha", "b" := "bravo", "c" := "charlie", "d" := "delta"];
+    var obj := map["a" := 1, "b" := 2, "c" := 3, "foo" := 4];
+    expect InjectiveOn(Renaming(mapping), obj);
+    expect renameKeys(mapping, obj) == map["alpha" := 1, "bravo" := 2, "charlie" := 3, "foo" := 4];
   }
 }
