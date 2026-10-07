@@ -1,4 +1,4 @@
-// Ramda v0.24.1 test/filter.js, reject.js, takeWhile.js, take.js,
+// Ramda v0.25.0 test/filter.js, reject.js, takeWhile.js, take.js,
 // dropWhile.js, drop.js, dropLast.js, takeLast.js, dropLastWhile.js and
 // takeLastWhile.js (until v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
 // the partially applied function in full). The "should start at the
@@ -14,7 +14,8 @@
 // replaced take's and drop's "dispatches to `slice` method" (whose object
 // halves were method dispatch) with "can operate on strings" and removed
 // their "is curried", and removed filterIndexed.js and rejectIndexed.js
-// with the functions.
+// with the functions. v0.25.0 adds "can operate on strings" to takeWhile,
+// dropWhile, dropLastWhile and takeLastWhile (Dafny strings).
 // (v0.4.1 removed skip's "should be aliased by `drop`" with `drop`; v0.9.0
 // renamed the filter.idx, reject.idx and skip describes to filterIndexed,
 // rejectIndexed and drop, and replaced skipUntil's with dropWhile's, whose
@@ -86,6 +87,11 @@ module RamdafTests.Ramda.Filter {
     expect takeWhile((x: Js) => !x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]) == [Num(1), Num(3)];
   }
 
+  // v0.25.0
+  method {:test} TakeWhileCanOperateOnStrings() {
+    expect takeWhile((x: char) => x != 'd', "Ramda") == "Ram";
+  }
+
   // describe('take')
   method {:test} TakeTakesTheFirstNElements() {
     expect take(3, ["a", "b", "c", "d", "e", "f", "g"]) == ["a", "b", "c"];
@@ -136,6 +142,11 @@ module RamdafTests.Ramda.Filter {
     var dropLt7 := (l: seq<int>) => dropWhile((x: int) => x < 7, l);
     expect dropLt7([1, 3, 5, 7, 9]) == [7, 9];
     expect dropLt7([2, 4, 6, 8, 10]) == [8, 10];
+  }
+
+  // v0.25.0
+  method {:test} DropWhileCanOperateOnStrings() {
+    expect dropWhile((x: char) => x != 'd', "Ramda") == "da";
   }
 
   // describe('drop') (describe('skip') until v0.8.0)
@@ -244,6 +255,11 @@ module RamdafTests.Ramda.Filter {
     expect dropGt7([1, 3, 5]) == [1, 3, 5];
   }
 
+  // v0.25.0
+  method {:test} DropLastWhileCanOperateOnStrings() {
+    expect dropLastWhile((x: char) => x != 'd', "Ramda") == "Ramd";
+  }
+
   // describe('takeLastWhile') (v0.16.0). The predicate of the empty-list
   // line would fail the test if called; here its result does not matter.
   method {:test} TakeLastWhileContinuesTakingElementsWhileTheFunctionReportsTrue() {
@@ -260,5 +276,10 @@ module RamdafTests.Ramda.Filter {
     var takeLastUntil7 := (l: seq<int>) => takeLastWhile((x: int) => x != 7, l);
     expect takeLastUntil7([1, 3, 5, 7, 9]) == [9];
     expect takeLastUntil7([2, 4, 6, 8, 10]) == [2, 4, 6, 8, 10];
+  }
+
+  // v0.25.0
+  method {:test} TakeLastWhileCanOperateOnStrings() {
+    expect takeLastWhile((x: char) => x != 'R', "Ramda") == "amda";
   }
 }

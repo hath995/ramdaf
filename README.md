@@ -21,7 +21,8 @@ For each Ramda tag, in order:
 1. `git -C ramda checkout <tag>`. The Ramda clone lives in the ignored
    `ramda/` directory.
 2. Diff the library source (`ramda.js` until v0.8.0; from v0.9.0 one
-   `src/<fn>.js` per export, plus `src/internal/`) and `test/` against the
+   `src/<fn>.js` per export, plus `src/internal/`, and from v0.25.0 the ES
+   modules `source/<fn>.js` and `source/internal/`) and `test/` against the
    previous tag.
 3. Port the changes into `src/*.dfy` following the porting conventions.
    Transcribe the changed Ramda tests into `tests/ramda/`, and add node-checked
@@ -127,21 +128,21 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0 and `{'@@functional/placeholder': true}` since v0.15.0, which also curries `concat` and `contains` this way, and since v0.10.0 `merge`) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) Since v0.11.0 `op` is gone and every curried function takes the placeholder in any position: `f(R.__, b)` is still `x => f(x, b)`, while `f(R.__)` is `f` itself, so `subtract(R.__)(5)` is `x => 5 - x` (from v0.6.0 to v0.10.0 `op` made it `x => x - 5`). |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type. (Since v0.11.0 a curried Ramda function called with no arguments returns itself, `identity()` is `identity`; the functions Ramda returns, such as `always(7)`, `T` and `cond(…)`'s result, are not curried, and they are the ones called this way.) |
 
-## Modules and exports (v0.24.1)
+## Modules and exports (v0.25.0)
 
 | Module | Exports |
 |---|---|
 | `Ramdaf.Core` | clone, isEmpty, prepend, nth, head, last, tail, append, concat, identity, times, length, isNil |
-| `Ramdaf.Functions` | compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec, o |
+| `Ramdaf.Functions` | compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec, o, applyTo |
 | `Ramdaf.List` | reduce, reduceRight, unfold, mapSeq (`map`), mapObjIndexed, filter, reject, takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex, all, any, contains, uniq, uniqWith, pluck, flatten, zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice, remove, insert, insertAll, partition, ap, of, empty, chain, unnest, zipObj, fromPairs, scan, repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none, adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex, dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose, without, reduceBy, groupWith, reduceWhile, startsWith, endsWith |
 | `Ramdaf.Sort` | comparator, ascend, descend, sortWith; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn, values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where, assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq, view, over, set_ (`set`), objOf, mergeWith, mergeWithKey |
 | `Ramdaf.Logic` | and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo, propSatisfies, when, unless, until |
 | `Ramdaf.Math` | add, multiply, subtract, divide, modulo, mathMod, sum, product, lt, lte, gt, gte, max, maxBy, minBy, min, inc, dec, negate, mean, median |
 | `Ramdaf.String` | toUpper, toLower, trim, replace, split |
-| `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project, equals, identical, eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin |
+| `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, countBy, groupBy, project, equals, identical, eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin |
 
-That is 196 of Ramda v0.24.1's 246 export names (since v0.9.0 Ramda has no
+That is 196 of Ramda v0.25.0's 246 export names (since v0.9.0 Ramda has no
 functions stored as properties of exports). The other 50 names are listed
 under "Not portable".
 
@@ -168,7 +169,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.24.1 does not export the helpers `_makeFlat`, `_checkForMethod` and
+Ramda v0.25.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
 `_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
@@ -208,9 +209,10 @@ where the engine has one, and `_objectAssign` otherwise) and `_Set` (behind
 `uniqBy`); v0.22.0 deletes `_xgroupBy` and adds `_xreduceBy`; v0.23.0
 deletes `_slice`, whose callers use `Array.prototype.slice`, and
 `_arrayOf`; v0.24.0 adds `_isArrayLike`, the code of the `isArrayLike`
-export it removes).
-Since v0.9.0 they are the modules `src/internal/_*.js` (until v0.8.0 local
-to `ramda.js`), and Ramdaf does not export them either. (`isArrayLike`, private since v0.3.0, was exported from v0.5.0 to
+export it removes; v0.25.0 adds `_xtap`, behind `tap`, and moves the
+modules to `source/internal/`).
+Since v0.9.0 they are the modules `src/internal/_*.js` (since v0.25.0
+`source/internal/_*.js`; until v0.8.0 local to `ramda.js`), and Ramdaf does not export them either. (`isArrayLike`, private since v0.3.0, was exported from v0.5.0 to
 v0.23.0, not portable, and is private again since v0.24.0 as
 `_isArrayLike`.) (`containsWith` was
 internal until v0.1.5 exported it, and `uniqWith` until v0.2.0; both are in
@@ -220,7 +222,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.24.1 exports are not ported, rather than faked:
+These Ramda v0.25.0 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -231,7 +233,7 @@ These Ramda v0.24.1 exports are not ported, rather than faked:
 | `bind` | Fixes the `this` of a JS function (v0.6.0; since v0.11.0 the result keeps `fn`'s arity); Dafny functions have no `this`. |
 | `useWith` | Argument transformers of a run-time number: `useWith(fn, [t1, …, tn])` (since v0.18.0 a list, and the transformers get the result's `this`; until v0.17.1 separate arguments, `useWith(fn, t1, …, tn)`) is a function of n arguments, each passed through its transformer, the rest passed on, curried to n. (v0.3.0 removed `use(fn).over(...)` and added the alias `disperseTo`, which v0.4.1 removed.) |
 | `partial`, `partialRight` | Partial application of a run-time number of arguments: since v0.18.0 `partial(fn, [a, b])` takes them as a list (until v0.17.1 `partial(fn, a, b)`), and the result takes the rest, any number. (v0.4.1 removed their aliases `applyLeft` and `applyRight`; v0.10.0 renamed `lPartial` and `rPartial` to `partial` and `partialRight`.) |
-| `memoize`, `memoizeWith`, `once`, `addIndex` | Rely on hidden mutable state: `addIndex(fn)` (v0.15.0) makes an indexed version of a list function such as `map` (`addIndex(map)((x, i) => x + i, [10, 20])` → `[10, 21]`) by counting the calls of the callback it passes in, so it needs `fn` to call it once per element in order, and the callback's type changes with `fn`'s; and `memoize`'s cache is keyed by `R.toString` of the arguments (v0.14.0; from v0.10.0 to v0.13.0 by each argument's string and type tag, `42::[object Number]`, and `String(arg)` before), which no generic Dafny function can compute; since v0.24.0 `memoizeWith(mFn, fn)` keys the cache by `mFn(...args)`, and `memoize` is `memoizeWith` of `toString(arguments)` (v0.24.1; in v0.24.0 `memoizeWith(toString)`, keyed by the first argument alone, so `memoize((x, y) => x + y)` gave `3` for `(1, 2)` and then for `(1, 3)`). |
+| `memoize`, `memoizeWith`, `once`, `addIndex` | Rely on hidden mutable state: `addIndex(fn)` (v0.15.0) makes an indexed version of a list function such as `map` (`addIndex(map)((x, i) => x + i, [10, 20])` → `[10, 21]`) by counting the calls of the callback it passes in, so it needs `fn` to call it once per element in order, and the callback's type changes with `fn`'s; and `memoize`'s cache is keyed by `R.toString` of the arguments (v0.14.0; from v0.10.0 to v0.13.0 by each argument's string and type tag, `42::[object Number]`, and `String(arg)` before), which no generic Dafny function can compute; since v0.24.0 `memoizeWith(mFn, fn)` keys the cache by `mFn(...args)`, and `memoize` (deprecated in v0.25.0) is `memoizeWith` of `toString(arguments)` (v0.24.1; in v0.24.0 `memoizeWith(toString)`, keyed by the first argument alone, so `memoize((x, y) => x + y)` gave `3` for `(1, 2)` and then for `(1, 3)`). |
 | `apply`, `unapply`, `nthArg`, `call` | Variadic (and so was `wrap(fn, wrapper)`, whose result called `wrapper(fn, ...arguments)`; deprecated in v0.22.0 and removed in v0.23.0, it had its own row). `apply` spreads a list of run-time length into a function's positional arguments, `fn.apply(this, args)` (v0.7.0), and passes `this`; `unapply(fn)` (v0.8.0), its inverse, collects any number of arguments into one list for `fn` (`unapply(JSON.stringify)(1, 2, 3)` → `'[1,2,3]'`; a Dafny `unapply(fn: seq<A> -> B)` would be `fn` itself); `nthArg(n)` (`argN` in v0.8.0) returns a function of any number of arguments that returns the nth (`nthArg(1)('a', 'b')` → `'b'`; since v0.9.0 a negative n counts from the end); `call(fn, ...args)` (v0.9.0) is `fn.apply(this, args)`. |
 | `composeP`, `pipeP` | Promise-aware composition (v0.8.0; `pCompose` and `pPipe` until v0.9.1): each intermediate result is tested at run time for a `then` method, and a promise's value is passed on inside `then`, asynchronously. Dafny has no promises or run-time type tests, and without them `pCompose` would be `compose`. |
 | `lift`, `liftN` | Lift a function of a run-time arity over lists (v0.7.0): `liftN(n, fn)` takes n lists, and `lift(fn)` reads `fn.length`. Dafny functions have no run-time arity. |
@@ -248,7 +250,7 @@ These Ramda v0.24.1 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.24.1 (node) | Ramdaf |
+| Function | Ramda v0.25.0 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`, and since v0.16.0 `head('')` and `last('')` → `''`, not a character; `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `repeat` (`repeatN` until v0.8.0), `times` | `new Array(n)` throws `RangeError` for a negative n: `repeat(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3; since v0.19.1 `times` throws its own `RangeError: n must be a non-negative number`, for NaN too) | `n: nat` |
@@ -258,6 +260,7 @@ These Ramda v0.24.1 exports are not ported, rather than faked:
 | `mathMod` | (v0.4.2) `NaN` unless m and p are integers and p is at least 1: `mathMod(17, -5)` and `mathMod(17, 0)` → `NaN`. (v0.3.0 to v0.4.1 tested the dividend instead, against the documentation: `mathMod(-17, 5)` and `mathMod(0, 5)` were `NaN` and `mathMod(17, -5)` was `-3`, and Ramdaf required `1 <= m` and `p != 0`.) | `requires p >= 1` |
 | `fromPairs` | (v0.3.0) since v0.22.0 every element is read as a pair, `out[pair[0]] = pair[1]`: a string gives its first character the second character, `[]` and an object give the key `'undefined'` an `undefined` value (`fromPairs([['a', 1], 'x', [], {}])` → `{a: 1, x: undefined, undefined: undefined}`), and a `null` element throws `TypeError` (from v0.3.0 to v0.21.0 an element that was not an array, or was empty, was skipped: `{a: 1}`); a one-element array gives an `undefined` value (`fromPairs([['a']])` → `{a: undefined}`), and elements past the second are ignored | not expressible: the elements are typed pairs `(string, V)` |
 | `invertObj` | (v0.9.0) for a repeated value the key last in property order wins: `invertObj({b: 'v', a: 'v'})` → `{v: 'a'}`, `invertObj({a: 'v', b: 'v'})` → `{v: 'b'}` (Ramda's test "prefers the last key found…"), and a map has no property order | `requires` distinct values |
+| `omit` | (v0.25.0) the names become the keys of an index object whose `hasOwnProperty` method tests each property of obj, so a name `'hasOwnProperty'` shadows the method and the first property throws `TypeError: index.hasOwnProperty is not a function` (`omit(['hasOwnProperty'], {a: 1})`; `omit(['hasOwnProperty'], {})` → `{}`, with no property to test) | `requires "hasOwnProperty" !in names \|\| \|obj\| == 0` |
 | `evolve` | (v0.15.0) a transformation that is an object is applied recursively to the object's value (`evolve({nested: {second: add(-1)}}, {first: 1, nested: {second: 2, third: 3}})` → `{first: 1, nested: {second: 1, third: 3}}`, Ramda's test "is recursive"), and one that is neither a function nor an object leaves the value (`evolve({a: 5}, {a: 1})` → `{a: 1}`; until v0.14.0 both threw `TypeError: fn is not a function`; a `null` one leaves the value too since v0.23.0, `evolve({n: null}, {n: 0})` → `{n: 0}`, where it was taken for a nested object, `{n: {}}`) | not expressible: the transformations are `Option<V> -> V` functions |
 | `whereEq` | (v0.14.0) a spec property whose value is `undefined`: `whereEq({x: undefined}, {})` and `whereEq({x: undefined}, {x: undefined})` → `true`, `whereEq({x: undefined}, {x: 1})` → `false` (Ramda's test "matches specs that have undefined properties"), as `eq(undefined)` holds for an absent or undefined test property. (`where` had this row until v0.13.0, when its spec values could be values: since v0.2.3 `where({x: undefined}, {})` was `true`, and `where(spec, null)` was `false`; since v0.14.0 its spec values are predicates, which get an absent and an undefined property alike, as `None` here, and `where(spec, null)` throws `TypeError` for a non-empty spec.) | not expressible: an undefined property is an absent one |
 | `lensIndex` | (v0.14.0) the getter `nth(n)` is `undefined` out of range: `view(lensIndex(5), [1, 2])` and `view(lensIndex(-3), [1, 2])` → `undefined` (v0.16.0; `lensIndex(5)([1, 2])` until v0.15.1), and `over` calls its function on that (`over(lensIndex(5), x => x.a, [1, 2])` throws `TypeError`; `over(lensIndex(0), x => x + 1, [])` → `[]`, as the setter then leaves the list, `[NaN]` until v0.15.0). Since v0.16.0 `set` runs the getter too, before ignoring its result: `set(lensIndex(5), 9, [1, 2])` → `[1, 2]`. (In v0.14.0 and v0.15.0 the setter's `_slice(xs, n + 1)` read before the start for n ≤ −2, `lensIndex(-2).set(9, [1, 2])` → `[9, undefined, 1, 2]`, and the port required `n >= -1`; since v0.15.1 the setter is `update(n)`, defined for every n: `[9, 2]`; in v0.15.1 the setter alone was total here.) | the lens requires the index (a negative n counted from the end) in the list, so `view`, `over` and `set_` do |
@@ -273,7 +276,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.24.1 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.25.0 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `identical` (`eq` until v0.14.0 and in v0.15.1) | `identical` (`Object.is`) compares arrays and objects by reference: `identical([], [])` → `false`. (Until v0.14.0 `===` or `Object.is` also made `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq` (v0.14.0; `where`'s value entries before) and `dropRepeats` (v0.14.0) compare by reference: for `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(Ro, So).length` → `0` and `difference(…)` → `4`. Since v0.15.0 they compare with `R.equals`, deep equality, as here, except that in v0.15.0 alone `uniq` kept a JS `Set`, which compares by reference (unless an object has an `equals` method), so `uniq([{a: 1}, {a: 1}])` kept both and `union(Ro, So).length` was still `8`; v0.15.1 makes `uniq` `uniqWith(equals)` again.) | Structural `==`: `true` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets | A `map` has no key order. |
@@ -325,7 +328,7 @@ also lists what it skips: arity checks, side-effect counting, calls with no
 arguments, `null` or `undefined` in place of a list, JS coercion, reference
 equality, method dispatch on non-array objects, array-like objects,
 prototypes, string-keyed `sortBy`, and the unportable functions' files
-(v0.24.1: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
+(v0.25.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
 `constructN.js`, `curry.js`, `curryN.js`, `forEach.js`,
 `into.js`, `lensPath.js`, `pathSatisfies.js`,
 `invoker.js`, `is.js`, `lift.js`, `liftN.js`, `pipeK.js`, `propIs.js`,
@@ -350,7 +353,8 @@ functions, and added `lensPath.js` and `pathSatisfies.js`; v0.20.0 removed
 `tryCatch.js`; v0.22.0 removed `allUniq.js`, with the function; v0.23.0
 removed `wrap.js`, with the function, and added `forEachObjIndexed.js`;
 v0.24.0 removed `isArrayLike.js`, with the export, and added
-`internal/_isArrayLike.js`, `memoizeWith.js` and the four `mergeDeep*.js`).
+`internal/_isArrayLike.js`, `memoizeWith.js` and the four `mergeDeep*.js`;
+v0.25.0 removed `intersectionWith.js`, with the function).
 `test.examplesRunner.js` (v0.5.0; in `test/helpers/` since v0.15.0) runs the JSDoc examples through `dox`
 and is not transcribed.
 
@@ -403,7 +407,7 @@ and is not transcribed.
 | v0.23.0 | 2016-12-29 | ported | — |
 | v0.24.0 | 2017-05-26 | ported | — |
 | v0.24.1 | 2017-06-01 | ported | — |
-| v0.25.0 | 2017-10-09 | pending | — |
+| v0.25.0 | 2017-10-09 | ported | — |
 | v0.26.0 | 2018-11-17 | pending | — |
 | v0.26.1 | 2018-11-27 | pending | — |
 | v0.27.0 | 2019-05-25 | pending | — |
@@ -2666,6 +2670,45 @@ and is not transcribed.
   with 2 arguments" and transduce.js's new line (not portable).
 - **Expected tier: patch.** No Dafny-visible change
   (`casestudy/expected/v0.24.1.json`, with no changes).
+- **lem:** — (not yet published from this history).
+
+### v0.25.0 (2017-10-09)
+
+- **Ramda** (the library moves to ES modules in `source/`; every module
+  compared with its v0.24.1 `src/` counterpart in normalised form, imports
+  and export wrappers folded, and the `test/` diff; behaviour checked in
+  node with a differential run of the ported exports):
+  - Removed (deprecated since v0.24.0, for `innerJoin`):
+    `intersectionWith`.
+  - New: `applyTo(x, f)` (`@category Function`), `f(x)`.
+  - `omit` keeps a property unless an index object built from the names
+    has it as an own property (`index.hasOwnProperty(prop)`), so a name
+    `'hasOwnProperty'` throws on the first property (`omit(['hasOwnProperty'],
+    {a: 1})` → TypeError, was `{a: 1}`).
+  - `prop` is `path([p], obj)`: undefined for a nil object, where it threw;
+    `takeWhile`, `dropWhile`, `takeLastWhile` and `dropLastWhile` cut with
+    the exported `slice`, so a JS string gives a string.
+  - Not visible in this encoding: `flip`'s result has fn's arity; `tap` is
+    a transducer; `memoize` is deprecated; `R.equals` compares Maps and
+    Sets as unordered collections; the module wrappers of `keys`, `trim`,
+    `over`, `view` and the internals.
+- **Ramdaf:**
+  - Removed `intersectionWith` (Data), with its tests and edge lines. (The
+    v0.24.0 port omitted its deprecation comment.)
+  - Added `applyTo` (Functions).
+  - `omit` requires that `'hasOwnProperty'` not be among the names unless
+    obj is empty (breaking), with an "Outside the modeled domain" row.
+  - Comments only: `prop`, `flip`, `takeWhile`, `dropWhile`,
+    `takeLastWhile`, `dropLastWhile`; the `memoize` row notes the
+    deprecation; the headers cite v0.25.0 and `source/<fn>.js`.
+  - Tests: applyTo.js (its arity `it` no) and the four "can operate on
+    strings" `it`s; last.js's retitled `it` renames its method. Not
+    transcribed: prop.js's undefined-object `it`, flip.js's arity, tap.js's
+    transducer and equals.js's Map and Set `it`s. New edges cover `applyTo`
+    and `omit`'s domain.
+- **Expected tier: major.** `intersectionWith` was removed; `omit`'s
+  precondition was strengthened; `applyTo` was added
+  (`casestudy/expected/v0.25.0.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.24.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.25.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -757,5 +757,21 @@ module RamdafTests.Edge.Misc {
   // o (v0.24.0): `f(g(x))` (node: 21).
   method {:test} OEdges() {
     expect o((x: int) => x + 1, (x: int) => x * 2, 10) == 21;
+  }
+
+  // applyTo (v0.25.0): `f(x)` (node: 3).
+  method {:test} ApplyToEdges() {
+    expect applyTo(2, (x: int) => x + 1) == 3;
+  }
+
+  // omit (v0.25.0): a name 'hasOwnProperty' throws TypeError on the first
+  // property of obj (`omit(['hasOwnProperty'], {a: 1})`, outside the
+  // domain), but not on an empty object; other `Object.prototype` names are
+  // ordinary (node: {}, {b: 2}, {b: 2}).
+  method {:test} OmitEdges() {
+    var empty: map<string, int> := map[];
+    expect omit(["hasOwnProperty"], empty) == map[];
+    expect omit(["toString", "constructor"], map["toString" := 1, "b" := 2]) == map["b" := 2];
+    expect omit(["a", "a"], map["a" := 1, "b" := 2]) == map["b" := 2];
   }
 }

@@ -1,5 +1,5 @@
-// Ramda v0.24.1 test/project.js, propEq.js, union.js, unionWith.js,
-// intersection.js, intersectionWith.js, difference.js, differenceWith.js,
+// Ramda v0.25.0 test/project.js, propEq.js, union.js, unionWith.js,
+// intersection.js, difference.js, differenceWith.js,
 // countBy.js, sortBy.js, equals.js, identical.js, eqBy.js,
 // symmetricDifference.js, symmetricDifferenceWith.js, clamp.js and
 // innerJoin.js (until v0.8.0
@@ -38,6 +38,7 @@
 //   identity" (no Promises);
 // - clamp.js's (v0.20.0) "works with letters as well": clamp takes ints
 //   (README "Deviations").
+// (v0.25.0 removed intersectionWith.js with the function.)
 // innerJoin.js's (v0.24.0) records `{id, name}` are the local datatype Rec,
 // and its `f = R.innerJoin((r, id) => r.id === id)` a lambda.
 
@@ -136,11 +137,6 @@ module RamdafTests.Ramda.Sql {
 
   method {:test} IntersectionHasNoDuplicates() {
     expect intersection(R2(), S2()) == [3, 4];
-  }
-
-  // describe('intersectionWith')
-  method {:test} IntersectionWithUsesThePredicate() {
-    expect intersectionWith(EqA, Ro(), So()) == [A(3), A(4)];
   }
 
   // describe('difference')

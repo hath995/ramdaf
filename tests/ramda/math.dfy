@@ -1,4 +1,4 @@
-// Ramda v0.24.1 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.25.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
 // median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real

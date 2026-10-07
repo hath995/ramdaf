@@ -1,5 +1,5 @@
-// Ramda v0.24.1 test/always.js, T.js, F.js, compose.js, pipe.js,
-// converge.js, flip.js, ap.js, juxt.js, applySpec.js and o.js (until v0.8.0 test.always.js,
+// Ramda v0.25.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// converge.js, flip.js, ap.js, juxt.js, applySpec.js, o.js and applyTo.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -63,7 +63,10 @@
 // curried calls are lambdas, and `R.map` and `R.multiply` in "performs
 // right-to-left function composition" are a lambda over `mapSeq` and a
 // lambda returning one; its "is not a variadic function" (arity) and the
-// jsverify "o properties" are not transcribed.
+// jsverify "o properties" are not transcribed. applyTo.js's (v0.25.0)
+// curried and placeholder calls are lambdas, and its "has length 2" (arity)
+// and flip.js's v0.25.0 "returns a function with the correct arity" are not
+// transcribed.
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -260,5 +263,21 @@ module RamdafTests.Ramda.Functions {
       o<int, int -> int, seq<int> -> seq<int>>((g: int -> int) => ((xs: seq<int>) => mapSeq(g, xs)),
                                                (a: int) => ((b: int) => multiply(a, b)), n);
     expect f(10)([1, 2, 3]) == [10, 20, 30];
+  }
+
+  // ---- applyTo.js (v0.25.0) ----
+
+  // `R.applyTo(21, R.multiply(2))`
+  method {:test} ApplyToAppliesTheFunctionToItsFirstArgument() {
+    expect applyTo(21, (x: int) => multiply(2, x)) == 42;
+  }
+
+  // `R.applyTo(42)(R.identity)` and `R.applyTo(R.__, R.identity)(42)`
+  method {:test} ApplyToIsCurried() {
+    var to42 := (f: int -> int) => applyTo(42, f);
+    var withIdentity := (x: int) => applyTo(x, (y: int) => C.identity(y));
+    expect applyTo(42, (y: int) => C.identity(y)) == 42;
+    expect to42((y: int) => C.identity(y)) == 42;
+    expect withIdentity(42) == 42;
   }
 }

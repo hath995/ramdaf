@@ -1,6 +1,7 @@
-// Ramdaf: Ramda v0.24.1 `src/comparator.js`, `src/sort.js`, `src/sortBy.js`,
-// `src/ascend.js`, `src/descend.js` and `src/sortWith.js` (v0.23.0; sorting
-// goes in Sort whatever the `@category`).
+// Ramdaf: Ramda v0.25.0 `source/comparator.js`, `source/sort.js`,
+// `source/sortBy.js`, `source/ascend.js`, `source/descend.js` and
+// `source/sortWith.js` (v0.23.0; sorting goes in Sort whatever the
+// `@category`). (From v0.9.0 to v0.24.1 the modules were `src/<fn>.js`.)
 //
 // `sort` is `_slice(list).sort(comparator)` (v0.14.0, "Don't clone in sort";
 // since v0.23.0 `Array.prototype.slice.call(list, 0).sort(comparator)`),

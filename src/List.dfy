@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.24.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.25.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -201,7 +201,11 @@ module Ramdaf.List {
   // `_slice` read an end index of 0 as "the end", so when the first element
   // failed fn the whole list came back; v0.2.4 fixed `_slice`.) The body
   // finds the first failing index with findIndex (-1 when every element
-  // passes).
+  // passes). The cut is `_slice` until v0.22.1, `Array.prototype.slice.call`
+  // in v0.23.x and, since v0.25.0, the exported `slice(0, idx, xs)`, which
+  // gives a string for a JS string where the others gave an array of
+  // characters (`takeWhile(x => x !== 'd', 'Ramda')` is 'Ram'), the same
+  // Dafny seq.
   function takeWhile<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures takeWhile(fn, list) <= list
     ensures forall i :: 0 <= i < |takeWhile(fn, list)| ==> fn(list[i])
@@ -227,7 +231,9 @@ module Ramdaf.List {
   // skipped until the predicate held): `while (++idx < len &&
   // pred(list[idx])) {}; return _slice(list, idx);`, the suffix starting at
   // the first element that fails pred (`dropWhile(p, l)` is v0.8.0's
-  // `skipUntil(x => !p(x), l)`).
+  // `skipUntil(x => !p(x), l)`). Since v0.25.0 the cut is the exported
+  // `slice(idx, Infinity, xs)`, a string for a JS string (`dropWhile(x => x
+  // !== 'd', 'Ramda')` is 'da'), as for takeWhile.
   function dropWhile<T>(pred: T -> bool, list: seq<T>): seq<T>
     ensures |dropWhile(pred, list)| <= |list|
     ensures dropWhile(pred, list) == list[|list| - |dropWhile(pred, list)|..]
@@ -848,7 +854,9 @@ module Ramdaf.List {
   // (idx >= 0 && pred(list[idx])) { idx -= 1; } return _slice(list, 0, idx +
   // 1);`, the list without its longest suffix whose elements satisfy pred
   // (`dropLastWhile(x => x > 2, [1, 3, 2, 4, 5])` is `[1, 3, 2]`). On a JS
-  // string `_slice` gives an array of characters, the same seq here. The
+  // string `_slice` gave an array of characters, and since v0.25.0 the
+  // exported `slice(0, idx + 1, xs)` gives a string (`dropLastWhile(x => x
+  // !== 'd', 'Ramda')` is 'Ramd'), the same seq here. The
   // body recurses on all but the last element, as the loop does. (Since
   // v0.19.0 it is dispatchable, a transducer, as dropLast is.)
   function dropLastWhile<T>(pred: T -> bool, list: seq<T>): seq<T>
@@ -865,7 +873,9 @@ module Ramdaf.List {
   // `R.takeLastWhile(fn, list)` (v0.16.0): as dropLastWhile, returning
   // `_slice(list, idx + 1, Infinity)`, the longest suffix whose elements
   // satisfy fn (`takeLastWhile(x => x > 2, [1, 3, 2, 4, 5])` is `[4, 5]`; an
-  // array of characters for a JS string, the same seq here).
+  // array of characters for a JS string until v0.24.1, and since v0.25.0,
+  // the exported `slice(idx + 1, Infinity, xs)`, a string, the same seq
+  // here).
   function takeLastWhile<T>(fn: T -> bool, list: seq<T>): seq<T>
   { if |list| == 0 || !fn(list[|list| - 1]) then []
     else takeLastWhile(fn, list[..|list| - 1]) + [list[|list| - 1]] }

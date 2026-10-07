@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.24.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.25.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
@@ -10,7 +10,8 @@
 // category `Relaction`; v0.15.0 removed `eqDeep`, v0.9.0, which
 // `equals` replaces, and `eq`, then in Object.dfy; v0.15.1 restored both,
 // deprecated, with `eq` here by `@category Relation`, and v0.16.0 removed
-// them again).
+// them again; v0.25.0 removed `intersectionWith`, deprecated since v0.24.0
+// for `innerJoin`).
 //
 // The set functions are `uniq`/`uniqWith` of a combined or filtered list, as
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
@@ -32,7 +33,7 @@ module Ramdaf.Data {
 
   export
     reveals union, unionWith, difference, differenceWith,
-            intersection, intersectionWith, countBy, groupBy, project, equals, identical,
+            intersection, countBy, groupBy, project, equals, identical,
             eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin
     provides Prelude, List, Object
 
@@ -123,34 +124,6 @@ module Ramdaf.Data {
   { var lookupList := if |list1| > |list2| then list1 else list2;
     var filteredList := if |list1| > |list2| then list2 else list1;
     List.uniq(List.filter(x => x in lookupList, filteredList)) }
-
-  // `uniqWith(pred, results)`, where results are the elements x of
-  // `filteredList` with `pred(x, y)` for some y in `lookupList`
-  // (`_containsWith(pred, x, lookupList)`, the exported `containsWith` until
-  // v0.18.0, written out here), and, since v0.20.0, as in intersection,
-  // `filteredList` is the shorter list (list1 when they are equally long)
-  // and `lookupList` the other (`intersectionWith((a, b) => a % 3 === b % 3,
-  // [4, 5, 7], [1, 2])` is `[1, 2]`). Until v0.19.1 the elements were always
-  // list1's, matched against list2 (`[4, 5]`).
-  function intersectionWith<T>(pred: (T, T) -> bool, list1: seq<T>, list2: seq<T>): seq<T>
-    ensures |list1| <= |list2| ==>
-      forall i :: 0 <= i < |intersectionWith(pred, list1, list2)| ==>
-        intersectionWith(pred, list1, list2)[i] in list1 &&
-        exists j :: 0 <= j < |list2| && pred(intersectionWith(pred, list1, list2)[i], list2[j])
-    ensures |list1| > |list2| ==>
-      forall i :: 0 <= i < |intersectionWith(pred, list1, list2)| ==>
-        intersectionWith(pred, list1, list2)[i] in list2 &&
-        exists j :: 0 <= j < |list1| && pred(intersectionWith(pred, list1, list2)[i], list1[j])
-    ensures forall i, j :: 0 <= i < j < |intersectionWith(pred, list1, list2)| ==>
-      !pred(intersectionWith(pred, list1, list2)[j], intersectionWith(pred, list1, list2)[i])
-  { var lookupList := if |list1| > |list2| then list1 else list2;
-    var filteredList := if |list1| > |list2| then list2 else list1;
-    var results := List.filter(x => exists j :: 0 <= j < |lookupList| && pred(x, lookupList[j]), filteredList);
-    var r := List.uniqWith(pred, results);
-    assert forall i :: 0 <= i < |r| ==> r[i] in results;
-    assert forall i :: 0 <= i < |r| ==>
-      r[i] in filteredList && exists j :: 0 <= j < |lookupList| && pred(r[i], lookupList[j]);
-    r }
 
   // `R.countBy(fn, list)`: since v0.21.0 `reduceBy(function(acc, elem) {
   // return acc + 1; }, 0)`, so the body calls `List.reduceBy`: for each key

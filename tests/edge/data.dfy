@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.24.1 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.25.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -109,13 +109,7 @@ module RamdafTests.Edge.Data {
     expect unionWith((a: int, b: int) => a < b, [3, 1, 2], empty) == [3];
     expect differenceWith(par, [1, 2, 3], [4]) == [1];
     expect differenceWith((a: int, b: int) => a == b, [1, 2, 1], [3]) == [1, 2];
-    // since v0.20.0 the shorter list's elements (node: [4, 5] both ways and
-    // `intersectionWith(lt, [3, 4, 6], [1, 5])` [1, 5]; [1, 2] and [3, 4]
-    // until v0.19.1)
-    expect intersectionWith(par, [1, 2, 3], [4, 5]) == [4, 5];
-    expect intersectionWith(par, [4, 5], [1, 2, 3]) == [4, 5];
-    expect intersectionWith(lt, [3, 4, 6], [1, 5]) == [1, 5];
-    expect intersectionWith((a: int, b: int) => a == b, [2, 1, 2], [2]) == [2];
+    // (intersectionWith's lines went with the function in v0.25.0.)
   }
 
   function parity(x: int): string { if x % 2 == 0 then "even" else "odd" }

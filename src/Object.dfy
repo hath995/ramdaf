@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.24.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.25.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
@@ -30,7 +30,9 @@ module Ramdaf.Object {
   // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
   // `Object.prototype` member that obj lacks finds the inherited member
   // (`prop('toString', {})` is a function); a map has no prototype, so it is
-  // None (README "Deviations").
+  // None (README "Deviations"). Since v0.25.0 (68e4ea9e) it is `path([p],
+  // obj)`, the same on an object, and undefined for a null or undefined obj
+  // (which threw TypeError), which a map cannot be.
   function prop<V>(p: string, obj: map<string, V>): Option<V>
   { if p in obj then Some(obj[p]) else None }
 
@@ -157,8 +159,19 @@ module Ramdaf.Object {
     ensures pickAll(names, obj).Keys == set n | n in names
   { map k | k in names :: prop(k, obj) }
 
-  // The properties of obj that are not listed.
+  // The properties of obj that are not listed. Since v0.25.0 (67d8b7a3,
+  // "Improve performance of omit") `var index = {}; … index[names[idx]] = 1;`
+  // and `for (var prop in obj) { if (!index.hasOwnProperty(prop)) {
+  // result[prop] = obj[prop]; } }` (until v0.24.1 `!_contains(prop,
+  // names)`): the same keys, except that a name 'hasOwnProperty' becomes an
+  // own property of index that shadows the method, so the first property of
+  // obj throws TypeError (`omit(['hasOwnProperty'], {a: 1})`; with no
+  // property there is no call, `omit(['hasOwnProperty'], {})` is {}), hence
+  // the precondition (README "Outside the modeled domain"). JS converts the
+  // names to keys (`omit([1], {1: 'x'})` is {} since v0.25.0); here they are
+  // strings.
   function omit<V>(names: seq<string>, obj: map<string, V>): map<string, V>
+    requires "hasOwnProperty" !in names || |obj| == 0
     ensures omit(names, obj).Keys == obj.Keys - set n | n in names
   { map k | k in obj && k !in names :: obj[k] }
 

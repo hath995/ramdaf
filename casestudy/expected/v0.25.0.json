@@ -1,0 +1,9 @@
+{
+  "ramda": "v0.25.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Data.intersectionWith", "kind": "removed", "why": "v0.25.0 removes intersectionWith (deprecated since v0.24.0 for innerJoin)"},
+    {"symbol": "Ramdaf.Object.omit", "kind": "breaking", "why": "v0.25.0's index object makes a name 'hasOwnProperty' shadow its method, so omit(['hasOwnProperty'], {a: 1}) throws TypeError (was {a: 1}): a strengthened precondition"},
+    {"symbol": "Ramdaf.Functions.applyTo", "kind": "added", "why": "new in v0.25.0 (@category Function): applyTo(x, f) is f(x)"}
+  ]
+}

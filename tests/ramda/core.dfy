@@ -1,4 +1,4 @@
-// Ramda v0.24.1 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.25.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
 // identity.js, isNil.js, ascend.js and descend.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
@@ -181,9 +181,10 @@ module RamdafTests.Ramda.Core {
     expect head("c") == 'c';
   }
 
-  // describe('last'): v0.16.0's "returns the first element of an ordered
-  // collection" (sic; it checks the last), with the same exclusions
-  method {:test} LastReturnsTheFirstElementOfAnOrderedCollection() {
+  // describe('last'): "returns the last element of an ordered collection"
+  // (v0.25.0; from v0.16.0 to v0.24.1 "returns the first element of an
+  // ordered collection", sic), with the same exclusions
+  method {:test} LastReturnsTheLastElementOfAnOrderedCollection() {
     expect last([1, 2, 3]) == 3;
     expect last([1, 2]) == 2;
     expect last([1]) == 1;
