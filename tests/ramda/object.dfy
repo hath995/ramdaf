@@ -1,9 +1,10 @@
-// Ramda v0.27.2 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.28.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
-// where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
+// where.js, whereEq.js, assoc.js, keys.js, keysIn.js, values.js,
 // valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
 // invertObj.js, dissoc.js, lenses.js, objOf.js, mergeWith.js,
-// mergeWithKey.js, lensProp.js, mergeLeft.js and mergeRight.js (v0.9.x mixin.js; until
+// mergeWithKey.js, lensProp.js, mergeLeft.js, mergeRight.js, modify.js and
+// whereAny.js (merge.js until v0.27.2; v0.9.x mixin.js; until
 // v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
 // describes), transcribed. (v0.26.0 removed the "is curried" `it`s of the
@@ -281,34 +282,6 @@ module RamdafTests.Ramda.Object {
   method {:test} WhereEqIsTrueForAnEmptySpec() {
     var empty: map<string, int> := map[];
     expect whereEq(empty, map["a" := 1]) == true;
-  }
-
-  // describe('merge') (describe('mixin') until v0.9.1)
-  method {:test} MergeMergesOwnPropertiesIntoANewObject() {
-    expect merge(map["w" := 1, "x" := 2], map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
-  }
-
-  method {:test} MergeOverridesPropertiesOfTheFirstObject() {
-    expect merge(map["w" := 1, "x" := 2], map["w" := 100, "y" := 3, "z" := 4]) ==
-      map["w" := 100, "x" := 2, "y" := 3, "z" := 4];
-  }
-
-  // v0.2.4: "should not be destructive" (its reference-inequality half has no
-  // counterpart; the map a is a value)
-  method {:test} MergeShouldNotBeDestructive() {
-    var a := map["w" := 1, "x" := 2];
-    var res := merge(a, map["x" := 5]);
-    expect res == map["w" := 1, "x" := 5];
-    expect a == map["w" := 1, "x" := 2];
-  }
-
-  // v0.2.4: "only own properties". `new Cla` has no own property (its x is
-  // on the prototype), so as a map it is empty.
-  method {:test} MergeOnlyOwnProperties() {
-    var a := map["w" := 1, "x" := 2];
-    var cla: map<string, int> := map[];
-    expect merge(cla, a) == map["w" := 1, "x" := 2];
-    expect merge(a, cla) == map["w" := 1, "x" := 2];
   }
 
   // ---- keys.js, values.js, keysIn.js, valuesIn.js (test.keysvals.js) ----
@@ -661,5 +634,64 @@ module RamdafTests.Ramda.Object {
   method {:test} HasTestsCurrying() {
     var hasA := (o: map<string, Js>) => has("a", o);
     expect hasA(map["a" := Obj(map["b" := Num(1)])]) == true;
+  }
+
+  // ---- modify.js (v0.28.0): the object mixes a string and numbers (Js),
+  // and `R.add(1)` adds to a number. Its "ignores primitive value
+  // transformations" and "ignores null transformations" (fn is not a
+  // function), "adjust if `array`…" (an array object) and "ignores
+  // transformations if the input value is not Array and Object" are not
+  // transcribed. ----
+
+  function AddOneJs(v: Js): Js { if v.Num? then Num(v.n + 1) else v }
+
+  method {:test} ModifyCreatesANewObjectByApplyingTheTransformationToTheProperty() {
+    expect modify_("elapsed", AddOneJs, Tomato(100, 1400)) == Tomato(101, 1400);
+  }
+
+  method {:test} ModifyReturnsTheOriginalObjectIfObjectDoesNotContainTheProperty() {
+    expect modify_("nonexistent", AddOneJs, Tomato(100, 1400)) == Tomato(100, 1400);
+  }
+
+  method {:test} ModifyIsNotDestructive() {
+    var obj := Tomato(100, 1400);
+    var res := modify_("elapsed", AddOneJs, obj);
+    expect res == Tomato(101, 1400);
+    expect obj == Tomato(100, 1400);
+  }
+
+  // ---- whereAny.js (v0.28.0): `R.equals(n)` is `x == Some(n)`. Its
+  // "matches inherited properties" and "does not match inherited spec"
+  // (prototypes) are not transcribed, as for where. ----
+
+  method {:test} WhereAnyReturnsTrueIfTheTestObjectSatisfiesTheSpec() {
+    var spec := map["x" := (v: Option<int>) => v == Some(0), "y" := (v: Option<int>) => v == Some(2)];
+    expect whereAny(spec, map["x" := 0, "y" := 200]) == true;
+    expect whereAny(spec, map["x" := 0, "y" := 10]) == true;
+    expect whereAny(spec, map["x" := 1, "y" := 101]) == false;
+    expect whereAny(spec, map["x" := 1, "y" := 2]) == true;
+  }
+
+  method {:test} WhereAnyDoesNotNeedTheSpecAndTheTestObjectToHaveTheSameInterface() {
+    var spec := map["x" := (v: Option<int>) => v == Some(100)];
+    expect whereAny(spec, map["x" := 20, "y" := 100, "z" := 100]) == false;
+    expect whereAny(spec, map["w" := 1, "x" := 100, "y" := 100, "z" := 100]) == true;
+  }
+
+  // `R.equals(undefined)` holds for undefined (None) only; `{x: undefined}`
+  // is the object without x here (README mapping), and `{x: null}` has the
+  // Js value Null (as for where).
+  method {:test} WhereAnyMatchesSpecsThatHaveUndefinedProperties() {
+    var spec := map["x" := (v: Option<Js>) => v.None?];
+    var none: map<string, Js> := map[];
+    expect whereAny(spec, none) == true;
+    expect whereAny(spec, map["x" := Null]) == false;
+    expect whereAny(spec, none) == true;
+    expect whereAny(spec, map["x" := Num(1)]) == false;
+  }
+
+  method {:test} WhereAnyIsFalseForAnEmptySpec() {
+    var empty: map<string, Option<int> -> bool> := map[];
+    expect whereAny(empty, map["a" := 1]) == false;
   }
 }

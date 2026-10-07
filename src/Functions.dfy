@@ -1,22 +1,24 @@
-// Ramdaf: Ramda v0.27.2 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
-// the functions with `@category Function` (`composeK`, `pipeK`, `juxt`,
-// `applySpec`, `o`, `applyTo`, `thunkify`, `pipeWith`, `composeWith`). (v0.4.1
+// the functions with `@category Function` (`juxt`, `applySpec`, `o`,
+// `applyTo`, `thunkify`, `pipeWith`, `composeWith`, `on`, `promap`). (v0.4.1
 // removed the aliases `sequence`, `distributeTo`, `constant` and `K`;
 // v0.4.2 renamed `fork` to `converge`; v0.9.0 renamed `alwaysTrue` and
 // `alwaysFalse` to `T` and `F` and removed `alwaysZero`; v0.16.0 removed
-// v0.14.0's `composeL` and `pipeL`, as lenses compose with `compose`.)
-// compose/pipe (and composeK/pipeK) are variadic in JS; the port is binary
-// (nest for more functions). composeK and pipeK chain with `List.chain`, so
-// Functions imports List (v0.16.0).
+// v0.14.0's `composeL` and `pipeL`, as lenses compose with `compose`;
+// v0.28.0 removed `composeK` and `pipeK` (v0.16.0), deprecated since v0.26.0
+// for `composeWith(chain)` and `pipeWith(chain)`.) compose/pipe are variadic
+// in JS; the port is binary (nest for more functions). Functions imports
+// List for `juxt` (`List.mapSeq`; since v0.16.0, when composeK and pipeK
+// chained with `List.chain`).
 
 module Ramdaf.Functions {
   import List
 
   export
-    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec, o, applyTo,
-            thunkify, pipeWith, composeWith
+    reveals compose, pipe, flip, converge, always, T, F, juxt, applySpec, o, applyTo,
+            thunkify, pipeWith, composeWith, on, promap
     provides List
 
   // `compose(f, g)(x) == f(g(x))`
@@ -71,33 +73,6 @@ module Ramdaf.Functions {
   // themselves, applied to one argument of any type, which they ignore.
   function T<U>(x: U): bool { true }
   function F<U>(x: U): bool { false }
-
-  // `R.composeK(…fns)` (v0.16.0, `@category Function`; deprecated since
-  // v0.26.0, for `composeWith(chain)`): since v0.23.0
-  // `compose(compose.apply(this, map(chain, init)), last)`, where `last` is
-  // the last function and `init` the others, right-to-left Kleisli
-  // composition of functions to a monad: the last function is applied to
-  // the value and each other function is `chain`ed over the monadic value
-  // the one to its right returns (`composeK(f, g)(x)` is `chain(f, g(x))`;
-  // `composeK()` throws Error, "composeK requires at least one argument").
-  // From v0.16.0 to v0.22.1 every function was chained, so the composition
-  // took a monadic value (`composeK(f, g)(m)` was `chain(f, chain(g, m))`,
-  // `compose.apply(this, prepend(identity, map(chain, arguments)))` since
-  // v0.18.0, and `composeK()` was `identity`). JS chains any Fantasy-land
-  // monad through its `chain` method; here the monad is the list, through
-  // `List.chain` (README "Deviations"). JS takes any number of functions;
-  // the port is binary, as compose is.
-  function composeK<A, B, C>(f: B -> seq<C>, g: A -> seq<B>): A -> seq<C>
-  { compose((xs: seq<B>) => List.chain(f, xs), g) }
-
-  // `R.pipeK(…fns)` (v0.16.0; deprecated since v0.26.0, for
-  // `pipeWith(chain)`): `composeK.apply(this, reverse(arguments))`,
-  // left-to-right Kleisli composition (`pipeK(f, g)` is `composeK(g, f)`,
-  // since v0.23.0 a function of a value, `chain(g, f(x))`, and `pipeK()`
-  // throws Error; until v0.22.1 of a monadic value, `chain(g, chain(f,
-  // m))`).
-  function pipeK<A, B, C>(f: A -> seq<B>, g: B -> seq<C>): A -> seq<C>
-  { composeK(g, f) }
 
   // `R.juxt(fns)` (v0.19.0, `@category Function`): a function that applies
   // every function to its arguments and lists the results in order
@@ -178,4 +153,20 @@ module Ramdaf.Functions {
   // the pair reversed is its swap.
   function composeWith<A, B, G, C>(xf: (G, B) -> C, fns: (G, A -> B)): A -> C
   { pipeWith(xf, (fns.1, fns.0)) }
+
+  // `R.on(f, g, a, b)` (v0.28.0, `@category Function`): `curryN(4, [],
+  // function on(f, g, a, b) { return f(g(a), g(b)); })`, the P combinator:
+  // g applied to both values and f to the results (`on((a, b) => a + b, x
+  // => x * 2, 1, 2)` is 6). Uncurried, it takes its four parameters.
+  function on<A, B, C>(f: (B, B) -> C, g: A -> B, a: A, b: A): C { f(g(a), g(b)) }
+
+  // `R.promap(f, g, profunctor)` (v0.28.0, `@category Function`):
+  // `_dispatchable(['fantasy-land/promap', 'promap'], _xpromap, _promap)`,
+  // and for a function the private `_promap`, `function(x) { return
+  // g(profunctor(f(x))); }`: f before the function and g after it
+  // (`promap(x => x + 1, x => x * 10, x => x - 3)(5)` is 30). JS dispatches
+  // to a profunctor's `promap` method and is a transducer; here the
+  // profunctor is a function (README "Deviations").
+  function promap<A, B, C, D>(f: A -> B, g: C -> D, profunctor: B -> C): A -> D
+  { x => g(profunctor(f(x))) }
 }

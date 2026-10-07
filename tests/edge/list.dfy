@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.27.2's own suite does not cover, each checked against
-// dist/ramda.js v0.27.2 under node (the expected values are node's output). The
+// Edge cases Ramda v0.28.0's own suite does not cover, each checked against
+// dist/ramda.js v0.28.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -574,7 +574,7 @@ module RamdafTests.Edge.List {
     expect allPos([1, 2]) == true;
     expect any((x: int) => x > 1, [1, 2]) == true;
     expect reject((x: int) => x > 1, [1, 2, 3]) == [1];
-    expect contains(3, [1, 2]) == false;
+    expect includes(3, [1, 2]) == false;
     expect mapSeq((x: int) => x * x, empty) == [];
   }
 
@@ -650,15 +650,21 @@ module RamdafTests.Edge.List {
 
   // node: flatten([{length: 0}]) is [], flatten([{length: 2, 0: 'a', 1: 'b'}])
   // is ['a', 'b'] and unnest([{length: 0}]) is [] (since v0.3.0 an array-like
-  // element is flattened), and since v0.4.0 flatten([{nodeType: 1, length: -1}])
-  // and unnest([{nodeType: 1, length: -1}]) are [] (a DOM-element test); a
-  // Leaf is never flattened.
+  // element is flattened); a Leaf is never flattened. (From v0.4.0 to v0.27.2
+  // flatten([{nodeType: 1, length: -1}]) and unnest of it were [] too, a
+  // DOM-element test: FlattenKeepsANodeTypeObject below.)
   method {:test} DeviationLeafIsNeverArrayLike() {
     var len0 := map["length" := 0];
     expect flatten([Leaf(len0)]) == [len0];
     var ab := map["length" := Num(2), "0" := Str("a"), "1" := Str("b")];
     expect flatten([Leaf(ab)]) == [ab];
     expect unnest([Leaf(len0)]) == [Leaf(len0)];
+  }
+
+  // node: since v0.28.0 `_isArrayLike` has no `nodeType === 1` case, so
+  // flatten([{nodeType: 1, length: -1}]) and unnest of it keep the object,
+  // as here (until v0.27.2 they were []; a line of the pin above).
+  method {:test} FlattenKeepsANodeTypeObject() {
     var node := map["nodeType" := 1, "length" := -1];
     expect flatten([Leaf(node)]) == [node];
     expect unnest([Leaf(node)]) == [Leaf(node)];
@@ -679,13 +685,16 @@ module RamdafTests.Edge.List {
   // property. Likewise the keys of mergeAll([JSON.parse('{"__proto__": 5,
   // "a": 1}'), {b: 2}]) (v0.10.0) are ['a', 'b'], and those of
   // reduceBy(add, 0, x => '__proto__', [1, 2]) (v0.20.0) are []. A map's
-  // keys are all ordinary.
+  // keys are all ordinary. And `collectBy(x => 'toString', [1])` (v0.28.0)
+  // throws `TypeError: o[tag].push is not a function`, as `o.toString` is the
+  // inherited function, which the port does not model.
   method {:test} DeviationPrototypeKeysAreOrdinaryInListBuilders() {
     expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
     expect indexBy((x: int) => "__proto__", [1]) == map["__proto__" := 1];
     expect mergeAll([map["__proto__" := 5, "a" := 1], map["b" := 2]]) == map["__proto__" := 5, "a" := 1, "b" := 2];
     expect reduceBy(M.add, 0, (x: int) => "__proto__", [1, 2]) == map["__proto__" := 3];
+    expect collectBy((x: int) => "toString", [1]) == [[1]];
   }
 
   // node: since v0.12.0 `_reduce` stops when the accumulator has a truthy
@@ -702,7 +711,16 @@ module RamdafTests.Edge.List {
   // v0.19.0 port; countBy's line is in tests/edge/data.dfy); and
   // `reduceWhile(() => true, (acc, x) => assoc('x', x, acc),
   // {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2])` (v0.22.0)
-  // is 9. Here the key is ordinary. (`mergeAll`
+  // is 9. Since v0.28.0 reduceBy also stops when valueFn returns an object
+  // carrying the marker, returning the groups so far:
+  // `reduceBy((acc, x) => x === 2 ? {'@@transducer/reduced': 1} :
+  // assoc('n', x, acc), {}, x => 'k', [1, 2, 3])` is `{k: {n: 1}}`, and so
+  // indexBy stops at such an element (`indexBy(x => 'k', [{n: 1},
+  // {'@@transducer/reduced': 1}, {n: 3}])` is `{k: {n: 1}}`); reduceRight
+  // stops at a marked accumulator (`reduceRight((x, acc) => assoc('x', x,
+  // acc), {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2])` is
+  // 9); and `collectBy(x => '@@transducer/reduced', [1, 2])` is [] (its group
+  // object is marked). Here the key is ordinary. (`mergeAll`
   // gave 7 from v0.12.0 to v0.19.1: MergeAllCopiesTheReducedMarker.)
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
     var marked := map["@@transducer/reduced" := 1, "@@transducer/value" := 9];
@@ -713,6 +731,13 @@ module RamdafTests.Edge.List {
     expect indexBy((x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := 2];
     expect reduceWhile((acc: map<string, int>, x: int) => true, (acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2]) ==
       marked["x" := 2];
+    var stop: map<string, int> := map["@@transducer/reduced" := 1];
+    var noKeys: map<string, int> := map[];
+    expect reduceBy((acc: map<string, int>, x: int) => if x == 2 then stop else acc["n" := x], noKeys, (x: int) => "k", [1, 2, 3]) ==
+      map["k" := stop["n" := 3]];
+    expect indexBy((o: map<string, int>) => "k", [map["n" := 1], stop, map["n" := 3]]) == map["k" := map["n" := 3]];
+    expect reduceRight((x: int, acc: map<string, int>) => acc["x" := x], marked, [1, 2]) == marked["x" := 1];
+    expect collectBy((x: int) => "@@transducer/reduced", [1, 2]) == [[1, 2]];
   }
 
   // node: since v0.20.0 `mergeAll` copies with the private `_objectAssign`,
@@ -754,7 +779,6 @@ module RamdafTests.Edge.List {
   // `includes(negate(0), [0])` (v0.26.0). An int has no -0.
   method {:test} DeviationListSearchesSignedZero() {
     var z := M.negate(0);
-    expect contains(z, [0]) == true;
     expect indexOf(z, [0]) == 0;
     expect lastIndexOf(z, [0]) == 0;
     expect uniq([0, z]) == [0];
@@ -916,5 +940,25 @@ module RamdafTests.Edge.List {
   // seq of characters, and they are moved (README "Deviations").
   method {:test} DeviationMoveOnAString() {
     expect move(0, 1, "abc") == "bac";
+  }
+
+  // count, collectBy and splitWhenever (v0.28.0) (node: 2, [[1, 3], [2,
+  // 4]], [], [[1], [1]], [], [[1, 2]]).
+  method {:test} CountCollectBySplitWheneverEdges() {
+    var none: seq<int> := [];
+    expect count((x: int) => true, [1, 2]) == 2;
+    expect collectBy((x: int) => if x % 2 == 1 then "odd" else "even", [1, 2, 3, 4]) == [[1, 3], [2, 4]];
+    expect collectBy((x: int) => "k", none) == [];
+    expect splitWhenever((x: int) => x > 2, [3, 1, 4, 1, 5]) == [[1], [1]];
+    expect splitWhenever((x: int) => true, [1, 2]) == [];
+    expect splitWhenever((x: int) => false, [1, 2]) == [[1, 2]];
+  }
+
+  // node: collectBy (v0.28.0) lists its groups in `for…in` order, which puts
+  // integer-like tags first, ascending: `collectBy(x => String(x % 3), [5,
+  // 4, 3, 2])` is [[3], [4], [5, 2]]; here the groups come in the order their
+  // tags first occur (README "Deviations").
+  method {:test} DeviationCollectByIntegerTagsFirst() {
+    expect collectBy((x: int) => [('0' as int + x % 3) as char], [5, 4, 3, 2]) == [[5, 2], [4], [3]];
   }
 }

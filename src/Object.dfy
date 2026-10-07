@@ -1,12 +1,13 @@
-// Ramdaf: Ramda v0.27.2 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
-// `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
-// `objOf`, `mergeWith`, `mergeWithKey`, `mergeLeft`, `mergeRight`). A JS object is a map<string, V>; a missing property is JS
+// `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`, `objOf`,
+// `mergeWith`, `mergeWithKey`, `mergeLeft`, `mergeRight`, `modify_`
+// (`modify`), `whereAny`). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
-// properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`, `assoc`,
-// `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter, `objOf`,
-// `mergeWithKey`) drop an own
+// properties (`pick`, `pickAll`, `pickBy`, `omit`, `assoc`, `evolve`,
+// `invertObj`, `dissoc`, `lensProp`'s setter, `objOf`, `mergeWithKey`,
+// `mergeLeft`, `mergeRight`, `modify_`; `merge` until v0.27.2) drop an own
 // `__proto__` property in JS, as the assignment sets the prototype instead; a
 // map's keys are all ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to
 // `pickBy`, and `props` to `propOf`, reusing the name `props` for a new
@@ -15,16 +16,18 @@
 // alias of `prop`, deprecated in v0.11.0; v0.15.0 removed `eq`, whose
 // `Object.is` is now `identical`, `@category Relation`, in Data.dfy, where
 // v0.15.1 restores `eq` itself, deprecated; v0.16.0 removed `lensOn`, as
-// lenses became van Laarhoven functions, and `eq` again.)
+// lenses became van Laarhoven functions, and `eq` again; v0.28.0 removed
+// `merge`, deprecated since v0.26.0 for `mergeRight`.)
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
     reveals prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
-            values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
+            values, valuesIn, pick, pickAll, omit, pickBy, eqProps, where,
             assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq,
-            view, over, set_, objOf, mergeWith, mergeWithKey, mergeLeft, mergeRight
+            view, over, set_, objOf, mergeWith, mergeWithKey, mergeLeft, mergeRight, modify_,
+            whereAny
     provides Prelude
 
   // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
@@ -193,27 +196,6 @@ module Ramdaf.Object {
     ensures pickBy(test, obj).Keys == set k | k in obj && test(obj[k], k, obj)
     ensures forall k :: k in pickBy(test, obj) ==> pickBy(test, obj)[k] == obj[k]
   { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
-
-  // `R.merge(a, b)` (v0.10.0, "rename R.mixin", with the same body): since
-  // v0.20.0 `_objectAssign({}, l, r)`, the private `Object.assign` (since
-  // v0.20.1 `_assign`, the native `Object.assign` where the engine has one,
-  // with the same results), the own properties of a, then of b: b's value
-  // wins where both have the key. The
-  // body is Dafny's right-biased map union, `a + b`, as it was until
-  // v0.18.0; in v0.19.x merge was `mergeWith(function(l, r) { return r;
-  // })`, and the body called mergeWith (from v0.16.0 to v0.18.0 its own
-  // `keys` loops, and `_extend(_extend({}, a), b)` before, `mixin`'s body
-  // since v0.2.4; before that, `pickAll(keys(a), a)` with b's properties
-  // copied over it), all with the same results. It was `op`-curried in
-  // v0.10.0 and is `_curry2` since v0.11.0, which only add the placeholder
-  // form `merge(__, b)`. (Not the list `merge` that v0.2.4 removed from
-  // Core.) Deprecated since v0.26.0, for `mergeRight`, which has its
-  // code.
-  function merge<V>(a: map<string, V>, b: map<string, V>): map<string, V>
-    ensures merge(a, b).Keys == a.Keys + b.Keys
-    ensures forall k :: k in b ==> merge(a, b)[k] == b[k]
-    ensures forall k :: k in a && k !in b ==> merge(a, b)[k] == a[k]
-  { a + b }
 
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal;
   // in v0.14.0 `_eq`, `Object.is`, and since v0.15.0 `R.equals`, deep
@@ -414,9 +396,32 @@ module Ramdaf.Object {
   { r + l }
 
   // `R.mergeRight(l, r)` (v0.26.0, `@category Object`): `_objectAssign({},
-  // l, r)`, merge's code, r's value winning where both have the key
+  // l, r)`, the code of merge (removed in v0.28.0), r's value winning where
+  // both have the key
   // (`mergeRight({a: 1, b: 2}, {b: 3, c: 4})` is `{a: 1, b: 3, c: 4}`): `l +
   // r`.
   function mergeRight<V>(l: map<string, V>, r: map<string, V>): map<string, V>
   { l + r }
+
+  // `R.modify(prop, fn, object)` (v0.28.0, `@category Object`):
+  // `modifyPath([prop], fn, object)`, which returns the object itself unless
+  // it is an object or an array that owns the property (`_has`), and
+  // otherwise a copy with `fn(object[prop])` there (the private `_modify`,
+  // `result[prop] = fn(result[prop])` on a `for…in` copy): fn applied to
+  // the property (`modify('a', x => x + 1, {a: 1, b: 2})` is `{a: 2, b: 2}`),
+  // and the object unchanged when it lacks it. `_has` is written out as `p in
+  // obj`. `modify` is a Dafny keyword, hence `modify_`. JS lets fn return a
+  // value of another type, and the copy drops an own `__proto__` property
+  // (README "Deviations").
+  function modify_<V>(p: string, fn: V -> V, obj: map<string, V>): map<string, V>
+  { if p in obj then obj[p := fn(obj[p])] else obj }
+
+  // `R.whereAny(spec, testObj)` (v0.28.0, `@category Object`): `for (var prop
+  // in spec) { if (_has(prop, spec) && spec[prop](testObj[prop])) { return
+  // true; } } return false;`, some own spec property is a predicate that
+  // holds for the test object's property, undefined (None) when the test
+  // object lacks it, as for where (a JS test object passes an inherited
+  // `Object.prototype` member for such a name: README "Deviations").
+  function whereAny<V>(spec: map<string, Option<V> -> bool>, test: map<string, V>): bool
+  { exists k :: k in spec && spec[k](prop(k, test)) }
 }

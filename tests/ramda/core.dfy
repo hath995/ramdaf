@@ -1,4 +1,4 @@
-// Ramda v0.27.2 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.28.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
 // identity.js, isNil.js, ascend.js and descend.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these
@@ -93,7 +93,7 @@ module RamdafTests.Ramda.Core {
   }
 
   // describe('concat') (v0.2.4; it was describe('merge')). Its first `it`
-  // appears twice, with the same body.
+  // appeared twice, with the same body, until v0.27.2.
   method {:test} ConcatCombinesTheLists() {
     expect concat(["a", "b"], ["c", "d"]) == ["a", "b", "c", "d"];
     var empty: seq<string> := [];

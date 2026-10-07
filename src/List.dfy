@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.27.2 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.28.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -39,7 +39,7 @@ module Ramdaf.List {
     reveals reduce, reduceRight, unfold, mapSeq,
             mapObjIndexed, filter, reject,
             takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex,
-            all, any, contains, uniq, uniqWith, pluck, flatten,
+            all, any, uniq, uniqWith, pluck, flatten,
             zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice,
             remove, insert, insertAll, partition,
             ap, of, empty, chain, unnest, zipObj, fromPairs, scan,
@@ -47,7 +47,8 @@ module Ramdaf.List {
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
-            without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes, move
+            without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes, move,
+            count, collectBy, splitWhenever
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -321,16 +322,6 @@ module Ramdaf.List {
   // some element.
   function any<T>(fn: T -> bool, list: seq<T>): bool
   { exists i :: 0 <= i < |list| && fn(list[i]) }
-
-  // `_indexOf(list, a) >= 0` (`===` until v0.13.0, `_eq`, `Object.is`, in
-  // v0.14.0, and since v0.15.0 `R.equals`, deep equality, which on Dafny
-  // values is `==`; see README on `-0`; `op`-curried from v0.9.0 to v0.10.0 and `_curry2` since v0.11.0,
-  // which only add the placeholder form `contains(__, list)`). Deprecated
-  // since v0.26.0 for `includes`, which is the same `_curry2(_includes)`
-  // (the private `_contains` renamed). On a JS string the string's own
-  // `indexOf` finds a substring (`contains('ba', 'banana')` is true since
-  // v0.19.0); here a string's element is a character (README "Deviations").
-  function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
 
   // `var result = []; ... if (!contains(item, result)) result.push(item);`
   // for each item in order (v0.2.4; until v0.2.3 a foldr from the right kept
@@ -999,12 +990,13 @@ module Ramdaf.List {
            (if j < |r| then r[j] else []) + (if j < |inner| then [inner[j]] else [])) }
 
   // `R.without(xs, list)` (v0.19.0, `@category List`):
-  // `reject(flip(_contains)(xs), list)`, the elements of list that are not
-  // in xs (`R.equals`, `==` here:
-  // README "Deviations" on `-0`); a transformer in list position makes it a
-  // transducer. The private `_contains` is `contains`.
+  // `reject(flip(_includes)(xs), list)` (`_contains` until v0.25.0), the
+  // elements of list that are not in xs (`R.equals`, `==` here: README
+  // "Deviations" on `-0`); a transformer in list position makes it a
+  // transducer. The private `_includes` is `includes` (until v0.27.2 the
+  // body called `contains`, which v0.28.0 removed).
   function without<T(==)>(xs: seq<T>, list: seq<T>): seq<T>
-  { reject((x: T) => contains(x, xs), list) }
+  { reject((x: T) => includes(x, xs), list) }
 
   // `R.reduceBy(valueFn, valueAcc, keyFn, list)` (v0.20.0, `@category
   // List`; since v0.21.0 in this order, where v0.20.x took `reduceBy(keyFn,
@@ -1087,7 +1079,9 @@ module Ramdaf.List {
   // `R.includes(a, list)` (v0.26.0, `@category List`): `_curry2(_includes)`,
   // `_indexOf(list, a, 0) >= 0`, whether a is an element of list (`R.equals`,
   // `==` here, except that JS tells `-0` from `0`: README "Deviations"); the
-  // same function as contains, which it deprecates. On a JS string the
+  // same function as contains, which it deprecated (v0.28.0 removed
+  // contains, `_curry2(_includes)` too, ported from v0.1.0 with the body `a
+  // in list`). On a JS string the
   // string's own `indexOf` finds a substring (`includes('ba', 'banana')` is
   // true); here a string's element is a character (README "Deviations").
   function includes<T(==)>(a: T, list: seq<T>): bool { a in list }
@@ -1109,4 +1103,47 @@ module Ramdaf.List {
     if f < 0 || f >= |list| || t < 0 || t >= |list| then list
     else var rest := list[..f] + list[f + 1..];
          rest[..t] + [list[f]] + rest[t..] }
+
+  // `R.count(pred, list)` (v0.28.0, `@category List`): `_reduce(function(a,
+  // e) { return pred(e) ? a + 1 : a; }, 0, list)`, the number of elements
+  // that satisfy pred (`count(x => x % 2 === 0, [1, 2, 3, 4, 5])` is 2).
+  // `_reduce` is reduce's body, so the body calls `reduce`.
+  function count<T>(pred: T -> bool, list: seq<T>): nat
+  { reduce<nat, T>((a: nat, e: T) => if pred(e) then a + 1 else a, 0, list) }
+
+  // `R.collectBy(fn, list)` (v0.28.0, `@category List`): `_reduce` collects
+  // each element into `o[fn(x)]` (`if (o[tag] === undefined) { o[tag] = [];
+  // } o[tag].push(x);`), and the result is the groups in `for…in` order: the
+  // elements grouped by the tag fn gives them, each group in list order
+  // (`collectBy(x => x > 2 ? 'b' : 'a', [5, 1, 3])` is `[[5, 3], [1]]`).
+  // `for…in` lists integer-like tags first, ascending, and then the others
+  // in insertion order; here the groups come in the order their tags first
+  // occur (README "Deviations"). A tag that names an `Object.prototype`
+  // member finds it in `o`, which throws TypeError, and a tag
+  // `@@transducer/reduced` ends `_reduce` (README "Deviations"). The body
+  // takes the first element's group and recurses on the elements with other
+  // tags.
+  function collectBy<T>(fn: T -> string, list: seq<T>): seq<seq<T>>
+    decreases |list|
+  { if |list| == 0 then []
+    else var tag := fn(list[0]);
+         [[list[0]] + filter((x: T) => fn(x) == tag, list[1..])] +
+           collectBy(fn, filter((x: T) => fn(x) != tag, list[1..])) }
+
+  // `R.splitWhenever(pred, list)` (v0.28.0, `@category List`; its JSDoc says
+  // `@since v0.26.1`): `for (var i = 0; i < list.length; i = i + 1) { if
+  // (!pred(list[i])) { curr.push(list[i]); } if ((i < list.length - 1 &&
+  // pred(list[i + 1]) || i === list.length - 1) && curr.length > 0) {
+  // acc.push(curr); curr = []; } }`: the maximal runs of elements that fail
+  // pred, the others dropped (`splitWhenever(equals(2), [1, 2, 3, 2, 4, 5])`
+  // is `[[1], [3], [4, 5]]`; a JS string gives arrays of characters, the
+  // same seqs here). The body drops a leading run that satisfies pred
+  // (`dropWhile`), takes the next run that fails it (`takeWhile`) and
+  // recurses on the rest.
+  function splitWhenever<T>(pred: T -> bool, list: seq<T>): seq<seq<T>>
+    decreases |list|
+  { var rest := dropWhile(pred, list);
+    if |rest| == 0 then []
+    else var chunk := takeWhile((x: T) => !pred(x), rest);
+         [chunk] + splitWhenever(pred, rest[|chunk|..]) }
 }

@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.27.2 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.28.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -110,14 +110,6 @@ module RamdafTests.Edge.Misc {
     expect pickBy((v: int, k: string, o: map<string, int>) => "b" in o && o["b"] == v, map["a" := 2, "b" := 2, "c" := 3]) ==
       map["a" := 2, "b" := 2];
     expect pickBy((v: int, k: string, o: map<string, int>) => v > 1, none) == map[];
-  }
-
-  // merge (mixin until v0.9.1): b's value wins.
-  method {:test} MergeEdges() {
-    var none: map<string, int> := map[];
-    expect merge(map["a" := 1, "b" := 2], map["b" := 3, "c" := 4]) == map["a" := 1, "b" := 3, "c" := 4];
-    expect merge(none, map["b" := 3]) == map["b" := 3];
-    expect merge(map["a" := 1], none) == map["a" := 1];
   }
 
   // dissoc (v0.10.0) copies obj without the property (node: {a: 1, c: 3},
@@ -527,22 +519,12 @@ module RamdafTests.Edge.Misc {
   }
 
   // propSatisfies (v0.16.0) gives the predicate the property, undefined
-  // (None) when it is absent (node: true, true); composeK and pipeK (v0.16.0)
-  // chain over lists, since v0.23.0 starting from a value that the last
-  // function (the first, for pipeK) is applied to (node: `composeK(x => [x,
-  // x * 10], x => [x + 1])(1)` is [2, 20], and so is `pipeK(x => [x + 1], x
-  // => [x, x * 10])(1)`; `composeK(x => [], x => [x])(1)` and `composeK(x =>
-  // [x], x => [])(1)` are []; until v0.22.1 they took a list, and the first
-  // two on [1, 2] were [2, 20, 3, 30]).
-  method {:test} PropSatisfiesAndComposeKEdges() {
+  // (None) when it is absent (node: true, true). (Until v0.27.2 this also
+  // covered composeK and pipeK, which v0.28.0 removed.)
+  method {:test} PropSatisfiesEdges() {
     var none: map<string, int> := map[];
     expect propSatisfies((x: Option<int>) => x.None?, "a", none) == true;
     expect propSatisfies((x: Option<int>) => x == Some(1), "a", map["a" := 1]) == true;
-    expect composeK((x: int) => [x, x * 10], (x: int) => [x + 1])(1) == [2, 20];
-    expect pipeK((x: int) => [x + 1], (x: int) => [x, x * 10])(1) == [2, 20];
-    var nothing: seq<int> := [];
-    expect composeK((x: int) => nothing, (x: int) => [x])(1) == [];
-    expect composeK((x: int) => [x], (x: int) => nothing)(1) == [];
   }
 
   // ---- documented deviations (not node behaviour) ----
@@ -576,13 +558,19 @@ module RamdafTests.Edge.Misc {
   // and of `mergeWithKey` of it and `JSON.parse('{"__proto__": 6}')`, are
   // ['a']; since v0.20.0 an own `__proto__` spec function of `applySpec`
   // (made with Object.defineProperty) is dropped by the spec's copy, so
-  // `applySpec(<{__proto__: x => 5, a: x => 1}>)(0)` has the keys ['a']. A
-  // map's keys are all ordinary, and `{}` has no `toString`.
+  // `applySpec(<{__proto__: x => 5, a: x => 1}>)(0)` has the keys ['a'];
+  // since v0.26.0 so do `mergeRight(<the JSON object>, {})` and `mergeLeft({},
+  // <it>)` (`Object.assign`; an omission of the v0.26.0 port, recorded in
+  // v0.28.0), and since v0.28.0 `modify('a', x => x + 1, <it>)` (`merge`'s
+  // line until v0.27.2). A map's keys are all ordinary, and `{}` has no
+  // `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
     expect clone(o) == o;
-    expect merge(o, none) == o;
+    expect mergeRight(o, none) == o;
+    expect mergeLeft(none, o) == o;
+    expect modify_("a", (v: int) => v + 1, o) == o["a" := 2];
     expect dissoc("x", o) == o;
     expect invertObj(map["a" := "__proto__", "b" := "c"]) == map["__proto__" := "a", "c" := "b"];
     expect evolve(map["a" := (v: Option<int>) => if v.Some? then v.value else 0], o) == o;
@@ -637,7 +625,9 @@ module RamdafTests.Edge.Misc {
   // true}, {})` was true, except in v0.2.3), and so is
   // `propSatisfies(x => x === undefined, 'toString', {})` (v0.16.0), and
   // since v0.26.0 `propOr(0, 'toString', {})` is the function (`pathOr`; it
-  // was 0). A map has no prototype: the reads give None (propOr's default).
+  // was 0), and `whereAny({toString: x => typeof x === 'function'}, {})`
+  // (v0.28.0) is true. A map has no prototype: the reads give None (propOr's
+  // default).
   method {:test} DeviationInheritedMembersAreAbsent() {
     var none: map<string, int> := map[];
     expect prop("toString", none) == None;
@@ -648,6 +638,7 @@ module RamdafTests.Edge.Misc {
     expect where(map["toString" := (x: Option<int>) => x.None?], none) == true;
     expect propSatisfies((x: Option<int>) => x.None?, "toString", none) == true;
     expect propOr(0, "toString", none) == 0;
+    expect whereAny(map["toString" := (x: Option<int>) => x.Some?], none) == false;
   }
 
   // node: since v0.26.0 `propOr(val, p, obj)` is `pathOr(val, [p], obj)`,
@@ -821,5 +812,18 @@ module RamdafTests.Edge.Misc {
     expect xor(false, true) == true;
     expect xor(true, false) == true;
     expect xor(true, true) == false;
+  }
+
+  // modify, whereAny, on and promap (v0.28.0) (node: {a: 1, b: 20}, {}, true,
+  // false, true, 15).
+  method {:test} ModifyWhereAnyOnPromapEdges() {
+    var none: map<string, int> := map[];
+    expect modify_("b", (x: int) => x * 10, map["a" := 1, "b" := 2]) == map["a" := 1, "b" := 20];
+    expect modify_("b", (x: int) => x * 10, none) == map[];
+    expect whereAny(map["a" := (x: Option<int>) => x.None?], none) == true;
+    expect whereAny(map["a" := (x: Option<int>) => x.Some? && x.value > 1, "b" := (x: Option<int>) => x.Some? && x.value > 1],
+                    map["a" := 1, "b" := 1]) == false;
+    expect on((a: int, b: int) => a == b, (x: int) => x % 3, 1, 4) == true;
+    expect promap((x: int) => x * 2, (x: int) => x - 1, (x: int) => x + 10)(3) == 15;
   }
 }

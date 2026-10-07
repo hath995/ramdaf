@@ -1,4 +1,4 @@
-// Ramda v0.27.2 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.28.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -9,7 +9,8 @@
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
 // splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js,
-// groupWith.js, reduceWhile.js, startsWith.js, endsWith.js and move.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// groupWith.js, reduceWhile.js, startsWith.js, endsWith.js, move.js, count.js
+// and splitWhenever.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -101,8 +102,8 @@
 // groupWith.js's (v0.21.0) `R.equals` is `==`, `R.complement(R.equals)`,
 // `R.T` and `R.F` are binary lambdas, and `R.unnest` of the groups is
 // `chain(identity)` (since v0.18.0), here `chain(g => g, …)`.
-// startsWith.js and endsWith.js (v0.24.0; endsWith.js's describe is named
-// 'startsWith' upstream) test strings as Dafny strings and arrays of
+// startsWith.js and endsWith.js (v0.24.0; endsWith.js's describe was named
+// 'startsWith' upstream until v0.27.2) test strings as Dafny strings and arrays of
 // strings as seqs of strings.
 // (v0.26.0 removed the per-function "is curried" `it`s and adjust's "curries
 // the arguments", with their transcriptions here, and renamed contains.js
@@ -1262,7 +1263,9 @@ module RamdafTests.Ramda.List {
     expect groupWith(isConsecutive, [1, 2, 9, 3, 4]) == [[1, 2], [9], [3, 4]];
   }
 
-  // ---- reduceWhile.js (v0.22.0): `isOdd = (_, x) => x % 2 === 1` ----
+  // ---- reduceWhile.js (v0.22.0): `isOdd = (_, x) => x % 2 === 1` (since
+  // v0.28.0 `x % 2 !== 0`, the same on the tests' numbers; Dafny's `%` is
+  // never negative) ----
 
   function IsOddX(acc: int, x: int): bool { x % 2 == 1 }
 
@@ -1375,5 +1378,35 @@ module RamdafTests.Ramda.List {
     expect reduceBy(CollectNames, none, byGrade, students) ==
       map["A" := ["Dianne", "Gillian"], "B" := ["Abby", "Chris", "Irene"], "C" := ["Brad", "Hannah"],
           "D" := ["Fred", "Jack"], "F" := ["Eddy"]];
+  }
+
+  // ---- count.js (v0.28.0): `even = x => x % 2 === 0` ----
+
+  method {:test} CountCountsItemsInAListThatMatchAFilter() {
+    expect count((x: int) => x % 2 == 0, [1, 2, 3, 4, 5]) == 2;
+    expect count((x: int) => x % 2 == 0, [2, 8, 10, 200]) == 4;
+  }
+
+  method {:test} CountReturnsZeroWhenNoElementMatches() {
+    expect count((x: int) => x % 2 == 0, [1, 3, 5, 7]) == 0;
+  }
+
+  method {:test} CountReturnsZeroForAnEmptyList() {
+    var empty: seq<int> := [];
+    expect count((x: int) => x % 2 == 0, empty) == 0;
+  }
+
+  // ---- splitWhenever.js (v0.28.0): `R.equals(n)` is `x => x == n` ----
+
+  method {:test} SplitWheneverSplitsAnArrayIntoSlicesWheneverThePredicateReturnsTrue() {
+    var empty: seq<int> := [];
+    expect splitWhenever((x: int) => x == 2, [1, 2, 3, 2, 4, 5, 2, 6, 7]) == [[1], [3], [4, 5], [6, 7]];
+    expect splitWhenever((x: int) => x == 2, [1, 2, 1]) == [[1], [1]];
+    expect splitWhenever((x: int) => x == 1, [1, 2, 1]) == [[2]];
+    expect splitWhenever((x: int) => x == 3, [1, 2, 1]) == [[1, 2, 1]];
+    expect splitWhenever((e: int) => e % 2 == 0, [1, 2, 3, 2, 4, 5, 2, 6, 7]) == [[1], [3], [5], [7]];
+    expect splitWhenever((x: int) => x == 3, empty) == [];
+    expect splitWhenever((x: int) => x == 1, [1, 2, 3]) == [[2, 3]];
+    expect splitWhenever((x: int) => x == 4, [1, 2, 3]) == [[1, 2, 3]];
   }
 }

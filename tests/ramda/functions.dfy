@@ -1,6 +1,6 @@
-// Ramda v0.27.2 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.28.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js, ap.js, juxt.js, applySpec.js, o.js, applyTo.js,
-// thunkify.js, pipeWith.js and composeWith.js (until v0.8.0 test.always.js,
+// thunkify.js, pipeWith.js, composeWith.js and promap.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -73,7 +73,12 @@
 // function that expects arguments and returns a new invoker function" is a
 // `typeof` check that holds by construction. pipeWith.js and composeWith.js
 // compose three functions as nested pairs (README "JS -> Dafny mapping"),
-// with ParseInt below; their promise `it`s are not transcribed.
+// with ParseInt below; their promise `it`s are not transcribed. promap.js
+// (v0.28.0): its profunctor-dispatch `it`s (objects with `promap` and
+// `fantasy-land/promap` methods) are not transcribed; on.js's only `it`
+// applies `R.includes` to strings, a substring search (README
+// "Deviations"); compose.js's, o.js's and flip.js's fast-check properties
+// (jsverify until v0.27.2) are not transcribed.
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -82,6 +87,7 @@ module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Math
   import C = Ramdaf.Core
   import O = Ramdaf.Object
+  import S = Ramdaf.String
   import opened Support
 
   // ---- always.js, T.js, F.js ----
@@ -335,5 +341,18 @@ module RamdafTests.Ramda.Functions {
     var f := composeWith(WhenNotNil, ((x: int) => Some(inc(x)), inner));
     expect f("1") == Some(2);
     expect f("2") == None;
+  }
+
+  // ---- promap.js (v0.28.0): "composes two functions, f and g, before and
+  // after the final function respectively": `charCodeAt(s)` is the first
+  // character's code and `String.fromCharCode` the one-character string ----
+
+  method {:test} PromapComposesTwoFunctionsFAndGBeforeAndAfterTheFinalFunction() {
+    var charCodeAt := (s: string) => if |s| > 0 then s[0] as int else 0;
+    var fromCharCode := (n: int) => if 0 <= n < 0xD800 then [n as char] else "";
+    var decodeChar := promap(charCodeAt, fromCharCode, (n: int) => add(-8, n));
+    var decodeString := promap((s: string) => S.split("", s), (l: seq<string>) => join("", l),
+                               (l: seq<string>) => mapSeq(decodeChar, l));
+    expect decodeString("ziuli") == "ramda";
   }
 }

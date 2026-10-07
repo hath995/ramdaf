@@ -1,0 +1,18 @@
+{
+  "ramda": "v0.28.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.contains", "kind": "removed", "why": "v0.28.0 removes contains (deprecated since v0.26.0 for includes)"},
+    {"symbol": "Ramdaf.Object.merge", "kind": "removed", "why": "v0.28.0 removes merge (deprecated since v0.26.0 for mergeRight)"},
+    {"symbol": "Ramdaf.Functions.composeK", "kind": "removed", "why": "v0.28.0 removes composeK (deprecated since v0.26.0)"},
+    {"symbol": "Ramdaf.Functions.pipeK", "kind": "removed", "why": "v0.28.0 removes pipeK (deprecated since v0.26.0)"},
+    {"symbol": "Ramdaf.List.without", "kind": "compatible", "why": "the revealed body called contains, removed in v0.28.0; it calls includes (Ramda's _includes), with the same results"},
+    {"symbol": "Ramdaf.List.count", "kind": "added", "why": "new in v0.28.0 (@category List): the number of elements that satisfy pred"},
+    {"symbol": "Ramdaf.List.collectBy", "kind": "added", "why": "new in v0.28.0 (@category List): the elements grouped by the tag fn gives them"},
+    {"symbol": "Ramdaf.List.splitWhenever", "kind": "added", "why": "new in v0.28.0 (@category List): the maximal runs of elements that fail pred"},
+    {"symbol": "Ramdaf.Object.modify_", "kind": "added", "why": "new in v0.28.0 (@category Object; modify is a Dafny keyword): fn applied to the property the object owns"},
+    {"symbol": "Ramdaf.Object.whereAny", "kind": "added", "why": "new in v0.28.0 (@category Object): some spec predicate holds for the test object's property"},
+    {"symbol": "Ramdaf.Functions.on", "kind": "added", "why": "new in v0.28.0 (@category Function): on(f, g, a, b) is f(g(a), g(b))"},
+    {"symbol": "Ramdaf.Functions.promap", "kind": "added", "why": "new in v0.28.0 (@category Function): promap(f, g, p) is x => g(p(f(x))) for a function"}
+  ]
+}
