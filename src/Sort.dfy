@@ -1,8 +1,11 @@
-// Ramdaf: Ramda v0.8.0 `comparator` and `sort` (ramda.js lines 3638-3683) and
-// `sortBy` (line 6108).
+// Ramdaf: Ramda v0.9.0 `src/comparator.js`, `src/sort.js` and
+// `src/sortBy.js`.
 //
 // `sort` is `clone(list).sort(comparator)`, i.e. JS Array.prototype.sort, which
-// is stable (ES2019; node is the reference). For a comparator that is
+// is stable (ES2019; node is the reference). (Since v0.9.0 `clone` is a deep
+// copy, so the elements are copies, and it returns a JS string as it is,
+// which has no `sort` method: `sort(cmp, 'cab')` throws, README
+// "Deviations".) For a comparator that is
 // consistent on the list's elements the postconditions determine the result
 // completely: the stable sorted permutation. JS leaves the order unspecified
 // for inconsistent comparators, and so do the postconditions here. The bodies

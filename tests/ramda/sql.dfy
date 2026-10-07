@@ -1,9 +1,16 @@
-// Ramda v0.8.0 test/test.sql.js, transcribed. Not transcribed:
+// Ramda v0.9.0 test/project.js, propEq.js, union.js, unionWith.js,
+// intersection.js, intersectionWith.js, difference.js, differenceWith.js,
+// countBy.js and sortBy.js (until v0.8.0 test.sql.js, whose copy of the
+// groupBy describe v0.9.0 dropped), transcribed. Not transcribed:
 // - the three "does not work for non-primitives" cases (union/intersection/
 //   difference of distinct-but-equal objects): JS `===` compares references,
 //   Dafny `==` structure (README "Deviations"; pinned in tests/edge/data.dfy);
 // - describe('sortBy'), which sorts by a string title: sortBy keys are ints
-//   (README "Deviations").
+//   (README "Deviations");
+// - eqDeep.js's (v0.9.0) "handles regex", "handles dates", "handles typed
+//   arrays" (no such values), the cyclic `c`/`d` and `e`/`f` lines of
+//   "handles recursive data structures" (a Dafny value cannot contain
+//   itself) and "throws if given no arguments". Its mixed values are Js.
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -76,6 +83,12 @@ module RamdafTests.Ramda.Sql {
   // describe('union')
   method {:test} UnionCombinesIntoTheSetOfAllElements() {
     expect union(R(), S()) == [1, 2, 3, 4, 5, 6];
+  }
+
+  // v0.9.0 (its `typeof` check holds by construction)
+  method {:test} UnionIsCurried() {
+    var withR := (l: seq<int>) => union(R(), l);
+    expect withR(S()) == [1, 2, 3, 4, 5, 6];
   }
 
   // describe('unionWith')
@@ -200,5 +213,47 @@ module RamdafTests.Ramda.Sql {
   method {:test} GroupByIsAutomaticallyCurried() {
     var grouper := (l: seq<map<string, string>>) => groupBy(Genre, l);
     expect grouper(Albums()) == GroupedByGenre();
+  }
+
+  // ---- eqDeep.js (v0.9.0) ----
+
+  method {:test} EqDeepTestsForDeepEqualityOfItsOperands() {
+    var a: seq<int> := [];
+    var b := a;
+    expect eqDeep(Num(100), Num(100)) == true;
+    expect eqDeep(Num(100), Str("100")) == false;
+    var e1: seq<int> := [];
+    var e2: seq<int> := [];
+    expect eqDeep(e1, e2) == true;
+    expect eqDeep(a, b) == true;
+  }
+
+  method {:test} EqDeepHandlesObjects() {
+    var none: map<string, int> := map[];
+    expect eqDeep(none, none) == true;
+    expect eqDeep(map["a" := 1, "b" := 2], map["a" := 1, "b" := 2]) == true;
+    expect eqDeep(map["a" := 2, "b" := 3], map["b" := 3, "a" := 2]) == true;
+    expect eqDeep(map["a" := 2, "b" := 3], map["a" := 3, "b" := 3]) == false;
+    expect eqDeep(map["a" := 2, "b" := 3, "c" := 1], map["a" := 2, "b" := 3]) == false;
+  }
+
+  method {:test} EqDeepHandlesLists() {
+    expect eqDeep(Arr([]), Obj(map[])) == false;
+    expect eqDeep([1, 2, 3], [1, 3, 2]) == false;
+  }
+
+  // its `nestA`, `nestB` and `nestC` lines
+  method {:test} EqDeepHandlesRecursiveDataStructures() {
+    var nestA := Obj(map["a" := Arr([Num(1), Num(2), Obj(map["c" := Num(1)])]), "b" := Num(1)]);
+    var nestB := Obj(map["a" := Arr([Num(1), Num(2), Obj(map["c" := Num(1)])]), "b" := Num(1)]);
+    var nestC := Obj(map["a" := Arr([Num(1), Num(2), Obj(map["c" := Num(2)])]), "b" := Num(1)]);
+    expect eqDeep(nestA, nestB) == true;
+    expect eqDeep(nestA, nestC) == false;
+  }
+
+  method {:test} EqDeepIsCurried() {
+    var a: seq<int> := [];
+    var isA := (x: seq<int>) => eqDeep(a, x);
+    expect isA([]) == true;
   }
 }

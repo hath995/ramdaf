@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.8.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.9.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -72,22 +72,23 @@ module RamdafTests.Edge.Misc {
   }
 
   // propOr (propOrDefault from v0.4.0 to v0.5.0) returns obj's own property
-  // p, or the default.
+  // p, or the default, which since v0.9.0 comes first (node: 1, 5, 0, 5, 1,
+  // null, undefined, and `propOr(5)('a')({})` 5).
   method {:test} PropOrEdges() {
     var none: map<string, int> := map[];
-    expect propOr("a", 5, map["a" := 1]) == 1;
-    expect propOr("z", 5, map["a" := 1]) == 5;
+    expect propOr(5, "a", map["a" := 1]) == 1;
+    expect propOr(5, "z", map["a" := 1]) == 5;
     // a falsy own value is kept
-    expect propOr("a", 5, map["a" := 0]) == 0;
+    expect propOr(5, "a", map["a" := 0]) == 0;
     // node: `{}` inherits `toString`, which is not an own property
-    expect propOr("toString", 5, none) == 5;
-    expect propOr("hasOwnProperty", 5, map["hasOwnProperty" := 1]) == 1;
+    expect propOr(5, "toString", none) == 5;
+    expect propOr(5, "hasOwnProperty", map["hasOwnProperty" := 1]) == 1;
     // an own property whose value is null or undefined is returned (node:
     // null, undefined)
-    expect propOr("a", Num(5), map["a" := Null]) == Null;
-    expect propOr("a", Num(5), map["a" := Undefined]) == Undefined;
-    // `propOr('a')(5)({})`
-    var aOr5 := (o: map<string, int>) => propOr("a", 5, o);
+    expect propOr(Num(5), "a", map["a" := Null]) == Null;
+    expect propOr(Num(5), "a", map["a" := Undefined]) == Undefined;
+    // `propOr(5)('a')({})`
+    var aOr5 := (o: map<string, int>) => propOr(5, "a", o);
     expect aOr5(none) == 5;
   }
 
@@ -121,16 +122,18 @@ module RamdafTests.Edge.Misc {
     expect mixin(map["a" := 1], none) == map["a" := 1];
   }
 
-  // cloneObj (v0.5.0) copies every own property (node: `cloneObj({a: undefined})`
-  // keeps `a`, and an object value is the same object).
-  method {:test} CloneObjEdges() {
+  // clone copies every own property of an object (cloneObj until v0.8.0;
+  // node: `clone({a: undefined})` keeps `a`, and since v0.9.0 an object
+  // value is an equal copy, not the same object, which value equality
+  // cannot tell apart).
+  method {:test} CloneOfObjectsEdges() {
     var none: map<string, int> := map[];
-    expect cloneObj(none) == map[];
-    expect cloneObj(map["a" := 1, "b" := 2, "c" := 3, "z" := 100]) == map["a" := 1, "b" := 2, "c" := 3, "z" := 100];
-    expect cloneObj(map["a" := Undefined]) == map["a" := Undefined];
-    expect cloneObj(map["hasOwnProperty" := 1]) == map["hasOwnProperty" := 1];
+    expect clone(none) == map[];
+    expect clone(map["a" := 1, "b" := 2, "c" := 3, "z" := 100]) == map["a" := 1, "b" := 2, "c" := 3, "z" := 100];
+    expect clone(map["a" := Undefined]) == map["a" := Undefined];
+    expect clone(map["hasOwnProperty" := 1]) == map["hasOwnProperty" := 1];
     var x1 := Obj(map["x" := Num(1)]);
-    expect cloneObj(map["a" := x1, "b" := Num(2)])["a"] == x1;
+    expect clone(map["a" := x1, "b" := Num(2)])["a"] == x1;
   }
 
   // Since v0.2.3 a function entry fails on an absent property without being
@@ -265,18 +268,16 @@ module RamdafTests.Edge.Misc {
   }
 
   method {:test} CaseConversionOfAscii() {
-    expect toUpperCase("aBc-1") == "ABC-1";
-    expect toLowerCase("AbC-1") == "abc-1";
+    expect toUpper("aBc-1") == "ABC-1";
+    expect toLower("AbC-1") == "abc-1";
   }
 
   // ifElse (cond from v0.6.0 to v0.7.2) applies onTrue or onFalse to its
-  // argument; JS forwards every argument (a tuple here). `if` (if_) is the
-  // same function.
+  // argument; JS forwards every argument (a tuple here).
   method {:test} IfElseEdges() {
     var big := ifElse((x: int) => x > 2, (x: int) => "big", (x: int) => "small");
     expect big(3) == "big";
     expect big(1) == "small";
-    expect if_((x: int) => x > 2, (x: int) => "big", (x: int) => "small")(3) == "big";
     // `ifElse((a, b) => a < b, (a, b) => b - a, (a, b) => a - b)(2, 5)`
     expect ifElse((p: (int, int)) => p.0 < p.1, (p: (int, int)) => p.1 - p.0, (p: (int, int)) => p.0 - p.1)((2, 5)) == 3;
   }
@@ -358,11 +359,11 @@ module RamdafTests.Edge.Misc {
   }
 
   method {:test} LogicAndFunctionEdges() {
-    var none: seq<int -> bool> := [];
-    expect allPredicates(none)(5) == true;
-    expect anyPredicates(none)(5) == false;
+    expect allPass([(x: int) => x > 1, (x: int) => x < 5])(3) == true;
+    expect anyPass([(x: int) => x < 1, (x: int) => x > 5])(7) == true;
     expect always(7)(()) == 7;
-    expect alwaysZero("x") == 0;
+    expect T("x") == true;
+    expect F("x") == false;
     expect flip((a: int, b: int) => a - b)(1, 2) == 1;
     expect compose((x: int) => x + 1, (x: int) => 2 * x)(3) == 7;
     expect pipe((x: int) => 2 * x, (x: int) => x + 1)(3) == 7;
@@ -378,23 +379,79 @@ module RamdafTests.Edge.Misc {
     expect converge((x: int, y: int) => [x, y], (t: (int, int)) => t.0 + t.1, (t: (int, int)) => t.0 * t.1)((2, 5)) == [7, 10];
   }
 
+  // inc, dec and negate (v0.9.0) are add(1), add(-1) and multiply(-1)
+  // (node: 0, -1, 1, -5, 5).
+  method {:test} IncDecNegateEdges() {
+    expect inc(-1) == 0;
+    expect dec(0) == -1;
+    expect dec(2) == 1;
+    expect negate(5) == -5;
+    expect negate(-5) == 5;
+  }
+
+  // isNil (v0.9.0) is true for null and undefined only (node: true, true,
+  // false for 0, '', [] and false); here None is both.
+  method {:test} IsNilEdges() {
+    var none: Option<int> := None;
+    expect isNil(none) == true;
+    expect isNil(Some(0)) == false;
+    expect isNil(Some("")) == false;
+    var empty: seq<int> := [];
+    expect isNil(Some(empty)) == false;
+    expect isNil(Some(false)) == false;
+    // `isNil(prop('a', {}))`, `isNil(nth(5, [1]))`
+    expect isNil(prop("a", map["b" := 1])) == true;
+    expect isNil(nth(5, [1])) == true;
+  }
+
+  // evolve (v0.9.0) sets each transformed key to fn(obj[key]), with
+  // undefined (None) for a missing key (node: {a: 2, b: 2}, {a: 1, c: 'U'},
+  // {a: 1}).
+  method {:test} EvolveEdges() {
+    var incOr := (v: Option<int>) => if v.Some? then v.value + 1 else -1;
+    expect evolve(map["a" := incOr], map["a" := 1, "b" := 2]) == map["a" := 2, "b" := 2];
+    expect evolve(map["c" := (v: Option<Js>) => if v.None? then Str("U") else v.value], map["a" := Num(1)]) ==
+      map["a" := Num(1), "c" := Str("U")];
+    var noFns: map<string, Option<int> -> int> := map[];
+    expect evolve(noFns, map["a" := 1]) == map["a" := 1];
+  }
+
+  // invert and invertObj (v0.9.0) (node: {a: ['x', 'z'], b: ['y']}, {},
+  // {"1": ['a', 'b']} from `invert({a: 1, b: 1})`; {a: 'x', b: 'y', c:
+  // 'z'}, {}).
+  method {:test} InvertEdges() {
+    var none: map<string, string> := map[];
+    expect invert(map["x" := "a", "y" := "b", "z" := "a"]) == map["a" := {"x", "z"}, "b" := {"y"}];
+    expect invert(none) == map[];
+    expect invert(map["a" := "1", "b" := "1"]) == map["1" := {"a", "b"}];
+    expect invertObj(map["x" := "a", "y" := "b", "z" := "c"]) == map["a" := "x", "b" := "y", "c" := "z"];
+    expect invertObj(none) == map[];
+  }
+
   // ---- documented deviations (not node behaviour) ----
 
 
-  // node: cloneObj(JSON.parse('{"__proto__": 5, "a": 1}')), mixin(<the
-  // same>, {}) and, since v0.8.0, cloneDeep(<the same>) are {a: 1}:
-  // assigning `__proto__` sets the prototype instead of a property (the
-  // input's own `__proto__` property can only come from JSON.parse or
+  // node: clone(JSON.parse('{"__proto__": 5, "a": 1}')) (cloneObj and
+  // cloneDeep until v0.8.0) and mixin(<the same>, {}) are {a: 1}: assigning
+  // `__proto__` sets the prototype instead of a property (the input's own
+  // `__proto__` property can only come from JSON.parse or
   // Object.defineProperty). Likewise assoc (v0.8.0): the keys of
   // `assoc('__proto__', 1, {a: 1})` are ['a'], and those of `assoc('a', 2,
-  // JSON.parse('{"__proto__": 5, "b": 1}'))` are ['b', 'a']. A map's keys
-  // are all ordinary.
+  // JSON.parse('{"__proto__": 5, "b": 1}'))` are ['b', 'a']; and since v0.9.0
+  // `invertObj({a: '__proto__', b: 'c'})` is {c: 'b'}, `evolve({a: x => x},
+  // <the JSON object>)` has the keys ['a'], and `evolve({toString: x =>
+  // typeof x}, {})` passes the inherited member (the result is {toString:
+  // 'function'}). A map's keys are all ordinary, and `{}` has no `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
-    expect cloneObj(o) == o;
+    expect clone(o) == o;
     expect mixin(o, none) == o;
-    expect cloneDeep(o) == o;
+    expect invertObj(map["a" := "__proto__", "b" := "c"]) == map["__proto__" := "a", "c" := "b"];
+    expect evolve(map["a" := (v: Option<int>) => if v.Some? then v.value else 0], o) == o;
+    var kind := (v: Option<string>) => if v.None? then "undefined" else "string";
+    var noStrings: map<string, string> := map[];
+    expect evolve(map["toString" := kind], noStrings) == map["toString" := "undefined"];
     expect assoc("__proto__", 1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
     expect assoc("a", 2, map["__proto__" := 5, "b" := 1]) == map["__proto__" := 5, "b" := 1, "a" := 2];
   }
@@ -408,13 +465,41 @@ module RamdafTests.Edge.Misc {
 
   // node: 'STRASSE' and 'Ä'; case conversion is ASCII-only here.
   method {:test} DeviationCaseConversionIsAsciiOnly() {
-    expect toUpperCase("straße") == "STRAßE";
-    expect toUpperCase("ä") == "ä";
+    expect toUpper("straße") == "STRAßE";
+    expect toUpper("ä") == "ä";
   }
 
   // node: 55357 (a UTF-16 surrogate) and length 2; a Dafny char is a code point.
   method {:test} DeviationCharactersAreCodePoints() {
     expect charCodeAt(0, "\U{1F600}") == 0x1F600;
     expect |"\U{1F600}"| == 1;
+  }
+
+  // node: invert({a: 'toString'}), invert({a: '__proto__'}) and every other
+  // value naming an `Object.prototype` member throw "TypeError:
+  // out[val].push is not a function" (v0.9.0); here the value is an ordinary
+  // key.
+  method {:test} DeviationInvertOfPrototypeNamedValues() {
+    expect invert(map["a" := "toString"]) == map["toString" := {"a"}];
+    expect invert(map["a" := "__proto__", "b" := "x"]) == map["__proto__" := {"a"}, "x" := {"b"}];
+  }
+
+  // node: eq(negate(0), 0), eq(multiply(-1, 0), 0) and eq(modulo(-4, 2), 0)
+  // are false since v0.9.0 (eq is `Object.is`, and each left side is -0),
+  // and so is eqDeep([negate(0)], [0]); an int has no -0.
+  method {:test} DeviationEqSignedZero() {
+    expect eq(negate(0), 0) == true;
+    expect eq(multiply(-1, 0), 0) == true;
+    expect eq(modulo(-4, 2), 0) == true;
+  }
+
+  // node: allPass([]) and anyPass([]) throw "First argument to arity must be
+  // a non-negative integer no greater than ten" (v0.9.0: the result's arity
+  // is the longest predicate's, and `max([])` is -Infinity); the
+  // two-argument forms allPass([], 5) and anyPass([], 5) are true and false.
+  method {:test} DeviationAllPassOfTheEmptyList() {
+    var none: seq<int -> bool> := [];
+    expect allPass(none)(5) == true;
+    expect anyPass(none)(5) == false;
   }
 }

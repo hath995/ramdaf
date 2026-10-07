@@ -1,11 +1,16 @@
-// Ramda v0.8.0 test/test.filter.js, transcribed ("automatically curried" cases
-// apply the partially applied function in full). The "should start at the
+// Ramda v0.9.0 test/filter.js, filterIndexed.js, reject.js,
+// rejectIndexed.js, takeWhile.js, take.js, dropWhile.js and drop.js (until
+// v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
+// the partially applied function in full). The "should start at the
 // right arg" cases use a predicate that would fail the test if called; here
 // it is a predicate whose result does not matter (the list is empty), and
 // `undefined` elements are Js values. Not transcribed: v0.5.0's filter
 // "dispatches to passed-in non-Array object with a `filter` method" (method
 // dispatch) and the "throws on zero arguments" cases (no-argument calls).
-// (v0.4.1 removed skip's "should be aliased by `drop`" with `drop`.)
+// (v0.4.1 removed skip's "should be aliased by `drop`" with `drop`; v0.9.0
+// renamed the filter.idx, reject.idx and skip describes to filterIndexed,
+// rejectIndexed and drop, and replaced skipUntil's with dropWhile's, whose
+// predicates are negated.)
 
 module RamdafTests.Ramda.Filter {
   import opened Ramdaf.List
@@ -34,35 +39,35 @@ module RamdafTests.Ramda.Filter {
     expect onlyEven([1, 2, 3, 4, 5, 6, 7]) == [2, 4, 6];
   }
 
-  // describe('filter.idx')
+  // describe('filterIndexed') (describe('filter.idx') until v0.8.0)
   function everyOther(val: int, idx: nat, list: seq<int>): bool { idx % 2 == 0 }
   function lastTwo(val: int, idx: nat, list: seq<int>): bool { |list| - idx < 3 }
 
-  method {:test} FilterIdxWorksJustLikeANormalFilter() {
-    expect filterIdx((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [2, 4];
+  method {:test} FilterIndexedWorksJustLikeANormalFilter() {
+    expect filterIndexed((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [2, 4];
   }
 
-  method {:test} FilterIdxPassesTheIndexAsASecondParameter() {
-    expect filterIdx(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [8, 7, 3, 9];
+  method {:test} FilterIndexedPassesTheIndexAsASecondParameter() {
+    expect filterIndexed(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [8, 7, 3, 9];
   }
 
-  method {:test} FilterIdxPassesTheEntireListAsAThirdParameter() {
-    expect filterIdx(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [0, 9];
-  }
-
-  // v0.5.0
-  method {:test} FilterIdxReturnsAnEmptyArrayIfNoElementMatches() {
-    expect filterIdx((x: int, idx: nat, list: seq<int>) => x > 100, [1, 9, 99]) == [];
+  method {:test} FilterIndexedPassesTheEntireListAsAThirdParameter() {
+    expect filterIndexed(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [0, 9];
   }
 
   // v0.5.0
-  method {:test} FilterIdxReturnsAnEmptyArrayIfAskedToFilterAnEmptyArray() {
+  method {:test} FilterIndexedReturnsAnEmptyArrayIfNoElementMatches() {
+    expect filterIndexed((x: int, idx: nat, list: seq<int>) => x > 100, [1, 9, 99]) == [];
+  }
+
+  // v0.5.0
+  method {:test} FilterIndexedReturnsAnEmptyArrayIfAskedToFilterAnEmptyArray() {
     var empty: seq<int> := [];
-    expect filterIdx((x: int, idx: nat, list: seq<int>) => x > 100, empty) == [];
+    expect filterIndexed((x: int, idx: nat, list: seq<int>) => x > 100, empty) == [];
   }
 
-  method {:test} FilterIdxIsAutomaticallyCurried() {
-    var everyOtherPosition := (l: seq<int>) => filterIdx(everyOther, l);
+  method {:test} FilterIndexedIsAutomaticallyCurried() {
+    var everyOtherPosition := (l: seq<int>) => filterIndexed(everyOther, l);
     expect everyOtherPosition([8, 6, 7, 5, 3, 0, 9]) == [8, 7, 3, 9];
   }
 
@@ -87,32 +92,32 @@ module RamdafTests.Ramda.Filter {
     expect odd([1, 2, 3, 4, 5, 6, 7]) == [1, 3, 5, 7];
   }
 
-  // describe('reject.idx')
-  method {:test} RejectIdxWorksJustLikeANormalReject() {
-    expect rejectIdx((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [1, 3, 5];
+  // describe('rejectIndexed') (describe('reject.idx') until v0.8.0)
+  method {:test} RejectIndexedWorksJustLikeANormalReject() {
+    expect rejectIndexed((x: int, idx: nat, list: seq<int>) => even(x), [1, 2, 3, 4, 5]) == [1, 3, 5];
   }
 
-  method {:test} RejectIdxPassesTheIndexAsASecondParameter() {
-    expect rejectIdx(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [6, 5, 0];
+  method {:test} RejectIndexedPassesTheIndexAsASecondParameter() {
+    expect rejectIndexed(everyOther, [8, 6, 7, 5, 3, 0, 9]) == [6, 5, 0];
   }
 
-  method {:test} RejectIdxPassesTheEntireListAsAThirdParameter() {
-    expect rejectIdx(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [8, 6, 7, 5, 3];
-  }
-
-  // v0.5.0
-  method {:test} RejectIdxReturnsAnEmptyArrayIfNoElementMatches() {
-    expect rejectIdx((x: int, idx: nat, list: seq<int>) => x < 100, [1, 9, 99]) == [];
+  method {:test} RejectIndexedPassesTheEntireListAsAThirdParameter() {
+    expect rejectIndexed(lastTwo, [8, 6, 7, 5, 3, 0, 9]) == [8, 6, 7, 5, 3];
   }
 
   // v0.5.0
-  method {:test} RejectIdxReturnsAnEmptyArrayIfAskedToFilterAnEmptyArray() {
+  method {:test} RejectIndexedReturnsAnEmptyArrayIfNoElementMatches() {
+    expect rejectIndexed((x: int, idx: nat, list: seq<int>) => x < 100, [1, 9, 99]) == [];
+  }
+
+  // v0.5.0
+  method {:test} RejectIndexedReturnsAnEmptyArrayIfAskedToFilterAnEmptyArray() {
     var empty: seq<int> := [];
-    expect rejectIdx((x: int, idx: nat, list: seq<int>) => x > 100, empty) == [];
+    expect rejectIndexed((x: int, idx: nat, list: seq<int>) => x > 100, empty) == [];
   }
 
-  method {:test} RejectIdxIsAutomaticallyCurried() {
-    var everyOtherPosition := (l: seq<int>) => rejectIdx(everyOther, l);
+  method {:test} RejectIndexedIsAutomaticallyCurried() {
+    var everyOtherPosition := (l: seq<int>) => rejectIndexed(everyOther, l);
     expect everyOtherPosition([8, 6, 7, 5, 3, 0, 9]) == [6, 5, 0];
   }
 
@@ -152,47 +157,44 @@ module RamdafTests.Ramda.Filter {
     expect take3(["w", "x", "y", "z"]) == ["w", "x", "y"];
   }
 
-  // describe('skipUntil')
-  method {:test} SkipUntilSkipsUntilTrue() {
-    expect skipUntil((x: int) => x == 5, [1, 3, 5, 7, 9]) == [5, 7, 9];
+  // describe('dropWhile') (v0.9.0, in place of describe('skipUntil'))
+  method {:test} DropWhileSkipsElementsWhileTheFunctionReportsTrue() {
+    expect dropWhile((x: int) => x < 5, [1, 3, 5, 7, 9]) == [5, 7, 9];
   }
 
-  method {:test} SkipUntilIsAutomaticallyCurried() {
-    var skipUntil7 := (l: seq<int>) => skipUntil((x: int) => x == 7, l);
-    expect skipUntil7([1, 3, 5, 7, 9]) == [7, 9];
-    expect skipUntil7([2, 4, 6, 8, 10]) == [];
-  }
-
-  // v0.5.0 splits v0.2.0's "should start at the right arg and acknowledges
-  // undefined" into "returns an empty list for an ampty list" and "starts at
-  // the right arg and acknowledges undefined".
-  method {:test} SkipUntilReturnsAnEmptyListForAnEmptyList() {
+  method {:test} DropWhileReturnsAnEmptyListForAnEmptyList() {
     var empty: seq<Js> := [];
-    expect skipUntil((x: Js) => false, empty) == [];
-    expect skipUntil((x: Js) => true, empty) == [];
+    expect dropWhile((x: Js) => false, empty) == [];
+    expect dropWhile((x: Js) => true, empty) == [];
   }
 
-  method {:test} SkipUntilStartsAtTheRightArgAndAcknowledgesUndefined() {
-    var sublist := skipUntil((x: Js) => x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]);
+  method {:test} DropWhileStartsAtTheRightArgAndAcknowledgesUndefined() {
+    var sublist := dropWhile((x: Js) => !x.Undefined?, [Num(1), Num(3), Undefined, Num(5), Num(7)]);
     expect |sublist| == 3;
     expect sublist[0] == Undefined;
     expect sublist[1] == Num(5);
     expect sublist[2] == Num(7);
   }
 
-  // describe('skip')
-  method {:test} SkipSkipsTheFirstNElements() {
-    expect skip(3, ["a", "b", "c", "d", "e", "f", "g"]) == ["d", "e", "f", "g"];
+  method {:test} DropWhileIsAutomaticallyCurried() {
+    var dropLt7 := (l: seq<int>) => dropWhile((x: int) => x < 7, l);
+    expect dropLt7([1, 3, 5, 7, 9]) == [7, 9];
+    expect dropLt7([2, 4, 6, 8, 10]) == [8, 10];
+  }
+
+  // describe('drop') (describe('skip') until v0.8.0)
+  method {:test} DropSkipsTheFirstNElements() {
+    expect drop(3, ["a", "b", "c", "d", "e", "f", "g"]) == ["d", "e", "f", "g"];
   }
 
   // v0.5.0 (until v0.4.3 skip threw RangeError here)
-  method {:test} SkipReturnsAnEmptyArrayIfNIsTooLarge() {
-    expect skip(20, ["a", "b", "c", "d", "e", "f", "g"]) == [];
+  method {:test} DropReturnsAnEmptyArrayIfNIsTooLarge() {
+    expect drop(20, ["a", "b", "c", "d", "e", "f", "g"]) == [];
   }
 
-  method {:test} SkipIsAutomaticallyCurried() {
-    var skip2 := (l: seq<string>) => skip(2, l);
-    expect skip2(["a", "b", "c", "d", "e"]) == ["c", "d", "e"];
-    expect skip2(["x", "y", "z"]) == ["z"];
+  method {:test} DropIsAutomaticallyCurried() {
+    var drop2 := (l: seq<string>) => drop(2, l);
+    expect drop2(["a", "b", "c", "d", "e"]) == ["c", "d", "e"];
+    expect drop2(["x", "y", "z"]) == ["z"];
   }
 }

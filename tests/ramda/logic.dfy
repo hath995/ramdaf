@@ -1,15 +1,18 @@
-// Ramda v0.8.0 test/test.booleans.js, test/test.allany.js and
-// test/test.cond.js, transcribed.
+// Ramda v0.9.0 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
+// any.js, ifElse.js and cond.js (until v0.8.0 test.booleans.js,
+// test.allany.js and test.cond.js), transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second
-// expression"), which detect a call by its side effect, the "reports its
-// arity" cases, and v0.5.0's "throws on zero arguments" cases (no-argument
-// calls; the `typeof` checks of "is curried" hold by construction, and so
-// does v0.8.0's cond "returns a function"). The multi-parameter predicates
-// take their arguments as a tuple. v0.8.0 renamed test.cond.js's
-// describe('cond') to describe('ifElse') (the function was renamed) and
-// added a describe('cond') for the new function; its "forwards all
-// arguments" case checks `arguments.length`, here the tuple that reaches
-// the transformer.
+// expression", "short-circuits on first false value"), which detect a call by
+// its side effect, the "reports its arity" cases, and the "throws on zero
+// arguments" cases (no-argument calls; the `typeof` checks of "is curried"
+// hold by construction, and so does cond's "returns a function"). The
+// multi-parameter predicates take their arguments as a tuple. cond's
+// "forwards all arguments" case checks `arguments.length`, here the tuple
+// that reaches the transformer. (v0.8.0 renamed test.cond.js's
+// describe('cond') to describe('ifElse') and added a describe('cond') for
+// the new function; v0.9.0 renamed the allPredicates, anyPredicates, every
+// and some describes to allPass, anyPass, all and any, and removed ifElse's
+// "is aliased by `if`" with the alias.)
 
 module RamdafTests.Ramda.Logic {
   import opened Ramdaf.Prelude
@@ -17,7 +20,7 @@ module RamdafTests.Ramda.Logic {
   import opened Ramdaf.Logic
   import opened Support
 
-  // ---- test.booleans.js ----
+  // ---- and.js, or.js, not.js, allPass.js, anyPass.js ----
 
   function even(x: int): bool { x % 2 == 0 }
   function gt10(x: int): bool { x > 10 }
@@ -81,23 +84,23 @@ module RamdafTests.Ramda.Logic {
   // `!!(n % 2)`
   function odd(n: int): bool { n % 2 != 0 }
 
-  // describe('allPredicates')
-  method {:test} AllPredicatesReportsWhetherAllAreSatisfied() {
-    var ok := allPredicates([odd, (n: int) => n < 20, (n: int) => n > 5]);
+  // describe('allPass') (describe('allPredicates') until v0.8.0)
+  method {:test} AllPassReportsWhetherAllAreSatisfied() {
+    var ok := allPass([odd, (n: int) => n < 20, (n: int) => n > 5]);
     expect ok(7) == true;
     expect ok(9) == true;
     expect ok(10) == false;
     expect ok(3) == false;
     expect ok(21) == false;
   }
-  method {:test} AllPredicatesDoesNotHaveToBeCurried() {
-    expect allPredicates([odd, (n: int) => n > 5])(3) == false;
-    expect allPredicates([odd, (n: int) => n > 5])(7) == true;
+  method {:test} AllPassDoesNotHaveToBeCurried() {
+    expect allPass([odd, (n: int) => n > 5])(3) == false;
+    expect allPass([odd, (n: int) => n > 5])(7) == true;
   }
 
-  // describe('anyPredicates')
-  method {:test} AnyPredicatesReportsWhetherAnyIsSatisfied() {
-    var ok := anyPredicates([odd, (n: int) => n > 20, (n: int) => n < 5]);
+  // describe('anyPass') (describe('anyPredicates') until v0.8.0)
+  method {:test} AnyPassReportsWhetherAnyIsSatisfied() {
+    var ok := anyPass([odd, (n: int) => n > 20, (n: int) => n < 5]);
     expect ok(7) == true;
     expect ok(9) == true;
     expect ok(10) == false;
@@ -105,43 +108,43 @@ module RamdafTests.Ramda.Logic {
     expect ok(3) == true;
     expect ok(22) == true;
   }
-  method {:test} AnyPredicatesDoesNotHaveToBeCurried() {
-    expect anyPredicates([odd, (n: int) => n < 5])(3) == true;
-    expect anyPredicates([odd, (n: int) => n < 5])(22) == false;
+  method {:test} AnyPassDoesNotHaveToBeCurried() {
+    expect anyPass([odd, (n: int) => n < 5])(3) == true;
+    expect anyPass([odd, (n: int) => n < 5])(22) == false;
   }
 
-  // ---- test.allany.js ----
+  // ---- all.js, any.js ----
 
-  // describe('every') (until v0.4.0 describe('all'); v0.4.1 renamed `all` to
-  // `every` and dropped "should be aliased by `every`")
-  method {:test} EveryTrueWhenAllSatisfy() { expect every(even, [2, 4, 6, 8, 10, 12]) == true; }
-  method {:test} EveryFalseWhenAnyFails() { expect every(even, [2, 4, 6, 8, 9, 10]) == false; }
-  method {:test} EveryTrueForTheEmptyList() {
+  // describe('all') (describe('every') from v0.4.1 to v0.8.0; v0.4.1 had
+  // renamed `all` to `every` and dropped "should be aliased by `every`")
+  method {:test} AllTrueWhenAllSatisfy() { expect all(even, [2, 4, 6, 8, 10, 12]) == true; }
+  method {:test} AllFalseWhenAnyFails() { expect all(even, [2, 4, 6, 8, 9, 10]) == false; }
+  method {:test} AllTrueForTheEmptyList() {
     var empty: seq<int> := [];
-    expect every((x: int) => true, empty) == true;
+    expect all((x: int) => true, empty) == true;
   }
   // v0.5.0: `o.x.length === 3`, `o.x.indexOf('a') > -1`
-  method {:test} EveryWorksWithMoreComplexObjects() {
+  method {:test} AllWorksWithMoreComplexObjects() {
     var xs := [map["x" := "abc"], map["x" := "ade"], map["x" := "fghiajk"]];
-    expect every((o: map<string, string>) => "x" in o && |o["x"]| == 3, xs) == false;
-    expect every((o: map<string, string>) => "x" in o && 'a' in o["x"], xs) == true;
+    expect all((o: map<string, string>) => "x" in o && |o["x"]| == 3, xs) == false;
+    expect all((o: map<string, string>) => "x" in o && 'a' in o["x"], xs) == true;
   }
 
   // v0.2.2 (the call count is not asserted)
-  method {:test} EveryIsAutomaticallyCurried() {
-    var allEven := (l: seq<int>) => every(even, l);
+  method {:test} AllIsAutomaticallyCurried() {
+    var allEven := (l: seq<int>) => all(even, l);
     expect allEven([2, 4, 6, 7, 8, 10]) == false;
   }
 
-  // describe('some') (until v0.4.0 describe('any'); v0.4.1 renamed `any` to
-  // `some` and dropped "should be aliased by `some`") (`n % 2 === 1`)
+  // describe('any') (describe('some') from v0.4.1 to v0.8.0; v0.4.1 had
+  // renamed `any` to `some` and dropped "should be aliased by `some`") (`n % 2 === 1`)
   function oddJs(n: int): bool { n % 2 == 1 }
 
-  method {:test} SomeTrueWhenOneSatisfies() { expect some(oddJs, [2, 4, 6, 8, 10, 11, 12]) == true; }
-  method {:test} SomeFalseWhenNoneSatisfies() { expect some(oddJs, [2, 4, 6, 8, 10, 12]) == false; }
+  method {:test} AnyTrueWhenOneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 11, 12]) == true; }
+  method {:test} AnyFalseWhenNoneSatisfies() { expect any(oddJs, [2, 4, 6, 8, 10, 12]) == false; }
   // v0.2.2 (the call count is not asserted)
-  method {:test} SomeIsAutomaticallyCurried() {
-    var anyOdd := (l: seq<int>) => some(oddJs, l);
+  method {:test} AnyIsAutomaticallyCurried() {
+    var anyOdd := (l: seq<int>) => any(oddJs, l);
     expect anyOdd([2, 4, 6, 7, 8, 10]) == true;
   }
 
@@ -150,28 +153,28 @@ module RamdafTests.Ramda.Logic {
   function alliterative(p: map<string, string>): bool
   { "first" in p && "last" in p && |p["first"]| > 0 && |p["last"]| > 0 && p["first"][0] == p["last"][0] }
 
-  method {:test} SomeWorksWithMoreComplexObjects() {
+  method {:test} AnyWorksWithMoreComplexObjects() {
     var people := [Person("Paul", "Grenier"), Person("Mike", "Hurley"), Person("Will", "Klein")];
-    expect some(alliterative, people) == false;
+    expect any(alliterative, people) == false;
     people := people + [Person("Scott", "Sauyet")];
-    expect some(alliterative, people) == true;
+    expect any(alliterative, people) == true;
   }
 
   function Teen(name: string, age: int): map<string, Js> { map["name" := Str(name), "age" := Num(age)] }
   function atLeast(age: int): map<string, Js> -> bool
   { (p: map<string, Js>) => "age" in p && p["age"].Num? && p["age"].n >= age }
 
-  method {:test} SomeCanUseAConfigurableFunction() {
+  method {:test} AnyCanUseAConfigurableFunction() {
     var teens := [Teen("Alice", 14), Teen("Betty", 18), Teen("Cindy", 17)];
-    expect some(atLeast(16), teens) == true;
-    expect some(atLeast(21), teens) == false;
+    expect any(atLeast(16), teens) == true;
+    expect any(atLeast(21), teens) == false;
   }
-  method {:test} SomeFalseForTheEmptyList() {
+  method {:test} AnyFalseForTheEmptyList() {
     var empty: seq<int> := [];
-    expect some((x: int) => true, empty) == false;
+    expect any((x: int) => true, empty) == false;
   }
 
-  // ---- test.cond.js (v0.6.0) ----
+  // ---- ifElse.js, cond.js (test.cond.js from v0.6.0 to v0.8.0) ----
 
   // describe('ifElse') (describe('cond') from v0.6.0 to v0.7.2): `t = a + 1`
   // (it only meets numbers), `identity`, and the validator
@@ -215,13 +218,6 @@ module RamdafTests.Ramda.Logic {
     var ifIsNumber := (tt: Js -> Js, ff: Js -> Js) => ifElse(IsNumber, tt, ff);
     expect ifIsNumber(CondT, CondId)(Num(15)) == Num(16);
     expect ifIsNumber(CondT, CondId)(Str("hello")) == Str("hello");
-  }
-
-  // v0.8.0: "is aliased by `if`" (`strictEqual(R['if'], R.ifElse)`; compared
-  // by results)
-  method {:test} IfElseIsAliasedByIf() {
-    expect if_(IsNumber, CondT, CondId)(Num(10)) == ifElse(IsNumber, CondT, CondId)(Num(10));
-    expect if_(IsNumber, CondT, CondId)(Str("hello")) == Str("hello");
   }
 
   // describe('cond') (v0.8.0): a list of [predicate, transformer] pairs;

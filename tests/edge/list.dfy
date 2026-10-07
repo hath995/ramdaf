@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.8.0's own suite does not cover, each checked against
-// ramda.js v0.8.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.9.0's own suite does not cover, each checked against
+// dist/ramda.js v0.9.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -14,7 +14,7 @@ module RamdafTests.Edge.List {
     expect tail(empty) == [];
     expect tail([1, 2]) == [2];
     expect head([5]) == 5;
-    expect car([1, 2, 3]) == 1;
+    expect head([1, 2, 3]) == 1;
     expect last([1, 2, 3]) == 3;
     expect last([5]) == 5;
     expect isEmpty([0]) == false;
@@ -23,11 +23,11 @@ module RamdafTests.Edge.List {
     expect concat([1, 2], [3]) == [1, 2, 3];
     expect append(1, empty) == [1];
     expect prepend(1, empty) == [1];
-    expect size(empty) == 0;
+    expect length(empty) == 0;
     expect clone([1, 2]) == [1, 2];
     expect identity(3) == 3;
-    expect repeatN(7, 0) == [];
-    expect repeatN("a", 2) == ["a", "a"];
+    expect repeat(7, 0) == [];
+    expect repeat("a", 2) == ["a", "a"];
     expect times((i: nat) => i * i, 4) == [0, 1, 4, 9];
     expect times((i: nat) => i, 0) == [];
   }
@@ -40,27 +40,28 @@ module RamdafTests.Edge.List {
     expect foldr((acc: int, a: int) => acc - a, 0, [1, 2, 3, 4]) == -10;
   }
 
-  // The idx folds pass (acc, element, index, list).
-  method {:test} IdxFoldsPassTheIndexAndList() {
+  // The indexed folds (the `.idx` properties until v0.8.0) pass (acc,
+  // element, index, list).
+  method {:test} IndexedFoldsPassTheIndexAndList() {
     var empty: seq<string> := [];
     var f := (acc: string, x: string, i: nat, l: seq<string>) => acc + x + NumStr(i) + NumStr(|l|);
-    expect foldlIdx(f, "", ["a", "b"]) == "a02b12";
-    expect foldrIdx(f, "", ["a", "b"]) == "b12a02";
-    expect foldlIdx(f, "5", empty) == "5";
-    expect reduceIdx((acc: int, x: int, i: nat, l: seq<int>) => acc + x * i, 0, [1, 2, 3]) == 8;
+    expect foldlIndexed(f, "", ["a", "b"]) == "a02b12";
+    expect foldrIndexed(f, "", ["a", "b"]) == "b12a02";
+    expect foldlIndexed(f, "5", empty) == "5";
+    expect foldlIndexed((acc: int, x: int, i: nat, l: seq<int>) => acc + x * i, 0, [1, 2, 3]) == 8;
     var none: seq<nat> := [];
-    expect reduceRightIdx((acc: seq<nat>, x: int, i: nat, l: seq<int>) => acc + [i], none, [9, 9, 9]) == [2, 1, 0];
+    expect foldrIndexed((acc: seq<nat>, x: int, i: nat, l: seq<int>) => acc + [i], none, [9, 9, 9]) == [2, 1, 0];
   }
 
-  method {:test} IdxMapFilterRejectEdges() {
+  method {:test} IndexedMapFilterRejectEdges() {
     var empty: seq<int> := [];
-    expect mapIdx((x: int, i: nat, l: seq<int>) => x + i, empty) == [];
-    expect mapIdx((x: int, i: nat, l: seq<int>) => |l| - i, [5, 5, 5]) == [3, 2, 1];
-    expect filterIdx((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7];
-    expect filterIdx((x: int, i: nat, l: seq<int>) => false, [1, 2]) == [];
-    expect filterIdx((x: int, i: nat, l: seq<int>) => i < |l|, [1, 2]) == [1, 2];
-    expect rejectIdx((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7, 7];
-    expect rejectIdx((x: int, i: nat, l: seq<int>) => true, empty) == [];
+    expect mapIndexed((x: int, i: nat, l: seq<int>) => x + i, empty) == [];
+    expect mapIndexed((x: int, i: nat, l: seq<int>) => |l| - i, [5, 5, 5]) == [3, 2, 1];
+    expect filterIndexed((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7];
+    expect filterIndexed((x: int, i: nat, l: seq<int>) => false, [1, 2]) == [];
+    expect filterIndexed((x: int, i: nat, l: seq<int>) => i < |l|, [1, 2]) == [1, 2];
+    expect rejectIndexed((x: int, i: nat, l: seq<int>) => i == 1, [7, 7, 7]) == [7, 7];
+    expect rejectIndexed((x: int, i: nat, l: seq<int>) => true, empty) == [];
   }
 
   // Since v0.4.2 findLast/findLastIndex test index 0 and end on the empty
@@ -99,8 +100,6 @@ module RamdafTests.Edge.List {
     expect slice(5, 5, l) == [];
     expect slice(-2, -1, l) == [4];
     expect slice(10, 20, l) == [];
-    expect sliceFrom(2, [1, 2, 3]) == [3];
-    expect sliceFrom(-2, [1, 2, 3]) == [2, 3];
   }
 
   // Since v0.3.0 partition splits a list into (passing, failing), each in
@@ -182,11 +181,11 @@ module RamdafTests.Edge.List {
     var none: map<string, int> := map[];
     expect mapObj((v: int) => v + 1, none) == map[];
     expect mapObj((v: int) => v * 2, map["a" := 1]) == map["a" := 2];
-    expect mapObjIdx((v: int, k: string, o: map<string, int>) => k + NumStr(v), map["a" := 1, "b" := 2]) ==
+    expect mapObjIndexed((v: int, k: string, o: map<string, int>) => k + NumStr(v), map["a" := 1, "b" := 2]) ==
       map["a" := "a1", "b" := "b2"];
-    expect mapObjIdx((v: int, k: string, o: map<string, int>) => |o| + v, map["a" := 1, "b" := 2]) ==
+    expect mapObjIndexed((v: int, k: string, o: map<string, int>) => |o| + v, map["a" := 1, "b" := 2]) ==
       map["a" := 3, "b" := 4];
-    expect mapObjIdx((v: int, k: string, o: map<string, int>) => v, none) == map[];
+    expect mapObjIndexed((v: int, k: string, o: map<string, int>) => v, none) == map[];
   }
 
   method {:test} ContainsWithEdges() {
@@ -210,14 +209,14 @@ module RamdafTests.Edge.List {
     }
   }
 
-  // Since v0.4.0 reduce holds the definition and foldl is its alias.
+  // foldl folds from the left (from v0.4.0 to v0.8.0 `reduce` held the
+  // definition and foldl was its alias; v0.9.0 removed `reduce`).
   method {:test} FoldlIsLeftAssociative() {
     expect foldl((acc: int, x: int) => acc - x, 0, [1, 2, 3]) == -6;
     expect foldl((acc: string, x: string) => acc + x, "", ["a", "b", "c"]) == "abc";
-    expect reduce((acc: int, x: int) => acc - x, 10, [1, 2, 3]) == 4;
     expect foldl((acc: int, x: int) => acc - x, 10, [1, 2, 3]) == 4;
-    // `reduce(cat, '')('abc')`: a string is a list of characters
-    expect reduce((acc: string, c: char) => acc + [c], "", "abc") == "abc";
+    // `foldl(cat, '')('abc')`: a string is a list of characters
+    expect foldl((acc: string, c: char) => acc + [c], "", "abc") == "abc";
   }
 
   // Two strings concatenate by the first one's own `concat` method. Since
@@ -265,17 +264,25 @@ module RamdafTests.Edge.List {
     expect prependTo("ab", 'c') == "cab";
   }
 
-  // cloneDeep (v0.8.0) keeps undefined properties (v0.1.1's JSON version
-  // dropped them) and functions (node: `Object.keys` ['a', 'u'], and
-  // `cloneDeep([{a: x => x * 2}])[0].a(10)` is 20).
-  method {:test} CloneDeepEdges() {
+  // clone (cloneDeep in v0.8.0) keeps undefined properties (v0.1.1's JSON
+  // cloneDeep dropped them) and functions, and since v0.9.0 copies any value
+  // (node: `Object.keys` ['a', 'u'], `clone([{a: x => x * 2}])[0].a(10)` is
+  // 20, `clone(5)` is 5, `clone('abc')` is 'abc', `clone({a: 1, b: [1, 2]})`
+  // is equal to its input; until v0.8.0 the last three threw or, for the
+  // string, gave ['a', 'b', 'c']).
+  method {:test} CloneEdges() {
     var o := map["a" := Arr([Num(1), Obj(map["b" := Num(2)])]), "u" := Undefined];
-    expect cloneDeep(o) == o;
-    var fns: seq<map<string, int -> int>> := cloneDeep([map["a" := (x: int) => x * 2]]);
+    expect clone(o) == o;
+    var fns: seq<map<string, int -> int>> := clone([map["a" := (x: int) => x * 2]]);
     var a := fns[0]["a"];
     expect a(10) == 20;
-    expect cloneDeep(-4) == -4;
-    expect cloneDeep(Null) == Null;
+    expect clone(-4) == -4;
+    expect clone(Null) == Null;
+    expect clone(5) == 5;
+    expect clone("abc") == "abc";
+    expect clone(map["a" := Num(1), "b" := Arr([Num(1), Num(2)])]) == map["a" := Num(1), "b" := Arr([Num(1), Num(2)])];
+    var none: map<string, int> := map[];
+    expect clone(none) == none;
   }
 
   // commute and commuteMap (v0.8.0): every choice of one element per list,
@@ -369,9 +376,10 @@ module RamdafTests.Edge.List {
   }
 
   // Since v0.1.5 take clamps n to the list's length, and since v0.8.0 a
-  // negative n gives [] (it threw RangeError); since v0.5.0 skip gives [] for
-  // n >= |list| (from v0.2.0 to v0.4.3 it threw RangeError for n > |list|).
-  method {:test} TakeSkipEdges() {
+  // negative n gives [] (it threw RangeError); since v0.5.0 drop (skip until
+  // v0.8.0) gives [] for n >= |list| (from v0.2.0 to v0.4.3 it threw
+  // RangeError for n > |list|).
+  method {:test} TakeDropEdges() {
     var empty: seq<int> := [];
     expect take(-1, [1, 2, 3]) == [];
     expect take(-5, empty) == [];
@@ -382,16 +390,17 @@ module RamdafTests.Edge.List {
     expect take(5, [1, 2]) == [1, 2];
     expect take(3, empty) == [];
     expect take(2, [1, 2, 3]) == [1, 2];
-    expect skip(0, [1, 2]) == [1, 2];
-    expect skip(2, [1, 2]) == [];
-    expect skip(1, [1, 2]) == [2];
-    expect skip(5, [1, 2]) == [];
-    expect skip(3, empty) == [];
-    expect skip(3, [1, 2, 3]) == [];
-    // `skip(5, "abc")` and `skip(5)([1, 2, 3])`
-    expect skip(5, "abc") == "";
-    var skip5 := (l: seq<int>) => skip(5, l);
-    expect skip5([1, 2, 3]) == [];
+    expect drop(0, [1, 2]) == [1, 2];
+    expect drop(2, [1, 2]) == [];
+    expect drop(1, [1, 2]) == [2];
+    expect drop(5, [1, 2]) == [];
+    expect drop(3, empty) == [];
+    expect drop(3, [1, 2, 3]) == [];
+    // `drop(5, "abc")`, `drop(1, "abc")` (['b', 'c']) and `drop(5)([1, 2, 3])`
+    expect drop(5, "abc") == "";
+    expect drop(1, "abc") == "bc";
+    var drop5 := (l: seq<int>) => drop(5, l);
+    expect drop5([1, 2, 3]) == [];
   }
 
   // Since v0.2.0 zip and zipWith stop at the shorter list.
@@ -453,24 +462,6 @@ module RamdafTests.Edge.List {
     expect insertAll(0, [7], empty) == [7];
   }
 
-  // indexOf.from/lastIndexOf.from (v0.2.2): a negative fromIdx counts from
-  // the end; lastIndexOf.from searches at and below fromIdx.
-  method {:test} IndexOfFromEdges() {
-    var empty: seq<int> := [];
-    expect indexOfFrom(2, 1, [2, 1, 2, 3]) == 2;
-    expect indexOfFrom(2, -2, [2, 1, 2, 3]) == 2;
-    expect indexOfFrom(2, -10, [2, 1, 2]) == 0;
-    expect indexOfFrom(2, 10, [2]) == -1;
-    expect indexOfFrom(2, 0, empty) == -1;
-    expect indexOfFrom(3, 3, [1, 2, 3]) == -1;
-    expect lastIndexOfFrom(2, 1, [2, 1, 2, 3]) == 0;
-    expect lastIndexOfFrom(2, -1, [2, 1, 2]) == 2;
-    expect lastIndexOfFrom(2, -10, [2, 1, 2]) == -1;
-    expect lastIndexOfFrom(2, 10, [2, 1, 2]) == 2;
-    expect lastIndexOfFrom(2, 0, empty) == -1;
-    expect lastIndexOfFrom(1, -3, [1, 2, 3]) == 0;
-  }
-
   method {:test} JoinEdges() {
     var empty: seq<string> := [];
     expect join(",", empty) == "";
@@ -483,7 +474,7 @@ module RamdafTests.Edge.List {
     expect range(3, 3) == [];
   }
 
-  method {:test} FindTakeWhileSkipUntilEdges() {
+  method {:test} FindTakeWhileDropWhileEdges() {
     var empty: seq<int> := [];
     expect find((x: int) => x > 9, [1, 2]) == None;
     expect find((x: int) => x > 1, [1, 2, 3]) == Some(2);
@@ -493,8 +484,14 @@ module RamdafTests.Edge.List {
     expect takeWhile((x: int) => x < 9, [1, 2]) == [1, 2];
     // v0.2.4 (it was the whole list from v0.2.0 to v0.2.3)
     expect takeWhile((x: int) => x > 5, [1, 2, 3]) == [];
-    expect skipUntil((x: int) => x > 2, [1, 2, 3, 1]) == [3, 1];
-    expect skipUntil((x: int) => x > 0, empty) == [];
+    // dropWhile (v0.9.0; skipUntil, with the predicate negated, until
+    // v0.8.0) stops at the first element that fails the predicate
+    expect dropWhile((x: int) => x <= 2, [1, 2, 3, 1]) == [3, 1];
+    expect dropWhile((x: int) => x > 2, [1, 2, 3, 1]) == [1, 2, 3, 1];
+    expect dropWhile((x: int) => x != 5, [1, 3, 5, 7, 9]) == [5, 7, 9];
+    expect dropWhile((x: int) => true, [1, 2]) == [];
+    expect dropWhile((x: int) => x <= 0, empty) == [];
+    expect dropWhile((c: char) => c != 'b', "abc") == "bc";
   }
 
   // scanl (v0.7.0): the accumulator, then each successive fn(acc, x).
@@ -539,12 +536,12 @@ module RamdafTests.Edge.List {
     expect lastIndexOf(2, [1, 2, 3, 2]) == 3;
     expect xprod(empty, [1]) == [];
     expect xprod([1], empty) == [];
-    expect every((x: int) => x > 0, empty) == true;
-    expect some((x: int) => x > 0, empty) == false;
-    // `every(x => x > 0)([1, 2])`, `some(x => x > 1, [1, 2])`
-    var allPos := (l: seq<int>) => every((x: int) => x > 0, l);
+    expect all((x: int) => x > 0, empty) == true;
+    expect any((x: int) => x > 0, empty) == false;
+    // `all(x => x > 0)([1, 2])`, `any(x => x > 1, [1, 2])`
+    var allPos := (l: seq<int>) => all((x: int) => x > 0, l);
     expect allPos([1, 2]) == true;
-    expect some((x: int) => x > 1, [1, 2]) == true;
+    expect any((x: int) => x > 1, [1, 2]) == true;
     expect reject((x: int) => x > 1, [1, 2, 3]) == [1];
     expect contains(3, [1, 2]) == false;
     expect mapSeq((x: int) => x * x, empty) == [];

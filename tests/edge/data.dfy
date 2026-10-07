@@ -1,10 +1,12 @@
-// Edge cases for Sort and Data, checked against ramda.js v0.8.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.9.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
   import opened Ramdaf.Prelude
   import opened Ramdaf.Sort
   import opened Ramdaf.Data
+  import M = Ramdaf.Math
+  import opened Support
 
   method {:test} ComparatorSigns() {
     var c := comparator((a: int, b: int) => a < b);
@@ -144,5 +146,34 @@ module RamdafTests.Edge.Data {
     expect groupBy((x: int) => "hasOwnProperty", [1]) == map["hasOwnProperty" := [1]];
     expect countBy((x: int) => "__proto__", [1, 2]) == map["__proto__" := 2];
     expect countBy((x: int) => "hasOwnProperty", [1, 2]) == map["hasOwnProperty" := 2];
+  }
+
+  // eqDeep (v0.9.0) compares structure: node gives true, true, false, false
+  // (a trailing undefined element), false (an undefined property against
+  // none) and false (`[]` against `{}`).
+  method {:test} EqDeepEdges() {
+    expect eqDeep([[1], [2, 3]], [[1], [2, 3]]) == true;
+    expect eqDeep(map["a" := 1, "b" := 2], map["b" := 2, "a" := 1]) == true;
+    expect eqDeep(map["a" := [1, 2]], map["a" := [2, 1]]) == false;
+    expect eqDeep([Num(1), Num(2)], [Num(1), Num(2), Undefined]) == false;
+    var none: map<string, Js> := map[];
+    expect eqDeep(map["a" := Undefined], none) == false;
+    expect eqDeep(Arr([]), Obj(map[])) == false;
+  }
+
+  // node: sort((a, b) => a < b ? -1 : a > b ? 1 : 0, 'cab') throws
+  // "TypeError: clone(...).sort is not a function" since v0.9.0 (`clone`
+  // returns the string, which has no `sort` method; v0.8.0 gave ['a', 'b',
+  // 'c']). Here a string is a seq of characters and sorts.
+  method {:test} DeviationSortOfAString() {
+    var cmp := (a: char, b: char) => if a < b then -1 else if a > b then 1 else 0;
+    expect sort(cmp, "cab") == "abc";
+  }
+
+  // node: eqDeep([negate(0)], [0]) is false since v0.9.0 (`_eqDeep` compares
+  // the elements with `eq`, `Object.is`, and negate(0) is -0); an int has no
+  // -0.
+  method {:test} DeviationEqDeepSignedZero() {
+    expect eqDeep([M.negate(0)], [0]) == true;
   }
 }

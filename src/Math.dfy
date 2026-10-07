@@ -1,6 +1,8 @@
-// Ramdaf: Ramda v0.8.0 "Arithmetic Functions" (ramda.js lines 4973-5427).
-// (v0.5.0 removed `subtractN`, `divideBy` and `moduloBy`; v0.8.0 renamed
-// `maxWith` and `minWith` to `maxBy` and `minBy`.)
+// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
+// functions with `@category Math` (`inc`, `dec`, `negate`). (v0.5.0 removed
+// `subtractN`, `divideBy` and `moduloBy`; v0.8.0 renamed `maxWith` and
+// `minWith` to `maxBy` and `minBy`.)
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 
@@ -9,7 +11,7 @@ module Ramdaf.Math {
 
   export
     reveals add, multiply, subtract, divide, modulo,
-            sum, product, lt, lte, gt, gte, max, maxBy, minBy, min, mathMod
+            sum, product, lt, lte, gt, gte, max, maxBy, minBy, min, mathMod, inc, dec, negate
     provides Prelude
 
   function add(a: int, b: int): int { a + b }
@@ -52,7 +54,7 @@ module Ramdaf.Math {
     requires p >= 1
   { modulo(modulo(m, p) + p, p) }
 
-  // `foldl(add, 0)`. (In v0.2.0 and v0.2.1 the partially applied foldl kept
+  // `foldl(add, 0)` (since v0.9.0 `foldl(_add, 0)`). (In v0.2.0 and v0.2.1 the partially applied foldl kept
   // its accumulator between calls; v0.2.2's curry3 starts each call afresh.)
   function sum(list: seq<int>): int
   { if |list| == 0 then 0 else list[0] + sum(list[1..]) }
@@ -137,4 +139,14 @@ module Ramdaf.Math {
       case Some(m) =>
         assert forall j :: 1 <= j < |list| ==> list[j] == list[1..][j - 1];
         if keyFn(m) < keyFn(list[0]) then Some(m) else Some(list[0]) }
+
+  // `R.inc = add(1)` (v0.9.0).
+  function inc(n: int): int { add(1, n) }
+
+  // `R.dec = add(-1)` (v0.9.0).
+  function dec(n: int): int { add(-1, n) }
+
+  // `R.negate = multiply(-1)` (v0.9.0). JS `negate(0)` is `-0`, which int
+  // does not have (README "Deviations", under `eq`).
+  function negate(n: int): int { multiply(-1, n) }
 }

@@ -1,33 +1,28 @@
-// Ramda v0.8.0 test/test.always.js, test/test.compose.js and
-// test/test.functionBasics.js, transcribed. A call with no arguments is a call
-// with the unit value `()`. Not transcribed: the Date case of `always`;
-// compose/pipe's "passes context to functions" (`this`, v0.2.3, which also
-// dropped the single-function cases); compose's "returns a function with
-// arity == rightmost argument" (v0.3.0; arity), and compose's (v0.3.0) and
-// pipe's (v0.4.0) "throws if given no arguments" and "returns argument if
-// given exactly one argument" (compose and pipe are binary here, and the
-// latter checks function identity); flip's "produces a function that throws
-// if given no arguments" (v0.4.0; no-argument call); ap's "dispatches to the
-// passed object's ap method" (method dispatch on a non-array object) and the
-// `typeof` check of its "is curried" (since v0.5.0 the dispatch case calls
-// `ap(obj, 10)`, on the first argument); useWith, once, memoize, construct,
-// constructN (v0.4.0), unary, binary, nAry (v0.4.1), apply (v0.7.0), and
-// v0.8.0's pCompose, pPipe (promises; pCompose's describe also holds a
-// compose arity case) and unapply (not portable, README;
-// v0.3.0 dropped the use-over describe with `use`). test.each.js,
-// test.partial.js, test.wrap.js, test.expose.js, v0.2.2's new test.curry.js
-// (v0.5.0 adds curryN's describe, v0.7.2 op's) and test.path.js, v0.3.0's new test.is.js
-// (v0.5.0 adds isArrayLike's describe), v0.4.0's new test.functions.js and
-// test.functionsIn.js, v0.6.0's new test.bind.js and test.invoker.js,
-// v0.7.0's new test.lift.js and v0.8.0's new test.type.js test functions
-// that are not portable (v0.8.0 rewrites test.invoker.js for `invokerN` by
-// method name and removes `invoker`'s describe, and adds an arity case to
-// test.wrap.js; test.identity.js's argN describe is not portable either,
-// and its identity describe is transcribed in tests/ramda/core.dfy), and
-// v0.5.0's new
-// test.examplesRunner.js runs the JSDoc examples through `dox`; it is not a
-// hand-written suite. (v0.1.3 moved test.lazy.js out of test/, and v0.4.1 removed
-// test.always.js's "should be aliased by `constant`" with `constant`.)
+// Ramda v0.9.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// converge.js, flip.js and ap.js (until v0.8.0 test.always.js,
+// test.compose.js and test.functionBasics.js), transcribed. A call with no
+// arguments is a call with the unit value `()`. Not transcribed: the Date
+// case of `always`; compose/pipe's "passes context to functions" (`this`,
+// v0.2.3, which also dropped the single-function cases); compose's "returns
+// a function with arity == rightmost argument" (v0.3.0; arity), and
+// compose's (v0.3.0) and pipe's (v0.4.0) "throws if given no arguments" and
+// "returns argument if given exactly one argument" (compose and pipe are
+// binary here, and the latter checks function identity); flip's "produces a
+// function that throws if given no arguments" (v0.4.0; no-argument call);
+// ap's "dispatches to the passed object's ap method" (method dispatch on a
+// non-array object) and the `typeof` check of its "is curried" (since v0.5.0
+// the dispatch case calls `ap(obj, 10)`, on the first argument). The files
+// of functions that are not portable (README) are not transcribed: useWith,
+// once, memoize, construct, constructN, unary, binary, nAry, apply, unapply,
+// pCompose, pPipe, curry, curryN, op, lPartial, rPartial, wrap, forEach,
+// forEachIndexed, installTo, path, pathOn, pathEq, is, isArrayLike, type,
+// functions, functionsIn, bind, invoker, lift, liftN, nthArg, and v0.9.0's
+// new arity.js and call.js; test.examplesRunner.js runs the JSDoc examples
+// through `dox` and is not a hand-written suite. (v0.1.3 moved test.lazy.js
+// out of test/, v0.4.1 removed test.always.js's "should be aliased by
+// `constant`" with `constant`, and v0.9.0 removed alwaysZero's describe with
+// the function and renamed the alwaysTrue and alwaysFalse describes to T and
+// F.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Functions
@@ -35,7 +30,7 @@ module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Math
   import opened Support
 
-  // ---- test.always.js ----
+  // ---- always.js, T.js, F.js ----
 
   // describe('always')
   // (v0.5.0 adds `always()()`, whose omitted value is undefined)
@@ -53,24 +48,20 @@ module RamdafTests.Ramda.Functions {
     expect always(obj)(()) == obj;
   }
 
-  // describe('alwaysZero'), describe('alwaysFalse'), describe('alwaysTrue')
-  method {:test} AlwaysZeroAlwaysReturnsZero() {
-    expect alwaysZero(()) == 0;
-    expect alwaysZero(10) == 0;
-    expect alwaysZero(false) == 0;
+  // describe('F') and describe('T') (describe('alwaysFalse') and
+  // describe('alwaysTrue') until v0.8.0)
+  method {:test} FAlwaysReturnsFalse() {
+    expect F(()) == false;
+    expect F(10) == false;
+    expect F(true) == false;
   }
-  method {:test} AlwaysFalseAlwaysReturnsFalse() {
-    expect alwaysFalse(()) == false;
-    expect alwaysFalse(10) == false;
-    expect alwaysFalse(true) == false;
-  }
-  method {:test} AlwaysTrueAlwaysReturnsTrue() {
-    expect alwaysTrue(()) == true;
-    expect alwaysTrue(10) == true;
-    expect alwaysTrue(true) == true;
+  method {:test} TAlwaysReturnsTrue() {
+    expect T(()) == true;
+    expect T(10) == true;
+    expect T(true) == true;
   }
 
-  // ---- test.compose.js ----
+  // ---- compose.js, pipe.js, converge.js ----
 
   function a(x: string): string { x + "A" }
   function b(x: string): string { x + "B" }
@@ -105,7 +96,7 @@ module RamdafTests.Ramda.Functions {
     expect converge((a: int, b: int) => a * b, (x: int) => add(1, x), (x: int) => add(3, x))(2) == 15;
   }
 
-  // ---- test.functionBasics.js: describe('flip') ----
+  // ---- flip.js ----
   // The JS function takes a third argument that flip passes through; the
   // binary port keeps the two that flip swaps.
 
@@ -122,7 +113,7 @@ module RamdafTests.Ramda.Functions {
     expect g("b") == "b a";
   }
 
-  // ---- test.functionBasics.js: describe('ap') (v0.3.0) ----
+  // ---- ap.js (v0.3.0) ----
 
   function mult2(x: int): int { x * 2 }
   function plus3(x: int): int { x + 3 }

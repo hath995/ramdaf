@@ -1,13 +1,15 @@
-// Ramdaf: Ramda v0.8.0 "Function functions" (ramda.js lines 1226-1806), `flip`
-// (lines 376-384, which v0.8.0 moves among the internal functions) and the
-// `always` family (lines 4025-4029, 4705-4737). (v0.4.1 removed the aliases
+// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "Function functions" section, `flip` (an internal function
+// in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
+// the functions with `@category Function`. (v0.4.1 removed the aliases
 // `sequence`, `distributeTo`, `constant` and `K`; v0.4.2 renamed `fork` to
-// `converge`.)
+// `converge`; v0.9.0 renamed `alwaysTrue` and `alwaysFalse` to `T` and `F`
+// and removed `alwaysZero`.)
 // compose/pipe are variadic in JS; the port is binary (nest for more functions).
 
 module Ramdaf.Functions {
   export
-    reveals compose, pipe, flip, converge, always, alwaysZero, alwaysFalse, alwaysTrue
+    reveals compose, pipe, flip, converge, always, T, F
 
   // `compose(f, g)(x) == f(g(x))`
   // (v0.1.1 dropped the `fog` alias. Since v0.3.0 JS `compose(f)` returns f
@@ -35,9 +37,10 @@ module Ramdaf.Functions {
   // takes one argument of any type.
   function always<T, U>(val: T): U -> T { _ => val }
 
-  // `alwaysZero = always(0)` etc.: the functions themselves, applied to one
+  // `R.T = always(true)` and `R.F = always(false)` (v0.9.0, which renamed
+  // `alwaysTrue` and `alwaysFalse` with the same code; `alwaysZero`, removed
+  // in v0.9.0, was `always(0)`): the functions themselves, applied to one
   // argument of any type.
-  function alwaysZero<U>(x: U): int { always(0)(x) }
-  function alwaysFalse<U>(x: U): bool { always(false)(x) }
-  function alwaysTrue<U>(x: U): bool { always(true)(x) }
+  function T<U>(x: U): bool { always(true)(x) }
+  function F<U>(x: U): bool { always(false)(x) }
 }

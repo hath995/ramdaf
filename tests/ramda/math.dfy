@@ -1,12 +1,15 @@
-// Ramda v0.8.0 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.9.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
+// min.js, maxBy.js, minBy.js, inc.js, dec.js and negate.js (until v0.8.0
+// test.math.js), transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). `subtract`,
 // `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` are
 // `op`-curried: since v0.6.0 one argument fixes the first parameter again
 // (`subtract(9)` is `x => 9 - x`), and `f(__, b)` with the placeholder `__`
-// (undefined) fixes the second (in v0.5.0 alone, one argument fixed the
-// second and `f(a, _)` the first, and Ramda's `it` names had left and right
-// the other way round). The lambdas follow what the code computes. Not
+// (undefined until v0.8.0; since v0.9.0 the object `R.__`) fixes the second
+// (in v0.5.0 alone, one argument fixed the second and `f(a, _)` the first,
+// and Ramda's `it` names had left and right the other way round). The lambdas follow what the code computes. Not
 // transcribed: mathMod's "requires integer arguments" (string and fractional
 // arguments, which give NaN); the last two asserts of its "behaves
 // differently than JS modulo" (17.2 is fractional, and since v0.4.2
@@ -34,9 +37,9 @@ module RamdafTests.Ramda.Math {
   method {:test} SubtractSubtractsTwoNumbers() { expect subtract(22, 7) == 15; }
   // "is curried": `subtract(9)`
   method {:test} SubtractIsCurried() { var ninesCompl := (x: int) => subtract(9, x); expect ninesCompl(6) == 3; }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument": `subtract(void 0, 5)`
-  method {:test} SubtractBehavesRightCurriedWithUndefinedFirst() { var minus5 := (x: int) => subtract(x, 5); expect minus5(17) == 12; }
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0): `subtract(R.__, 5)`
+  method {:test} SubtractBehavesRightCurriedWithPlaceholderFirst() { var minus5 := (x: int) => subtract(x, 5); expect minus5(17) == 12; }
 
   // describe('divide')
   method {:test} DivideDividesTwoNumbers() { expect divide(28.0, 7.0) == 4.0; }
@@ -45,9 +48,9 @@ module RamdafTests.Ramda.Math {
     var into28 := (x: real) requires x != 0.0 => divide(28.0, x);
     expect into28(7.0) == 4.0;
   }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument": `divide(void 0, 2)`
-  method {:test} DivideBehavesRightCurriedWithUndefinedFirst() {
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0): `divide(R.__, 2)`
+  method {:test} DivideBehavesRightCurriedWithPlaceholderFirst() {
     var half := (x: real) => divide(x, 2.0);
     expect half(40.0) == 20.0;
   }
@@ -65,9 +68,9 @@ module RamdafTests.Ramda.Math {
     expect hundredMod(3) == 1;
     expect hundredMod(17) == 15;
   }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument": `modulo(void 0, 2)`
-  method {:test} ModuloBehavesRightCurriedWithUndefinedFirst() {
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0): `modulo(R.__, 2)`
+  method {:test} ModuloBehavesRightCurriedWithPlaceholderFirst() {
     var isOdd := (x: int) => modulo(x, 2);
     expect isOdd(3) == 1;
     expect isOdd(198) == 0;
@@ -92,9 +95,10 @@ module RamdafTests.Ramda.Math {
     var f := (p: int) requires p >= 1 => mathMod(29, p);
     expect f(6) == 5;
   }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument", which calls `modulo(void 0, 5)`, not mathMod
-  method {:test} MathModBehavesRightCurriedWithUndefinedFirst() {
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0), which calls
+  // `modulo(R.__, 5)`, not mathMod
+  method {:test} MathModBehavesRightCurriedWithPlaceholderFirst() {
     var mod5 := (x: int) => modulo(x, 5);
     expect mod5(12) == 2;
     expect mod5(8) == 3;
@@ -123,9 +127,9 @@ module RamdafTests.Ramda.Math {
     expect !gt5(5);
     expect !gt5(3);
   }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument": `lt(__, 5)`
-  method {:test} LtBehavesRightCurriedWithUndefinedFirst() {
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0): `lt(__, 5)`
+  method {:test} LtBehavesRightCurriedWithPlaceholderFirst() {
     var lt5 := (x: int) => lt(x, 5);
     expect !lt5(10);
     expect !lt5(5);
@@ -143,9 +147,9 @@ module RamdafTests.Ramda.Math {
     expect gte20(20);
     expect gte20(25);
   }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument": `lte(__, 20)`
-  method {:test} LteBehavesRightCurriedWithUndefinedFirst() {
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0): `lte(__, 20)`
+  method {:test} LteBehavesRightCurriedWithPlaceholderFirst() {
     var upTo20 := (x: int) => lte(x, 20);
     expect upTo20(10);
     expect upTo20(20);
@@ -163,9 +167,9 @@ module RamdafTests.Ramda.Math {
     expect !lt20(20);
     expect !lt20(25);
   }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument": `gt(__, 20)`
-  method {:test} GtBehavesRightCurriedWithUndefinedFirst() {
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0): `gt(__, 20)`
+  method {:test} GtBehavesRightCurriedWithPlaceholderFirst() {
     var gt20 := (x: int) => gt(x, 20);
     expect !gt20(10);
     expect !gt20(20);
@@ -183,9 +187,9 @@ module RamdafTests.Ramda.Math {
     expect lte20(20);
     expect !lte20(25);
   }
-  // v0.6.0: "behaves right curried when passed `undefined` for its first
-  // argument": `gte(__, 20)`
-  method {:test} GteBehavesRightCurriedWithUndefinedFirst() {
+  // v0.6.0: "behaves right curried when passed `R.__` for its first
+  // argument" ("… `undefined` …" until v0.8.0): `gte(__, 20)`
+  method {:test} GteBehavesRightCurriedWithPlaceholderFirst() {
     var gte20 := (x: int) => gte(x, 20);
     expect !gte20(10);
     expect gte20(20);
@@ -256,5 +260,28 @@ module RamdafTests.Ramda.Math {
   method {:test} MinByIsProperlyCurried() {
     var lowestX := (l: seq<map<string, int>>) => minBy(X, l);
     expect lowestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
+  }
+
+  // describe('inc') (v0.9.0): its int lines (12.34 and the infinities are
+  // not ints)
+  method {:test} IncIncrementsItsArgument() {
+    expect inc(-1) == 0;
+    expect inc(0) == 1;
+    expect inc(1) == 2;
+  }
+
+  // describe('dec') (v0.9.0)
+  method {:test} DecDecrementsItsArgument() {
+    expect dec(-1) == -2;
+    expect dec(0) == -1;
+    expect dec(1) == 0;
+  }
+
+  // describe('negate') (v0.9.0): its int lines (`negate(0)` is `-0` in JS,
+  // which 2015's `strictEqual`, `===`, equated with 0)
+  method {:test} NegateNegatesItsArgument() {
+    expect negate(-1) == 1;
+    expect negate(0) == 0;
+    expect negate(1) == -1;
   }
 }

@@ -1,33 +1,32 @@
-// Ramda v0.8.0 test/test.core.js, test/test.clone.js, test/test.cloneDeep.js
-// and test/test.identity.js, transcribed. Not transcribed: head's and last's
-// "returns undefined for an empty list" (the empty list is outside their
-// domain, README "Outside the modeled domain"); v0.8.0's "throws if applied
-// to null or undefined" of nth, head, last and tail (null and undefined are
-// not lists; v0.8.0 removed head's and last's "returns undefined for no
-// arguments" and tail's "returns an empty list for no arguments"); v0.4.0's
-// concat cases "delegates to non-String object with a
-// concat method, as second param" (method dispatch on a non-array object) and
-// "throws if not an array, String, or object with a concat method" (object
-// operands); and the `notStrictEqual` half of clone's "returns a copy of an
-// array" (v0.4.0; reference identity); v0.5.0's "throws on zero arguments"
-// cases (no-argument calls; v0.8.0 adds prependTo's and appendTo's), and the
-// `notStrictEqual` half of cloneObj's "returns a copy of an object";
-// v0.8.0's isEmpty cases on values that are not lists ("returns true for
-// null", "for undefined", "for empty arguments object", the two objects with
-// a `length` property, and of "returns false for every other value" all but
-// `isEmpty([''])`; v0.8.0 replaced the `it`s "returns true if the list is
-// empty", "returns false if the list is not empty" and "returns `true` for
-// falsy arguments"); test.cloneDeep.js's "clone objects with circular
-// references" and "clone instances" (cycles, prototypes) and "clone date"
-// (no Date value), the Date property of "clone shallow object", the
-// mutations of the original after cloning (a Dafny value cannot be mutated,
-// so the clone equals the input) and the `!==`, `===` and `notStrictEqual`
-// halves (reference identity); and test.identity.js's two-argument call
-// (fixed arity), "has length 1" (arity) and argN's describe (not portable,
-// README). (v0.2.0 removed test.clone.js's describe('cloneDeep') with the
-// function, and v0.5.0 test.core.js's describe('isAtom').) The lists that
-// mix strings and arrays are lists of Js values, and so are the values
-// test.cloneDeep.js clones.
+// Ramda v0.9.0 test/isEmpty.js, prepend.js, prependTo.js, append.js,
+// appendTo.js, concat.js, nth.js, head.js, last.js, tail.js, length.js,
+// sort.js, comparator.js, clone.js, identity.js and isNil.js, transcribed
+// (v0.9.0 splits the suite into one file per function; until v0.8.0 these
+// were test.core.js, test.clone.js, test.cloneDeep.js and test.identity.js).
+// Not transcribed: head's and last's "returns undefined for an empty list"
+// (the empty list is outside their domain, README "Outside the modeled
+// domain"); the "throws if applied to null or undefined" cases of nth, head,
+// last and tail (null and undefined are not lists); concat's "delegates to
+// non-String object with a concat method, as second param" (method dispatch
+// on a non-array object) and "throws if not an array, String, or object with
+// a concat method" (object operands); the "throws on zero arguments" cases
+// (no-argument calls); isEmpty's cases on values that are not lists
+// ("returns false for null" and "for undefined", "returns true for empty
+// arguments object", the two objects with a `length` property, and of
+// "returns false for every other value" all but `isEmpty([''])`); length's
+// cases on functions, arguments objects and values of other types (NaN);
+// clone's "clone objects with circular references" and "clone instances"
+// (cycles, prototypes) and "clone date" (no Date value), the Date property
+// of "clone shallow object", the mutations of the original after cloning (a
+// Dafny value cannot be mutated, so the clone equals the input) and the
+// `!==`, `===` and `notStrictEqual` halves (reference identity); identity's
+// two-argument call (fixed arity) and "has length 1" (arity); and nthArg.js
+// (not portable, README). The `typeof` checks of the "is curried" cases hold
+// by construction. (v0.9.0 removed size's describe with `size`, whose
+// "counts the elements" length.js replaces, clone's two shallow-copy `it`s
+// and cloneObj's describe with `cloneObj`; v0.5.0 removed test.core.js's
+// describe('isAtom').) The lists that mix strings and arrays are lists of Js
+// values, and so are the values clone.js clones.
 
 module RamdafTests.Ramda.Core {
   import opened Ramdaf.Prelude
@@ -36,7 +35,7 @@ module RamdafTests.Ramda.Core {
   import opened Ramdaf.Sort
   import opened Support
 
-  // describe('isEmpty') (v0.8.0's its; a string is a seq here)
+  // describe('isEmpty') (a string is a seq here)
   method {:test} IsEmptyTrueForEmptyString() {
     expect isEmpty("") == true;
   }
@@ -145,6 +144,16 @@ module RamdafTests.Ramda.Core {
     expect concat("", "") == "";
   }
 
+  // v0.9.0: "is curried like a binary operator, that accepts an inital
+  // placeholder": `concat(__)('bar')('foo')`, `concat(__, 'bar')('foo')` and
+  // `concat(__)('bar', 'foo')` are each `concat('foo', 'bar')`.
+  method {:test} ConcatIsCurriedLikeABinaryOperator() {
+    var withSecond := (b: string) => ((a: string) => concat(a, b));
+    expect withSecond("bar")("foo") == "foobar";
+    var flipped := (b: string, a: string) => concat(a, b);
+    expect flipped("bar", "foo") == "foobar";
+  }
+
   // v0.4.0: "is curried" (its mixed list is a list of Js values)
   method {:test} ConcatIsCurried() {
     var conc123 := (l: seq<int>) => concat([1, 2, 3], l);
@@ -197,17 +206,16 @@ module RamdafTests.Ramda.Core {
     expect tail(["a", "b", "c", "d"]) == ["b", "c", "d"];
   }
 
-  // describe('size')
-  method {:test} SizeCountsTheElements() {
-    expect size(["a", "b", "c", "d"]) == 4;
+  // describe('length') (v0.9.0; describe('size') until v0.8.0)
+  method {:test} LengthReturnsTheLengthOfAList() {
+    var empty: seq<string> := [];
+    expect length(empty) == 0;
+    expect length(["a", "b", "c", "d"]) == 4;
   }
 
-  // v0.3.0: "is aliased by `length`" (since v0.7.0 only its `strictEqual(R.length,
-  // size)`, a function-identity check that Dafny functions have no
-  // counterpart for; the alias is compared by its results).
-  method {:test} SizeIsAliasedByLength() {
-    expect length([2, 4, 6, 8, 10]) == 5;
-    expect length([2, 4, 6, 8, 10]) == size([2, 4, 6, 8, 10]);
+  method {:test} LengthReturnsTheLengthOfAString() {
+    expect length("") == 0;
+    expect length("xyz") == 3;
   }
 
   // describe('sort')
@@ -234,117 +242,89 @@ module RamdafTests.Ramda.Core {
     expect sort(comparator((a: int, b: int) => a < b), [3, 1, 8, 1, 2, 5]) == [1, 1, 2, 3, 5, 8];
   }
 
-  // ---- test.clone.js ----
-
-  // describe('clone')
-  method {:test} CloneReturnsACopyOfAnArray() {
-    expect clone([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5];
-  }
-
-  // "copies objects in the array by reference": `c[0]` equals `o1` (Dafny
-  // compares values, so this holds without references).
-  method {:test} CloneCopiesObjectsInTheArrayByReference() {
-    var o1, o2, o3 := map["x" := 1], map["x" := 2], map["x" := 3];
-    var c := clone([o1, o2, o3]);
-    expect c[0] == o1;
-  }
-
-  // describe('cloneiObj') (sic; v0.5.0): "returns a copy of an object"
-  method {:test} CloneObjReturnsACopyOfAnObject() {
-    var input := map["a" := 1, "b" := 2, "c" := 3, "z" := 100];
-    expect cloneObj(input) == input;
-  }
-
-  // "copies objects in the array by reference": `c.a` equals `o1` (by value)
-  method {:test} CloneObjCopiesObjectsByReference() {
-    var o1, o2, o3 := map["x" := 1], map["x" := 2], map["x" := 3];
-    var c := cloneObj(map["a" := o1, "b" := o2, "c" := o3]);
-    expect c["a"] == o1;
-  }
-
-  // ---- test.cloneDeep.js (v0.8.0) ----
+  // ---- clone.js (test.cloneDeep.js's `it`s until v0.8.0, for cloneDeep) ----
 
   // describe('deep clone integers, strings and booleans')
-  method {:test} CloneDeepCloneIntegers() {
-    expect cloneDeep(-4) == -4;
-    expect cloneDeep(9007199254740991) == 9007199254740991;
+  method {:test} CloneIntegers() {
+    expect clone(-4) == -4;
+    expect clone(9007199254740991) == 9007199254740991;
   }
 
-  method {:test} CloneDeepCloneFloats() {
-    expect cloneDeep(-4.5) == -4.5;
-    expect cloneDeep(0.0) == 0.0;
+  method {:test} CloneFloats() {
+    expect clone(-4.5) == -4.5;
+    expect clone(0.0) == 0.0;
   }
 
-  method {:test} CloneDeepCloneStrings() {
-    expect cloneDeep("ramda") == "ramda";
+  method {:test} CloneStrings() {
+    expect clone("ramda") == "ramda";
   }
 
-  method {:test} CloneDeepCloneBooleans() {
-    expect cloneDeep(true) == true;
+  method {:test} CloneBooleans() {
+    expect clone(true) == true;
   }
 
   // describe('deep clone objects'): "clone shallow object" without its Date
   // property `d`
-  method {:test} CloneDeepCloneShallowObject() {
+  method {:test} CloneShallowObject() {
     var obj := map["a" := Num(1), "b" := Str("ramda"), "c" := Bool(true)];
-    expect cloneDeep(obj) == map["a" := Num(1), "b" := Str("ramda"), "c" := Bool(true)];
+    expect clone(obj) == map["a" := Num(1), "b" := Str("ramda"), "c" := Bool(true)];
   }
 
-  method {:test} CloneDeepCloneDeepObject() {
+  method {:test} CloneDeepObject() {
     var obj := map["a" := Obj(map["b" := Obj(map["c" := Str("ramda")])])];
-    expect cloneDeep(obj) == map["a" := Obj(map["b" := Obj(map["c" := Str("ramda")])])];
+    expect clone(obj) == map["a" := Obj(map["b" := Obj(map["c" := Str("ramda")])])];
   }
 
   // describe('deep clone arrays')
-  method {:test} CloneDeepCloneShallowArrays() {
-    expect cloneDeep([1, 2, 3]) == [1, 2, 3];
+  method {:test} CloneShallowArrays() {
+    expect clone([1, 2, 3]) == [1, 2, 3];
   }
 
-  method {:test} CloneDeepCloneDeepArrays() {
+  method {:test} CloneDeepArrays() {
     var list := [Num(1), Arr([Num(1), Num(2), Num(3)]), Arr([Arr([Arr([Num(5)])])])];
-    expect cloneDeep(list) == [Num(1), Arr([Num(1), Num(2), Num(3)]), Arr([Arr([Arr([Num(5)])])])];
+    expect clone(list) == [Num(1), Arr([Num(1), Num(2), Num(3)]), Arr([Arr([Arr([Num(5)])])])];
   }
 
   // describe('deep `clone` functions'): "keep reference to function"
-  method {:test} CloneDeepKeepsReferenceToFunction() {
+  method {:test} CloneKeepsReferenceToFunction() {
     var fn := (x: int) => x + x;
-    var c: seq<map<string, int -> int>> := cloneDeep([map["a" := fn]]);
+    var c: seq<map<string, int -> int>> := clone([map["a" := fn]]);
     var a := c[0]["a"];
     expect a(10) == 20;
   }
 
   // describe('deep clone deep nested mixed objects')
-  method {:test} CloneDeepCloneArrayWithObjects() {
+  method {:test} CloneArrayWithObjects() {
     var list := [Obj(map["a" := Obj(map["b" := Num(1)])]), Arr([Obj(map["c" := Obj(map["d" := Num(1)])])])];
-    expect cloneDeep(list) == [Obj(map["a" := Obj(map["b" := Num(1)])]), Arr([Obj(map["c" := Obj(map["d" := Num(1)])])])];
+    expect clone(list) == [Obj(map["a" := Obj(map["b" := Num(1)])]), Arr([Obj(map["c" := Obj(map["d" := Num(1)])])])];
   }
 
-  method {:test} CloneDeepCloneArrayWithArrays() {
+  method {:test} CloneArrayWithArrays() {
     var list := [Arr([Num(1)]), Arr([Arr([Num(3)])])];
-    expect cloneDeep(list) == [Arr([Num(1)]), Arr([Arr([Num(3)])])];
+    expect clone(list) == [Arr([Num(1)]), Arr([Arr([Num(3)])])];
   }
 
-  method {:test} CloneDeepCloneArrayWithMutualRefObject() {
+  method {:test} CloneArrayWithMutualRefObject() {
     var obj := map["a" := 1];
-    var c := cloneDeep([map["b" := obj], map["b" := obj]]);
+    var c := clone([map["b" := obj], map["b" := obj]]);
     expect c[0]["b"] == c[1]["b"];
     expect c[0]["b"] == map["a" := 1];
     expect c[1]["b"] == map["a" := 1];
   }
 
-  // describe('deep clone edge cases'): `cloneDeep()` is
-  // `cloneDeep(undefined)`
-  method {:test} CloneDeepNullsUndefinedsAndEmptyObjectsAndArrays() {
-    expect cloneDeep(Null) == Null;
-    expect cloneDeep(Undefined) == Undefined;
-    expect cloneDeep(Undefined) != Null;
+  // describe('deep clone edge cases'): `clone()` is
+  // `clone(undefined)`
+  method {:test} CloneNullsUndefinedsAndEmptyObjectsAndArrays() {
+    expect clone(Null) == Null;
+    expect clone(Undefined) == Undefined;
+    expect clone(Undefined) != Null;
     var obj: map<string, int> := map[];
-    expect cloneDeep(obj) == obj;
+    expect clone(obj) == obj;
     var list: seq<int> := [];
-    expect cloneDeep(list) == list;
+    expect clone(list) == list;
   }
 
-  // ---- test.identity.js (v0.8.0) ----
+  // ---- identity.js ----
 
   // "returns its first argument": `identity()` is `identity(undefined)`
   method {:test} IdentityReturnsItsFirstArgument() {
@@ -356,5 +336,18 @@ module RamdafTests.Ramda.Core {
   method {:test} IdentityIsAliasedByI() {
     expect I("foo") == identity("foo");
     expect I(Num(3)) == Num(3);
+  }
+
+  // ---- isNil.js (v0.9.0) ----
+
+  // "tests a value for `null` or `undefined`": both are None here (README
+  // "Deviations"); the other values are Some.
+  method {:test} IsNilTestsAValueForNullOrUndefined() {
+    var none: Option<Js> := None;
+    expect isNil(none) == true;
+    expect isNil(Some(Arr([]))) == false;
+    expect isNil(Some(Obj(map[]))) == false;
+    expect isNil(Some(Num(0))) == false;
+    expect isNil(Some(Str(""))) == false;
   }
 }

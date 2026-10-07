@@ -1,12 +1,15 @@
-// Ramdaf: Ramda v0.8.0 "Logic Functions" (ramda.js lines 4741-4972).
-// (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
-// reused the name `cond` for a new function.)
+// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
+// with `@category Logic`. (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with
+// the alias `if`, and reused the name `cond` for a new function; v0.9.0
+// renamed `allPredicates` and `anyPredicates` to `allPass` and `anyPass`
+// and removed `if`.)
 
 module Ramdaf.Logic {
   import opened Prelude
 
   export
-    reveals and, or, not, allPredicates, anyPredicates, ifElse, if_, cond
+    reveals and, or, not, allPass, anyPass, ifElse, cond
     provides Prelude
 
   // v0.1.4 deleted the boolean operators `and`, `or` and `not` and renamed
@@ -26,13 +29,20 @@ module Ramdaf.Logic {
   // `!f(...)`
   function not<T>(f: T -> bool): T -> bool { x => !f(x) }
 
-  // `allPredicates(preds)` is a predicate true exactly when every predicate
-  // holds; the JS form that also takes the values (`allPredicates(preds, v)`)
-  // is the application `allPredicates(preds)(v)`.
-  function allPredicates<T>(preds: seq<T -> bool>): T -> bool
+  // `R.allPass = _predicateWrap(_all)` (v0.9.0, which renamed
+  // `allPredicates`): `allPass(preds)` is a predicate true exactly when every
+  // predicate holds; the JS form that also takes the values
+  // (`allPass(preds, v)`) is the application `allPass(preds)(v)`. Since
+  // v0.9.0 JS `allPass([])` throws, as the result's arity is the longest
+  // predicate's, while `allPass([], v)` is true, as here (README
+  // "Deviations").
+  function allPass<T>(preds: seq<T -> bool>): T -> bool
   { x => forall i :: 0 <= i < |preds| ==> preds[i](x) }
 
-  function anyPredicates<T>(preds: seq<T -> bool>): T -> bool
+  // `R.anyPass = _predicateWrap(_any)` (v0.9.0, which renamed
+  // `anyPredicates`): true exactly when some predicate holds (`anyPass([])`
+  // throws in JS, `anyPass([], v)` is false).
+  function anyPass<T>(preds: seq<T -> bool>): T -> bool
   { x => exists i :: 0 <= i < |preds| && preds[i](x) }
 
   // `R.ifElse(condition, onTrue, onFalse)` (v0.8.0, which renamed v0.6.0's
@@ -42,11 +52,6 @@ module Ramdaf.Logic {
   // arguments; the port's result is unary (tuple the arguments for more).
   function ifElse<A, B>(condition: A -> bool, onTrue: A -> B, onFalse: A -> B): A -> B
   { x => if condition(x) then onTrue(x) else onFalse(x) }
-
-  // `R['if'] = ifElse` (v0.8.0). `if` is a Dafny keyword, so the alias is
-  // `if_`.
-  function if_<A, B>(condition: A -> bool, onTrue: A -> B, onFalse: A -> B): A -> B
-  { ifElse(condition, onTrue, onFalse) }
 
   // `R.cond([pred, transform], ...)` (v0.8.0; the name held today's `ifElse`
   // from v0.6.0 to v0.7.2): a function that tests its arguments against each

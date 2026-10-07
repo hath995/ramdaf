@@ -1,4 +1,5 @@
-// Ramda v0.8.0 test/test.fold.js, transcribed. Not transcribed: the "should
+// Ramda v0.9.0 test/foldl.js, foldr.js, foldlIndexed.js and foldrIndexed.js
+// (until v0.8.0 test.fold.js), transcribed. Not transcribed: the "should
 // correctly report the arity of curried versions" cases (Dafny functions have
 // no arity) and the "throws on zero arguments" cases (v0.5.0; no-argument
 // calls). The alias `it`s assert `strictEqual` on the function objects, which
@@ -7,6 +8,9 @@
 // "Deviations"), and Ramda's `add` on strings (JS `+`) is string
 // concatenation. Ramda's `ls === list` checks compare the list by value.
 // v0.1.1 dropped the foldl1 and foldr1 describes, and v0.2.0 the functions.
+// v0.9.0 removed the four "is aliased by `reduce…`" `it`s with `reduce` and
+// `reduceRight`, and renamed the foldl.idx and foldr.idx describes to
+// foldlIndexed and foldrIndexed (and `timesIndexed` to `timesIndexed`).
 
 module RamdafTests.Ramda.Fold {
   import opened Ramdaf.List
@@ -39,12 +43,6 @@ module RamdafTests.Ramda.Fold {
     expect catAll(["1", "2", "3", "4"]) == "1234";
   }
 
-  // (since v0.7.0 only `strictEqual(R.reduce, R.foldl)`)
-  method {:test} FoldlIsAliasedByReduce() {
-    expect reduce(add, 0, [1, 2, 3, 4]) == 10;
-    expect reduce(add, 0, [1, 2, 3, 4]) == foldl(add, 0, [1, 2, 3, 4]);
-  }
-
   // describe('foldr')
   method {:test} FoldrFoldsListsInTheRightOrder() {
     expect foldr((a: string, b: string) => a + b, "", ["a", "b", "c", "d"]) == "dcba";
@@ -67,98 +65,80 @@ module RamdafTests.Ramda.Fold {
     expect rcat(["1", "2", "3", "4"]) == "4321";
   }
 
-  // (since v0.7.0 only `strictEqual(R.reduceRight, R.foldr)`)
-  method {:test} FoldrIsAliasedByReduceRight() {
-    expect reduceRight(avg, 54.0, [12.0, 4.0, 10.0, 6.0]) == 12.0;
-    expect reduceRight(avg, 54.0, [12.0, 4.0, 10.0, 6.0]) == foldr(avg, 54.0, [12.0, 4.0, 10.0, 6.0]);
-  }
-
-  // describe('foldl.idx')
-  function timesIdx(tot: int, num: int, idx: nat, ls: seq<int>): int { tot + num * idx }
+  // describe('foldlIndexed') (describe('foldl.idx') until v0.8.0)
+  function timesIndexed(tot: int, num: int, idx: nat, ls: seq<int>): int { tot + num * idx }
 
   // (v0.5.0 gives it a body: `foldl.idx(R.add, 0, …)`, `foldl.idx(R.multiply, 1, …)`)
-  method {:test} FoldlIdxWorksJustLikeNormalFoldl() {
-    expect foldlIdx((a: int, x: int, i: nat, l: seq<int>) => add(a, x), 0, [1, 2, 3, 4]) == 10;
-    expect foldlIdx((a: int, x: int, i: nat, l: seq<int>) => mult(a, x), 1, [1, 2, 3, 4]) == 24;
-  }
-
-  // v0.5.0: "should be aliased by `reduceRight`" (under foldl.idx, it asserts
-  // `reduceRight === foldr`)
-  method {:test} FoldlIdxDescribeAliasesReduceRightToFoldr() {
-    expect reduceRight(add, 0, [1, 2, 3]) == foldr(add, 0, [1, 2, 3]);
+  method {:test} FoldlIndexedWorksJustLikeNormalFoldl() {
+    expect foldlIndexed((a: int, x: int, i: nat, l: seq<int>) => add(a, x), 0, [1, 2, 3, 4]) == 10;
+    expect foldlIndexed((a: int, x: int, i: nat, l: seq<int>) => mult(a, x), 1, [1, 2, 3, 4]) == 24;
   }
 
   // `objectify` assigns `acc[elem] = idx` on an object.
-  method {:test} FoldlIdxPassesTheIndexAsAThirdParameter() {
-    expect foldlIdx(timesIdx, 0, [1, 2, 3, 4, 5]) == 40;
+  method {:test} FoldlIndexedPassesTheIndexAsAThirdParameter() {
+    expect foldlIndexed(timesIndexed, 0, [1, 2, 3, 4, 5]) == 40;
     var empty: map<string, nat> := map[];
-    expect foldlIdx((acc: map<string, nat>, elem: string, idx: nat, ls: seq<string>) => acc[elem := idx],
+    expect foldlIndexed((acc: map<string, nat>, elem: string, idx: nat, ls: seq<string>) => acc[elem := idx],
                     empty, ["a", "b", "c", "d", "e"]) == map["a" := 0, "b" := 1, "c" := 2, "d" := 3, "e" := 4];
   }
 
   // (v0.5.0 gives it a body)
-  method {:test} FoldlIdxPassesTheEntireListAsAFourthParameter() {
+  method {:test} FoldlIndexedPassesTheEntireListAsAFourthParameter() {
     var list := [1, 2, 3];
-    expect foldlIdx((acc: bool, x: int, idx: nat, ls: seq<int>) => acc && ls == list, true, list);
+    expect foldlIndexed((acc: bool, x: int, idx: nat, ls: seq<int>) => acc && ls == list, true, list);
   }
 
   // v0.5.0
-  method {:test} FoldlIdxIsAutomaticallyCurried() {
-    var sum := (l: seq<int>) => foldlIdx((a: int, x: int, i: nat, ls: seq<int>) => add(a, x), 0, l);
+  method {:test} FoldlIndexedIsAutomaticallyCurried() {
+    var sum := (l: seq<int>) => foldlIndexed((a: int, x: int, i: nat, ls: seq<int>) => add(a, x), 0, l);
     expect sum([1, 2, 3, 4]) == 10;
-    var catAll := (l: seq<string>) => foldlIdx((a: string, x: string, i: nat, ls: seq<string>) => cat(a, x), "", l);
+    var catAll := (l: seq<string>) => foldlIndexed((a: string, x: string, i: nat, ls: seq<string>) => cat(a, x), "", l);
     expect catAll(["1", "2", "3", "4"]) == "1234";
   }
 
-  // describe('foldr.idx')
-  method {:test} FoldrIdxFoldsListsInTheRightOrder() {
-    expect foldrIdx((a: string, b: string, idx: nat, list: seq<string>) => a + NumStr(idx) + b, "",
+  // describe('foldrIndexed') (describe('foldr.idx') until v0.8.0)
+  method {:test} FoldrIndexedFoldsListsInTheRightOrder() {
+    expect foldrIndexed((a: string, b: string, idx: nat, list: seq<string>) => a + NumStr(idx) + b, "",
                     ["a", "b", "c", "d"]) == "3d2c1b0a";
   }
 
-  method {:test} FoldrIdxFoldsWithTheSuppliedAccumulator() {
+  method {:test} FoldrIndexedFoldsWithTheSuppliedAccumulator() {
     var empty: seq<int> := [];
-    expect foldrIdx((acc: seq<int>, n: int, i: nat, ls: seq<int>) => acc + [i, n], empty, [12, 4, 10, 6]) ==
+    expect foldrIndexed((acc: seq<int>, n: int, i: nat, ls: seq<int>) => acc + [i, n], empty, [12, 4, 10, 6]) ==
       [3, 6, 2, 10, 1, 4, 0, 12];
   }
 
   // The result is the accumulator itself (v0.2.3 asserts `memo`; before, it
   // asserted `== 0`, which JS's `[] == 0` satisfies).
-  method {:test} FoldrIdxReturnsTheAccumulatorForAnEmptyArray() {
+  method {:test} FoldrIndexedReturnsTheAccumulatorForAnEmptyArray() {
     var empty: seq<int> := [];
-    expect foldrIdx((a: seq<int>, n: int, i: nat, ls: seq<int>) => a + [i], empty, empty) == empty;
+    expect foldrIndexed((a: seq<int>, n: int, i: nat, ls: seq<int>) => a + [i], empty, empty) == empty;
   }
 
-  method {:test} FoldrIdxIsAutomaticallyCurried() {
-    var something := (l: seq<int>) => foldrIdx((acc: int, b: int, i: nat, ls: seq<int>) => acc + i + b, 54, l);
+  method {:test} FoldrIndexedIsAutomaticallyCurried() {
+    var something := (l: seq<int>) => foldrIndexed((acc: int, b: int, i: nat, ls: seq<int>) => acc + i + b, 54, l);
     expect something([12, 4, 10, 6]) == 92;
   }
 
-  // "should be aliased by `reduceRight.idx`" (`reduceRight.idx === foldr.idx`;
-  // until v0.4.3 it was named "… by `reduceRight`")
-  method {:test} FoldrIdxIsAliasedByReduceRightIdx() {
-    expect reduceRightIdx((acc: int, b: int, i: nat, ls: seq<int>) => acc + i + b, 54, [12, 4, 10, 6]) == 92;
-  }
-
   // v0.5.0
-  method {:test} FoldrIdxPassesTheIndexAsAThirdParameter() {
-    expect foldrIdx(timesIdx, 0, [1, 2, 3, 4, 5]) == 40;
+  method {:test} FoldrIndexedPassesTheIndexAsAThirdParameter() {
+    expect foldrIndexed(timesIndexed, 0, [1, 2, 3, 4, 5]) == 40;
     var empty: map<string, nat> := map[];
-    expect foldrIdx((acc: map<string, nat>, elem: string, idx: nat, ls: seq<string>) => acc[elem := idx],
+    expect foldrIndexed((acc: map<string, nat>, elem: string, idx: nat, ls: seq<string>) => acc[elem := idx],
                     empty, ["a", "b", "c", "d", "e"]) == map["a" := 0, "b" := 1, "c" := 2, "d" := 3, "e" := 4];
   }
 
   // v0.5.0
-  method {:test} FoldrIdxPassesTheEntireListAsAFourthParameter() {
+  method {:test} FoldrIndexedPassesTheEntireListAsAFourthParameter() {
     var list := [1, 2, 3];
-    expect foldrIdx((acc: bool, x: int, idx: nat, ls: seq<int>) => acc && ls == list, true, list);
+    expect foldrIndexed((acc: bool, x: int, idx: nat, ls: seq<int>) => acc && ls == list, true, list);
   }
 
-  // v0.5.0: the second "should be automatically curried" (`foldr.idx(R.add)`)
-  method {:test} FoldrIdxIsAutomaticallyCurriedWithAdd() {
-    var sum := (l: seq<int>) => foldrIdx((a: int, x: int, i: nat, ls: seq<int>) => add(a, x), 0, l);
+  // v0.5.0: the second "should be automatically curried" (`foldrIndexed(R.add)`)
+  method {:test} FoldrIndexedIsAutomaticallyCurriedWithAdd() {
+    var sum := (l: seq<int>) => foldrIndexed((a: int, x: int, i: nat, ls: seq<int>) => add(a, x), 0, l);
     expect sum([1, 2, 3, 4]) == 10;
-    var catAll := (l: seq<string>) => foldrIdx((a: string, x: string, i: nat, ls: seq<string>) => cat(a, x), "", l);
+    var catAll := (l: seq<string>) => foldrIndexed((a: string, x: string, i: nat, ls: seq<string>) => cat(a, x), "", l);
     expect catAll(["1", "2", "3", "4"]) == "4321";
   }
 

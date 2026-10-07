@@ -1,36 +1,39 @@
-// Ramda v0.8.0 test/test.objectBasics.js, test/test.keysvals.js,
-// test/test.tapeq.js and test/test.zip.js's toPairs and toPairsIn describes,
-// transcribed. Not transcribed: v0.2.4's "should work for
-// primitives" cases (keys/values of null, 55, "" and the like: the argument
-// is a map); v0.2.4's where cases on prototypes ("matches inherited props",
-// "doesnt match inherited spec", the `toString` half of "matches inherited
-// functions") and on `where(Lib, Lib)` ("equal objects are true": one object
-// as both spec and test); describe('func') and
-// describe('tap') (not portable, README), `eq([], [])` (reference equality,
-// README "Deviations"; pinned in tests/edge/object.dfy); and
-// test.keysvals.js's cases on an object built by a
-// constructor whose prototype has properties ("does not include"/"includes
-// the given object's prototype properties"), and propOr's (propOrDefault's
-// until v0.5.0) "should not return properties from the prototype chain", toPairs "only
-// iterates the object's own properties" and toPairsIn "iterates properties
-// on the object's prototype chain", and v0.7.0's pick "retrieves prototype
-// properties", omit "includes prototype properties", pickBy's (pickWith's
-// until v0.7.2) "retrieves prototype properties", has "does not check properties from the prototype
-// chain" and hasIn "checks properties from the prototype chain" (objects
-// built by a constructor whose prototype has properties): a map has no
-// prototype. Also skipped:
-// the no-argument cases, prop's "should throw when called with no
-// arguments" (v0.4.0) and propOr's, where's and eq's "throws if given
-// no arguments" (v0.4.1), has's and hasIn's (v0.7.0), props's "throws when
-// called with no arguments" (v0.8.0); describe('assocPath') (v0.8.0; not
-// portable, README); the "creates a copy" case of pickBy (reference
-// inequality); describe('tap'),
-// whose arguments v0.7.0 reversed (not portable); and eq's "is curried" (v0.4.1), which relies on
-// `[] !== []`, reference inequality (README "Deviations"). toPairs and toPairsIn return a set (a map has no key order, README
-// "Deviations"). v0.8.0 renamed describe('props') to describe('propOf')
-// and describe('pickWith') to describe('pickBy') with the functions, and
-// added a describe('props') for the new function; assoc's "reference
-// equality" lines compare by value (Dafny values have no identity).
+// Ramda v0.9.0 test/prop.js, propOf.js, props.js, propOr.js, has.js,
+// hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
+// where.js, mixin.js, assoc.js, keys.js, keysIn.js, values.js, valuesIn.js,
+// eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js and invertObj.js
+// (until v0.8.0 test.objectBasics.js, test.keysvals.js, test.tapeq.js and
+// test.zip.js's toPairs and toPairsIn describes), transcribed. Not
+// transcribed: keys's and values's "should work for primitives" cases (v0.2.4;
+// keys/values of null, 55, "" and the like: the argument is a map); where's
+// cases on prototypes ("matches inherited props", "doesnt match inherited
+// spec", the `toString` half of "matches inherited functions") and on
+// `where(Lib, Lib)` ("equal objects are true": one object as both spec and
+// test); the cases on an object built by a constructor whose prototype has
+// properties (keys's, keysIn's, values's and valuesIn's "does not include"/
+// "includes the given object's prototype properties", propOr's "does not
+// return properties from the prototype chain", toPairs's "only iterates the
+// object's own properties", toPairsIn's "iterates properties on the object's
+// prototype chain", pick's "retrieves prototype properties", omit's
+// "includes prototype properties", pickBy's "retrieves prototype
+// properties", has's "does not check properties from the prototype chain"
+// and hasIn's "checks properties from the prototype chain"): a map has no
+// prototype; the no-argument cases ("throws if given no arguments" and the
+// like); pickBy's "creates a copy" (reference inequality); eq's `eq([], [])`
+// and "is curried", which rely on `[] !== []` (reference equality, README
+// "Deviations"), and its `eq(0, -0)` and `eq(NaN, NaN)` (no `-0` or NaN in
+// an int; README "Deviations", pinned in tests/edge/misc.dfy); invert's and
+// invertObj's "takes a list or object…" (`typeof` and throws on primitives);
+// invertObj's "prefers the last key found…" and "is not destructive",
+// whose inputs repeat a value (outside the domain, README); and assocPath.js,
+// func.js and tap.js (not portable, README). invert's and invertObj's array
+// inputs are the objects their keys see (index keys "0", "1", …). toPairs,
+// toPairsIn and invert's key lists are sets (a map has no key order, README
+// "Deviations"). assoc's "reference equality" lines compare by value (Dafny
+// values have no identity). (v0.8.0 renamed describe('props') to
+// describe('propOf') and describe('pickWith') to describe('pickBy') with the
+// functions, and added a describe('props') for the new function; v0.9.0
+// moved propOr's default to the first argument.)
 
 module RamdafTests.Ramda.Object {
   import opened Ramdaf.Prelude
@@ -40,7 +43,7 @@ module RamdafTests.Ramda.Object {
 
   function Fred(): map<string, Js> { map["name" := Str("Fred"), "age" := Num(23)] }
 
-  // ---- test.objectBasics.js ----
+  // ---- prop.js … mixin.js (test.objectBasics.js until v0.8.0) ----
 
   // describe('prop')
   method {:test} PropFetchesTheProperty() {
@@ -100,15 +103,16 @@ module RamdafTests.Ramda.Object {
   }
 
   // describe('propOr') (describe('propOrDefault') from v0.4.0 to v0.5.0):
-  // `nm = propOr('name', 'Unknown')` (its `typeof nm == 'function'` holds by
+  // `nm = propOr('Unknown', 'name')` (`propOr('name', 'Unknown')` until
+  // v0.8.0; its `typeof nm == 'function'` holds by
   // construction)
   method {:test} PropOrReturnsAFunctionThatFetchesTheAppropriateProperty() {
-    var nm := (o: map<string, Js>) => propOr("name", Str("Unknown"), o);
+    var nm := (o: map<string, Js>) => propOr(Str("Unknown"), "name", o);
     expect nm(Fred()) == Str("Fred");
   }
 
   method {:test} PropOrReturnsTheDefaultValueWhenThePropertyDoesNotExist() {
-    var nm := (o: map<string, Js>) => propOr("name", Str("Unknown"), o);
+    var nm := (o: map<string, Js>) => propOr(Str("Unknown"), "name", o);
     expect nm(map["age" := Num(99)]) == Str("Unknown");
   }
 
@@ -299,7 +303,7 @@ module RamdafTests.Ramda.Object {
     expect curried(map["y" := 3, "z" := 4]) == map["w" := 1, "x" := 2, "y" := 3, "z" := 4];
   }
 
-  // ---- test.keysvals.js ----
+  // ---- keys.js, values.js, keysIn.js, valuesIn.js (test.keysvals.js) ----
 
   function KeysValsObj(): map<string, Js>
   { map["a" := Num(100), "b" := Arr([Num(1), Num(2), Num(3)]),
@@ -339,17 +343,21 @@ module RamdafTests.Ramda.Object {
       Obj(map["x" := Num(200), "y" := Num(300)]), Str("D"), Null, Undefined};
   }
 
-  // ---- test.tapeq.js: describe('eq') ----
+  // ---- eq.js (test.tapeq.js's describe('eq') until v0.8.0) ----
 
   method {:test} EqTestsStrictEquality() {
     var a: seq<int> := [];
     var b := a;
     expect eq(Num(100), Num(100)) == true;
     expect eq(Num(100), Str("100")) == false;
+    expect eq("string", "string") == true;
     expect eq(a, b) == true;
+    // v0.9.0
+    expect eq(Undefined, Undefined) == true;
+    expect eq(Null, Undefined) == false;
   }
 
-  // ---- test.zip.js: describe('toPairs'), describe('toPairsIn') (v0.4.0) ----
+  // ---- toPairs.js, toPairsIn.js (v0.4.0; in test.zip.js until v0.8.0) ----
 
   method {:test} ToPairsConvertsAnObjectIntoKeyValuePairs() {
     expect toPairs(map["a" := 1, "b" := 2, "c" := 3]) == {("a", 1), ("b", 2), ("c", 3)};
@@ -359,7 +367,7 @@ module RamdafTests.Ramda.Object {
     expect toPairsIn(map["a" := 1, "b" := 2, "c" := 3]) == {("a", 1), ("b", 2), ("c", 3)};
   }
 
-  // ---- test.objectBasics.js: describe('assoc') (v0.8.0) ----
+  // ---- assoc.js (v0.8.0) ----
 
   function AssocObj1(): map<string, Js>
   { map["a" := Num(1), "b" := Obj(map["c" := Num(2), "d" := Num(3)]), "e" := Num(4), "f" := Num(5)] }
@@ -393,5 +401,75 @@ module RamdafTests.Ramda.Object {
     var g := (o: map<string, Js>) => f(Obj(map["x" := Num(42)]), o);
     expect f(Obj(map["x" := Num(42)]), obj1) == expected;
     expect g(obj1) == expected;
+  }
+
+  // ---- evolve.js (v0.9.0) ----
+
+  // `R.add(k)` over the Js numbers it meets here (`add(1)(undefined)` would
+  // be NaN, which these cases never reach)
+  function AddJs(k: int): Option<Js> -> Js
+  { (v: Option<Js>) => if v.Some? && v.value.Num? then Num(v.value.n + k) else Undefined }
+
+  function Tomato(elapsed: int, remaining: int): map<string, Js>
+  { map["name" := Str("Tomato"), "elapsed" := Num(elapsed), "remaining" := Num(remaining)] }
+
+  method {:test} EvolveCreatesANewObjectByEvolvingTheObject() {
+    var transf := map["elapsed" := AddJs(1), "remaining" := AddJs(-1)];
+    expect evolve(transf, Tomato(100, 1400)) == Tomato(101, 1399);
+  }
+
+  // `{wow: String}`: `String(undefined)` is 'undefined' (the only value the
+  // transformation meets here)
+  method {:test} EvolveInvokesFunctionWithUndefinedIfObjectDoesNotContainTheKey() {
+    var transf := map["wow" := (v: Option<Js>) => if v.None? then Str("undefined") else v.value];
+    var none: map<string, Js> := map[];
+    expect evolve(transf, none) == map["wow" := Str("undefined")];
+  }
+
+  // The object is a value, so the check holds trivially.
+  method {:test} EvolveIsNotDestructive() {
+    var transf := map["elapsed" := AddJs(1), "remaining" := AddJs(-1)];
+    var obj := Tomato(100, 1400);
+    var _ := evolve(transf, obj);
+    expect obj == Tomato(100, 1400);
+  }
+
+  method {:test} EvolveIsCurried() {
+    var tick := (o: map<string, Js>) => evolve(map["elapsed" := AddJs(1), "remaining" := AddJs(-1)], o);
+    expect tick(Tomato(100, 1400)) == Tomato(101, 1399);
+  }
+
+  // ---- invert.js (v0.9.0) ----
+
+  method {:test} InvertReturnsTheInputsValuesAsKeysAndKeysAsValues() {
+    // `invert(['a', 'b', 'c'])`
+    expect invert(map["0" := "a", "1" := "b", "2" := "c"]) == map["a" := {"0"}, "b" := {"1"}, "c" := {"2"}];
+    expect invert(map["x" := "a", "y" := "b", "z" := "c"]) == map["a" := {"x"}, "b" := {"y"}, "c" := {"z"}];
+  }
+
+  method {:test} InvertPutsKeysThatHaveTheSameValueIntoTheAppropriateArray() {
+    // `invert(['a', 'b', 'a'])`
+    expect invert(map["0" := "a", "1" := "b", "2" := "a"]) == map["a" := {"0", "2"}, "b" := {"1"}];
+    var inverted := invert(map["x" := "a", "y" := "b", "z" := "a", "_id" := "a"]);
+    expect "a" in inverted && "b" in inverted;
+    expect "x" in inverted["a"];
+    expect "z" in inverted["a"];
+    expect "_id" in inverted["a"];
+    expect inverted["b"] == {"y"};
+  }
+
+  // The input is a value, so the check holds trivially.
+  method {:test} InvertIsNotDestructive() {
+    var input := map["x" := "a", "y" := "b", "z" := "a", "_id" := "a"];
+    var _ := invert(input);
+    expect input == map["x" := "a", "y" := "b", "z" := "a", "_id" := "a"];
+  }
+
+  // ---- invertObj.js (v0.9.0) ----
+
+  method {:test} InvertObjReturnsTheInputsValuesAsKeysAndKeysAsValues() {
+    // `invertObj(['a', 'b', 'c'])`
+    expect invertObj(map["0" := "a", "1" := "b", "2" := "c"]) == map["a" := "0", "b" := "1", "c" := "2"];
+    expect invertObj(map["x" := "a", "y" := "b", "z" := "c"]) == map["a" := "x", "b" := "y", "c" := "z"];
   }
 }

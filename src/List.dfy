@@ -1,77 +1,72 @@
-// Ramdaf: Ramda v0.8.0 "List Functions" (ramda.js lines 1807-3752), except
-// `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
-// (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
-// `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
-// aliases `every`/`some`; v0.8.0 removed `xprodWith`.)
+// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "List Functions" section, except `comparator`/`sort`
+// (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
+// the functions with `@category List` (`repeat`, `init`, `mapAccumL`,
+// `mapAccumR` and the renamed functions below). (v0.4.1 removed the aliases
+// `drop`, `nth`, `flatMap`, `flattenDeep` and `flattenShallow`, and renamed
+// `all`/`any` to their aliases `every`/`some`; v0.8.0 removed `xprodWith`.
+// v0.9.0 removed `reduce` and `reduceRight`, whose aliases `foldl` and
+// `foldr` hold their code now, and `indexOf.from`, `lastIndexOf.from` and
+// `slice.from`; it renamed the `.idx` properties to `*Indexed` functions,
+// `skip` to `drop`, `every`/`some` to `all`/`any` and `insert.all` to
+// `insertAll` (the name the port already used), and replaced `skipUntil`
+// with `dropWhile`.)
 
 module Ramdaf.List {
   import opened Prelude
 
   export
-    reveals foldl, reduce, foldlIdx, reduceIdx, foldr, reduceRight, foldrIdx,
-            reduceRightIdx, unfoldr, mapSeq, mapIdx, mapObj, mapObjIdx, filter, filterIdx,
-            reject, rejectIdx, takeWhile, take, skipUntil, skip, find,
-            findIndex, findLast, findLastIndex, every, some, contains, containsWith,
-            uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, lens, xprod, reverse,
-            range, indexOf, indexOfFrom, lastIndexOf, lastIndexOfFrom, join, slice, sliceFrom,
+    reveals foldl, foldlIndexed, foldr, foldrIndexed, unfoldr, mapSeq, mapIndexed,
+            mapObj, mapObjIndexed, filter, filterIndexed, reject, rejectIndexed,
+            takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex,
+            all, any, contains, containsWith, uniq, isSet, uniqWith, pluck, flatten,
+            zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice,
             remove, insert, insertAll, partition,
             ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scanl,
-            createMapEntry
+            createMapEntry, repeat, init, mapAccumL, mapAccumR
     provides Prelude
 
-  // `acc = fn(acc, list[idx])` for idx ascending. Since v0.4.0 `reduce` holds
-  // the definition (`var foldl = R.reduce = curry3(...)`, `@alias foldl`) and
-  // `foldl` is the alias (`R.foldl = R.reduce`); until v0.3.0 it was the other
-  // way round. The two keep the same contract.
-  function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
-    ensures |list| > 0 ==>
-      reduce(fn, acc, list) == fn(reduce(fn, acc, list[..|list| - 1]), list[|list| - 1])
-  { if |list| == 0 then acc
-    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         reduce(fn, fn(acc, list[0]), list[1..]) }
+  // `_curry3(_foldl)` (`src/foldl.js`), `acc = fn(acc, list[idx])` for idx
+  // ascending. v0.9.0 removed `reduce`, which held the definition from v0.4.0
+  // to v0.8.0 with `foldl` its alias (until v0.3.0 `foldl` held it), so the
+  // body is the recursion again.
   function foldl<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
       foldl(fn, acc, list) == fn(foldl(fn, acc, list[..|list| - 1]), list[|list| - 1])
-  { reduce(fn, acc, list) }
-
-  // `reduce.idx` (v0.4.1 defines it as `R.reduce.idx` and sets
-  // `R.foldl.idx = R.reduce.idx`; until v0.4.0 `foldl.idx` held it):
-  // `acc = fn(acc, list[idx], idx, list)` for idx ascending. The body folds
-  // over (element, index) pairs. The two keep the same contract.
-  function reduceIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
-    ensures |list| == 0 ==> reduceIdx(fn, acc, list) == acc
-  { reduce((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
-  function foldlIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
-    ensures |list| == 0 ==> foldlIdx(fn, acc, list) == acc
-  { reduceIdx(fn, acc, list) }
-
-  // `acc = fn(acc, list[idx])` for idx descending: since v0.1.1 the
-  // accumulator comes first, as in foldl, and the fold runs from the right, so
-  // reduceRight(fn, acc, [x0, ..., xn]) is fn(... fn(fn(acc, xn), xn-1) ..., x0).
-  // Since v0.4.1 `reduceRight` holds the definition and `foldr` is the alias
-  // (`var foldr = R.foldr = R.reduceRight`); until v0.4.0 it was the other way
-  // round. The two keep the same contract.
-  function reduceRight<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
-    ensures |list| > 0 ==>
-      reduceRight(fn, acc, list) == reduceRight(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
   { if |list| == 0 then acc
     else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         fn(reduceRight(fn, acc, list[1..]), list[0]) }
+         foldl(fn, fn(acc, list[0]), list[1..]) }
+
+  // `R.foldlIndexed` (v0.9.0, which renamed `foldl.idx`, the alias of
+  // `reduce.idx` from v0.4.1 to v0.8.0, with the same code):
+  // `acc = fn(acc, list[idx], idx, list)` for idx ascending. The body folds
+  // over (element, index) pairs.
+  function foldlIndexed<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> foldlIndexed(fn, acc, list) == acc
+  { foldl((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
+
+  // `var idx = list.length; while (idx--) { acc = fn(acc, list[idx]); }`
+  // (`src/foldr.js`): `acc = fn(acc, list[idx])` for idx descending. Since
+  // v0.1.1 the accumulator comes first, as in foldl, and the fold runs from
+  // the right, so foldr(fn, acc, [x0, ..., xn]) is
+  // fn(... fn(fn(acc, xn), xn-1) ..., x0). v0.9.0 removed `reduceRight`, which
+  // held the definition from v0.4.1 to v0.8.0 with `foldr` its alias, so the
+  // body is the recursion again (and no longer dispatches to a
+  // `reduceRight` method).
   function foldr<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
       foldr(fn, acc, list) == foldr(fn, fn(acc, list[|list| - 1]), list[..|list| - 1])
-  { reduceRight(fn, acc, list) }
+  { if |list| == 0 then acc
+    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
+         fn(foldr(fn, acc, list[1..]), list[0]) }
 
-  // `reduceRight.idx` (v0.4.1 defines it and sets `R.foldr.idx =
-  // R.reduceRight.idx`; until v0.4.0 `foldr.idx` held it):
+  // `R.foldrIndexed` (v0.9.0, which renamed `foldr.idx`, the alias of
+  // `reduceRight.idx` from v0.4.1 to v0.8.0, with the same code):
   // `acc = fn(acc, list[idx], idx, list)` for idx descending. The body folds
-  // over (element, index) pairs. The two keep the same contract.
-  function reduceRightIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
-    ensures |list| == 0 ==> reduceRightIdx(fn, acc, list) == acc
-  { reduceRight((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
-  function foldrIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
-    ensures |list| == 0 ==> foldrIdx(fn, acc, list) == acc
-  { reduceRightIdx(fn, acc, list) }
+  // over (element, index) pairs.
+  function foldrIndexed<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
+    ensures |list| == 0 ==> foldrIndexed(fn, acc, list) == acc
+  { foldr((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
 
   // `R.scanl(fn, acc, list)` (v0.7.0): `result[0] = acc; while (++idx < len)
   // { acc = fn(acc, list[idx - 1]); result[idx] = acc; }`, the accumulator
@@ -97,13 +92,15 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |list| ==> mapSeq(fn, list)[i] == fn(list[i])
   { seq(|list|, i requires 0 <= i < |list| => fn(list[i])) }
 
-  // `map.idx`: `fn(list[idx], idx, list)` for each index.
-  function mapIdx<A, B>(fn: (A, nat, seq<A>) -> B, list: seq<A>): seq<B>
-    ensures |mapIdx(fn, list)| == |list|
-    ensures forall i :: 0 <= i < |list| ==> mapIdx(fn, list)[i] == fn(list[i], i, list)
+  // `R.mapIndexed` (v0.9.0, which renamed `map.idx` with the same code):
+  // `fn(list[idx], idx, list)` for each index.
+  function mapIndexed<A, B>(fn: (A, nat, seq<A>) -> B, list: seq<A>): seq<B>
+    ensures |mapIndexed(fn, list)| == |list|
+    ensures forall i :: 0 <= i < |list| ==> mapIndexed(fn, list)[i] == fn(list[i], i, list)
   { seq(|list|, i requires 0 <= i < |list| => fn(list[i], i, list)) }
 
-  // `foldl(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`:
+  // `_foldl(function(acc, key) { acc[key] = fn(obj[key]); return acc; }, {}, keys(obj))`
+  // (`foldl` until v0.8.0, the same function):
   // fn applied to every own property. (In JS an own `__proto__` property is
   // dropped, as the assignment sets the prototype; README "Deviations".)
   function mapObj<V, W>(fn: V -> W, obj: map<string, V>): map<string, W>
@@ -111,17 +108,18 @@ module Ramdaf.List {
     ensures forall k :: k in obj ==> mapObj(fn, obj)[k] == fn(obj[k])
   { map k | k in obj :: fn(obj[k]) }
 
-  // `mapObj.idx` (v0.2.2): `fn(obj[key], key, obj)` for every own property
+  // `R.mapObjIndexed` (v0.9.0, which renamed `mapObj.idx`, added in v0.2.2,
+  // with the same code): `fn(obj[key], key, obj)` for every own property
   // (an own `__proto__` dropped in JS, as for mapObj).
-  function mapObjIdx<V, W>(fn: (V, string, map<string, V>) -> W, obj: map<string, V>): map<string, W>
-    ensures mapObjIdx(fn, obj).Keys == obj.Keys
-    ensures forall k :: k in obj ==> mapObjIdx(fn, obj)[k] == fn(obj[k], k, obj)
+  function mapObjIndexed<V, W>(fn: (V, string, map<string, V>) -> W, obj: map<string, V>): map<string, W>
+    ensures mapObjIndexed(fn, obj).Keys == obj.Keys
+    ensures forall k :: k in obj ==> mapObjIndexed(fn, obj)[k] == fn(obj[k], k, obj)
   { map k | k in obj :: fn(obj[k], k, obj) }
 
   // `R.ap(fns, vs)` (v0.3.0): `foldl(function(acc, fn) { return concat(acc,
-  // map(fn, vs)); }, [], fns)`, every function applied to every value, the
-  // functions outermost (`ap([f, g], [1, 2])` is `[f(1), f(2), g(1), g(2)]`).
-  // A non-array object with an `ap` method is dispatched to (Fantasy-land;
+  // map(fn, vs)); }, [], fns)` (since v0.9.0 `_ap`, with `_foldl`), every
+  // function applied to every value, the functions outermost
+  // (`ap([f, g], [1, 2])` is `[f(1), f(2), g(1), g(2)]`). A non-array object with an `ap` method is dispatched to (Fantasy-land;
   // since v0.5.0 the first argument, `fns.ap(vs)`, before that `vs`); no
   // Dafny value has one.
   function ap<A, B>(fns: seq<A -> B>, vs: seq<A>): seq<B>
@@ -147,17 +145,20 @@ module Ramdaf.List {
   function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
   { foldl((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
 
-  // `R.commuteMap(fn, of, list)` (v0.8.0): `reduce(consF, of([]), list)`
-  // with `consF(acc, ftor) = ap(map(append, fn(ftor)), acc)`, which turns a
+  // `R.commuteMap(fn, of, list)` (v0.8.0): `_foldl(consF, of([]), list)`
+  // with `consF(acc, ftor) = _ap(_map(append, fn(ftor)), acc)` (v0.9.0;
+  // v0.8.0 folded with `reduce`, which v0.9.0 removed, and called `R.ap` and
+  // `R.map`), which turns a
   // list of functors into a functor of lists, fn transforming each functor
   // first. For arrays: every way of picking one element of fn(ftor) for each
   // ftor, the first list's element varying fastest (`commuteMap(map(x => x +
   // 10), of, [[1, 2], [3]])` is `[[11, 13], [12, 13]]`). JS dispatches `ap`
   // and `map` to any Fantasy-land functor, with of building the result's
-  // functor; here they are arrays (README "Deviations"). `R.append` (Core)
-  // is written out as `l + [x]`.
+  // functor (since v0.9.0 only `of`'s functor and its `ap`); here they are
+  // arrays (README "Deviations"). `R.append` (Core) is written out as
+  // `l + [x]`.
   function commuteMap<A, B>(fn: seq<A> -> seq<B>, of: seq<B> -> seq<seq<B>>, list: seq<seq<A>>): seq<seq<B>>
-  { reduce((acc: seq<seq<B>>, ftor: seq<A>) => ap(mapSeq((x: B) => ((l: seq<B>) => l + [x]), fn(ftor)), acc),
+  { foldl((acc: seq<seq<B>>, ftor: seq<A>) => ap(mapSeq((x: B) => ((l: seq<B>) => l + [x]), fn(ftor)), acc),
            of([]), list) }
 
   // `R.commute = commuteMap(map(identity))` (v0.8.0): commuteMap with no
@@ -176,14 +177,15 @@ module Ramdaf.List {
     else assert list == [list[0]] + list[1..];
          if fn(list[0]) then [list[0]] + filter(fn, list[1..]) else filter(fn, list[1..]) }
 
-  // `filter.idx`: the elements list[idx] with `fn(list[idx], idx, list)`, in
+  // `R.filterIndexed` (v0.9.0, which renamed `filter.idx` with the same
+  // code): the elements list[idx] with `fn(list[idx], idx, list)`, in
   // list order. The body pairs each element with its index, filters the
   // pairs and keeps the elements.
-  function filterIdx<T>(fn: (T, nat, seq<T>) -> bool, list: seq<T>): seq<T>
-    ensures |filterIdx(fn, list)| <= |list|
-    ensures forall k :: 0 <= k < |filterIdx(fn, list)| ==>
-      exists i :: 0 <= i < |list| && list[i] == filterIdx(fn, list)[k] && fn(list[i], i, list)
-    ensures forall i :: 0 <= i < |list| && fn(list[i], i, list) ==> list[i] in filterIdx(fn, list)
+  function filterIndexed<T>(fn: (T, nat, seq<T>) -> bool, list: seq<T>): seq<T>
+    ensures |filterIndexed(fn, list)| <= |list|
+    ensures forall k :: 0 <= k < |filterIndexed(fn, list)| ==>
+      exists i :: 0 <= i < |list| && list[i] == filterIndexed(fn, list)[k] && fn(list[i], i, list)
+    ensures forall i :: 0 <= i < |list| && fn(list[i], i, list) ==> list[i] in filterIndexed(fn, list)
   { var pairs: seq<(T, nat)> := seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat));
     var kept := filter((p: (T, nat)) => fn(p.0, p.1, list), pairs);
     assert forall k :: 0 <= k < |kept| ==>
@@ -211,14 +213,15 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |list| && !fn(list[i]) ==> list[i] in reject(fn, list)
   { filter(x => !fn(x), list) }
 
-  // `reject.idx`: `filter.idx(notFn(fn), list)`, the elements list[idx] with
-  // `!fn(list[idx], idx, list)`, in list order (the body is filter.idx's with
-  // the test negated).
-  function rejectIdx<T>(fn: (T, nat, seq<T>) -> bool, list: seq<T>): seq<T>
-    ensures |rejectIdx(fn, list)| <= |list|
-    ensures forall k :: 0 <= k < |rejectIdx(fn, list)| ==>
-      exists i :: 0 <= i < |list| && list[i] == rejectIdx(fn, list)[k] && !fn(list[i], i, list)
-    ensures forall i :: 0 <= i < |list| && !fn(list[i], i, list) ==> list[i] in rejectIdx(fn, list)
+  // `R.rejectIndexed` (v0.9.0, which renamed `reject.idx` with the same
+  // code): `_filterIndexed(not(fn), list)`, the elements list[idx] with
+  // `!fn(list[idx], idx, list)`, in list order (the body is filterIndexed's
+  // with the test negated).
+  function rejectIndexed<T>(fn: (T, nat, seq<T>) -> bool, list: seq<T>): seq<T>
+    ensures |rejectIndexed(fn, list)| <= |list|
+    ensures forall k :: 0 <= k < |rejectIndexed(fn, list)| ==>
+      exists i :: 0 <= i < |list| && list[i] == rejectIndexed(fn, list)[k] && !fn(list[i], i, list)
+    ensures forall i :: 0 <= i < |list| && !fn(list[i], i, list) ==> list[i] in rejectIndexed(fn, list)
   { var pairs: seq<(T, nat)> := seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat));
     var kept := filter((p: (T, nat)) => !fn(p.0, p.1, list), pairs);
     assert forall k :: 0 <= k < |kept| ==>
@@ -263,24 +266,30 @@ module Ramdaf.List {
     ensures take(n, list) <= list
   { if n < 0 then [] else if n <= |list| then list[..n] else list }
 
-  // The suffix starting at the first element that satisfies fn.
-  function skipUntil<T>(fn: T -> bool, list: seq<T>): seq<T>
-    ensures |skipUntil(fn, list)| <= |list|
-    ensures skipUntil(fn, list) == list[|list| - |skipUntil(fn, list)|..]
-    ensures forall i :: 0 <= i < |list| - |skipUntil(fn, list)| ==> !fn(list[i])
-    ensures |skipUntil(fn, list)| > 0 ==> fn(skipUntil(fn, list)[0])
-  { if |list| == 0 || fn(list[0]) then list else skipUntil(fn, list[1..]) }
+  // `R.dropWhile(pred, list)` (v0.9.0, in place of `skipUntil`, which
+  // skipped until the predicate held): `while (++idx < len &&
+  // pred(list[idx])) {}; return _slice(list, idx);`, the suffix starting at
+  // the first element that fails pred (`dropWhile(p, l)` is v0.8.0's
+  // `skipUntil(x => !p(x), l)`).
+  function dropWhile<T>(pred: T -> bool, list: seq<T>): seq<T>
+    ensures |dropWhile(pred, list)| <= |list|
+    ensures dropWhile(pred, list) == list[|list| - |dropWhile(pred, list)|..]
+    ensures forall i :: 0 <= i < |list| - |dropWhile(pred, list)| ==> pred(list[i])
+    ensures |dropWhile(pred, list)| > 0 ==> !pred(dropWhile(pred, list)[0])
+  { if |list| == 0 || !pred(list[0]) then list else dropWhile(pred, list[1..]) }
 
+  // `R.drop` (v0.9.0, which renamed `skip` with the same code; it dispatches
+  // to a `drop` method of a non-array where `skip` called `skip`):
   // `if (n < list.length) { return _slice(list, n); } else { return []; }`
   // (v0.5.0, "Fix a bug in R.skip"): all but the first n elements, or [] when
   // n is at least the length. From v0.2.0 to v0.4.3 `_slice` allocated
   // `new Array(list.length - n)`, which threw RangeError for n > |list|
   // (`skip(5, [1, 2])`), so n was at most |list|; before v0.2.0 it was [].
-  // A negative n gives JS garbage (`skip(-1, [1, 2])` is
+  // A negative n gives JS garbage (`drop(-1, [1, 2])` is
   // `[undefined, 1, 2]`), so n is a nat.
-  function skip<T>(n: nat, list: seq<T>): seq<T>
-    ensures n <= |list| ==> skip(n, list) == list[n..]
-    ensures n >= |list| ==> skip(n, list) == []
+  function drop<T>(n: nat, list: seq<T>): seq<T>
+    ensures n <= |list| ==> drop(n, list) == list[n..]
+    ensures n >= |list| ==> drop(n, list) == []
   { if n < |list| then list[n..] else [] }
 
   // The first element satisfying fn; JS returns undefined when none does.
@@ -335,16 +344,18 @@ module Ramdaf.List {
          assert forall j :: 0 <= j < |list| - 1 ==> list[..|list| - 1][j] == list[j];
          r }
 
-  // v0.4.1 renames `all` to `every` (`R.every = curry2(every)`; `every` was
-  // its alias), so the body is the one `all` had: fn holds for every element.
-  function every<T>(fn: T -> bool, list: seq<T>): bool
+  // `R.all = _curry2(_all)` (v0.9.0, which renamed `every` with the same
+  // code; v0.4.1 had renamed `all` to `every`): fn holds for every element.
+  function all<T>(fn: T -> bool, list: seq<T>): bool
   { forall i :: 0 <= i < |list| ==> fn(list[i]) }
 
-  // v0.4.1 renames `any` to `some` likewise: fn holds for some element.
-  function some<T>(fn: T -> bool, list: seq<T>): bool
+  // `R.any = _curry2(_any)` (v0.9.0, `some` renamed likewise): fn holds for
+  // some element.
+  function any<T>(fn: T -> bool, list: seq<T>): bool
   { exists i :: 0 <= i < |list| && fn(list[i]) }
 
-  // `list.indexOf(a) > -1` (JS `===`; see README on equality).
+  // `list.indexOf(a) > -1` (JS `===`; see README on equality; since v0.9.0
+  // `op`-curried, which only adds the placeholder form `contains(__, list)`).
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
 
   // `pred(x, list[idx])` for some idx (exported since v0.1.5).
@@ -534,12 +545,15 @@ module Ramdaf.List {
   // Every pair `[a[idx], b[j]]`, the first list's index outermost: Ramda's
   // nested loops (`[]` when either list is empty). Until v0.7.2 the body was
   // `xprodWith` of the pairing function, which v0.8.0 removed (Ramda's own
-  // `xprod` always had its own loops), with the same results.
+  // `xprod` always had its own loops), with the same results. (v0.9.0 drops
+  // Ramda's `isEmpty` guard, which the loops make redundant.)
   function xprod<A, B>(a: seq<A>, b: seq<B>): seq<(A, B)>
     ensures |xprod(a, b)| == |a| * |b|
   { if |a| == 0 || |b| == 0 then []
     else mapSeq((y: B) => (a[0], y), b) + xprod(a[1..], b) }
 
+  // `_slice(list).reverse()` (v0.9.0; an explicit loop since v0.6.0): the
+  // list back to front.
   function reverse<T>(list: seq<T>): seq<T>
     ensures |reverse(list)| == |list|
     ensures forall i :: 0 <= i < |list| ==> reverse(list)[i] == list[|list| - 1 - i]
@@ -563,25 +577,6 @@ module Ramdaf.List {
     else var r := indexOf(obj, list[1..]);
          if r < 0 then -1 else r + 1 }
 
-  // `indexOf.from(target, fromIdx, list)` (v0.2.2): the search starts at
-  // fromIdx, a negative fromIdx counting from the end (`Math.max(0, length +
-  // fromIdx)`); -1 when target does not occur from there on. The body
-  // searches the suffix with indexOf.
-  function indexOfFrom<T(==)>(target: T, fromIdx: int, list: seq<T>): int
-    ensures var i := if fromIdx < 0 then (if |list| + fromIdx < 0 then 0 else |list| + fromIdx)
-                     else if fromIdx > |list| then |list| else fromIdx;
-      -1 <= indexOfFrom(target, fromIdx, list) < |list| &&
-      (indexOfFrom(target, fromIdx, list) == -1 <==> target !in list[i..]) &&
-      (indexOfFrom(target, fromIdx, list) >= 0 ==>
-         i <= indexOfFrom(target, fromIdx, list) && list[indexOfFrom(target, fromIdx, list)] == target &&
-         forall j :: i <= j < indexOfFrom(target, fromIdx, list) ==> list[j] != target)
-  { var i := if fromIdx < 0 then (if |list| + fromIdx < 0 then 0 else |list| + fromIdx)
-             else if fromIdx > |list| then |list| else fromIdx;
-    var r := indexOf(target, list[i..]);
-    assert r >= 0 ==> list[i..][r] == list[i + r];
-    assert forall j :: i <= j < i + r ==> list[j] == list[i..][j - i];
-    if r == -1 then -1 else r + i }
-
   // `list.lastIndexOf(obj)`: the last index of obj, or -1.
   function lastIndexOf<T(==)>(obj: T, list: seq<T>): int
     ensures -1 <= lastIndexOf(obj, list) < |list|
@@ -593,26 +588,8 @@ module Ramdaf.List {
     else if list[|list| - 1] == obj then |list| - 1
     else lastIndexOf(obj, list[..|list| - 1]) }
 
-  // `lastIndexOf.from(target, fromIdx, list)` (v0.2.2): the search runs
-  // down from fromIdx, a negative fromIdx counting from the end (the loop
-  // starts below `length + fromIdx + 1`, or below `Math.min(length,
-  // fromIdx + 1)`); -1 when target does not occur at or before it. The body
-  // searches the prefix with lastIndexOf.
-  function lastIndexOfFrom<T(==)>(target: T, fromIdx: int, list: seq<T>): int
-    ensures var e := if fromIdx < 0 then |list| + fromIdx + 1
-                     else if fromIdx + 1 < |list| then fromIdx + 1 else |list|;
-      -1 <= lastIndexOfFrom(target, fromIdx, list) < |list| &&
-      (e <= 0 ==> lastIndexOfFrom(target, fromIdx, list) == -1) &&
-      (e > 0 ==> (lastIndexOfFrom(target, fromIdx, list) == -1 <==> target !in list[..e])) &&
-      (lastIndexOfFrom(target, fromIdx, list) >= 0 ==>
-         lastIndexOfFrom(target, fromIdx, list) < e && list[lastIndexOfFrom(target, fromIdx, list)] == target &&
-         forall j :: lastIndexOfFrom(target, fromIdx, list) < j < e ==> list[j] != target)
-  { var e := if fromIdx < 0 then |list| + fromIdx + 1
-             else if fromIdx + 1 < |list| then fromIdx + 1 else |list|;
-    if e <= 0 then -1 else lastIndexOf(target, list[..e]) }
-
-  // `list.join(sep)` (since v0.8.0 `invokerN(1, 'join')`, the target's own
-  // method); the elements are strings (see README on numbers).
+  // `list.join(sep)` (since v0.8.0 `invokerN(1, 'join')`, since v0.9.0
+  // `invoker(1, 'join')`, the target's own method); the elements are strings (see README on numbers).
   function join(sep: string, list: seq<string>): string
   { if |list| == 0 then ""
     else if |list| == 1 then list[0]
@@ -620,7 +597,7 @@ module Ramdaf.List {
 
   // `Array.prototype.slice(from, to)` (an invoker since v0.1.4; since v0.6.0
   // `invoker(Array.prototype.slice)`, which also works on a JS string; since
-  // v0.8.0 `invokerN(2, 'slice')`, the target's own method, so
+  // v0.8.0 `invokerN(2, 'slice')`, v0.9.0 `invoker`, the target's own method, so
   // `slice(1, 2, "abc")` is the string "b" where it was ["b"]; both are the
   // Dafny "b"): a negative
   // index counts from the end, both are clamped into the list, and the result
@@ -635,14 +612,8 @@ module Ramdaf.List {
     var b := if to < 0 then (if n + to < 0 then 0 else n + to) else if to > n then n else to;
     if a < b then list[a..b] else [] }
 
-  // `curry2(function(a, xs) { return xs.slice(a, xs.length); })` (v0.5.0;
-  // it was `flip(slice)(undefined)`, which returned undefined for a JS
-  // string): everything from `from` (clamped, negative from the end).
-  function sliceFrom<T>(from: int, list: seq<T>): seq<T>
-    ensures sliceFrom(from, list) == slice(from, |list|, list)
-  { slice(from, |list|, list) }
-
-  // `remove`, `insert` and `insert.all` (v0.2.2) are built on
+  // `remove`, `insert` and `insert.all` (v0.2.2; `insertAll` since v0.9.0)
+  // are built on
   // `_slice(args, from, to)`, which copies args[from..to) into a new array:
   // indices past an end read undefined holes, and until v0.7.2 a negative
   // length (`new Array(to - from)`) threw RangeError; since v0.8.0 the
@@ -677,8 +648,10 @@ module Ramdaf.List {
   { var i := if 0 <= index < |list| then index else |list|;
     list[..i] + [elt] + list[i..] }
 
-  // `insert.all`: as insert, with the list elts in place of one element:
-  // `concat(concat(_slice(list, 0, index), elts), _slice(list, index))`.
+  // `R.insertAll` (`src/insertAll.js`; until v0.8.0 the property
+  // `insert.all`, ported under this name): as insert, with the list elts in
+  // place of one element: `concat(concat(_slice(list, 0, index), elts),
+  // _slice(list, index))`.
   function insertAll<T>(index: int, elts: seq<T>, list: seq<T>): seq<T>
     ensures var i := if 0 <= index < |list| then index else |list|;
       insertAll(index, elts, list) == list[..i] + elts + list[i..]
@@ -692,4 +665,42 @@ module Ramdaf.List {
   // which groupBy (Data.dfy) now does.
   function partition<T>(pred: T -> bool, list: seq<T>): (seq<T>, seq<T>)
   { (filter(pred, list), reject(pred, list)) }
+
+  // `R.repeat(value, n)` (v0.9.0, which renamed `repeatN` with the same
+  // code, `times(always(value), n)`; `@category List` puts it here, where
+  // `repeatN` was in Core): n copies of value. Before v0.2.3 the body was
+  // `var arr = new Array(n), i = -1; while (++i < n) { arr[i] = value; }`.
+  // Since v0.2.0 the array is allocated with `new Array(n)`, which throws
+  // RangeError for a negative n (v0.1.3 to v0.1.5 returned []), so n is a
+  // nat.
+  function repeat<T>(value: T, n: nat): seq<T>
+    ensures |repeat(value, n)| == n
+    ensures forall i :: 0 <= i < n ==> repeat(value, n)[i] == value
+  { seq(n, _ => value) }
+
+  // `R.init = slice(0, -1)` (v0.9.0): all but the last element ([] for []).
+  // `slice` is an `invoker`, so on a JS string it gives the string, here the
+  // same seq.
+  function init<T>(list: seq<T>): seq<T> { slice(0, -1, list) }
+
+  // `R.mapAccumL(fn, acc, list)` (v0.9.0): `tuple = [acc]; while (++idx <
+  // len) { tuple = fn(tuple[0], list[idx]); result[idx] = tuple[1]; }
+  // return [tuple[0], result];`, threading the accumulator left to right
+  // through fn, which returns the pair [accumulator, mapped element].
+  function mapAccumL<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
+    ensures |mapAccumL(fn, acc, list).1| == |list|
+  { if |list| == 0 then (acc, [])
+    else var t := fn(acc, list[0]);
+         var r := mapAccumL(fn, t.0, list[1..]);
+         (r.0, [t.1] + r.1) }
+
+  // `R.mapAccumR(fn, acc, list)` (v0.9.0): as mapAccumL with idx descending,
+  // `result[idx] = tuple[1]`, so each mapped element stays at its element's
+  // index while the accumulator runs right to left.
+  function mapAccumR<A, B, C>(fn: (A, B) -> (A, C), acc: A, list: seq<B>): (A, seq<C>)
+    ensures |mapAccumR(fn, acc, list).1| == |list|
+  { if |list| == 0 then (acc, [])
+    else var t := fn(acc, list[|list| - 1]);
+         var r := mapAccumR(fn, t.0, list[..|list| - 1]);
+         (r.0, r.1 + [t.1]) }
 }

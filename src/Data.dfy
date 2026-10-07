@@ -1,9 +1,10 @@
-// Ramdaf: Ramda v0.8.0 "Data Analysis and Grouping Functions" (ramda.js lines
-// 5787-6200), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
-// unportable `functions`/`functionsIn`, and `groupBy`, which since v0.3.0 is
-// defined in "List Functions" (line 3717 in v0.8.0; from v0.2.0 to v0.2.4 an
-// alias of `partition` there) but which stays here (functions do not move
-// between modules).
+// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "Data Analysis and Grouping Functions" section, except
+// `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
+// `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
+// defined in "List Functions" (from v0.2.0 to v0.2.4 an alias of `partition`
+// there) but which stays here (functions do not move between modules); from
+// v0.9.0 on, the functions with `@category Relation` (`eqDeep`).
 //
 // The set functions are `uniq`/`uniqWith` of a combined or filtered list, as
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
@@ -20,7 +21,7 @@ module Ramdaf.Data {
 
   export
     reveals union, unionWith, difference, differenceWith,
-            intersection, intersectionWith, countBy, groupBy, project
+            intersection, intersectionWith, countBy, groupBy, project, eqDeep
     provides Prelude, List, Object
 
   // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
@@ -130,4 +131,11 @@ module Ramdaf.Data {
   // own `__proto__` property is dropped, as for pickAll).
   function project<V>(names: seq<string>, list: seq<map<string, V>>): seq<map<string, Option<V>>>
   { List.mapSeq((obj: map<string, V>) => Object.pickAll(names, obj), list) }
+
+  // `R.eqDeep(a, b)` (v0.9.0, `@category Relation`): `_eqDeep(a, b, [], [])`,
+  // values of the same `type` that are `eq` or, for arrays and objects, have
+  // the same own keys with deeply equal values (with cycle detection, Date
+  // times and RegExp flags). On Dafny values that is structural equality.
+  // (It inherits `eq`'s `Object.is`: README "Deviations".)
+  function eqDeep<T(==)>(a: T, b: T): bool { a == b }
 }

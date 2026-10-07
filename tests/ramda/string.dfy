@@ -1,5 +1,8 @@
-// Ramda v0.8.0 test/test.stringBasics.js and test/test.replace.js, transcribed. Not transcribed:
-// describe('match') (regular expressions are not portable, README), and
+// Ramda v0.9.0 test/substring.js, substringFrom.js, substringTo.js,
+// charAt.js, charCodeAt.js, strIndexOf.js, strLastIndexOf.js, toUpper.js,
+// toLower.js, trim.js, split.js and replace.js (until v0.8.0
+// test.stringBasics.js and test.replace.js), transcribed. Not transcribed:
+// match.js (regular expressions are not portable, README), and
 // trim's "falls back to a shim if String.prototype.trim is not present"
 // (v0.6.0), which is only registered when that method is missing, so not
 // under node (its asserts repeat the other three).
@@ -70,9 +73,10 @@ module RamdafTests.Ramda.String {
     expect findA("banana split") == 5;
   }
 
-  // describe('toUpperCase'), describe('toLowerCase')
-  method {:test} ToUpperCaseUppercases() { expect toUpperCase("abc") == "ABC"; }
-  method {:test} ToLowerCaseLowercases() { expect toLowerCase("XYZ") == "xyz"; }
+  // describe('toUpper'), describe('toLower') (describe('toUpperCase') and
+  // describe('toLowerCase') until v0.8.0)
+  method {:test} ToUpperUppercases() { expect toUpper("abc") == "ABC"; }
+  method {:test} ToLowerLowercases() { expect toLower("XYZ") == "xyz"; }
 
   // describe('trim') (v0.6.0): the 26 characters before and after
   // "Hello, World!" are ES5 whitespace plus U+180E, U+2028, U+2029 and U+FEFF.

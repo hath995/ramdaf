@@ -1,38 +1,41 @@
-// Ramdaf: Ramda v0.8.0 "Core Functions" (ramda.js lines 866-1225), `clone`
-// (lines 785-787) and `cloneDeep` (lines 808-810) from the internal
-// functions, and `size` with its alias `length` (lines 2443-2453).
-// (v0.2.0 removed `cloneDeep`, which v0.8.0 brings back, and v0.4.1 the
-// `first` alias of `head`.)
+// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "Core Functions" section (`isEmpty`, `prepend`,
+// `prependTo`, `nth`, `head`, `last`, `tail`, `append`, `appendTo`,
+// `concat`, `identity`, `I`, `times`), `clone` and `length`; and, from
+// v0.9.0 on, the functions with `@category Type` (`isNil`). (v0.2.0 removed
+// `cloneDeep`, which v0.8.0 brought back; v0.4.1 removed the `first` alias of
+// `head`; v0.9.0 removed the aliases `car`, `cdr`, `cons` and `push`,
+// `size`, whose alias `length` holds its code now, and `cloneDeep`, which
+// `clone` became, and renamed `repeatN` to `repeat`, which `@category List`
+// puts in List.)
 
 module Ramdaf.Core {
   import opened Prelude
 
   export
-    reveals clone, cloneDeep, isEmpty, prepend, cons, prependTo, nth, head, car, last,
-            tail, cdr, append, push, appendTo, concat, identity, I, times, repeatN,
-            size, length
+    reveals clone, isEmpty, prepend, prependTo, nth, head, last, tail, append,
+            appendTo, concat, identity, I, times, length, isNil
     provides Prelude
 
-  // `clone(list)` is `_slice(list)` (`list.concat()` before v0.2.0), a
-  // shallow copy. Dafny sequences are values, so the copy is the list itself.
-  function clone<T>(list: seq<T>): seq<T> { list }
+  // `R.clone(value)` (`src/clone.js`): `_baseCopy(value, [], [])`, a deep
+  // copy of nested arrays and objects (a Date is copied, a shared or
+  // circular reference copied once) that keeps functions and primitives
+  // (strings included) as they are. v0.9.0 "unify R.clone, R.cloneObj, and
+  // R.cloneDeep" gave `clone` v0.8.0's `cloneDeep` code and removed the
+  // other two; until v0.8.0 `clone(list)` was `_slice(list)`
+  // (`list.concat()` before v0.2.0), a shallow copy of a list, and the port
+  // took a seq. A Dafny value is immutable and has no identity, so its copy
+  // is the value itself. In JS an own `__proto__` property is not copied
+  // (README "Deviations").
+  function clone<T>(value: T): T { value }
 
-  // `R.cloneDeep(value)` (v0.8.0): `_baseCopy(value, [], [])`, a deep copy of
-  // nested arrays and objects (a Date is copied, a shared or circular
-  // reference copied once) that keeps functions by reference. A Dafny value
-  // is immutable and has no identity, so its deep copy is the value itself.
-  // (v0.1.1's `cloneDeep`, removed in v0.2.0, was a JSON round trip that
-  // dropped functions and undefined properties, and took a `T(==)`.) In JS
-  // an own `__proto__` property is not copied (README "Deviations").
-  function cloneDeep<T>(value: T): T { value }
-
-  // `val == null || val.length === 0` (v0.8.0; `!list || !list.length`
-  // before): on a list (or a JS string) the same test, |list| == 0. Only
-  // non-list arguments changed (`isEmpty(0)` is now false).
+  // `Object(list).length === 0` (v0.9.0; v0.8.0 `val == null || val.length
+  // === 0`, `!list || !list.length` before): on a list (or a JS string) the
+  // same test, |list| == 0. Only non-list arguments changed (since v0.8.0
+  // `isEmpty(0)` is false, and since v0.9.0 `isEmpty(null)` too).
   function isEmpty<T>(list: seq<T>): bool { |list| == 0 }
 
   function prepend<T>(el: T, list: seq<T>): seq<T> { [el] + list }
-  function cons<T>(el: T, list: seq<T>): seq<T> { prepend(el, list) }
 
   // `R.prependTo = flip(_prepend)` (v0.8.0), where `_prepend` is the
   // function behind `R.prepend`: prepend with the arguments the other way
@@ -53,9 +56,6 @@ module Ramdaf.Core {
   function head<T>(list: seq<T>): T
     requires |list| > 0
   { list[0] }
-  function car<T>(list: seq<T>): T
-    requires |list| > 0
-  { head(list) }
 
   // `arr[arr.length - 1]` (since v0.8.0 `nth(-1)`): `last([])` is undefined,
   // so the empty list is excluded.
@@ -69,10 +69,8 @@ module Ramdaf.Core {
   function tail<T>(list: seq<T>): seq<T>
     ensures |list| > 0 ==> tail(list) == list[1..]
   { if |list| <= 1 then [] else list[1..] }
-  function cdr<T>(list: seq<T>): seq<T> { tail(list) }
 
   function append<T>(el: T, list: seq<T>): seq<T> { list + [el] }
-  function push<T>(el: T, list: seq<T>): seq<T> { append(el, list) }
 
   // `R.appendTo = flip(_append)` (v0.8.0): append with the arguments the
   // other way round.
@@ -87,12 +85,15 @@ module Ramdaf.Core {
   // `_hasMethod` tests `obj != null`, so it is `"bar"`, as here. (v0.4.0 and
   // v0.5.0 tested for a String first argument and then the second argument's
   // method.) A Dafny string is a seq, so the same function covers strings.
+  // (Since v0.9.0 `concat` is `op`-curried, which only adds the placeholder
+  // form `concat(__, b)`.)
   function concat<T>(list1: seq<T>, list2: seq<T>): seq<T> { list1 + list2 }
 
   function identity<T>(x: T): T { x }
   function I<T>(x: T): T { identity(x) }
 
-  // `var arr = new Array(n); while (++i < n) { arr[i] = fn(i); }` (v0.2.3):
+  // `var arr = new Array(n); while (++i < n) { arr[i] = fn(i); }` (v0.2.3;
+  // since v0.9.0 `new Array(Number(n))`, which only changes non-numbers):
   // fn applied to 0, 1, ..., n - 1. `new Array(n)` throws RangeError for a
   // negative n, so n is a nat.
   function times<T>(fn: nat -> T, n: nat): seq<T>
@@ -100,17 +101,14 @@ module Ramdaf.Core {
     ensures forall i :: 0 <= i < n ==> times(fn, n)[i] == fn(i)
   { seq(n, i requires 0 <= i < n => fn(i)) }
 
-  // n copies of value: since v0.2.3 `times(always(value), n)`, before that
-  // `var arr = new Array(n), i = -1; while (++i < n) { arr[i] = value; }`.
-  // Since v0.2.0 the array is allocated with `new Array(n)`, which throws
-  // RangeError for a negative n (v0.1.3 to v0.1.5 returned []), so n is a
-  // nat.
-  function repeatN<T>(value: T, n: nat): seq<T>
-    ensures |repeatN(value, n)| == n
-    ensures forall i :: 0 <= i < n ==> repeatN(value, n)[i] == value
-  { seq(n, _ => value) }
+  // `list != null && is(Number, list.length) ? list.length : NaN`
+  // (`src/length.js`; v0.9.0 removed `size`, whose alias `length` was from
+  // v0.3.0 to v0.8.0, and gave `length` the code, NaN only for non-lists).
+  function length<T>(list: seq<T>): nat { |list| }
 
-  function size<T>(list: seq<T>): nat { |list| }
-  // v0.3.0: `aliasFor('size').is('length')`.
-  function length<T>(list: seq<T>): nat { size(list) }
+  // `R.isNil(x)` (v0.9.0, `@category Type`): `x == null`, true for null and
+  // undefined. The port's `None` is JS undefined (an absent property, a "no
+  // value" result) and stands for null too, so isNil tests an Option
+  // (README "Deviations").
+  function isNil<T>(x: Option<T>): bool { x.None? }
 }

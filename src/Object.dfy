@@ -1,23 +1,30 @@
-// Ramdaf: Ramda v0.8.0 "Object Functions" (ramda.js lines 3753-4608) and `propEq`
-// (line 5838). A JS object is a map<string, V>; a missing property is JS
-// undefined, here None. The functions that build an object by assigning
-// properties (`pick`, `pickAll`, `pickBy`, `omit`, `mixin`, `cloneObj`,
-// `assoc`) drop an own `__proto__` property in JS, as the assignment sets the
-// prototype instead; a map's keys are all ordinary (README "Deviations").
-// (v0.8.0 renamed `pickWith` to `pickBy`, and `props` to `propOf`, reusing
-// the name `props` for a new function.)
+// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
+// the functions with `@category Object` (`evolve`, `invert`, `invertObj`).
+// A JS object is a map<string, V>; a missing property is JS undefined, here
+// None. The functions that build an object by assigning properties (`pick`,
+// `pickAll`, `pickBy`, `omit`, `mixin`, `assoc`, `evolve`, `invertObj`) drop
+// an own `__proto__` property in JS, as the assignment sets the prototype
+// instead; a map's keys are all ordinary (README "Deviations"). (v0.8.0
+// renamed `pickWith` to `pickBy`, and `props` to `propOf`, reusing the name
+// `props` for a new function; v0.9.0 removed `cloneObj`, which `clone`
+// (Core.dfy) took over.)
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
     reveals eq, prop, get, propOf, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
-            values, valuesIn, pick, pickAll, omit, pickBy, mixin, cloneObj, eqProps, where,
-            assoc, propEq
+            values, valuesIn, pick, pickAll, omit, pickBy, mixin, eqProps, where,
+            assoc, propEq, evolve, invert, invertObj
     provides Prelude
 
-  // `a === b`. Dafny equality is structural where JS compares objects and
-  // arrays by reference (see README "Deviations").
+  // `a === b` until v0.8.0; since v0.9.0 `Object.is`: `1 / a === 1 / b`
+  // when a is 0, and `a === b || (a !== a && b !== b)` otherwise, so `-0`
+  // and `0` differ and `NaN` equals itself. On ints that is `==`; JS
+  // arithmetic can produce `-0`, which `int` does not have, and Dafny
+  // equality is structural where JS compares objects and arrays by reference
+  // (see README "Deviations").
   function eq<T(==)>(a: T, b: T): bool { a == b }
 
   // `obj[p]`
@@ -39,12 +46,15 @@ module Ramdaf.Object {
     ensures |props(ps, obj)| == |ps|
   { seq(|ps|, i requires 0 <= i < |ps| => prop(ps[i], obj)) }
 
-  // `R.propOr(p, val, obj)`: `hasOwnProperty.call(obj, p) ? obj[p] : val`,
-  // obj's own property p, or val when obj lacks it (v0.6.0 renamed
-  // `propOrDefault`, added in v0.4.0, to `propOr`, with the same code). Every
-  // property of a map is its own.
-  function propOr<V>(p: string, val: V, obj: map<string, V>): V
-  { if p in obj then obj[p] else val }
+  // `R.propOr(val, p, obj)` (`src/propOr.js`): `has(p, obj) ? obj[p] :
+  // val`, obj's own property p, or val when obj lacks it. v0.9.0 moved the
+  // default to the first argument ("take default value as first argument to
+  // R.propOr"); until v0.8.0 it was `propOr(p, val, obj)`, with
+  // `hasOwnProperty.call(obj, p)`. (v0.6.0 renamed `propOrDefault`, added in
+  // v0.4.0, to `propOr`, with the same code.) Every property of a map is
+  // its own.
+  function propOr<V>(val: V, p: string, obj: map<string, V>): V
+  { if has(p, obj) then obj[p] else val }
 
   // `R.has(prop, obj)` (v0.7.0): `hasOwnProperty.call(obj, prop)`. Every
   // property of a map is its own.
@@ -166,12 +176,6 @@ module Ramdaf.Object {
     ensures forall k :: k in a && k !in b ==> mixin(a, b)[k] == a[k]
   { a + b }
 
-  // `R.cloneObj(obj)` (v0.5.0): `extend({}, obj)`, a shallow copy of obj's
-  // own properties. Dafny maps are values, so the copy is obj itself (as for
-  // `clone`). In JS an own `__proto__` property is not copied (README
-  // "Deviations").
-  function cloneObj<V>(obj: map<string, V>): map<string, V> { obj }
-
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal).
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
   { prop(p, obj1) == prop(p, obj2) }
@@ -203,4 +207,33 @@ module Ramdaf.Object {
   // `obj[name] === val`
   function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool
   { name in obj && obj[name] == val }
+
+  // `R.evolve(transformations, object)` (v0.9.0): `_extend(_extend({},
+  // object), mapObjIndexed((fn, key) => fn(object[key]), transformations))`,
+  // a copy of object in which every key of transformations is set to its
+  // function applied to `object[key]`, which is undefined (None) when object
+  // lacks the key (Ramda's test "invokes function with undefined if object
+  // does not contain the key"). JS lets a transformation change the value's
+  // type (README "Deviations").
+  function evolve<V>(transformations: map<string, Option<V> -> V>, obj: map<string, V>): map<string, V>
+    ensures evolve(transformations, obj).Keys == obj.Keys + transformations.Keys
+  { obj + map k | k in transformations :: transformations[k](prop(k, obj)) }
+
+  // `R.invert(obj)` (v0.9.0): `out[val] = out[val] || []; out[val].push(key)`
+  // over `keys(obj)`, each value mapped to the keys holding it. JS lists the
+  // keys in property order; a map has none, so they are a set, as for `keys`
+  // (README "Deviations"). The values become keys, so they are strings.
+  function invert(obj: map<string, string>): map<string, set<string>>
+    ensures invert(obj).Keys == obj.Values
+  { map v | v in obj.Values :: set k | k in obj && obj[k] == v }
+
+  // `R.invertObj(obj)` (v0.9.0): `out[obj[key]] = key` over `keys(obj)`,
+  // each value mapped to its key. For a repeated value the key last in
+  // property order wins, which a map does not carry, so the values must be
+  // distinct (README "Outside the modeled domain").
+  function invertObj(obj: map<string, string>): map<string, string>
+    requires forall k1, k2 :: k1 in obj && k2 in obj && obj[k1] == obj[k2] ==> k1 == k2
+    ensures invertObj(obj).Keys == obj.Values
+    ensures forall k :: k in obj ==> invertObj(obj)[obj[k]] == k
+  { map k | k in obj :: obj[k] := k }
 }
