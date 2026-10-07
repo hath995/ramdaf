@@ -1,4 +1,4 @@
-// Ramda v0.23.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.24.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -9,7 +9,7 @@
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
 // splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js,
-// groupWith.js and reduceWhile.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// groupWith.js, reduceWhile.js, startsWith.js and endsWith.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -101,6 +101,9 @@
 // groupWith.js's (v0.21.0) `R.equals` is `==`, `R.complement(R.equals)`,
 // `R.T` and `R.F` are binary lambdas, and `R.unnest` of the groups is
 // `chain(identity)` (since v0.18.0), here `chain(g => g, …)`.
+// startsWith.js and endsWith.js (v0.24.0; endsWith.js's describe is named
+// 'startsWith' upstream) test strings as Dafny strings and arrays of
+// strings as seqs of strings.
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -1456,6 +1459,17 @@ module RamdafTests.Ramda.List {
     expect byEquals("Mississippi") == ["M", "i", "ss", "i", "ss", "i", "pp", "i"];
   }
 
+  // v0.24.0: `isConsecutive = (a, b) => a + 1 === b`
+  method {:test} GroupWithSplitsTheListIntoStreaksTestingAdjacentElements() {
+    var isConsecutive := (a: int, b: int) => a + 1 == b;
+    var empty: seq<int> := [];
+    expect groupWith(isConsecutive, empty) == [];
+    expect groupWith(isConsecutive, [4, 3, 2, 1]) == [[4], [3], [2], [1]];
+    expect groupWith(isConsecutive, [1, 2, 3, 4]) == [[1, 2, 3, 4]];
+    expect groupWith(isConsecutive, [1, 2, 2, 3]) == [[1, 2], [2, 3]];
+    expect groupWith(isConsecutive, [1, 2, 9, 3, 4]) == [[1, 2], [9], [3, 4]];
+  }
+
   // ---- reduceWhile.js (v0.22.0): `isOdd = (_, x) => x % 2 === 1` ----
 
   function IsOddX(acc: int, x: int): bool { x % 2 == 1 }
@@ -1475,5 +1489,73 @@ module RamdafTests.Ramda.List {
     var empty: seq<int> := [];
     expect reduceWhileOdd((a: int, b: int) => a + b, 101, empty) == 101;
     expect reduceWhileOdd((a: int, b: int) => a + b, 0, [1, 2, 3, 4]) == 1;
+  }
+
+  // ---- startsWith.js (v0.24.0) ----
+
+  method {:test} StartsWithShouldReturnTrueWhenAStringStartsWithTheProvidedValue() {
+    expect startsWith("a", "abc") == true;
+  }
+
+  method {:test} StartsWithShouldReturnTrueWhenALongStringStartsWithTheProvidedValue() {
+    expect startsWith("astro", "astrology") == true;
+  }
+
+  method {:test} StartsWithShouldReturnFalseWhenAStringDoesNotStartWithTheProvidedValue() {
+    expect startsWith("b", "abc") == false;
+  }
+
+  method {:test} StartsWithShouldReturnFalseWhenALongStringDoesNotStartWithTheProvidedValue() {
+    expect startsWith("stro", "astrology") == false;
+  }
+
+  method {:test} StartsWithShouldReturnTrueWhenAnArrayStartsWithTheProvidedValue() {
+    expect startsWith(["a"], ["a", "b", "c"]) == true;
+  }
+
+  method {:test} StartsWithShouldReturnTrueWhenAnArrayStartsWithTheProvidedValues() {
+    expect startsWith(["a", "b"], ["a", "b", "c"]) == true;
+  }
+
+  method {:test} StartsWithShouldReturnFalseWhenAnArrayDoesNotStartWithTheProvidedValue() {
+    expect startsWith(["b"], ["a", "b", "c"]) == false;
+  }
+
+  method {:test} StartsWithShouldReturnFalseWhenAnArrayDoesNotStartWithTheProvidedValues() {
+    expect startsWith(["b", "c"], ["a", "b", "c"]) == false;
+  }
+
+  // ---- endsWith.js (v0.24.0) ----
+
+  method {:test} EndsWithShouldReturnTrueWhenAStringEndsWithTheProvidedValue() {
+    expect endsWith("c", "abc") == true;
+  }
+
+  method {:test} EndsWithShouldReturnTrueWhenALongStringEndsWithTheProvidedValue() {
+    expect endsWith("ology", "astrology") == true;
+  }
+
+  method {:test} EndsWithShouldReturnFalseWhenAStringDoesNotEndWithTheProvidedValue() {
+    expect endsWith("b", "abc") == false;
+  }
+
+  method {:test} EndsWithShouldReturnFalseWhenALongStringDoesNotEndWithTheProvidedValue() {
+    expect endsWith("olog", "astrology") == false;
+  }
+
+  method {:test} EndsWithShouldReturnTrueWhenAnArrayEndsWithTheProvidedValue() {
+    expect endsWith(["c"], ["a", "b", "c"]) == true;
+  }
+
+  method {:test} EndsWithShouldReturnTrueWhenAnArrayEndsWithTheProvidedValues() {
+    expect endsWith(["b", "c"], ["a", "b", "c"]) == true;
+  }
+
+  method {:test} EndsWithShouldReturnFalseWhenAnArrayDoesNotEndWithTheProvidedValue() {
+    expect endsWith(["b"], ["a", "b", "c"]) == false;
+  }
+
+  method {:test} EndsWithShouldReturnFalseWhenAnArrayDoesNotEndWithTheProvidedValues() {
+    expect endsWith(["a", "b"], ["a", "b", "c"]) == false;
   }
 }

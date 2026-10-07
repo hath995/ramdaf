@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.23.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.24.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
@@ -6,7 +6,7 @@
 // v0.2.4 an alias of `partition` there) but which stays here (functions do
 // not move between modules); from v0.9.0 on, the functions with `@category
 // Relation` (`equals`, `identical`, `eqBy`, `symmetricDifference`,
-// `symmetricDifferenceWith` and `clamp`, whose v0.20.x JSDoc misspelt the
+// `symmetricDifferenceWith`, `innerJoin` and `clamp`, whose v0.20.x JSDoc misspelt the
 // category `Relaction`; v0.15.0 removed `eqDeep`, v0.9.0, which
 // `equals` replaces, and `eq`, then in Object.dfy; v0.15.1 restored both,
 // deprecated, with `eq` here by `@category Relation`, and v0.16.0 removed
@@ -33,7 +33,7 @@ module Ramdaf.Data {
   export
     reveals union, unionWith, difference, differenceWith,
             intersection, intersectionWith, countBy, groupBy, project, equals, identical,
-            eqBy, symmetricDifference, symmetricDifferenceWith, clamp
+            eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin
     provides Prelude, List, Object
 
   // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
@@ -250,4 +250,14 @@ module Ramdaf.Data {
   function clamp(min: int, max: int, value: int): int
     requires min <= max
   { if value < min then min else if value > max then max else value }
+
+  // `R.innerJoin(pred, xs, ys)` (v0.24.0, `@category Relation`):
+  // `_filter(function(x) { return _containsWith(pred, x, ys); }, xs)`, the
+  // elements x of xs for which `pred(x, y)` holds for some y in ys, in xs's
+  // order and with xs's duplicates (`innerJoin((r, id) => r.id === id,
+  // [a, b, c], [1, 2])` is `[a, b]`). The private `_filter` is `filter` on a
+  // list, and `_containsWith` is written out as `exists j :: … pred(x,
+  // ys[j])`, as in differenceWith.
+  function innerJoin<A, B>(pred: (A, B) -> bool, xs: seq<A>, ys: seq<B>): seq<A>
+  { List.filter((x: A) => exists j :: 0 <= j < |ys| && pred(x, ys[j]), xs) }
 }

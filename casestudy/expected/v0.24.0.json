@@ -1,0 +1,11 @@
+{
+  "ramda": "v0.24.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.groupWith", "kind": "breaking", "why": "v0.24.0 compares each element with the one before it, fn(list[nextidx - 1], list[nextidx]), not with the group's first: groupWith((a, b) => b - a <= 1, [1, 2, 3, 4]) is [[1, 2, 3, 4]], was [[1, 2], [3, 4]]"},
+    {"symbol": "Ramdaf.Functions.o", "kind": "added", "why": "new in v0.24.0 (@category Function): o(f, g, x) is f(g(x))"},
+    {"symbol": "Ramdaf.List.startsWith", "kind": "added", "why": "new in v0.24.0 (@category List): equals(take(prefix.length, list), prefix)"},
+    {"symbol": "Ramdaf.List.endsWith", "kind": "added", "why": "new in v0.24.0 (@category List): equals(takeLast(suffix.length, list), suffix)"},
+    {"symbol": "Ramdaf.Data.innerJoin", "kind": "added", "why": "new in v0.24.0 (@category Relation): the elements of xs that pred relates to some element of ys"}
+  ]
+}

@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.23.0's own suite does not cover, each checked against
-// dist/ramda.js v0.23.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.24.0's own suite does not cover, each checked against
+// dist/ramda.js v0.24.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -750,7 +750,8 @@ module RamdafTests.Edge.List {
   // `uniq` is `uniqBy(identity)`, and `uniq([negate(0), negate(0)])` is
   // [-0] (from v0.19.0 to v0.21.0 its `Set` kept a repeated -0, [-0, -0];
   // UniqByOfRepeatedSignedZeroKeys below), and `without([0], [negate(0)])`
-  // (v0.19.0) is [-0]. An int has no -0.
+  // (v0.19.0) is [-0], and since v0.24.0 `startsWith([0], [negate(0)])` and
+  // `endsWith([negate(0)], [1, 0])` are false (`R.equals`). An int has no -0.
   method {:test} DeviationListSearchesSignedZero() {
     var z := M.negate(0);
     expect contains(z, [0]) == true;
@@ -761,6 +762,8 @@ module RamdafTests.Edge.List {
     expect without([0], [z]) == [];
     expect dropRepeats([0, z]) == [0];
     expect uniqBy((x: int) => x, [z, 0]) == [z];
+    expect startsWith([0], [z]) == true;
+    expect endsWith([z], [1, 0]) == true;
   }
 
   // node: since v0.22.0 uniqBy's `_Set` flags every -0, so a repeated -0
@@ -837,18 +840,23 @@ module RamdafTests.Edge.List {
     expect reduceBy((a: seq<int>, x: int) => a + [x], nothing, (x: int) => "k", [3, 1, 2]) == map["k" := [3, 1, 2]];
   }
 
-  // groupWith (v0.21.0): each group's first element is compared with the
-  // ones after it, so the relation need not be symmetric or transitive
-  // (node: [[1, 2], [3, 4]], [[1, 2], [0, 3, 1]], [[1, 2]], [[1], [2]], [],
-  // ['aa', 'b', 'a']).
+  // groupWith (v0.21.0): since v0.24.0 each element is compared with the
+  // one before it, so a group is a streak of related neighbours, whatever
+  // the relation (node: [[1, 2, 3, 4]], [[1, 2], [0, 3], [1]], [[1, 2]],
+  // [[1], [2]], [], ['aa', 'b', 'a'], [[1, 2], [2, 3]], [[3], [1, 2, 2],
+  // [0, 5]]; until v0.23.0 each group's first element was compared with the
+  // ones after it: [[1, 2], [3, 4]], [[1, 2], [0, 3, 1]], and [[1, 2, 2],
+  // [3]] for the seventh).
   method {:test} GroupWithEdges() {
     var empty: seq<int> := [];
-    expect groupWith((a: int, b: int) => b - a <= 1, [1, 2, 3, 4]) == [[1, 2], [3, 4]];
-    expect groupWith((a: int, b: int) => a < b, [1, 2, 0, 3, 1]) == [[1, 2], [0, 3, 1]];
+    expect groupWith((a: int, b: int) => b - a <= 1, [1, 2, 3, 4]) == [[1, 2, 3, 4]];
+    expect groupWith((a: int, b: int) => a < b, [1, 2, 0, 3, 1]) == [[1, 2], [0, 3], [1]];
     expect groupWith((a: int, b: int) => true, [1, 2]) == [[1, 2]];
     expect groupWith((a: int, b: int) => false, [1, 2]) == [[1], [2]];
     expect groupWith((a: int, b: int) => true, empty) == [];
     expect groupWith((a: char, b: char) => a == b, "aaba") == ["aa", "b", "a"];
+    expect groupWith((a: int, b: int) => a + 1 == b, [1, 2, 2, 3]) == [[1, 2], [2, 3]];
+    expect groupWith((a: int, b: int) => a <= b, [3, 1, 2, 2, 0, 5]) == [[3], [1, 2, 2], [0, 5]];
   }
 
   // reduceWhile (v0.22.0): the predicate sees the accumulator and the
@@ -859,5 +867,22 @@ module RamdafTests.Edge.List {
     expect reduceWhile((acc: int, x: int) => false, (a: int, b: int) => a + b, 7, [1, 2]) == 7;
     expect reduceWhile((acc: int, x: int) => true, (a: int, b: int) => a + b, 0, empty) == 0;
     expect reduceWhile((acc: int, x: int) => x > 0, (a: int, b: int) => a + b, 0, [1, 2, -1, 4]) == 3;
+  }
+
+  // startsWith and endsWith (v0.24.0): the empty prefix or suffix always
+  // matches, a longer one never does, the whole list matches, and nested
+  // lists compare deeply (node: true, true, false, true, false, false, true,
+  // false, true).
+  method {:test} StartsWithEndsWithEdges() {
+    var none: seq<int> := [];
+    expect startsWith("", "") == true;
+    expect startsWith(none, [1]) == true;
+    expect startsWith("abc", "ab") == false;
+    expect endsWith(none, [1]) == true;
+    expect endsWith([1, 2, 3], [2, 3]) == false;
+    expect startsWith([1, 2, 3], [1, 2]) == false;
+    expect endsWith([1, 2, 3], [1, 2, 3]) == true;
+    expect endsWith("c", "") == false;
+    expect startsWith([[1]], [[1], [2]]) == true;
   }
 }

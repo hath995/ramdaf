@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.23.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.24.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -376,5 +376,15 @@ module RamdafTests.Edge.Data {
     expect sortWith([(a: int, b: int) => ascend((x: int) => x % 2, a, b)], [3, 2, 1, 4]) == [2, 4, 3, 1];
     expect sortWith([(a: int, b: int) => ascend((x: int) => x % 2, a, b), (a: int, b: int) => descend((x: int) => x, a, b)],
                     [3, 2, 1, 4]) == [4, 2, 3, 1];
+  }
+
+  // innerJoin (v0.24.0): the elements of the first list related to some
+  // element of the second, in order, duplicates kept (node: [2, 2], [],
+  // ['ab', 'de']).
+  method {:test} InnerJoinEdges() {
+    var none: seq<int> := [];
+    expect innerJoin((x: int, y: int) => x == y + 1, [1, 2, 3, 2], [1, 1]) == [2, 2];
+    expect innerJoin((x: int, y: int) => true, [1, 2], none) == [];
+    expect innerJoin((x: string, y: int) => |x| == y, ["ab", "c", "de"], [2]) == ["ab", "de"];
   }
 }

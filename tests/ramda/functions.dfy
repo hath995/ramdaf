@@ -1,5 +1,5 @@
-// Ramda v0.23.0 test/always.js, T.js, F.js, compose.js, pipe.js,
-// converge.js, flip.js, ap.js, juxt.js and applySpec.js (until v0.8.0 test.always.js,
+// Ramda v0.24.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// converge.js, flip.js, ap.js, juxt.js, applySpec.js and o.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -23,7 +23,9 @@
 // once, memoize, construct, constructN, unary, binary, nAry, apply, unapply,
 // composeP, pipeP, curry, curryN, op, partial, partialRight, wrap, forEach,
 // forEachIndexed (until v0.15.1), installTo (until v0.11.0), path, pathOn,
-// pathEq, pathOr (v0.18.0), is, propIs (v0.16.0), isArrayLike, type,
+// pathEq, pathOr (v0.18.0), is, propIs (v0.16.0), isArrayLike (until
+// v0.23.0; v0.24.0 tests the private `_isArrayLike` in
+// internal/_isArrayLike.js), type,
 // functions, functionsIn, bind, invoker, lift, liftN, nthArg, and v0.9.0's
 // new call.js, v0.14.0's uncurryN.js and v0.15.0's addIndex.js, and
 // v0.16.0's composeK.js and pipeK.js, whose monad is an `Identity` object
@@ -48,14 +50,20 @@
 // applicative", and passes converge's functions as one list, a pair here;
 // v0.19.0 removed functions.js and functionsIn.js with the functions and
 // added the unportable lensPath.js and pathSatisfies.js; v0.20.0 added the
-// unportable tryCatch.js.) juxt.js's (v0.19.0) and applySpec.js's (v0.20.0)
+// unportable tryCatch.js; v0.24.0 added the unportable memoizeWith.js,
+// mergeDeepLeft.js, mergeDeepRight.js, mergeDeepWith.js and
+// mergeDeepWithKey.js.) juxt.js's (v0.19.0) and applySpec.js's (v0.20.0)
 // calls with no values pass `()`, and with several a tuple. Not
 // transcribed either: v0.20.0's arity and curried `it`s, converge's "works
 // with empty functions list" (no arguments; the port's converge takes a
 // pair), juxt's "retains the highest arity" and "returns a curried
 // function", and applySpec's "works with nested specs" (a nested spec
 // object cannot be written, README "Outside the modeled domain"), "retains
-// the highest arity" and "returns a curried function".
+// the highest arity" and "returns a curried function". o.js's (v0.24.0)
+// curried calls are lambdas, and `R.map` and `R.multiply` in "performs
+// right-to-left function composition" are a lambda over `mapSeq` and a
+// lambda returning one; its "is not a variadic function" (arity) and the
+// jsverify "o properties" are not transcribed.
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -234,5 +242,23 @@ module RamdafTests.Ramda.Functions {
   // `R.add` on two values
   method {:test} ApplySpecWorksWithBinaryFunctions() {
     expect applySpec(map["sum" := (t: (int, int)) => add(t.0, t.1)])((1, 2)) == map["sum" := 3];
+  }
+
+  // ---- o.js (v0.24.0) ----
+
+  // `R.o(R.add(1), R.multiply(2), 10)` equals
+  // `R.o(R.add(1))(R.multiply(2))(10)`
+  method {:test} OIsACurriedFunction() {
+    var oCurried := (f: int -> int) => ((g: int -> int) => ((x: int) => o(f, g, x)));
+    expect o((x: int) => add(1, x), (x: int) => multiply(2, x), 10) ==
+      oCurried((x: int) => add(1, x))((x: int) => multiply(2, x))(10);
+  }
+
+  // `f = R.o(R.map, R.multiply)`; `f(10)([1, 2, 3])`
+  method {:test} OPerformsRightToLeftFunctionComposition() {
+    var f := (n: int) =>
+      o<int, int -> int, seq<int> -> seq<int>>((g: int -> int) => ((xs: seq<int>) => mapSeq(g, xs)),
+                                               (a: int) => ((b: int) => multiply(a, b)), n);
+    expect f(10)([1, 2, 3]) == [10, 20, 30];
   }
 }

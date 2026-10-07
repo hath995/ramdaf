@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.23.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.24.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -6,8 +6,8 @@
 // `intersperse`, `dropRepeats`, `dropRepeatsWith`, `lensIndex`, `dropLast`,
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
 // `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
-// `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith`, `reduceWhile`
-// and the renamed functions below; since v0.16.0 the
+// `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith`, `reduceWhile`,
+// `startsWith`, `endsWith` and the renamed functions below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
@@ -46,7 +46,7 @@ module Ramdaf.List {
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
-            without, reduceBy, groupWith, reduceWhile
+            without, reduceBy, groupWith, reduceWhile, startsWith, endsWith
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -135,7 +135,10 @@ module Ramdaf.List {
   // since v0.5.0 the first argument, `fns.ap(vs)`, before that `vs`); no
   // Dafny value has one. Since v0.18.0 (35acea0d) `ap(applicative, fn)` also
   // takes functions, the reader applicative, `ap(f, g)(x)` being
-  // `f(x)(g(x))`; here both are lists (README "Deviations").
+  // `f(x)(g(x))`; here both are lists (README "Deviations"). Since v0.24.0
+  // (`ap(applyF, applyX)`) a second argument with a Fantasy-land 1.0
+  // `fantasy-land/ap` method is dispatched to first, as `map` and `chain`
+  // dispatch to `fantasy-land/map` and `fantasy-land/chain`.
   function ap<A, B>(fns: seq<A -> B>, vs: seq<A>): seq<B>
   { reduce((acc: seq<B>, fn: A -> B) => acc + mapSeq(fn, vs), [], fns) }
 
@@ -1007,20 +1010,26 @@ module Ramdaf.List {
            map[], list) }
 
   // `R.groupWith(fn, list)` (v0.21.0, `@category List`): `while (idx < len) {
-  // nextidx = idx + 1; while (nextidx < len && fn(list[idx],
+  // nextidx = idx + 1; while (nextidx < len && fn(list[nextidx - 1],
   // list[nextidx])) { nextidx += 1; } res.push(list.slice(idx, nextidx));
-  // idx = nextidx; }`, the list cut into consecutive groups, each running
-  // from its first element through the elements right after it that fn
-  // relates to that first element (`groupWith(equals, [1, 2, 2, 3])` is
-  // `[[1], [2, 2], [3]]`; `groupWith((a, b) => b - a <= 1, [1, 2, 3, 4])` is
-  // `[[1, 2], [3, 4]]`). On a JS string the groups are strings, the same
-  // seqs here. The inner loop is `takeWhile` on the rest of the list, and
-  // the body recurses on what follows the group, as the outer loop does.
+  // idx = nextidx; }` (v0.24.0, "streaks testing adjacent elements"), the
+  // list cut into consecutive groups, each running on while fn relates every
+  // element to the one before it (`groupWith((a, b) => a + 1 === b, [1, 2,
+  // 9, 3, 4])` is `[[1, 2], [9], [3, 4]]`; `groupWith(equals, [1, 2, 2,
+  // 3])` is `[[1], [2, 2], [3]]`). From v0.21.0 to v0.23.0 the inner loop
+  // tested `fn(list[idx], list[nextidx])`, each element against the group's
+  // first (`groupWith((a, b) => b - a <= 1, [1, 2, 3, 4])` was `[[1, 2], [3,
+  // 4]]`, now `[[1, 2, 3, 4]]`), the same groups for an equivalence relation
+  // such as `equals`. On a JS string the groups are strings, the same seqs
+  // here. The inner loop is `findIndex` of the first adjacent pair
+  // (`zip(list, list[1..])`) that fn rejects, and the body recurses on what
+  // follows the group, as the outer loop does.
   function groupWith<T>(fn: (T, T) -> bool, list: seq<T>): seq<seq<T>>
     decreases |list|
   { if |list| == 0 then []
-    else var group := [list[0]] + takeWhile((x: T) => fn(list[0], x), list[1..]);
-         [group] + groupWith(fn, list[|group|..]) }
+    else var k := findIndex((p: (T, T)) => !fn(p.0, p.1), zip(list, list[1..]));
+         var n := if k == -1 then |list| else k + 1;
+         [list[..n]] + groupWith(fn, list[n..]) }
 
   // `R.reduceWhile(pred, fn, a, list)` (v0.22.0, `@category List`):
   // `_reduce(function(acc, x) { return pred(acc, x) ? fn(acc, x) :
@@ -1035,4 +1044,22 @@ module Ramdaf.List {
   { if |list| == 0 then a
     else if pred(a, list[0]) then reduceWhile(pred, fn, fn(a, list[0]), list[1..])
     else a }
+
+  // `R.startsWith(prefix, list)` (v0.24.0, `@category List`):
+  // `equals(take(prefix.length, list), prefix)`, whether list begins with
+  // prefix's elements (`startsWith('astro', 'astrology')` is true; the empty
+  // prefix always matches, and a longer one never does). `R.equals` (Data's,
+  // which imports List) is `==` on Dafny values, except that JS tells `-0`
+  // from `0` (README "Deviations"). JS takes strings or arrays, and a string
+  // never equals an array (`startsWith('a', ['a'])` is false); here both are
+  // one seq type, a Dafny string included.
+  function startsWith<T(==)>(prefix: seq<T>, list: seq<T>): bool
+  { take(|prefix|, list) == prefix }
+
+  // `R.endsWith(suffix, list)` (v0.24.0, `@category List`):
+  // `equals(takeLast(suffix.length, list), suffix)`, whether list ends with
+  // suffix's elements (`endsWith(['b', 'c'], ['a', 'b', 'c'])` is true), as
+  // startsWith.
+  function endsWith<T(==)>(suffix: seq<T>, list: seq<T>): bool
+  { takeLast(|suffix|, list) == suffix }
 }

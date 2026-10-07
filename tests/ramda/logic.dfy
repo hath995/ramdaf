@@ -1,4 +1,4 @@
-// Ramda v0.23.0 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.24.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
 // defaultTo.js, propSatisfies.js, when.js, unless.js and until.js (until v0.8.0
 // test.booleans.js, test.allany.js and test.cond.js), transcribed. (v0.16.0
@@ -34,7 +34,8 @@
 // type), and its null and undefined are both None (README "Deviations");
 // v0.18.0's `defaultTo42(NaN)` line is not transcribed (no NaN). when.js's
 // and unless.js's values are Js values too: `R.is(Number)` and
-// `R.isArrayLike` are not portable, and `R.of` changes the value's type, so
+// `R.isArrayLike` (since v0.24.0 the private `_isArrayLike`, which the tests
+// import) are not portable, and `R.of` changes the value's type, so
 // they are local functions on Js. v0.20.0's fantasy-land `it`s of both,
 // either and complement (sanctuary's `Just` and `Nothing`: README
 // "Deviations") and cond's "retains highest predicate arity" (arity) are

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.23.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.24.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`, `nth`,
 // `head`, `last`, `tail`, `append`, `concat`, `identity`, `times`), `clone`
 // and `length`; and, from v0.9.0 on, the functions with `@category Type`
@@ -86,6 +86,10 @@ module Ramdaf.Core {
   // was `[1, 2]`), which the types exclude here. Since v0.22.0 it throws
   // TypeError again when list1 has no `concat` method, or is an array and
   // list2 is not (`concat([1], 2)`), and otherwise is `list1.concat(list2)`.
+  // Since v0.24.0 two arrays give `list1.concat(list2)` and two strings `a +
+  // b`, an array or a string with anything else throws TypeError
+  // (`concat('a', [1])`, which was 'a1'), and otherwise a `fantasy-land/concat`
+  // or `concat` method is called.
   // Until v0.17.1, when the
   // second argument was not an array, v0.6.0 called the first argument's
   // `concat` method if it had one (`concat("foo", "bar")` is `"foobar"`) and

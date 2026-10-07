@@ -1,7 +1,8 @@
-// Ramda v0.23.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.24.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js, sortBy.js, equals.js, identical.js, eqBy.js,
-// symmetricDifference.js, symmetricDifferenceWith.js and clamp.js (until v0.8.0
+// symmetricDifference.js, symmetricDifferenceWith.js, clamp.js and
+// innerJoin.js (until v0.8.0
 // test.sql.js, whose copy of the groupBy describe v0.9.0 dropped; eq.js and
 // eqDeep.js, restored in v0.15.1, went with the functions in v0.16.0),
 // transcribed. Not transcribed:
@@ -37,6 +38,8 @@
 //   identity" (no Promises);
 // - clamp.js's (v0.20.0) "works with letters as well": clamp takes ints
 //   (README "Deviations").
+// innerJoin.js's (v0.24.0) records `{id, name}` are the local datatype Rec,
+// and its `f = R.innerJoin((r, id) => r.id === id)` a lambda.
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -427,5 +430,28 @@ module RamdafTests.Ramda.Sql {
     expect clamp(1, 10, 4) == 4;
     expect clamp(3, 12, 6) == 6;
     expect clamp(-15, 3, 0) == 0;
+  }
+
+  // ---- innerJoin.js (v0.24.0) ----
+
+  datatype Rec = Rec(id: int, name: string)
+
+  function JoinById(xs: seq<Rec>, ids: seq<int>): seq<Rec>
+  { innerJoin((r: Rec, id: int) => r.id == id, xs, ids) }
+
+  method {:test} InnerJoinOnlyReturnsElementsFromTheFirstList() {
+    var a, b, c := Rec(1, "a"), Rec(2, "b"), Rec(3, "c");
+    var none: seq<int> := [];
+    expect JoinById([a, b, c], none) == [];
+    expect JoinById([a, b, c], [1]) == [a];
+    expect JoinById([a, b, c], [1, 2]) == [a, b];
+    expect JoinById([a, b, c], [1, 2, 3]) == [a, b, c];
+    expect JoinById([a, b, c], [1, 2, 3, 4]) == [a, b, c];
+  }
+
+  method {:test} InnerJoinDoesNotRemoveDuplicates() {
+    var a, b, c := Rec(1, "a"), Rec(2, "b"), Rec(3, "c");
+    expect JoinById([a, a, a], [1, 2, 3]) == [a, a, a];
+    expect JoinById([a, b, c], [1, 1, 1]) == [a];
   }
 }

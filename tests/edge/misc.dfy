@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.23.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.24.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -752,5 +752,10 @@ module RamdafTests.Edge.Misc {
   // returns the value reached (README "Deviations").
   method {:test} DeviationUntilStopsAtFuel() {
     expect until((x: int) => x < 0, (x: int) => x + 1, 0, 3) == 3;
+  }
+
+  // o (v0.24.0): `f(g(x))` (node: 21).
+  method {:test} OEdges() {
+    expect o((x: int) => x + 1, (x: int) => x * 2, 10) == 21;
   }
 }

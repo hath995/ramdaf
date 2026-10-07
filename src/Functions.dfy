@@ -1,8 +1,8 @@
-// Ramdaf: Ramda v0.23.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.24.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
 // the functions with `@category Function` (`composeK`, `pipeK`, `juxt`,
-// `applySpec`). (v0.4.1
+// `applySpec`, `o`). (v0.4.1
 // removed the aliases `sequence`, `distributeTo`, `constant` and `K`;
 // v0.4.2 renamed `fork` to `converge`; v0.9.0 renamed `alwaysTrue` and
 // `alwaysFalse` to `T` and `F` and removed `alwaysZero`; v0.16.0 removed
@@ -15,7 +15,7 @@ module Ramdaf.Functions {
   import List
 
   export
-    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec
+    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec, o
     provides List
 
   // `compose(f, g)(x) == f(g(x))`
@@ -123,4 +123,11 @@ module Ramdaf.Functions {
   // dropped and a reduced marker key ends the copy (README "Deviations").
   function applySpec<A, B>(spec: map<string, A -> B>): A -> map<string, B>
   { x => map k | k in spec :: spec[k](x) }
+
+  // `R.o(f, g, x)` (v0.24.0, `@category Function`): `_curry3(function o(f, g,
+  // x) { return f(g(x)); })`, the composition of exactly two functions,
+  // applied to x (`o(R.add(1), R.multiply(2), 10)` is 21), curried where
+  // compose is variadic (`o(f, g)` is a function of x). Uncurried, it takes
+  // its three parameters.
+  function o<A, B, C>(f: B -> C, g: A -> B, x: A): C { f(g(x)) }
 }
