@@ -1,8 +1,8 @@
-// Ramdaf: Ramda v0.7.2 "List Functions" (ramda.js lines 1528-3397), except
+// Ramdaf: Ramda v0.8.0 "List Functions" (ramda.js lines 1807-3752), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
 // (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
 // `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
-// aliases `every`/`some`.)
+// aliases `every`/`some`; v0.8.0 removed `xprodWith`.)
 
 module Ramdaf.List {
   import opened Prelude
@@ -12,10 +12,11 @@ module Ramdaf.List {
             reduceRightIdx, unfoldr, mapSeq, mapIdx, mapObj, mapObjIdx, filter, filterIdx,
             reject, rejectIdx, takeWhile, take, skipUntil, skip, find,
             findIndex, findLast, findLastIndex, every, some, contains, containsWith,
-            uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
+            uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, lens, xprod, reverse,
             range, indexOf, indexOfFrom, lastIndexOf, lastIndexOfFrom, join, slice, sliceFrom,
             remove, insert, insertAll, partition,
-            ap, of, empty, chain, unnest, zipObj, fromPairs, scanl, createMapEntry
+            ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scanl,
+            createMapEntry
     provides Prelude
 
   // `acc = fn(acc, list[idx])` for idx ascending. Since v0.4.0 `reduce` holds
@@ -146,6 +147,25 @@ module Ramdaf.List {
   function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
   { foldl((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
 
+  // `R.commuteMap(fn, of, list)` (v0.8.0): `reduce(consF, of([]), list)`
+  // with `consF(acc, ftor) = ap(map(append, fn(ftor)), acc)`, which turns a
+  // list of functors into a functor of lists, fn transforming each functor
+  // first. For arrays: every way of picking one element of fn(ftor) for each
+  // ftor, the first list's element varying fastest (`commuteMap(map(x => x +
+  // 10), of, [[1, 2], [3]])` is `[[11, 13], [12, 13]]`). JS dispatches `ap`
+  // and `map` to any Fantasy-land functor, with of building the result's
+  // functor; here they are arrays (README "Deviations"). `R.append` (Core)
+  // is written out as `l + [x]`.
+  function commuteMap<A, B>(fn: seq<A> -> seq<B>, of: seq<B> -> seq<seq<B>>, list: seq<seq<A>>): seq<seq<B>>
+  { reduce((acc: seq<seq<B>>, ftor: seq<A>) => ap(mapSeq((x: B) => ((l: seq<B>) => l + [x]), fn(ftor)), acc),
+           of([]), list) }
+
+  // `R.commute = commuteMap(map(identity))` (v0.8.0): commuteMap with no
+  // transformation (`commute(of, [[1, 2], [3, 4]])` is `[[1, 3], [2, 3],
+  // [1, 4], [2, 4]]`). `R.identity` (Core) is written out as `x => x`.
+  function commute<A>(of: seq<A> -> seq<seq<A>>, list: seq<seq<A>>): seq<seq<A>>
+  { commuteMap((xs: seq<A>) => mapSeq((x: A) => x, xs), of, list) }
+
   function filter<T>(fn: T -> bool, list: seq<T>): seq<T>
     ensures |filter(fn, list)| <= |list|
     ensures forall i :: 0 <= i < |filter(fn, list)| ==> fn(filter(fn, list)[i])
@@ -232,14 +252,16 @@ module Ramdaf.List {
   { var i := findIndex(x => !fn(x), list);
     if i == -1 then list else list[..i] }
 
-  // A copy of the list with its length set to `Math.min(n, list.length)`
-  // (v0.1.5; before, `take(5, [1, 2])` had three undefined slots): the first
-  // n elements, or the whole list. A negative n throws RangeError, so n is a
+  // `_slice(list, 0, Math.min(n, list.length))` (v0.3.0; v0.1.5 set a
+  // copy's length to that; before, `take(5, [1, 2])` had three undefined
+  // slots): the first n elements, or the whole list. Since v0.8.0 `_slice`
+  // allocates `Math.max(0, to - from)` elements, so a negative n gives []
+  // (`take(-1, [1, 2, 3])`); until v0.7.2 it threw RangeError, and n was a
   // nat.
-  function take<T>(n: nat, list: seq<T>): seq<T>
-    ensures |take(n, list)| == if n <= |list| then n else |list|
+  function take<T>(n: int, list: seq<T>): seq<T>
+    ensures |take(n, list)| == if n < 0 then 0 else if n <= |list| then n else |list|
     ensures take(n, list) <= list
-  { if n <= |list| then list[..n] else list }
+  { if n < 0 then [] else if n <= |list| then list[..n] else list }
 
   // The suffix starting at the first element that satisfies fn.
   function skipUntil<T>(fn: T -> bool, list: seq<T>): seq<T>
@@ -498,15 +520,25 @@ module Ramdaf.List {
   // "Deviations").
   function createMapEntry<V>(key: string, val: V): map<string, V> { map[key := val] }
 
-  // Every pair, the first list's index outermost.
-  function xprodWith<A, B, C>(fn: (A, B) -> C, a: seq<A>, b: seq<B>): seq<C>
-    ensures |xprodWith(fn, a, b)| == |a| * |b|
-  { if |a| == 0 || |b| == 0 then []
-    else mapSeq((y: B) => fn(a[0], y), b) + xprodWith(fn, a[1..], b) }
+  // `R.lens(get, set)` (v0.8.0; defined in "List Functions", hence here): a
+  // function `lns(a) = get(a)` with the properties `lns.set = set` and
+  // `lns.map = (fn, a) => set(fn(get(a)), a)`, here the record
+  // `Prelude.Lens` (README "Deviations"; `set` is a Dafny keyword). get and
+  // set_ are partial arrows, so a getter or setter that is undefined on part
+  // of its domain carries a precondition; map_ requires get's on a and
+  // set_'s on the mapped value.
+  function lens<A, V>(get: A --> V, set_: (V, A) --> A): Lens<A, V>
+  { Lens(get, set_, (fn: V -> V, a: A) requires get.requires(a) && set_.requires(fn(get(a)), a) =>
+                      set_(fn(get(a)), a)) }
 
+  // Every pair `[a[idx], b[j]]`, the first list's index outermost: Ramda's
+  // nested loops (`[]` when either list is empty). Until v0.7.2 the body was
+  // `xprodWith` of the pairing function, which v0.8.0 removed (Ramda's own
+  // `xprod` always had its own loops), with the same results.
   function xprod<A, B>(a: seq<A>, b: seq<B>): seq<(A, B)>
     ensures |xprod(a, b)| == |a| * |b|
-  { xprodWith((x: A, y: B) => (x, y), a, b) }
+  { if |a| == 0 || |b| == 0 then []
+    else mapSeq((y: B) => (a[0], y), b) + xprod(a[1..], b) }
 
   function reverse<T>(list: seq<T>): seq<T>
     ensures |reverse(list)| == |list|
@@ -579,15 +611,18 @@ module Ramdaf.List {
              else if fromIdx + 1 < |list| then fromIdx + 1 else |list|;
     if e <= 0 then -1 else lastIndexOf(target, list[..e]) }
 
-  // `list.join(sep)`; the elements are strings (see README on numbers).
+  // `list.join(sep)` (since v0.8.0 `invokerN(1, 'join')`, the target's own
+  // method); the elements are strings (see README on numbers).
   function join(sep: string, list: seq<string>): string
   { if |list| == 0 then ""
     else if |list| == 1 then list[0]
     else list[0] + sep + join(sep, list[1..]) }
 
   // `Array.prototype.slice(from, to)` (an invoker since v0.1.4; since v0.6.0
-  // `invoker(Array.prototype.slice)`, which also works on a JS string, as
-  // the port does): a negative
+  // `invoker(Array.prototype.slice)`, which also works on a JS string; since
+  // v0.8.0 `invokerN(2, 'slice')`, the target's own method, so
+  // `slice(1, 2, "abc")` is the string "b" where it was ["b"]; both are the
+  // Dafny "b"): a negative
   // index counts from the end, both are clamped into the list, and the result
   // is empty when `to` falls at or before `from`.
   function slice<T>(from: int, to: int, list: seq<T>): seq<T>
@@ -608,25 +643,27 @@ module Ramdaf.List {
   { slice(from, |list|, list) }
 
   // `remove`, `insert` and `insert.all` (v0.2.2) are built on
-  // `_slice(args, from, to)`, which copies args[from..to) into
-  // `new Array(to - from)`: a negative length throws RangeError, and indices
-  // past an end read undefined holes. From v0.2.2 to v0.2.3 `_slice` read an
-  // end index of 0 as "the end" (`to || args.length`), so a cut at 0 copied
-  // the whole list; v0.2.4 checks `typeof to === "number"` instead.
+  // `_slice(args, from, to)`, which copies args[from..to) into a new array:
+  // indices past an end read undefined holes, and until v0.7.2 a negative
+  // length (`new Array(to - from)`) threw RangeError; since v0.8.0 the
+  // length is `Math.max(0, to - from)`, so nothing is copied. From v0.2.2 to
+  // v0.2.3 `_slice` read an end index of 0 as "the end" (`to ||
+  // args.length`), so a cut at 0 copied the whole list; v0.2.4 checks
+  // `typeof to === "number"` instead.
 
   // `concat(_slice(list, 0, Math.min(start, length)), _slice(list,
   // Math.min(length, start + count)))`: the list without `count` elements
   // from `start` (`remove(0, 2, [1, 2, 3, 4, 5])` is `[3, 4, 5]`; it was
-  // `[1, 2, 3, 4, 5, 3, 4, 5]` before v0.2.4). A negative start throws
-  // RangeError, and start + count < 0 reads undefined holes, so both are
-  // excluded.
+  // `[1, 2, 3, 4, 5, 3, 4, 5]` before v0.2.4). Since v0.8.0 a negative start
+  // makes the first cut empty (`remove(-1, 2, [1, 2, 3, 4, 5])` is
+  // `[2, 3, 4, 5]`; until v0.7.2 it threw RangeError, and start was at least
+  // 0). start + count < 0 still reads undefined holes, so it is excluded.
   function remove<T>(start: int, count: int, list: seq<T>): seq<T>
-    requires 0 <= start
     requires 0 <= start + count
-    ensures var a := if start < |list| then start else |list|;
+    ensures var a := if start < 0 then 0 else if start < |list| then start else |list|;
       var b := if start + count < |list| then start + count else |list|;
       remove(start, count, list) == list[..a] + list[b..]
-  { var a := if start < |list| then start else |list|;
+  { var a := if start < 0 then 0 else if start < |list| then start else |list|;
     var b := if start + count < |list| then start + count else |list|;
     list[..a] + list[b..] }
 

@@ -1,17 +1,19 @@
-// Ramdaf: Ramda v0.7.2 "Object Functions" (ramda.js lines 3398-4154) and `propEq`
-// (line 5299). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.8.0 "Object Functions" (ramda.js lines 3753-4608) and `propEq`
+// (line 5838). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
-// properties (`pick`, `pickAll`, `pickWith`, `omit`, `mixin`, `cloneObj`)
-// drop an own `__proto__` property in JS, as the assignment sets the
+// properties (`pick`, `pickAll`, `pickBy`, `omit`, `mixin`, `cloneObj`,
+// `assoc`) drop an own `__proto__` property in JS, as the assignment sets the
 // prototype instead; a map's keys are all ordinary (README "Deviations").
+// (v0.8.0 renamed `pickWith` to `pickBy`, and `props` to `propOf`, reusing
+// the name `props` for a new function.)
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, get, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
-            values, valuesIn, pick, pickAll, omit, pickWith, mixin, cloneObj, eqProps, where,
-            propEq
+    reveals eq, prop, get, propOf, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
+            values, valuesIn, pick, pickAll, omit, pickBy, mixin, cloneObj, eqProps, where,
+            assoc, propEq
     provides Prelude
 
   // `a === b`. Dafny equality is structural where JS compares objects and
@@ -23,9 +25,19 @@ module Ramdaf.Object {
   { if p in obj then Some(obj[p]) else None }
   function get<V>(p: string, obj: map<string, V>): Option<V> { prop(p, obj) }
 
-  // `flip(R.prop)` (v0.4.0; `obj && obj[prop]` before, the same on a map):
-  // prop with the arguments the other way round.
-  function props<V>(obj: map<string, V>, p: string): Option<V> { prop(p, obj) }
+  // `R.propOf = flip(prop)` (v0.8.0, which renamed `props` to `propOf` with
+  // the same code; `props` was `flip(R.prop)` since v0.4.0, `obj &&
+  // obj[prop]` before, the same on a map): prop with the arguments the other
+  // way round.
+  function propOf<V>(obj: map<string, V>, p: string): Option<V> { prop(p, obj) }
+
+  // `R.props(ps, obj)` (v0.8.0, "multiple `get`"): `out[idx] = obj[ps[idx]]`
+  // for each name in ps, so the values in the order of ps, undefined (None)
+  // where obj lacks the property. (Until v0.7.2 `props` was today's
+  // `propOf`.)
+  function props<V>(ps: seq<string>, obj: map<string, V>): seq<Option<V>>
+    ensures |props(ps, obj)| == |ps|
+  { seq(|ps|, i requires 0 <= i < |ps| => prop(ps[i], obj)) }
 
   // `R.propOr(p, val, obj)`: `hasOwnProperty.call(obj, p) ? obj[p] : val`,
   // obj's own property p, or val when obj lacks it (v0.6.0 renamed
@@ -120,8 +132,8 @@ module Ramdaf.Object {
   }
 
   // The listed properties that exist on obj. (Since v0.7.0 pick, omit and
-  // pickWith iterate `keysIn(obj)`, so inherited enumerable properties count
-  // too; a map has none.)
+  // pickBy, `pickWith` until v0.7.2, iterate `keysIn(obj)`, so inherited
+  // enumerable properties count too; a map has none.)
   function pick<V>(names: seq<string>, obj: map<string, V>): map<string, V>
     ensures pick(names, obj).Keys == obj.Keys * set n | n in names
   { map k | k in obj && k in names :: obj[k] }
@@ -136,11 +148,13 @@ module Ramdaf.Object {
     ensures omit(names, obj).Keys == obj.Keys - set n | n in names
   { map k | k in obj && k !in names :: obj[k] }
 
-  // v0.2.3: the properties of obj for which `test(val, key, obj)` is
-  // truthy (pick and omit are now written with it, with unchanged results).
-  function pickWith<V>(test: (V, string, map<string, V>) -> bool, obj: map<string, V>): map<string, V>
-    ensures pickWith(test, obj).Keys == set k | k in obj && test(obj[k], k, obj)
-    ensures forall k :: k in pickWith(test, obj) ==> pickWith(test, obj)[k] == obj[k]
+  // `R.pickBy` (v0.8.0, which renamed `pickWith`, added in v0.2.3, with the
+  // same results): the properties of obj for which `test(val, key, obj)` is
+  // truthy (pick and omit are written with the private `_pickBy`, with
+  // unchanged results).
+  function pickBy<V>(test: (V, string, map<string, V>) -> bool, obj: map<string, V>): map<string, V>
+    ensures pickBy(test, obj).Keys == set k | k in obj && test(obj[k], k, obj)
+    ensures forall k :: k in pickBy(test, obj) ==> pickBy(test, obj)[k] == obj[k]
   { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
 
   // `extend(extend({}, a), b)` (v0.2.4; before, `pickAll(keys(a), a)` with
@@ -176,6 +190,15 @@ module Ramdaf.Object {
       match spec[k]
         case Pred(fn) => k in test && fn(Some(test[k]), test)
         case Val(v) => k in test && test[k] == v }
+
+  // `R.assoc(prop, val, obj)` (v0.8.0): `_extend(fromPairs(map(key => [key,
+  // obj[key]], keysIn(obj))), createMapEntry(prop, val))`, a shallow copy of
+  // obj with the property set to val (added if obj lacks it). On a map that
+  // is the map update. In JS the key is converted to a string, and a
+  // `__proto__` key (or an own `__proto__` property of obj) is not an
+  // ordinary property (README "Deviations").
+  function assoc<V>(p: string, val: V, obj: map<string, V>): map<string, V>
+  { obj[p := val] }
 
   // `obj[name] === val`
   function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool

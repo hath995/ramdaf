@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.7.2 "String Functions" (ramda.js lines 4892-5247): the
+// Ramdaf: Ramda v0.8.0 "String Functions" (ramda.js lines 5428-5786): the
 // String.prototype methods, with JS's index clamping. A Dafny `string` is a
 // sequence of Unicode scalar values where JS counts UTF-16 code units, and
 // case conversion is ASCII-only (see README "Deviations").

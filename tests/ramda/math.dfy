@@ -1,4 +1,4 @@
-// Ramda v0.7.2 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.8.0 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). `subtract`,
 // `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` are
@@ -14,7 +14,8 @@
 // and the four NaN asserts of v0.4.2's "computes the true modulo function"
 // (`mathMod(17, -5)`, `mathMod(17, 0)` and fractional arguments); v0.4.0's 13
 // "throws if given no arguments" cases (no-argument calls). (v0.5.0
-// removed subtractN, divideBy and moduloBy with their describes.)
+// removed subtractN, divideBy and moduloBy with their describes; v0.8.0
+// renamed the maxWith and minWith describes to maxBy and minBy.)
 
 module RamdafTests.Ramda.Math {
   import opened Ramdaf.Prelude
@@ -229,30 +230,31 @@ module RamdafTests.Ramda.Math {
   // `prop('x')`: every record here has an x.
   function X(o: map<string, int>): int { Field(o, "x") }
 
-  // describe('maxWith') (v0.2.0: a key function instead of a comparator)
-  method {:test} MaxWithCalculatesTheLargestValueUsingTheKey() {
-    expect maxWith(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
+  // describe('maxBy') (describe('maxWith') until v0.7.2; v0.2.0: a key
+  // function instead of a comparator)
+  method {:test} MaxByCalculatesTheLargestValueUsingTheKey() {
+    expect maxBy(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
   }
-  method {:test} MaxWithReturnsUndefinedForTheEmptyList() {
+  method {:test} MaxByReturnsUndefinedForTheEmptyList() {
     var empty: seq<map<string, int>> := [];
-    expect maxWith(X, empty) == None;
+    expect maxBy(X, empty) == None;
   }
-  method {:test} MaxWithIsProperlyCurried() {
-    var highestX := (l: seq<map<string, int>>) => maxWith(X, l);
+  method {:test} MaxByIsProperlyCurried() {
+    var highestX := (l: seq<map<string, int>>) => maxBy(X, l);
     expect highestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
   }
 
-  // describe('minWith')
-  method {:test} MinWithCalculatesTheSmallestValueUsingTheKey() {
-    expect minWith(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
+  // describe('minBy') (describe('minWith') until v0.7.2)
+  method {:test} MinByCalculatesTheSmallestValueUsingTheKey() {
+    expect minBy(X, [Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
   }
   // "returns null for the empty list" checks for undefined
-  method {:test} MinWithReturnsUndefinedForTheEmptyList() {
+  method {:test} MinByReturnsUndefinedForTheEmptyList() {
     var empty: seq<map<string, int>> := [];
-    expect minWith(X, empty) == None;
+    expect minBy(X, empty) == None;
   }
-  method {:test} MinWithIsProperlyCurried() {
-    var lowestX := (l: seq<map<string, int>>) => minWith(X, l);
+  method {:test} MinByIsProperlyCurried() {
+    var lowestX := (l: seq<map<string, int>>) => minBy(X, l);
     expect lowestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
   }
 }

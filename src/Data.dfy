@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.7.2 "Data Analysis and Grouping Functions" (ramda.js lines
-// 5248-5661), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
+// Ramdaf: Ramda v0.8.0 "Data Analysis and Grouping Functions" (ramda.js lines
+// 5787-6200), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
 // unportable `functions`/`functionsIn`, and `groupBy`, which since v0.3.0 is
-// defined in "List Functions" (line 3362 in v0.7.2; from v0.2.0 to v0.2.4 an
+// defined in "List Functions" (line 3717 in v0.8.0; from v0.2.0 to v0.2.4 an
 // alias of `partition` there) but which stays here (functions do not move
 // between modules).
 //
@@ -23,8 +23,10 @@ module Ramdaf.Data {
             intersection, intersectionWith, countBy, groupBy, project
     provides Prelude, List, Object
 
-  // `compose(uniq, R.concat)` (`merge` before v0.2.4): the elements of both
-  // lists, each kept at its first occurrence (`union([1, 2, 3], [1]) ==
+  // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
+  // to v0.7.2, so from v0.6.0 an empty first string threw, as for concat:
+  // `union("", "b")`, now `["b"]`; `merge` before v0.2.4): the elements of
+  // both lists, each kept at its first occurrence (`union([1, 2, 3], [1]) ==
   // [1, 2, 3]`; it was `[2, 3, 1]` until v0.2.3).
   function union<T(==)>(list1: seq<T>, list2: seq<T>): seq<T>
   { List.uniq(list1 + list2) }

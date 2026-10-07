@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.7.2's own suite does not cover, each checked against
-// ramda.js v0.7.2 under node (the expected values are node's output). The
+// Edge cases Ramda v0.8.0's own suite does not cover, each checked against
+// ramda.js v0.8.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -220,13 +220,113 @@ module RamdafTests.Edge.List {
     expect reduce((acc: string, c: char) => acc + [c], "", "abc") == "abc";
   }
 
-  // Two strings concatenate when the first is not empty (its own `concat`
-  // method); the empty first string is a deviation since v0.6.0 (below).
+  // Two strings concatenate by the first one's own `concat` method. Since
+  // v0.8.0 that includes an empty first string (node: 'bar' and ''; from
+  // v0.6.0 to v0.7.2 both threw "TypeError: can't concat string", a
+  // deviation pinned until then).
   method {:test} ConcatOfStrings() {
     expect concat("foo", "") == "foo";
     expect concat("ab", "cd") == "abcd";
+    expect concat("", "bar") == "bar";
+    expect concat("", "") == "";
     var empty: seq<int> := [];
     expect concat(empty, [1]) == [1];
+  }
+
+  // nth (v0.8.0): a negative n counts from the end, and out of range is
+  // undefined (node: 'foo', 'quux', undefined, 'quux', 'foo', undefined,
+  // undefined; undefined for []; 'b', 'c', undefined on 'abc').
+  method {:test} NthEdges() {
+    var l := ["foo", "bar", "baz", "quux"];
+    var empty: seq<int> := [];
+    expect nth(0, l) == Some("foo");
+    expect nth(3, l) == Some("quux");
+    expect nth(4, l) == None;
+    expect nth(-1, l) == Some("quux");
+    expect nth(-4, l) == Some("foo");
+    expect nth(-5, l) == None;
+    expect nth(-99, l) == None;
+    expect nth(0, empty) == None;
+    expect nth(-1, empty) == None;
+    expect nth(1, "abc") == Some('b');
+    expect nth(-1, "abc") == Some('c');
+    expect nth(5, "abc") == None;
+  }
+
+  // prependTo and appendTo (v0.8.0) take the list first (node: [1],
+  // [[2], [1]], [[1], [2], [4, 5, 6]], and on the string 'ab' the characters
+  // plus the element, ['a', 'b', 'c'] and ['c', 'a', 'b']).
+  method {:test} PrependToAppendToEdges() {
+    var empty: seq<int> := [];
+    expect prependTo(empty, 1) == [1];
+    expect prependTo([[1]], [2]) == [[2], [1]];
+    expect appendTo([[1], [2]], [4, 5, 6]) == [[1], [2], [4, 5, 6]];
+    expect appendTo("ab", 'c') == "abc";
+    expect prependTo("ab", 'c') == "cab";
+  }
+
+  // cloneDeep (v0.8.0) keeps undefined properties (v0.1.1's JSON version
+  // dropped them) and functions (node: `Object.keys` ['a', 'u'], and
+  // `cloneDeep([{a: x => x * 2}])[0].a(10)` is 20).
+  method {:test} CloneDeepEdges() {
+    var o := map["a" := Arr([Num(1), Obj(map["b" := Num(2)])]), "u" := Undefined];
+    expect cloneDeep(o) == o;
+    var fns: seq<map<string, int -> int>> := cloneDeep([map["a" := (x: int) => x * 2]]);
+    var a := fns[0]["a"];
+    expect a(10) == 20;
+    expect cloneDeep(-4) == -4;
+    expect cloneDeep(Null) == Null;
+  }
+
+  // commute and commuteMap (v0.8.0): every choice of one element per list,
+  // the first list's element varying fastest; of builds the starting functor
+  // (node: [[]], [], [], [[1], [2], [3]], [[1], [1]], [], the eight triples,
+  // ['ac', 'bc', 'ad', 'bd'] as character pairs, [[1, 3], [1, 3], [2, 3],
+  // [2, 3]], [[2, 1]], [[]] and [[2, 4], [1, 4], [2, 3], [1, 3]]).
+  method {:test} CommuteEdges() {
+    var none: seq<seq<int>> := [];
+    var empty: seq<int> := [];
+    expect commute(of, none) == [[]];
+    expect commute(of, [empty]) == [];
+    expect commute(of, [[1], empty]) == [];
+    expect commute(of, [[1, 2, 3]]) == [[1], [2], [3]];
+    expect commute((x: seq<int>) => [x, x], [[1]]) == [[1], [1]];
+    expect commute((x: seq<int>) => [], [[1]]) == [];
+    expect commute(of, [[1, 2], [3, 4], [5, 6]]) ==
+      [[1, 3, 5], [2, 3, 5], [1, 4, 5], [2, 4, 5], [1, 3, 6], [2, 3, 6], [1, 4, 6], [2, 4, 6]];
+    expect commute(of, ["ab", "cd"]) == ["ac", "bc", "ad", "bd"];
+    expect commute((x: seq<int>) => [x, x], [[1, 2], [3]]) == [[1, 3], [1, 3], [2, 3], [2, 3]];
+    expect commuteMap((xs: seq<int>) => [|xs|], of, [[1, 2], [3]]) == [[2, 1]];
+    expect commuteMap((xs: seq<int>) => mapSeq((x: int) => x + 10, xs), of, none) == [[]];
+    expect commuteMap(reverse, of, [[1, 2], [3, 4]]) == [[2, 4], [1, 4], [2, 3], [1, 3]];
+  }
+
+  // lens (v0.8.0), Ramda's headLens example (node: 10, ['mu', 20, 30, 40],
+  // [11, 20, 30, 40]).
+  method {:test} LensEdges() {
+    var headLens := lens((a: seq<Js>) => if |a| > 0 then a[0] else Undefined,
+                         (v: Js, a: seq<Js>) => [v] + (if |a| > 0 then a[1..] else []));
+    var l := [Num(10), Num(20), Num(30), Num(40)];
+    expect headLens.get(l) == Num(10);
+    expect headLens.set_(Str("mu"), l) == [Str("mu"), Num(20), Num(30), Num(40)];
+    expect headLens.map_((x: Js) => if x.Num? then Num(x.n + 1) else x, l) == [Num(11), Num(20), Num(30), Num(40)];
+    // On ints the getter is partial: node's `l([])` is undefined and
+    // `l.map(x => x + 1, [])` is `[NaN]`, so get and map_ require a
+    // non-empty list; the setter is total (`l.set(9, [])` is `[9]`). Node:
+    // 10, [9], [11, 20].
+    var intHead := lens((a: seq<int>) requires |a| > 0 => a[0],
+                        (v: int, a: seq<int>) => [v] + (if |a| > 0 then a[1..] else []));
+    expect intHead.get([10, 20]) == 10;
+    expect intHead.set_(9, []) == [9];
+    expect intHead.map_((x: int) => x + 1, [10, 20]) == [11, 20];
+  }
+
+  // xprod (v0.8.0 removed xprodWith; xprod is unchanged): node gives
+  // [[1, 'a'], [1, 'b'], [2, 'a'], [2, 'b']] and, on two strings, the
+  // character pairs.
+  method {:test} XprodEdges() {
+    expect xprod([1, 2], ["a", "b"]) == [(1, "a"), (1, "b"), (2, "a"), (2, "b")];
+    expect xprod("ab", "cd") == [('a', 'c'), ('a', 'd'), ('b', 'c'), ('b', 'd')];
   }
 
   // Since v0.7.2 an object with a positive `length` is array-like only when
@@ -268,11 +368,15 @@ module RamdafTests.Edge.List {
     expect uniqWith((a: int, b: int) => a == b, empty) == [];
   }
 
-  // Since v0.1.5 take clamps n to the list's length; since v0.5.0 skip gives
-  // [] for n >= |list| (from v0.2.0 to v0.4.3 it threw RangeError for
-  // n > |list|).
+  // Since v0.1.5 take clamps n to the list's length, and since v0.8.0 a
+  // negative n gives [] (it threw RangeError); since v0.5.0 skip gives [] for
+  // n >= |list| (from v0.2.0 to v0.4.3 it threw RangeError for n > |list|).
   method {:test} TakeSkipEdges() {
     var empty: seq<int> := [];
+    expect take(-1, [1, 2, 3]) == [];
+    expect take(-5, empty) == [];
+    expect take(-1, "abc") == "";
+    expect take(0, [1]) == [];
     expect take(0, [1, 2]) == [];
     expect take(2, [1, 2]) == [1, 2];
     expect take(5, [1, 2]) == [1, 2];
@@ -301,7 +405,10 @@ module RamdafTests.Edge.List {
   }
 
   // remove, insert and insert.all are built on `_slice`; since v0.2.4 a cut
-  // at 0 is empty (until v0.2.3 it copied the whole list).
+  // at 0 is empty (until v0.2.3 it copied the whole list), and since v0.8.0
+  // a negative start cuts at 0 (node: [1, 2, 3, 4, 5], [2, 3, 4, 5],
+  // [2, 3, 4, 5], [], [], [3, 4, 5] and []; until v0.7.2 each threw
+  // RangeError).
   method {:test} RemoveUsesRamdasSlice() {
     var l := [1, 2, 3, 4, 5];
     var empty: seq<int> := [];
@@ -317,6 +424,14 @@ module RamdafTests.Edge.List {
     expect remove(1, 0, l) == l;
     expect remove(0, 1, empty) == [];
     expect remove(2, 0, empty) == [];
+    expect remove(4, -4, [16, 8, 12]) == [16, 8, 12, 16, 8, 12];
+    expect remove(-1, 1, l) == [1, 2, 3, 4, 5];
+    expect remove(-1, 2, l) == [2, 3, 4, 5];
+    expect remove(-2, 3, l) == [2, 3, 4, 5];
+    expect remove(-3, 8, l) == [];
+    expect remove(-1, 6, l) == [];
+    expect remove(-10, 12, l) == [3, 4, 5];
+    expect remove(-1, 1, empty) == [];
   }
 
   method {:test} InsertUsesRamdasSlice() {
@@ -456,17 +571,6 @@ module RamdafTests.Edge.List {
     var node := map["nodeType" := 1, "length" := -1];
     expect flatten([Leaf(node)]) == [node];
     expect unnest([Leaf(node)]) == [Leaf(node)];
-  }
-
-  // node: concat('', 'bar') and concat('', '') throw "TypeError: can't concat
-  // string" (since v0.6.0 a non-array second argument needs a truthy first
-  // argument with a `concat` method; v0.4.0 and v0.5.0 gave 'bar' and '',
-  // v0.2.4 to v0.3.0 ['b', 'a', 'r'] and []). Here a string is a seq, and
-  // `concat("", "bar")` is the same call as `concat([], ['b', 'a', 'r'])`,
-  // which node still allows.
-  method {:test} DeviationConcatOfAnEmptyFirstString() {
-    expect concat("", "bar") == "bar";
-    expect concat("", "") == "";
   }
 
   // node: chain(x => 'ab', [1, 2]) is ['ab', 'ab'] (a string is not

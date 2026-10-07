@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against ramda.js v0.7.2 under node;
+// Edge cases for Sort and Data, checked against ramda.js v0.8.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -31,6 +31,16 @@ module RamdafTests.Edge.Data {
     expect sortBy((s: string) => |s|, ["ccc", "a", "bb"]) == ["a", "bb", "ccc"];
     // {k, i} records, sorted by k: the i's come out 1, 3, 0, 2
     expect sortBy((r: (int, int)) => r.0, [(2, 0), (1, 1), (2, 2), (1, 3)]) == [(1, 1), (1, 3), (2, 0), (2, 2)];
+  }
+
+  // union is `compose(uniq, _concat)` since v0.8.0, so an empty first string
+  // concatenates (node: ['b'] and []; from v0.6.0 to v0.7.2, through
+  // `R.concat`, both threw "TypeError: can't concat string", an unrecorded
+  // deviation of those ports). A string is a seq here.
+  method {:test} UnionOfAnEmptyFirstString() {
+    expect union("", "b") == "b";
+    expect union("", "") == "";
+    expect union("ab", "bc") == "abc";
   }
 
   // Since v0.2.4 union/difference/intersection keep the first occurrence

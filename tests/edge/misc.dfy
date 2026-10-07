@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.7.2 under node; the methods named Deviation* pin documented
+// ramda.js v0.8.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -27,10 +27,34 @@ module RamdafTests.Edge.Misc {
     expect eqProps("x", map["x" := 1], none) == false;
     expect propEq("nope", 1, map["foo" := 1]) == false;
     expect prop("nope", map["a" := 1]) == None;
-    expect props(map["a" := 1], "a") == Some(1);
-    expect props(map["a" := 1], "b") == None;
+    expect propOf(map["a" := 1], "a") == Some(1);
+    expect propOf(map["a" := 1], "b") == None;
     expect eq(1, 1) == true;
     expect keys(none) == {};
+  }
+
+  // props (v0.8.0) gives one value per name, in the names' order, undefined
+  // (None) for a missing property (node: [1, 1], [undefined, 1, 2], []).
+  method {:test} PropsEdges() {
+    var none: map<string, int> := map[];
+    var names: seq<string> := [];
+    expect props(["a", "a"], map["a" := 1]) == [Some(1), Some(1)];
+    expect props(["c", "a", "b"], map["b" := 2, "a" := 1]) == [None, Some(1), Some(2)];
+    expect props(names, map["a" := 1]) == [];
+    expect props(["a"], none) == [None];
+  }
+
+  // assoc (v0.8.0) copies obj with the property set (node: {a: 1, z: 9},
+  // {a: 1}, {x: 2, hasOwnProperty: 1}, and `assoc('a', undefined, {})` has
+  // the own key a).
+  method {:test} AssocEdges() {
+    var none: map<string, int> := map[];
+    expect assoc("z", 9, map["a" := 1]) == map["a" := 1, "z" := 9];
+    expect assoc("a", 1, none) == map["a" := 1];
+    expect assoc("a", 2, map["a" := 1, "b" := 3]) == map["a" := 2, "b" := 3];
+    expect assoc("hasOwnProperty", 1, map["x" := 2]) == map["x" := 2, "hasOwnProperty" := 1];
+    var emptyJs: map<string, Js> := map[];
+    expect assoc("a", Undefined, emptyJs) == map["a" := Undefined];
   }
 
   // values keeps one entry per key (node: [1, 1]).
@@ -81,13 +105,13 @@ module RamdafTests.Edge.Misc {
     expect toPairsIn(none) == {};
   }
 
-  // pickWith (v0.2.3) passes (value, key, object).
-  method {:test} PickWithEdges() {
+  // pickBy (pickWith from v0.2.3 to v0.7.2) passes (value, key, object).
+  method {:test} PickByEdges() {
     var none: map<string, int> := map[];
-    expect pickWith((v: int, k: string, o: map<string, int>) => k == "a", map["a" := 1, "b" := 2]) == map["a" := 1];
-    expect pickWith((v: int, k: string, o: map<string, int>) => "b" in o && o["b"] == v, map["a" := 2, "b" := 2, "c" := 3]) ==
+    expect pickBy((v: int, k: string, o: map<string, int>) => k == "a", map["a" := 1, "b" := 2]) == map["a" := 1];
+    expect pickBy((v: int, k: string, o: map<string, int>) => "b" in o && o["b"] == v, map["a" := 2, "b" := 2, "c" := 3]) ==
       map["a" := 2, "b" := 2];
-    expect pickWith((v: int, k: string, o: map<string, int>) => v > 1, none) == map[];
+    expect pickBy((v: int, k: string, o: map<string, int>) => v > 1, none) == map[];
   }
 
   method {:test} MixinEdges() {
@@ -184,21 +208,22 @@ module RamdafTests.Edge.Misc {
     expect product(empty) == 1;
   }
 
-  // v0.2.0: maxWith/minWith take a key function, and the running winner is
-  // replaced only by a strictly better key, so the first of equals wins.
-  method {:test} MaxWithMinWithKeepTheFirstOfEquals() {
-    expect maxWith((r: (int, int)) => r.0, [(3, 0), (5, 1), (5, 2), (1, 3)]) == Some((5, 1));
-    expect minWith((r: (int, int)) => r.0, [(3, 0), (1, 1), (1, 2)]) == Some((1, 1));
-    expect maxWith((x: int) => x % 2, [1, 3, 2]) == Some(1);
-    expect minWith((x: int) => x % 2, [2, 4, 1]) == Some(2);
+  // v0.2.0: maxWith/minWith (since v0.8.0 maxBy/minBy) take a key function,
+  // and the running winner is replaced only by a strictly better key, so the
+  // first of equals wins (node: `maxBy(k => k % 3, [1, 3, 3, 2])` is 2).
+  method {:test} MaxByMinByKeepTheFirstOfEquals() {
+    expect maxBy((r: (int, int)) => r.0, [(3, 0), (5, 1), (5, 2), (1, 3)]) == Some((5, 1));
+    expect minBy((r: (int, int)) => r.0, [(3, 0), (1, 1), (1, 2)]) == Some((1, 1));
+    expect maxBy((x: int) => x % 2, [1, 3, 2]) == Some(1);
+    expect minBy((x: int) => x % 2, [2, 4, 1]) == Some(2);
   }
 
-  method {:test} MaxWithMinWithCompareKeys() {
+  method {:test} MaxByMinByCompareKeys() {
     var empty: seq<int> := [];
-    expect maxWith((x: int) => -x, [1, 2, 3]) == Some(1);
-    expect minWith((x: int) => -x, [1, 2, 3]) == Some(3);
-    expect maxWith((x: int) => x, [7]) == Some(7);
-    expect minWith((x: int) => x, empty) == None;
+    expect maxBy((x: int) => -x, [1, 2, 3]) == Some(1);
+    expect minBy((x: int) => -x, [1, 2, 3]) == Some(3);
+    expect maxBy((x: int) => x, [7]) == Some(7);
+    expect minBy((x: int) => x, empty) == None;
   }
 
   // String.prototype.substring clamps both indices and swaps them if needed.
@@ -244,14 +269,30 @@ module RamdafTests.Edge.Misc {
     expect toLowerCase("AbC-1") == "abc-1";
   }
 
-  // cond (v0.6.0) applies onTrue or onFalse to its argument; JS forwards
-  // every argument (a tuple here).
-  method {:test} CondEdges() {
-    var big := cond((x: int) => x > 2, (x: int) => "big", (x: int) => "small");
+  // ifElse (cond from v0.6.0 to v0.7.2) applies onTrue or onFalse to its
+  // argument; JS forwards every argument (a tuple here). `if` (if_) is the
+  // same function.
+  method {:test} IfElseEdges() {
+    var big := ifElse((x: int) => x > 2, (x: int) => "big", (x: int) => "small");
     expect big(3) == "big";
     expect big(1) == "small";
-    // `cond((a, b) => a < b, (a, b) => b - a, (a, b) => a - b)(2, 5)`
-    expect cond((p: (int, int)) => p.0 < p.1, (p: (int, int)) => p.1 - p.0, (p: (int, int)) => p.0 - p.1)((2, 5)) == 3;
+    expect if_((x: int) => x > 2, (x: int) => "big", (x: int) => "small")(3) == "big";
+    // `ifElse((a, b) => a < b, (a, b) => b - a, (a, b) => a - b)(2, 5)`
+    expect ifElse((p: (int, int)) => p.0 < p.1, (p: (int, int)) => p.1 - p.0, (p: (int, int)) => p.0 - p.1)((2, 5)) == 3;
+  }
+
+  // cond (v0.8.0): the first pair whose predicate holds decides, and no match
+  // (or no pairs) is undefined, here None (node: 'a', 'b', undefined,
+  // undefined, 5; `cond(x => x > 2, ...)`, v0.7.2's form, now throws).
+  method {:test} CondEdges() {
+    var ab := cond([((x: int) => x > 1, (x: int) => "a"), ((x: int) => x > 0, (x: int) => "b")]);
+    expect ab(5) == Some("a");
+    expect ab(1) == Some("b");
+    expect ab(0) == None;
+    var none: seq<(int -> bool, int -> string)> := [];
+    expect cond(none)(5) == None;
+    // `cond([(a, b) => a < b, (a, b) => b - a])(2, 7)`
+    expect cond([((p: (int, int)) => p.0 < p.1, (p: (int, int)) => p.1 - p.0)])((2, 7)) == Some(5);
   }
 
   // has (v0.7.0) sees own properties only; hasIn also sees the 12 members of
@@ -340,15 +381,22 @@ module RamdafTests.Edge.Misc {
   // ---- documented deviations (not node behaviour) ----
 
 
-  // node: cloneObj(JSON.parse('{"__proto__": 5, "a": 1}')) and mixin(<the
-  // same>, {}) are {a: 1}: assigning `__proto__` sets the prototype instead
-  // of a property (the input's own `__proto__` property can only come from
-  // JSON.parse or Object.defineProperty). A map's keys are all ordinary.
+  // node: cloneObj(JSON.parse('{"__proto__": 5, "a": 1}')), mixin(<the
+  // same>, {}) and, since v0.8.0, cloneDeep(<the same>) are {a: 1}:
+  // assigning `__proto__` sets the prototype instead of a property (the
+  // input's own `__proto__` property can only come from JSON.parse or
+  // Object.defineProperty). Likewise assoc (v0.8.0): the keys of
+  // `assoc('__proto__', 1, {a: 1})` are ['a'], and those of `assoc('a', 2,
+  // JSON.parse('{"__proto__": 5, "b": 1}'))` are ['b', 'a']. A map's keys
+  // are all ordinary.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
     expect cloneObj(o) == o;
     expect mixin(o, none) == o;
+    expect cloneDeep(o) == o;
+    expect assoc("__proto__", 1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
+    expect assoc("a", 2, map["__proto__" := 5, "b" := 1]) == map["__proto__" := 5, "b" := 1, "a" := 2];
   }
 
   // node: eq([], []) is false (two distinct array objects).

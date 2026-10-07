@@ -1,4 +1,4 @@
-// Ramda v0.7.2 test/test.list.js, test/test.indexof.js,
+// Ramda v0.8.0 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js,
@@ -17,16 +17,23 @@
 // are undefined" (more keys than values is outside the domain, README) and
 // fromPairs "skips empty Arrays and non-Array elements" (the elements are
 // typed pairs, README "Outside the modeled domain"). Also transcribed here:
-// v0.7.0's new test.createMapEntry.js and test.scanl.js. test.zip.js's v0.4.0
-// toPairs and toPairsIn describes test Object functions and are transcribed
-// in tests/ramda/object.dfy. (v0.4.1 removed test.list.js's describe('nth')
-// with the function.)
+// v0.7.0's new test.createMapEntry.js and test.scanl.js, and v0.8.0's new
+// test.commute.js and test.lens.js (the `typeof` checks hold by
+// construction, including lens's "returns a function with `set` and `map`
+// properties": a `Lens` always has its three fields; the lens is applied
+// with `.get`, `.set_` and `.map_`, README "Deviations"). test.zip.js's
+// v0.4.0 toPairs and toPairsIn describes test Object functions and are
+// transcribed in tests/ramda/object.dfy. (v0.4.1 removed test.list.js's
+// describe('nth') with the function, and v0.8.0 test.product.js's
+// describe('xprodWith').)
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
   import opened Ramdaf.Core
   import opened Ramdaf.List
   import opened Ramdaf.Data
+  import O = Ramdaf.Object
+  import S = Ramdaf.String
   import opened Support
 
   // ---- test.list.js ----
@@ -757,22 +764,104 @@ module RamdafTests.Ramda.List {
     expect something([1, 2]) == [("a", 1), ("a", 2), ("b", 1), ("b", 2), ("c", 1), ("c", 2)];
   }
 
-  method {:test} XprodWithCreatesAllCrossProducts() {
-    expect xprodWith((x: int, y: string) => NumStr(x) + y, [1, 2], ["a", "b", "c"]) ==
-      ["1a", "1b", "1c", "2a", "2b", "2c"];
+  // ---- test.commute.js (v0.8.0) ----
+
+  function As(): seq<seq<int>> { [[1], [3, 4]] }
+  function Bs(): seq<seq<int>> { [[1, 2], [3]] }
+  function Cs(): seq<seq<int>> { [[1, 2], [3, 4]] }
+
+  // describe('commute'): `R.of` is List.of
+  method {:test} CommutePivotsAList() {
+    expect commute(of, As()) == [[1, 3], [1, 4]];
+    expect commute(of, Bs()) == [[1, 3], [2, 3]];
+    expect commute(of, Cs()) == [[1, 3], [2, 3], [1, 4], [2, 4]];
   }
 
-  method {:test} XprodWithReturnsAnEmptyListIfEitherInputListIsEmpty() {
-    var empty: seq<int> := [];
-    expect xprodWith((x: int, y: int) => x + y, empty, [1, 2, 3]) == [];
-    expect xprodWith((x: int, y: int) => x + y, [1, 2, 3], empty) == [];
+  method {:test} CommuteIsCurried() {
+    var cmtArr := (l: seq<seq<int>>) => commute(of, l);
+    expect cmtArr(As()) == [[1, 3], [1, 4]];
+    expect cmtArr(Bs()) == [[1, 3], [2, 3]];
+    expect cmtArr(Cs()) == [[1, 3], [2, 3], [1, 4], [2, 4]];
   }
 
-  method {:test} XprodWithIsAutomaticallyCurried() {
-    expect xprodWith((x: string, y: int) => x + NumStr(y), ["a", "b", "c"], [1, 2]) ==
-      ["a1", "a2", "b1", "b2", "c1", "c2"];
-    expect xprodWith((x: int, y: string) => NumStr(x) + y, [1, 2], ["a", "b", "c"]) ==
-      ["1a", "1b", "1c", "2a", "2b", "2c"];
+  // describe('commuteMap'): `plus10map = R.map(x => x + 10)`
+  function Plus10Map(xs: seq<int>): seq<int> { mapSeq((x: int) => x + 10, xs) }
+
+  method {:test} CommuteMapPivotsAListAndAppliesATransformation() {
+    expect commuteMap(Plus10Map, of, As()) == [[11, 13], [11, 14]];
+    expect commuteMap(Plus10Map, of, Bs()) == [[11, 13], [12, 13]];
+    expect commuteMap(Plus10Map, of, Cs()) == [[11, 13], [12, 13], [11, 14], [12, 14]];
+  }
+
+  // `cmtPlus10 = commuteMap(plus10map)`, `cmtmArr = cmtPlus10(R.of)`
+  method {:test} CommuteMapIsCurried() {
+    var cmtPlus10 := (o: seq<int> -> seq<seq<int>>) => ((l: seq<seq<int>>) => commuteMap(Plus10Map, o, l));
+    var cmtmArr := cmtPlus10(of);
+    expect cmtmArr(As()) == [[11, 13], [11, 14]];
+    expect cmtmArr(Bs()) == [[11, 13], [12, 13]];
+    expect cmtmArr(Cs()) == [[11, 13], [12, 13], [11, 14], [12, 14]];
+  }
+
+  // ---- test.lens.js (v0.8.0) ----
+
+  // `getHead(obj) = obj[0]` (undefined for []), `setHead(val, obj) =
+  // [val].concat(obj.slice(1))`; the lists mix numbers and strings, so they
+  // hold Js values.
+  function GetHead(o: seq<Js>): Js { if |o| > 0 then o[0] else Undefined }
+  function SetHead(v: Js, o: seq<Js>): seq<Js> { [v] + (if |o| > 0 then o[1..] else []) }
+  function HeadOf(): Lens<seq<Js>, Js> { lens(GetHead, SetHead) }
+
+  // `getPhrase(obj) = obj.catchphrase`, `setPhrase(val, obj)` sets it on
+  // `R.cloneObj(obj)`
+  function GetPhrase(o: map<string, Js>): Js { if "catchphrase" in o then o["catchphrase"] else Undefined }
+  function SetPhrase(v: Js, o: map<string, Js>): map<string, Js> { O.cloneObj(o)["catchphrase" := v] }
+  function PhraseLens(): Lens<map<string, Js>, Js> { lens(GetPhrase, SetPhrase) }
+
+  function Nums(ns: seq<int>): seq<Js> { mapSeq((n: int) => Num(n), ns) }
+  function PhraseObj(): map<string, Js> { map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")] }
+
+  method {:test} LensRetrievesValuesAsDefinedByTheGetter() {
+    expect HeadOf().get(Nums([10, 20, 30, 40])) == Num(10);
+    expect HeadOf().get([Str("a"), Str("b"), Str("c"), Str("d")]) == Str("a");
+  }
+
+  method {:test} LensSetsPropertiesAndReturnsTheNewObject() {
+    expect HeadOf().set_(Str("cow"), Nums([1, 2, 3, 4])) == [Str("cow"), Num(2), Num(3), Num(4)];
+  }
+
+  // The second assertion holds trivially: obj is a value.
+  method {:test} LensTheSetterNeedNotMutateTheObject() {
+    var obj := PhraseObj();
+    expect PhraseLens().set_(Str("kapow!"), obj) == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("kapow!")];
+    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
+  }
+
+  method {:test} LensMapsAPropertyFromGetterToSetter() {
+    var plus10 := (x: Js) => if x.Num? then Num(x.n + 10) else x;
+    expect HeadOf().map_(plus10, Nums([-9, 2, 3])) == Nums([1, 2, 3]);
+  }
+
+  // `uc(s) = s.toUpperCase()`
+  method {:test} LensTheModifierNeedNotMutateTheObject() {
+    var obj := PhraseObj();
+    var uc := (s: Js) => if s.Str? then Str(S.toUpperCase(s.s)) else s;
+    expect PhraseLens().map_(uc, obj) == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("ZING!")];
+    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
+  }
+
+  // `get1(x) = x[1]`; `set1(val, obj)` replaces element 1 by
+  // `obj.concat().splice(1, 1, val)` (appended to a shorter list); `partial =
+  // R.lens(get1)`
+  function Get1(o: seq<Js>): Js { if |o| > 1 then o[1] else Undefined }
+  function Set1(v: Js, o: seq<Js>): seq<Js> { if |o| > 1 then o[1 := v] else o + [v] }
+
+  method {:test} LensIsCurried() {
+    var partial := (s: (Js, seq<Js>) -> seq<Js>) => lens(Get1, s);
+    expect partial(Set1).get([Str("zeroth"), Str("first"), Str("second")]) == Str("first");
+    expect partial(Set1).get(Nums([10, 20, 30])) == Num(20);
+    expect partial(Set1).set_(Str("zoom"), Nums([10, 20, 30])) == [Num(10), Str("zoom"), Num(30)];
+    var x2 := (x: Js) => if x.Num? then Num(x.n * 2) else x;
+    expect partial(Set1).map_(x2, Nums([10, 20, 30])) == Nums([10, 40, 30]);
   }
 
 

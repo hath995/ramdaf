@@ -1,5 +1,6 @@
-// Ramdaf: Ramda v0.7.2 "Arithmetic Functions" (ramda.js lines 4443-4891).
-// (v0.5.0 removed `subtractN`, `divideBy` and `moduloBy`.)
+// Ramdaf: Ramda v0.8.0 "Arithmetic Functions" (ramda.js lines 4973-5427).
+// (v0.5.0 removed `subtractN`, `divideBy` and `moduloBy`; v0.8.0 renamed
+// `maxWith` and `minWith` to `maxBy` and `minBy`.)
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
 
@@ -8,7 +9,7 @@ module Ramdaf.Math {
 
   export
     reveals add, multiply, subtract, divide, modulo,
-            sum, product, lt, lte, gt, gte, max, maxWith, minWith, min, mathMod
+            sum, product, lt, lte, gt, gte, max, maxBy, minBy, min, mathMod
     provides Prelude
 
   function add(a: int, b: int): int { a + b }
@@ -93,42 +94,45 @@ module Ramdaf.Math {
          assert list == [list[0]] + list[1..];
          if m < list[0] then m else list[0] }
 
-  // `maxWith(keyFn, list)` (v0.2.0; it took a comparator before; since v0.7.0
+  // `R.maxBy(keyFn, list)` (v0.8.0 renamed `maxWith` to `maxBy` with the
+  // same code, `_curry2(_createMaxMinBy(gt))`; `maxWith` took a key function
+  // since v0.2.0, a comparator before; v0.7.0 made it
   // `curry2(createMaxMinWith(gt))`, the same loop): the running
   // winner is replaced only when `keyFn(list[idx]) > max`, so the FIRST
   // element with the greatest key wins. The empty list gives undefined (null
   // before v0.2.0), here None. Keys are ints (README "Deviations"). The body
   // recurses on the tail: the tail's winner beats list[0] only when its key
   // is strictly greater, which picks the same element as the loop.
-  function maxWith<T>(keyFn: T -> int, list: seq<T>): Option<T>
-    ensures maxWith(keyFn, list).None? <==> |list| == 0
-    ensures maxWith(keyFn, list).Some? ==> maxWith(keyFn, list).value in list
-    ensures maxWith(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| ==> keyFn(list[j]) <= keyFn(maxWith(keyFn, list).value)
-    ensures maxWith(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| && keyFn(list[j]) == keyFn(maxWith(keyFn, list).value) &&
+  function maxBy<T>(keyFn: T -> int, list: seq<T>): Option<T>
+    ensures maxBy(keyFn, list).None? <==> |list| == 0
+    ensures maxBy(keyFn, list).Some? ==> maxBy(keyFn, list).value in list
+    ensures maxBy(keyFn, list).Some? ==>
+      forall j :: 0 <= j < |list| ==> keyFn(list[j]) <= keyFn(maxBy(keyFn, list).value)
+    ensures maxBy(keyFn, list).Some? ==>
+      forall j :: 0 <= j < |list| && keyFn(list[j]) == keyFn(maxBy(keyFn, list).value) &&
                   (forall i :: 0 <= i < j ==> keyFn(list[i]) < keyFn(list[j]))
-                  ==> list[j] == maxWith(keyFn, list).value
+                  ==> list[j] == maxBy(keyFn, list).value
   { if |list| == 0 then None
-    else match maxWith(keyFn, list[1..])
+    else match maxBy(keyFn, list[1..])
       case None => Some(list[0])
       case Some(m) =>
         assert forall j :: 1 <= j < |list| ==> list[j] == list[1..][j - 1];
         if keyFn(m) > keyFn(list[0]) then Some(m) else Some(list[0]) }
 
-  // As maxWith, replacing the running winner when `keyFn(list[idx]) < min`:
-  // the FIRST element with the least key wins.
-  function minWith<T>(keyFn: T -> int, list: seq<T>): Option<T>
-    ensures minWith(keyFn, list).None? <==> |list| == 0
-    ensures minWith(keyFn, list).Some? ==> minWith(keyFn, list).value in list
-    ensures minWith(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| ==> keyFn(minWith(keyFn, list).value) <= keyFn(list[j])
-    ensures minWith(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| && keyFn(list[j]) == keyFn(minWith(keyFn, list).value) &&
+  // `R.minBy` (v0.8.0, `minWith` renamed, with the same code): as maxBy,
+  // replacing the running winner when `keyFn(list[idx]) < min`: the FIRST
+  // element with the least key wins.
+  function minBy<T>(keyFn: T -> int, list: seq<T>): Option<T>
+    ensures minBy(keyFn, list).None? <==> |list| == 0
+    ensures minBy(keyFn, list).Some? ==> minBy(keyFn, list).value in list
+    ensures minBy(keyFn, list).Some? ==>
+      forall j :: 0 <= j < |list| ==> keyFn(minBy(keyFn, list).value) <= keyFn(list[j])
+    ensures minBy(keyFn, list).Some? ==>
+      forall j :: 0 <= j < |list| && keyFn(list[j]) == keyFn(minBy(keyFn, list).value) &&
                   (forall i :: 0 <= i < j ==> keyFn(list[j]) < keyFn(list[i]))
-                  ==> list[j] == minWith(keyFn, list).value
+                  ==> list[j] == minBy(keyFn, list).value
   { if |list| == 0 then None
-    else match minWith(keyFn, list[1..])
+    else match minBy(keyFn, list[1..])
       case None => Some(list[0])
       case Some(m) =>
         assert forall j :: 1 <= j < |list| ==> list[j] == list[1..][j - 1];

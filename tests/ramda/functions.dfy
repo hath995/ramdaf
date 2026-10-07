@@ -1,4 +1,4 @@
-// Ramda v0.7.2 test/test.always.js, test/test.compose.js and
+// Ramda v0.8.0 test/test.always.js, test/test.compose.js and
 // test/test.functionBasics.js, transcribed. A call with no arguments is a call
 // with the unit value `()`. Not transcribed: the Date case of `always`;
 // compose/pipe's "passes context to functions" (`this`, v0.2.3, which also
@@ -11,14 +11,20 @@
 // passed object's ap method" (method dispatch on a non-array object) and the
 // `typeof` check of its "is curried" (since v0.5.0 the dispatch case calls
 // `ap(obj, 10)`, on the first argument); useWith, once, memoize, construct,
-// constructN (v0.4.0), unary, binary, nAry (v0.4.1) and apply (v0.7.0) (not
-// portable, README;
+// constructN (v0.4.0), unary, binary, nAry (v0.4.1), apply (v0.7.0), and
+// v0.8.0's pCompose, pPipe (promises; pCompose's describe also holds a
+// compose arity case) and unapply (not portable, README;
 // v0.3.0 dropped the use-over describe with `use`). test.each.js,
 // test.partial.js, test.wrap.js, test.expose.js, v0.2.2's new test.curry.js
 // (v0.5.0 adds curryN's describe, v0.7.2 op's) and test.path.js, v0.3.0's new test.is.js
 // (v0.5.0 adds isArrayLike's describe), v0.4.0's new test.functions.js and
-// test.functionsIn.js, v0.6.0's new test.bind.js and test.invoker.js, and
-// v0.7.0's new test.lift.js test functions that are not portable, and v0.5.0's new
+// test.functionsIn.js, v0.6.0's new test.bind.js and test.invoker.js,
+// v0.7.0's new test.lift.js and v0.8.0's new test.type.js test functions
+// that are not portable (v0.8.0 rewrites test.invoker.js for `invokerN` by
+// method name and removes `invoker`'s describe, and adds an arity case to
+// test.wrap.js; test.identity.js's argN describe is not portable either,
+// and its identity describe is transcribed in tests/ramda/core.dfy), and
+// v0.5.0's new
 // test.examplesRunner.js runs the JSDoc examples through `dox`; it is not a
 // hand-written suite. (v0.1.3 moved test.lazy.js out of test/, and v0.4.1 removed
 // test.always.js's "should be aliased by `constant`" with `constant`.)

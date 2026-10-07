@@ -1,0 +1,30 @@
+{
+  "ramda": "v0.8.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Math.maxWith", "kind": "removed", "why": "v0.8.0 renamed maxWith to maxBy with the same code (createMaxMinWith(gt) became _createMaxMinBy(gt)); R.maxWith is gone"},
+    {"symbol": "Ramdaf.Math.minWith", "kind": "removed", "why": "v0.8.0 renamed minWith to minBy with the same code; R.minWith is gone"},
+    {"symbol": "Ramdaf.Object.pickWith", "kind": "removed", "why": "v0.8.0 renamed pickWith to pickBy with the same results (the private pickWith became _pickBy); R.pickWith is gone"},
+    {"symbol": "Ramdaf.List.xprodWith", "kind": "removed", "why": "v0.8.0 removed R.xprodWith (commit 'remove R.xprodWith')"},
+    {"symbol": "Ramdaf.Object.props", "kind": "breaking", "why": "v0.8.0 renamed the old props (flip(prop)) to propOf and reused the name for 'multiple get': props(ps, obj) is [obj[ps[0]], ...], so the signature changed from (obj, p): Option<V> to (ps: seq<string>, obj): seq<Option<V>> (node: props({x: 100}, 'x') went from 100 to [undefined])"},
+    {"symbol": "Ramdaf.Logic.cond", "kind": "breaking", "why": "v0.8.0 renamed cond(condition, onTrue, onFalse) to ifElse and reused cond for [predicate, transformer] pairs, returning the first matching transformer's result or undefined: the signature changed to cond(pairs: seq<(A -> bool, A -> B)>): A -> Option<B>"},
+    {"symbol": "Ramdaf.List.take", "kind": "compatible", "why": "v0.8.0's _slice allocates Math.max(0, to - from), so take(-1, l) went from RangeError to []: n: nat widens to n: int, every previous result unchanged"},
+    {"symbol": "Ramdaf.List.remove", "kind": "compatible", "why": "v0.8.0's _slice copies nothing for a negative length, so a negative start cuts at 0 (remove(-1, 2, [1, 2, 3, 4, 5]) went from RangeError to [2, 3, 4, 5]): requires 0 <= start is dropped, requires 0 <= start + count stays, every previous result unchanged"},
+    {"symbol": "Ramdaf.List.xprod", "kind": "compatible", "why": "knock-on of the xprodWith removal: the revealed body called xprodWith and is rewritten as its own recursion (Ramda's xprod has its own loops), same results"},
+    {"symbol": "Ramdaf.Prelude.Lens", "kind": "added", "why": "encodes the result of R.lens (new in v0.8.0), a function carrying set and map properties, as a record of get, set_ and map_ (set and map are Dafny keywords)"},
+    {"symbol": "Ramdaf.Core.nth", "kind": "added", "why": "v0.8.0 defines R.nth in ramda.js's Core Functions section (v0.4.1 had removed List.nth, an alias of prop): list[n], or list[list.length + n] for a negative n, undefined (None) out of range"},
+    {"symbol": "Ramdaf.Core.prependTo", "kind": "added", "why": "new in v0.8.0: R.prependTo = flip(_prepend)"},
+    {"symbol": "Ramdaf.Core.appendTo", "kind": "added", "why": "new in v0.8.0: R.appendTo = flip(_append)"},
+    {"symbol": "Ramdaf.Core.cloneDeep", "kind": "added", "why": "new in v0.8.0 (defined among the internal functions; v0.2.0 had removed the JSON-based one): a deep copy that keeps functions by reference; a Dafny value is its own copy"},
+    {"symbol": "Ramdaf.List.commuteMap", "kind": "added", "why": "new in v0.8.0: R.commuteMap(fn, of, list) = reduce((acc, ftor) => ap(map(append, fn(ftor)), acc), of([]), list), ported for arrays"},
+    {"symbol": "Ramdaf.List.commute", "kind": "added", "why": "new in v0.8.0: R.commute = commuteMap(map(identity))"},
+    {"symbol": "Ramdaf.List.lens", "kind": "added", "why": "new in v0.8.0 (defined in ramda.js's List Functions section): R.lens(get, set) returns get as a function with the properties set and map(fn, a) = set(fn(get(a)), a)"},
+    {"symbol": "Ramdaf.Object.propOf", "kind": "added", "why": "new name in v0.8.0 for the old props, same code: flip(prop)"},
+    {"symbol": "Ramdaf.Object.pickBy", "kind": "added", "why": "new name in v0.8.0 for pickWith, same results: the properties for which test(val, key, obj) is truthy"},
+    {"symbol": "Ramdaf.Object.assoc", "kind": "added", "why": "new in v0.8.0: R.assoc(prop, val, obj), a shallow copy of obj with prop set to val"},
+    {"symbol": "Ramdaf.Logic.ifElse", "kind": "added", "why": "new name in v0.8.0 for v0.6.0's cond, same code: condition(...) ? onTrue(...) : onFalse(...)"},
+    {"symbol": "Ramdaf.Logic.if_", "kind": "added", "why": "new in v0.8.0: the alias R['if'] = ifElse (if is a Dafny keyword)"},
+    {"symbol": "Ramdaf.Math.maxBy", "kind": "added", "why": "new name in v0.8.0 for maxWith, same code: the first element with the greatest key, undefined for []"},
+    {"symbol": "Ramdaf.Math.minBy", "kind": "added", "why": "new name in v0.8.0 for minWith, same code: the first element with the least key, undefined for []"}
+  ]
+}

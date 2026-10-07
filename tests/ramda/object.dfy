@@ -1,4 +1,4 @@
-// Ramda v0.7.2 test/test.objectBasics.js, test/test.keysvals.js,
+// Ramda v0.8.0 test/test.objectBasics.js, test/test.keysvals.js,
 // test/test.tapeq.js and test/test.zip.js's toPairs and toPairsIn describes,
 // transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument
@@ -14,17 +14,23 @@
 // until v0.5.0) "should not return properties from the prototype chain", toPairs "only
 // iterates the object's own properties" and toPairsIn "iterates properties
 // on the object's prototype chain", and v0.7.0's pick "retrieves prototype
-// properties", omit "includes prototype properties", pickWith "retrieves
-// prototype properties", has "does not check properties from the prototype
+// properties", omit "includes prototype properties", pickBy's (pickWith's
+// until v0.7.2) "retrieves prototype properties", has "does not check properties from the prototype
 // chain" and hasIn "checks properties from the prototype chain" (objects
 // built by a constructor whose prototype has properties): a map has no
 // prototype. Also skipped:
 // the no-argument cases, prop's "should throw when called with no
 // arguments" (v0.4.0) and propOr's, where's and eq's "throws if given
-// no arguments" (v0.4.1), has's and hasIn's (v0.7.0); describe('tap'),
+// no arguments" (v0.4.1), has's and hasIn's (v0.7.0), props's "throws when
+// called with no arguments" (v0.8.0); describe('assocPath') (v0.8.0; not
+// portable, README); the "creates a copy" case of pickBy (reference
+// inequality); describe('tap'),
 // whose arguments v0.7.0 reversed (not portable); and eq's "is curried" (v0.4.1), which relies on
 // `[] !== []`, reference inequality (README "Deviations"). toPairs and toPairsIn return a set (a map has no key order, README
-// "Deviations").
+// "Deviations"). v0.8.0 renamed describe('props') to describe('propOf')
+// and describe('pickWith') to describe('pickBy') with the functions, and
+// added a describe('props') for the new function; assoc's "reference
+// equality" lines compare by value (Dafny values have no identity).
 
 module RamdafTests.Ramda.Object {
   import opened Ramdaf.Prelude
@@ -56,13 +62,41 @@ module RamdafTests.Ramda.Object {
     expect nm(people) == [Some(Str("Fred")), Some(Str("Wilma")), Some(Str("Pebbles"))];
   }
 
-  // describe('props')
-  method {:test} PropsFetchesFromTheInitiallySuppliedObject() {
+  // describe('propOf') (describe('props') until v0.7.2; v0.8.0 adds the
+  // nonexistent property)
+  method {:test} PropOfFetchesFromTheInitiallySuppliedObject() {
     var fred := map["name" := Str("Fred"), "age" := Num(23), "feet" := Str("large")];
-    var p := (k: string) => props(fred, k);
+    var p := (k: string) => propOf(fred, k);
     expect p("name") == Some(Str("Fred"));
     expect p("age") == Some(Num(23));
     expect p("feet") == Some(Str("large"));
+    expect p("nonexistent") == None;
+  }
+
+  // describe('props') (v0.8.0): undefined is None
+  method {:test} PropsReturnsEmptyArrayIfNoPropertiesRequested() {
+    var none: seq<string> := [];
+    expect props(none, Abc()) == [];
+  }
+
+  method {:test} PropsReturnsValuesForRequestedProperties() {
+    expect props(["a", "e"], Abc()) == [Some(1), Some(5)];
+  }
+
+  method {:test} PropsPreservesOrder() {
+    expect props(["f", "c", "e"], Abc()) == [Some(6), Some(3), Some(5)];
+  }
+
+  method {:test} PropsReturnsUndefinedForNonexistentProperties() {
+    var ps := props(["a", "nonexistent"], Abc());
+    expect |ps| == 2;
+    expect ps[0] == Some(1);
+    expect ps[1] == None;
+  }
+
+  method {:test} PropsIsAutomaticallyCurried() {
+    var ab := (o: map<string, int>) => props(["a", "b"], o);
+    expect ab(Abc()) == [Some(1), Some(2)];
   }
 
   // describe('propOr') (describe('propOrDefault') from v0.4.0 to v0.5.0):
@@ -142,25 +176,26 @@ module RamdafTests.Ramda.Object {
     expect skipAB(Abc()) == map["c" := 3, "d" := 4, "e" := 5, "f" := 6];
   }
 
-  // describe('pickWith') (v0.2.3). "should create a copy of the object"
-  // asserts reference inequality, which Dafny values do not have; the
-  // truthy/falsy cases use boolean predicates (`always({})`, `always(1)`,
-  // `always(0)` and `always(null)` are true, true, false, false).
-  method {:test} PickWithReturningTruthyKeepsTheKey() {
-    expect pickWith((v: int, k: string, o: map<string, int>) => true, Abc()) == Abc();
+  // describe('pickBy') (describe('pickWith') from v0.2.3 to v0.7.2). "creates
+  // a copy of the object" asserts reference inequality, which Dafny values do
+  // not have; the truthy/falsy cases use boolean predicates (`always({})`,
+  // `always(1)`, `always(0)` and `always(null)` are true, true, false,
+  // false).
+  method {:test} PickByReturningTruthyKeepsTheKey() {
+    expect pickBy((v: int, k: string, o: map<string, int>) => true, Abc()) == Abc();
   }
 
   // "returning falsy keeps the key" (the title says keeps; the cases drop it)
-  method {:test} PickWithReturningFalsyDropsTheKey() {
-    expect pickWith((v: int, k: string, o: map<string, int>) => false, Abc()) == map[];
+  method {:test} PickByReturningFalsyDropsTheKey() {
+    expect pickBy((v: int, k: string, o: map<string, int>) => false, Abc()) == map[];
   }
 
-  method {:test} PickWithShouldBeCalledWithValKeyObj() {
-    expect pickWith((v: int, k: string, o: map<string, int>) => o == Abc() && k == "d" && v == 4, Abc()) == map["d" := 4];
+  method {:test} PickByShouldBeCalledWithValKeyObj() {
+    expect pickBy((v: int, k: string, o: map<string, int>) => o == Abc() && k == "d" && v == 4, Abc()) == map["d" := 4];
   }
 
-  method {:test} PickWithShouldBeAutomaticallyCurried() {
-    var copier := (o: map<string, int>) => pickWith((v: int, k: string, o': map<string, int>) => true, o);
+  method {:test} PickByShouldBeAutomaticallyCurried() {
+    var copier := (o: map<string, int>) => pickBy((v: int, k: string, o': map<string, int>) => true, o);
     expect copier(Abc()) == Abc();
   }
 
@@ -322,5 +357,41 @@ module RamdafTests.Ramda.Object {
 
   method {:test} ToPairsInConvertsAnObjectIntoKeyValuePairs() {
     expect toPairsIn(map["a" := 1, "b" := 2, "c" := 3]) == {("a", 1), ("b", 2), ("c", 3)};
+  }
+
+  // ---- test.objectBasics.js: describe('assoc') (v0.8.0) ----
+
+  function AssocObj1(): map<string, Js>
+  { map["a" := Num(1), "b" := Obj(map["c" := Num(2), "d" := Num(3)]), "e" := Num(4), "f" := Num(5)] }
+
+  method {:test} AssocMakesAShallowCloneOverridingOnlyTheSpecifiedProperty() {
+    var obj1 := AssocObj1();
+    var obj2 := assoc("e", Obj(map["x" := Num(42)]), obj1);
+    expect obj2 == map["a" := Num(1), "b" := Obj(map["c" := Num(2), "d" := Num(3)]),
+                       "e" := Obj(map["x" := Num(42)]), "f" := Num(5)];
+    expect obj2["a"] == obj1["a"];
+    expect obj2["b"] == obj1["b"];
+    expect obj2["f"] == obj1["f"];
+  }
+
+  method {:test} AssocIsCloneAndSetIfThePropertyIsNotOnTheOriginal() {
+    var obj1 := AssocObj1();
+    var obj2 := assoc("z", Obj(map["x" := Num(42)]), obj1);
+    expect obj2 == map["a" := Num(1), "b" := Obj(map["c" := Num(2), "d" := Num(3)]),
+                       "e" := Num(4), "f" := Num(5), "z" := Obj(map["x" := Num(42)])];
+    expect obj2["a"] == obj1["a"];
+    expect obj2["b"] == obj1["b"];
+    expect obj2["f"] == obj1["f"];
+  }
+
+  // `f = assoc('e')`, `g = f({x: 42})`
+  method {:test} AssocIsProperlyCurried() {
+    var obj1 := AssocObj1();
+    var expected := map["a" := Num(1), "b" := Obj(map["c" := Num(2), "d" := Num(3)]),
+                        "e" := Obj(map["x" := Num(42)]), "f" := Num(5)];
+    var f := (v: Js, o: map<string, Js>) => assoc("e", v, o);
+    var g := (o: map<string, Js>) => f(Obj(map["x" := Num(42)]), o);
+    expect f(Obj(map["x" := Num(42)]), obj1) == expected;
+    expect g(obj1) == expected;
   }
 }

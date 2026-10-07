@@ -1,4 +1,4 @@
-// Ramda v0.7.2 test/test.stringBasics.js and test/test.replace.js, transcribed. Not transcribed:
+// Ramda v0.8.0 test/test.stringBasics.js and test/test.replace.js, transcribed. Not transcribed:
 // describe('match') (regular expressions are not portable, README), and
 // trim's "falls back to a shim if String.prototype.trim is not present"
 // (v0.6.0), which is only registered when that method is missing, so not
