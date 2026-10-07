@@ -1,7 +1,8 @@
-// Ramdaf: Ramda v0.19.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Function functions" section, `flip` (an internal function
 // in v0.8.0) and the `always` family (`always`, `T`, `F`); from v0.9.0 on,
-// the functions with `@category Function` (`composeK`, `pipeK`, `juxt`). (v0.4.1
+// the functions with `@category Function` (`composeK`, `pipeK`, `juxt`,
+// `applySpec`). (v0.4.1
 // removed the aliases `sequence`, `distributeTo`, `constant` and `K`;
 // v0.4.2 renamed `fork` to `converge`; v0.9.0 renamed `alwaysTrue` and
 // `alwaysFalse` to `T` and `F` and removed `alwaysZero`; v0.16.0 removed
@@ -14,7 +15,7 @@ module Ramdaf.Functions {
   import List
 
   export
-    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt
+    reveals compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec
     provides List
 
   // `compose(f, g)(x) == f(g(x))`
@@ -40,8 +41,10 @@ module Ramdaf.Functions {
   // (v0.18.0, 360d5904 "make converge a binary function": `_curry2(function
   // converge(after, fns))`, the branching functions one list, and the result
   // curried to the longest function's arity, `curryN(Math.max.apply(Math,
-  // pluck('length', fns)), …)`, which passes its `this` on; `converge(after,
-  // [])` throws, as the arity is -Infinity). Until v0.17.1 the functions
+  // pluck('length', fns)), …)`, which passes its `this` on; since v0.20.0
+  // the arity is `reduce(max, 0, …)`, so `converge(after, [])` is a function
+  // of no arguments that calls after with none, where until v0.19.1 it threw
+  // as the arity was -Infinity). Until v0.17.1 the functions
   // were separate arguments, `converge(after, f1, f2)`: v0.4.2 renamed
   // `fork`, added in v0.1.2, to `converge` with the same code, v0.1.4 had
   // moved `after` first and allowed any number of functions (v0.4.2's
@@ -82,13 +85,35 @@ module Ramdaf.Functions {
   function pipeK<A, B, C>(f: A -> seq<B>, g: B -> seq<C>): seq<A> -> seq<C>
   { composeK(g, f) }
 
-  // `R.juxt(fns)` (v0.19.0, `@category Function`): `function() { return
-  // map(apply(__, arguments), fns); }`, a function that applies every
-  // function to its arguments and lists the results in order (`juxt([add(3),
-  // multiply(2)])(2)` is `[5, 4]`). JS forwards any number of arguments; the
-  // result here is unary (tuple the arguments for more, `()` for none), and
-  // `R.map` is `List.mapSeq` with the application written out (`R.apply` is
-  // not portable, README).
+  // `R.juxt(fns)` (v0.19.0, `@category Function`): a function that applies
+  // every function to its arguments and lists the results in order
+  // (`juxt([add(3), multiply(2)])(2)` is `[5, 4]`). Since v0.20.0 it is
+  // `converge(_arrayOf, fns)`, curried to the longest function's arity
+  // (`juxt([multiply, add])(2)(3)` is `[6, 5]`), with the same results; in
+  // v0.19.x `function() { return map(apply(__, arguments), fns); }`. JS
+  // forwards any number of arguments; the result here is unary (tuple the
+  // arguments for more, `()` for none). The port's converge takes a pair of
+  // functions, so the body keeps v0.19.0's form: `R.map` is `List.mapSeq`
+  // with the application written out (`R.apply` is not portable, README).
   function juxt<A, B>(fns: seq<A -> B>): A -> seq<B>
   { x => List.mapSeq((f: A -> B) => f(x), fns) }
+
+  // `R.applySpec(spec)` (v0.20.0, `@category Function`): `spec =
+  // map(function(v) { return typeof v == 'function' ? v : applySpec(v); },
+  // spec)`, then `curryN(reduce(max, 0, pluck('length', values(spec))),
+  // function() { var args = arguments; return map(function(f) { return
+  // apply(f, args); }, spec); })`: a function that calls every function of
+  // the spec with its arguments and returns an object of the same shape
+  // (`applySpec({v: inc, u: dec})(1)` is `{v: 2, u: 0}`). Here the spec maps
+  // each key to a function of one type, and `R.map` over an object is
+  // written out as a map comprehension (as in Object.whereEq). A nested spec
+  // object, which JS applies recursively, and a value that is neither a
+  // function nor an object (it throws) cannot be written (README "Outside
+  // the modeled domain"). JS forwards any number of arguments and curries
+  // the result to the longest function's arity; the result here is unary
+  // (tuple the arguments for more, `()` for none; README "Deviations"). The
+  // spec is copied with R.map, so in JS an own `__proto__` spec function is
+  // dropped and a reduced marker key ends the copy (README "Deviations").
+  function applySpec<A, B>(spec: map<string, A -> B>): A -> map<string, B>
+  { x => map k | k in spec :: spec[k](x) }
 }

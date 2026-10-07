@@ -1,5 +1,5 @@
-// Ramda v0.19.1 test/always.js, T.js, F.js, compose.js, pipe.js,
-// converge.js, flip.js, ap.js and juxt.js (until v0.8.0 test.always.js,
+// Ramda v0.20.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// converge.js, flip.js, ap.js, juxt.js and applySpec.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
 // case of `always`; compose/pipe's "passes context to functions" (`this`,
@@ -47,8 +47,15 @@
 // "applies a list of functions to a list of values" "interprets [a] as an
 // applicative", and passes converge's functions as one list, a pair here;
 // v0.19.0 removed functions.js and functionsIn.js with the functions and
-// added the unportable lensPath.js and pathSatisfies.js.) juxt.js's
-// (v0.19.0) calls with no values pass `()`, and with several a tuple.
+// added the unportable lensPath.js and pathSatisfies.js; v0.20.0 added the
+// unportable tryCatch.js.) juxt.js's (v0.19.0) and applySpec.js's (v0.20.0)
+// calls with no values pass `()`, and with several a tuple. Not
+// transcribed either: v0.20.0's arity and curried `it`s, converge's "works
+// with empty functions list" (no arguments; the port's converge takes a
+// pair), juxt's "retains the highest arity" and "returns a curried
+// function", and applySpec's "works with nested specs" (a nested spec
+// object cannot be written, README "Outside the modeled domain"), "retains
+// the highest arity" and "returns a curried function".
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
@@ -210,5 +217,22 @@ module RamdafTests.Ramda.Functions {
   // `R.add`, `R.multiply` on two values
   method {:test} JuxtWorksWithSomeFunctionsAndSomeValues() {
     expect juxt([(t: (int, int)) => add(t.0, t.1), (t: (int, int)) => multiply(t.0, t.1)])((2, 3)) == [5, 6];
+  }
+
+  // ---- applySpec.js (v0.20.0) ----
+
+  method {:test} ApplySpecWorksWithEmptySpec() {
+    var spec: map<string, (()) -> int> := map[];
+    expect applySpec(spec)(()) == map[];
+  }
+
+  // `R.inc`, `R.dec`
+  method {:test} ApplySpecWorksWithUnaryFunctions() {
+    expect applySpec(map["v" := inc, "u" := dec])(1) == map["v" := 2, "u" := 0];
+  }
+
+  // `R.add` on two values
+  method {:test} ApplySpecWorksWithBinaryFunctions() {
+    expect applySpec(map["sum" := (t: (int, int)) => add(t.0, t.1)])((1, 2)) == map["sum" := 3];
   }
 }

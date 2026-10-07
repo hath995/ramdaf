@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.19.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -6,7 +6,7 @@
 // `intersperse`, `dropRepeats`, `dropRepeatsWith`, `lensIndex`, `dropLast`,
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
 // `allUniq`, `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
-// `splitWhen`, `transpose`, `without` and the renamed functions below; since v0.16.0 the
+// `splitWhen`, `transpose`, `without`, `reduceBy` and the renamed functions below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
@@ -26,7 +26,8 @@
 // `isSet` to `allUniq`, keeping `isSet` as a deprecated alias, and made
 // `createMapEntry` a deprecated alias of the new `objOf` (Object.dfy);
 // v0.19.0 removed `isSet`, `createMapEntry`, `containsWith` and `mapObj`,
-// deprecated in v0.18.0.)
+// deprecated in v0.18.0; v0.20.0 removed `commute` and `commuteMap`,
+// deprecated in v0.19.0 for `sequence` and `traverse`.)
 
 module Ramdaf.List {
   import opened Prelude
@@ -38,12 +39,12 @@ module Ramdaf.List {
             all, any, contains, uniq, uniqWith, pluck, flatten,
             zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice,
             remove, insert, insertAll, partition,
-            ap, of, empty, chain, commuteMap, commute, unnest, zipObj, fromPairs, scan,
+            ap, of, empty, chain, unnest, zipObj, fromPairs, scan,
             repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none,
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             allUniq, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
-            without
+            without, reduceBy
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -162,34 +163,6 @@ module Ramdaf.List {
   // README "Deviations".)
   function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
   { reduce((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
-
-  // `R.commuteMap(fn, of, list)` (v0.8.0): since v0.18.0 (1502c6d5 "fix
-  // R.commute and R.commuteMap", 7ef6df08) `reduceRight(consF, of([]),
-  // list)` with `consF(acc, x) = ap(map(prepend, fn(x)), acc)`, which turns
-  // a list of functors into a functor of lists, fn transforming each functor
-  // first. For arrays: every way of picking one element of fn(x) for each x,
-  // the last list's element varying fastest (`commuteMap(map(x => x + 10),
-  // of, [[1, 2], [3, 4]])` is `[[11, 13], [11, 14], [12, 13], [12, 14]]`).
-  // Until v0.17.1 it was `_reduce(consF, of([]), list)` with `consF(acc,
-  // ftor) = _ap(_map(append, fn(ftor)), acc)` (v0.10.0; v0.9.x folded with
-  // `_foldl`, and v0.8.0 with `reduce`, calling `R.ap` and `R.map`), so the
-  // first list's element varied fastest (`[[11, 13], [12, 13], [11, 14],
-  // [12, 14]]`). JS dispatches `ap` and `map` to any Fantasy-land functor,
-  // with of building the result's functor; here they are arrays (README
-  // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`.
-  // `@deprecated since v0.19.0`, for `traverse`, which computes the same.
-  function commuteMap<A, B>(fn: seq<A> -> seq<B>, of: seq<B> -> seq<seq<B>>, list: seq<seq<A>>): seq<seq<B>>
-  { reduceRight((acc: seq<seq<B>>, x: seq<A>) => ap(mapSeq((y: B) => ((l: seq<B>) => [y] + l), fn(x)), acc),
-                of([]), list) }
-
-  // `R.commute = commuteMap(identity)` (v0.16.0, "Make `commute` more
-  // efficient"; `commuteMap(map(identity))` from v0.8.0 to v0.15.1, the same
-  // results on arrays): commuteMap with no transformation (`commute(of, [[1,
-  // 2], [3, 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]` since v0.18.0, and
-  // was `[[1, 3], [2, 3], [1, 4], [2, 4]]`). `R.identity` (Core) is written
-  // out as `xs => xs`. `@deprecated since v0.19.0`, for `sequence`.
-  function commute<A>(of: seq<A> -> seq<seq<A>>, list: seq<seq<A>>): seq<seq<A>>
-  { commuteMap((xs: seq<A>) => xs, of, list) }
 
   // The elements that satisfy fn, in order. (Since v0.19.0 JS `filter` also
   // takes an object, giving its own properties that satisfy fn:
@@ -419,6 +392,7 @@ module Ramdaf.List {
   // allUniq", with isSet's code): `_indexOf(list, list[idx], idx + 1) < 0`
   // for every idx, with `R.equals`, so true exactly when no element occurs
   // twice, which is the body (README "Deviations" on `-0`).
+  // `@deprecated since v0.20.0`.
   function allUniq<T(==)>(list: seq<T>): bool
   { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
 
@@ -501,15 +475,19 @@ module Ramdaf.List {
     seq(n, i requires 0 <= i < n => (a[i], b[i])) }
 
   // `R.zipObj(keys, values)` (v0.3.0): `out[keys[i]] = values[i]` for i
-  // ascending, so a later duplicate key wins and extra values are ignored.
-  // An extra key gets an undefined value, which is still an own property
-  // (`zipObj(['a', 'b'], [1])` has the keys a and b), so keys may not
-  // outnumber values. JS converts keys to strings, and a key such as
-  // `__proto__` is not an ordinary property (README "Deviations"). The body
-  // sets the last key on the object built from the others, which is the loop.
+  // below `Math.min(keys.length, values.length)` (v0.20.0), ascending, so a
+  // later duplicate key wins and extra keys and extra values are ignored
+  // (`zipObj(['a', 'b'], [1])` is `{a: 1}`). Until v0.19.1 the loop ran to
+  // `keys.length`, so an extra key got an undefined value, which was still
+  // an own property (`{a: 1, b: undefined}`), and the port required that
+  // keys not outnumber values. JS converts keys to strings, and a key such
+  // as `__proto__` is not an ordinary property (README "Deviations"). The
+  // body drops the extra keys, then sets the last key on the object built
+  // from the others, which is the loop.
   function zipObj<V>(keys: seq<string>, values: seq<V>): map<string, V>
-    requires |keys| <= |values|
-  { if |keys| == 0 then map[]
+    decreases |keys|
+  { if |keys| > |values| then zipObj(keys[..|values|], values)
+    else if |keys| == 0 then map[]
     else zipObj(keys[..|keys| - 1], values)[keys[|keys| - 1] := values[|keys| - 1]] }
 
   // `R.fromPairs(pairs)` (v0.3.0): `out[pairs[i][0]] = pairs[i][1]` for each
@@ -678,7 +656,12 @@ module Ramdaf.List {
   // v0.9.x): the pair of the elements that
   // satisfy pred and those that fail it, each in list order. From v0.1.4 to
   // v0.2.4 partition grouped the elements by the string key fn returned,
-  // which groupBy (Data.dfy) now does.
+  // which groupBy (Data.dfy) now does. Since v0.20.0 it is `juxt([filter,
+  // reject])`, `[filter(pred, list), reject(pred, list)]`, the same on
+  // lists; the body is that pair (`Functions.juxt` returns a list of one
+  // type, and List does not import Functions). JS now partitions an object's
+  // own properties too (`partition(x => x % 2, {a: 0, b: 1})` is `[{b: 1},
+  // {a: 0}]`), and any filterable; here a list (README "Deviations").
   function partition<T>(pred: T -> bool, list: seq<T>): (seq<T>, seq<T>)
   { (filter(pred, list), reject(pred, list)) }
 
@@ -722,15 +705,23 @@ module Ramdaf.List {
          var r := mapAccumRight(fn, t.0, list[..|list| - 1]);
          (r.0, r.1 + [t.1]) }
 
-  // `_curry1(function mergeAll(list) { return reduce(merge, {}, list); })`
-  // (v0.11.0; v0.10.0's `R.mergeAll = reduce(merge, {})` shared its `{}`
-  // accumulator across calls, so `mergeAll([])` was the same object every
-  // time), `@category List`: the objects merged left to right, a later
-  // object's keys winning. `R.merge` is `Object.merge`, which List does not
-  // import, so `merge(acc, obj)` is written out as its body, `acc + obj`. (An
-  // own `__proto__` property is dropped in JS, README "Deviations".)
+  // `R.mergeAll(list)` (v0.10.0, `@category List`): since v0.20.0
+  // `_objectAssign.apply(null, [{}].concat(list))`, the private
+  // `Object.assign`, which copies each object's own properties onto `{}` in
+  // list order: the objects merged left to right, a later object's keys
+  // winning. The body recurses on all but the last object and merges it
+  // over the result (`+`, Dafny's right-biased map union), which is the
+  // loop. Until v0.19.1 it was `_curry1(function mergeAll(list) { return
+  // reduce(merge, {}, list); })` (v0.11.0; v0.10.0's `R.mergeAll =
+  // reduce(merge, {})` shared its `{}` accumulator across calls), with the
+  // same results, and the body was `reduce` of `acc + obj` (`R.merge`
+  // written out); that `_reduce` ended at a reduced marker, which
+  // `_objectAssign` copies as ordinary keys, as here (README "Deviations").
+  // An own `__proto__` property is still dropped in JS (README
+  // "Deviations").
   function mergeAll<V>(list: seq<map<string, V>>): map<string, V>
-  { reduce((acc: map<string, V>, obj: map<string, V>) => acc + obj, map[], list) }
+  { if |list| == 0 then map[]
+    else mergeAll(list[..|list| - 1]) + list[|list| - 1] }
 
   // `R.aperture(n, list)` (v0.12.0, `@category List`): `limit = list.length -
   // (n - 1)`, and for idx below limit `acc[idx] = _slice(list, idx, idx +
@@ -880,9 +871,11 @@ module Ramdaf.List {
   // the loop does. Since v0.19.0 JS keeps the results of fn that are
   // primitives in a `Set` (`SameValueZero`), with its own flag for a first
   // `-0`, so a repeated `-0` is kept again (`uniqBy(x => x * 0, [-1, -2])`
-  // is `[-1, -2]`; README "Deviations"), and a `null` result of fn pushes
-  // `null` in place of the element (`uniqBy(x => null, [1, 2])` is `[null]`),
-  // which no key here can be (README "Outside the modeled domain").
+  // is `[-1, -2]`; README "Deviations"); in v0.19.x a `null` result of fn
+  // pushed `null` in place of the element (`uniqBy(x => null, [1, 2])` was
+  // `[null]`). Since v0.20.0 the keys go into the private `_Set`, which
+  // keeps the `-0` flag and tracks `null` like any other key, so that gives
+  // `[1]`, the first element for the key, as here.
   function uniqBy<T, U(==)>(fn: T -> U, list: seq<T>): seq<T>
   { if |list| == 0 then []
     else var r := uniqBy(fn, list[..|list| - 1]);
@@ -909,8 +902,8 @@ module Ramdaf.List {
   // acc); }, of([]), traversable)`, a list of applicatives turned into an
   // applicative of a list: for arrays every way of picking one element of
   // each list, the last list's varying fastest (`sequence(of, [[1, 2], [3,
-  // 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]`; `commute`, deprecated, is the
-  // same). JS takes any Fantasy-land applicative; here arrays (README
+  // 4]])` is `[[1, 3], [1, 4], [2, 3], [2, 4]]`; `commute`, removed in
+  // v0.20.0, was the same). JS takes any Fantasy-land applicative; here arrays (README
   // "Deviations"). `R.prepend` (Core) is written out as `[y] + l`.
   function sequence<A>(of: seq<A> -> seq<seq<A>>, traversable: seq<seq<A>>): seq<seq<A>>
   { reduceRight((acc: seq<seq<A>>, x: seq<A>) => ap(mapSeq((y: A) => ((l: seq<A>) => [y] + l), x), acc),
@@ -918,8 +911,8 @@ module Ramdaf.List {
 
   // `R.traverse(of, f, traversable)` (v0.19.0, `@category List`):
   // `sequence(of, map(f, traversable))`, f mapped over the traversable and
-  // the results sequenced (`commuteMap`, deprecated, with its arguments in
-  // another order).
+  // the results sequenced (`commuteMap`, removed in v0.20.0, with its
+  // arguments in another order).
   function traverse<A, B>(of: seq<B> -> seq<seq<B>>, f: A -> seq<B>, traversable: seq<A>): seq<seq<B>>
   { sequence(of, mapSeq(f, traversable)) }
 
@@ -964,4 +957,22 @@ module Ramdaf.List {
   // transducer. The private `_contains` is `contains`.
   function without<T(==)>(xs: seq<T>, list: seq<T>): seq<T>
   { reject((x: T) => contains(x, xs), list) }
+
+  // `R.reduceBy(keyFn, valueFn, valueAcc, list)` (v0.20.0, `@category
+  // List`): `_reduce(function(acc, elt) { var key = keyFn(elt); acc[key] =
+  // valueFn(_has(key, acc) ? acc[key] : valueAcc, elt); return acc; }, {},
+  // list)`, the elements grouped by the key keyFn gives them, each group
+  // folded with valueFn from valueAcc, in list order ("a more general
+  // groupBy": `reduceBy(x => x % 2 ? 'odd' : 'even', add, 0, [1, 2, 3])` is
+  // `{odd: 4, even: 2}`). `_reduce` is `reduce`'s body, so the body calls
+  // `reduce`, and `R.has` (`_has`, an own property; Object's, which List does
+  // not import) is written out as `key in acc`. JS converts the key to a
+  // string (README "Deviations"), a `__proto__` key sets the prototype
+  // instead of a property, and `_reduce` ends at a reduced marker key
+  // (README "Deviations"); a mutable valueAcc is one object shared by every
+  // group in JS, which an immutable Dafny value cannot be.
+  function reduceBy<T, A>(keyFn: T -> string, valueFn: (A, T) -> A, valueAcc: A, list: seq<T>): map<string, A>
+  { reduce((acc: map<string, A>, elt: T) =>
+             acc[keyFn(elt) := valueFn(if keyFn(elt) in acc then acc[keyFn(elt)] else valueAcc, elt)],
+           map[], list) }
 }

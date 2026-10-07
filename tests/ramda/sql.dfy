@@ -1,7 +1,7 @@
-// Ramda v0.19.1 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.20.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js, sortBy.js, equals.js, identical.js, eqBy.js,
-// symmetricDifference.js and symmetricDifferenceWith.js (until v0.8.0
+// symmetricDifference.js, symmetricDifferenceWith.js and clamp.js (until v0.8.0
 // test.sql.js, whose copy of the groupBy describe v0.9.0 dropped; eq.js and
 // eqDeep.js, restored in v0.15.1, went with the functions in v0.16.0),
 // transcribed. Not transcribed:
@@ -33,7 +33,10 @@
 // - eqBy.js's (v0.18.0) and symmetricDifference.js's (v0.19.0) "has
 //   R.equals semantics" (`-0`, NaN and `Just` objects with an `equals`
 //   method), and equals.js's v0.19.0 "considers equivalent Error objects
-//   equal" (no Error values).
+//   equal" (no Error values) and v0.20.0 "compares Promise objects by
+//   identity" (no Promises);
+// - clamp.js's (v0.20.0) "works with letters as well": clamp takes ints
+//   (README "Deviations").
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -405,5 +408,24 @@ module RamdafTests.Ramda.Sql {
   // `identical = (a, b) => a === b`
   method {:test} SymmetricDifferenceWithDoesNotReturnASparseArray() {
     expect |symmetricDifferenceWith((a: int, b: int) => a == b, [1, 3, 2, 1, 3, 1, 2, 3], [3])| == 2;
+  }
+
+  // describe('clamp') (v0.20.0)
+  method {:test} ClampClampsToTheLowerBound() {
+    expect clamp(1, 10, 0) == 1;
+    expect clamp(3, 12, 1) == 3;
+    expect clamp(-15, 3, -100) == -15;
+  }
+
+  method {:test} ClampClampsToTheUpperBound() {
+    expect clamp(1, 10, 20) == 10;
+    expect clamp(3, 12, 23) == 12;
+    expect clamp(-15, 3, 16) == 3;
+  }
+
+  method {:test} ClampLeavesItAloneWhenWithinTheBound() {
+    expect clamp(1, 10, 4) == 4;
+    expect clamp(3, 12, 6) == 6;
+    expect clamp(-15, 3, 0) == 0;
   }
 }

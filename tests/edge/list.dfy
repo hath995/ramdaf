@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.19.1's own suite does not cover, each checked against
-// dist/ramda.js v0.19.1 under node (the expected values are node's output). The
+// Edge cases Ramda v0.20.0's own suite does not cover, each checked against
+// dist/ramda.js v0.20.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -128,14 +128,20 @@ module RamdafTests.Edge.List {
     expect flatten([Leaf(1), Node([Leaf(2), Node([Leaf(3)])])]) == [1, 2, 3];
   }
 
-  // zipObj and fromPairs (v0.3.0): a later duplicate key wins.
+  // zipObj and fromPairs (v0.3.0): a later duplicate key wins; since
+  // v0.20.0 zipObj ignores the keys past the last value (node: {a: 1}, {},
+  // and {a: 1, b: 2}, where the third key would have set a to undefined).
   method {:test} ZipObjFromPairsEdges() {
     var nokeys: seq<string> := [];
+    var novalues: seq<int> := [];
     expect zipObj(["a", "a"], [1, 2]) == map["a" := 2];
     expect zipObj(["b", "a"], [1, 2]) == map["b" := 1, "a" := 2];
     expect zipObj(nokeys, [1, 2]) == map[];
+    expect zipObj(["a", "b"], [1]) == map["a" := 1];
+    expect zipObj(["a"], novalues) == map[];
+    expect zipObj(["a", "b", "a"], [1, 2]) == map["a" := 1, "b" := 2];
     // `zipObj(['a'])(['z'])`
-    var zipA := (vs: seq<string>) requires |vs| >= 1 => zipObj(["a"], vs);
+    var zipA := (vs: seq<string>) => zipObj(["a"], vs);
     expect zipA(["z"]) == map["a" := "z"];
     var nopairs: seq<(string, int)> := [];
     expect fromPairs([("a", 1), ("a", 2)]) == map["a" := 2];
@@ -245,30 +251,6 @@ module RamdafTests.Edge.List {
     expect clone(map["a" := Num(1), "b" := Arr([Num(1), Num(2)])]) == map["a" := Num(1), "b" := Arr([Num(1), Num(2)])];
     var none: map<string, int> := map[];
     expect clone(none) == none;
-  }
-
-  // commute and commuteMap (v0.8.0): every choice of one element per list,
-  // since v0.18.0 the last list's element varying fastest (until v0.17.1 the
-  // first's); of builds the starting functor (node: [[]], [], [], [[1], [2],
-  // [3]], [[1], [1]], [], the eight triples, ['ac', 'ad', 'bc', 'bd'] as
-  // character pairs, [[1, 3], [1, 3], [2, 3], [2, 3]], [[2, 1]], [[]] and
-  // [[2, 4], [2, 3], [1, 4], [1, 3]]).
-  method {:test} CommuteEdges() {
-    var none: seq<seq<int>> := [];
-    var empty: seq<int> := [];
-    expect commute(of, none) == [[]];
-    expect commute(of, [empty]) == [];
-    expect commute(of, [[1], empty]) == [];
-    expect commute(of, [[1, 2, 3]]) == [[1], [2], [3]];
-    expect commute((x: seq<int>) => [x, x], [[1]]) == [[1], [1]];
-    expect commute((x: seq<int>) => [], [[1]]) == [];
-    expect commute(of, [[1, 2], [3, 4], [5, 6]]) ==
-      [[1, 3, 5], [1, 3, 6], [1, 4, 5], [1, 4, 6], [2, 3, 5], [2, 3, 6], [2, 4, 5], [2, 4, 6]];
-    expect commute(of, ["ab", "cd"]) == ["ac", "ad", "bc", "bd"];
-    expect commute((x: seq<int>) => [x, x], [[1, 2], [3]]) == [[1, 3], [1, 3], [2, 3], [2, 3]];
-    expect commuteMap((xs: seq<int>) => [|xs|], of, [[1, 2], [3]]) == [[2, 1]];
-    expect commuteMap((xs: seq<int>) => mapSeq((x: int) => x + 10, xs), of, none) == [[]];
-    expect commuteMap(reverse, of, [[1, 2], [3, 4]]) == [[2, 4], [2, 3], [1, 4], [1, 3]];
   }
 
   // lens (v0.8.0), Ramda's headLens example, run with view, set and over
@@ -699,13 +681,15 @@ module RamdafTests.Edge.List {
   // the keys of indexBy(x => '__proto__', [1]) are []): assigning
   // `__proto__` sets the prototype (a primitive is ignored) instead of a
   // property. Likewise the keys of mergeAll([JSON.parse('{"__proto__": 5,
-  // "a": 1}'), {b: 2}]) (v0.10.0) are ['a', 'b']. A map's keys are all
-  // ordinary.
+  // "a": 1}'), {b: 2}]) (v0.10.0) are ['a', 'b'], and those of
+  // reduceBy(x => '__proto__', add, 0, [1, 2]) (v0.20.0) are []. A map's
+  // keys are all ordinary.
   method {:test} DeviationPrototypeKeysAreOrdinaryInListBuilders() {
     expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
     expect indexBy((x: int) => "__proto__", [1]) == map["__proto__" := 1];
     expect mergeAll([map["__proto__" := 5, "a" := 1], map["b" := 2]]) == map["__proto__" := 5, "a" := 1, "b" := 2];
+    expect reduceBy((x: int) => "__proto__", M.add, 0, [1, 2]) == map["__proto__" := 3];
   }
 
   // node: since v0.12.0 `_reduce` stops when the accumulator has a truthy
@@ -713,17 +697,27 @@ module RamdafTests.Edge.List {
   // (the transducer protocol's "reduced" marker; `__transducers_reduced__`
   // and `value` until v0.13.0): `reduce((acc, x) => assoc('x', x, acc),
   // {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2, 3])` is 9,
-  // `mergeAll([{'@@transducer/reduced': 1, '@@transducer/value': 7}, {a:
-  // 2}])` is 7, and `mapObjIndexed((x, k, o) => x, {'@@transducer/reduced':
-  // 1, '@@transducer/value': 5, z: 3})` is undefined (and so was `mapObj`'s
-  // until v0.18.0). Here the key is ordinary.
+  // `mapObjIndexed((x, k, o) => x, {'@@transducer/reduced': 1,
+  // '@@transducer/value': 5, z: 3})` is undefined (and so was `mapObj`'s
+  // until v0.18.0), and `reduceBy(x => '@@transducer/reduced', add, 0, [1,
+  // 2])` (v0.20.0), whose group value 1 is truthy, is undefined (the
+  // `@@transducer/value` it reads). Here the key is ordinary. (`mergeAll`
+  // gave 7 from v0.12.0 to v0.19.1: MergeAllCopiesTheReducedMarker.)
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
     var marked := map["@@transducer/reduced" := 1, "@@transducer/value" := 9];
     expect reduce((acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2, 3]) == marked["x" := 3];
-    var m7 := map["@@transducer/reduced" := 1, "@@transducer/value" := 7];
-    expect mergeAll([m7, map["a" := 2]]) == m7["a" := 2];
     var o := map["@@transducer/reduced" := 1, "@@transducer/value" := 5, "z" := 3];
     expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
+    expect reduceBy((x: int) => "@@transducer/reduced", M.add, 0, [1, 2]) == map["@@transducer/reduced" := 3];
+  }
+
+  // node: since v0.20.0 `mergeAll` copies with the private `_objectAssign`,
+  // not `_reduce`, so `mergeAll([{'@@transducer/reduced': 1,
+  // '@@transducer/value': 7}, {a: 2}])` is the merged object, as here (from
+  // v0.12.0 to v0.19.1 it was 7, the pin above).
+  method {:test} MergeAllCopiesTheReducedMarker() {
+    var m7 := map["@@transducer/reduced" := 1, "@@transducer/value" := 7];
+    expect mergeAll([m7, map["a" := 2]]) == m7["a" := 2];
   }
 
   // node: since v0.14.0 the v0.12.0 marker `__transducers_reduced__` is an
@@ -816,5 +810,17 @@ module RamdafTests.Edge.List {
     expect sequence((x: seq<int>) => [x, x], [[1]]) == [[1], [1]];
     expect traverse(of, (x: int) => [x, -x], [1, 2]) == [[1, 2], [1, -2], [-1, 2], [-1, -2]];
     expect traverse(of, (x: int) => [x], none) == [[]];
+  }
+
+  // reduceBy (v0.20.0): groups folded from valueAcc in list order; a
+  // `toString` key is an own property (`_has`), as here (node: {}, {odd: 4,
+  // even: 2}, {toString: 3}, {k: [3, 1, 2]}).
+  method {:test} ReduceByEdges() {
+    var none: seq<int> := [];
+    var nothing: seq<int> := [];
+    expect reduceBy((x: int) => "a", M.add, 0, none) == map[];
+    expect reduceBy((x: int) => if x % 2 != 0 then "odd" else "even", M.add, 0, [1, 2, 3]) == map["odd" := 4, "even" := 2];
+    expect reduceBy((x: int) => "toString", M.add, 0, [1, 2]) == map["toString" := 3];
+    expect reduceBy((x: int) => "k", (a: seq<int>, x: int) => a + [x], nothing, [3, 1, 2]) == map["k" := [3, 1, 2]];
   }
 }

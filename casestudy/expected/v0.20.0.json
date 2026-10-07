@@ -1,0 +1,17 @@
+{
+  "ramda": "v0.20.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.commute", "kind": "removed", "why": "v0.20.0 removed R.commute, deprecated since v0.19.0 for sequence"},
+    {"symbol": "Ramdaf.List.commuteMap", "kind": "removed", "why": "v0.20.0 removed R.commuteMap, deprecated since v0.19.0 for traverse"},
+    {"symbol": "Ramdaf.Data.intersection", "kind": "breaking", "why": "v0.20.0 filters the shorter list against the longer, so the elements and order follow the shorter list: intersection([3, 2], [1, 2, 3]) is [3, 2], was [2, 3]"},
+    {"symbol": "Ramdaf.Data.intersectionWith", "kind": "breaking", "why": "v0.20.0 keeps the shorter list's elements that match the longer: intersectionWith(mod3, [4, 5, 7], [1, 2]) is [1, 2], was [4, 5]; the postcondition changes with it"},
+    {"symbol": "Ramdaf.List.zipObj", "kind": "compatible", "why": "v0.20.0 stops at Math.min(keys.length, values.length): extra keys are ignored where they were undefined values; the precondition |keys| <= |values| is dropped, results on the old domain unchanged"},
+    {"symbol": "Ramdaf.Object.merge", "kind": "compatible", "why": "v0.20.0's merge is _objectAssign({}, l, r) instead of mergeWith: the revealed body is a + b, with the same results"},
+    {"symbol": "Ramdaf.List.mergeAll", "kind": "compatible", "why": "v0.20.0's mergeAll is _objectAssign over the list instead of reduce(merge, {}): the revealed body is its own recursion, with the same results"},
+    {"symbol": "Ramdaf.Functions.applySpec", "kind": "added", "why": "new in v0.20.0 (@category Function): a function returning the spec's object of each function applied to its arguments; flat spec, unary here"},
+    {"symbol": "Ramdaf.Data.clamp", "kind": "added", "why": "new in v0.20.0 (@category Relaction, i.e. Relation): value restricted to [min, max], throwing for min > max"},
+    {"symbol": "Ramdaf.List.reduceBy", "kind": "added", "why": "new in v0.20.0 (@category List): the elements grouped by keyFn, each group folded with valueFn from valueAcc"},
+    {"symbol": "Ramdaf.Logic.until", "kind": "added", "why": "new in v0.20.0 (@category Logic): fn applied to init until pred holds; bounded by an extra fuel here"}
+  ]
+}

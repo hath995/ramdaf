@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.19.1 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.20.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -47,8 +47,11 @@ module RamdafTests.Edge.Data {
   }
 
   // Since v0.2.4 union/difference/intersection keep the first occurrence
-  // (uniq); intersection takes its elements, and their order, from the
-  // second list.
+  // (uniq); since v0.20.0 intersection takes its elements, and their order,
+  // from the shorter list, the first when they are equally long (until
+  // v0.19.1 always the second: `intersection([3, 2], [1, 2, 3])` and
+  // `intersection([1, 2], [2, 1])` were [2, 3] and [2, 1]; node now: [3, 2],
+  // [1, 2]).
   method {:test} SetOperationsKeepFirstOccurrences() {
     var empty: seq<int> := [];
     expect union([1, 2, 3], [1]) == [1, 2, 3];
@@ -60,6 +63,8 @@ module RamdafTests.Edge.Data {
     expect intersection([1, 2, 3, 4], [4, 3, 2]) == [4, 3, 2];
     expect intersection([1, 2, 1, 3], [3, 1, 1]) == [3, 1];
     expect intersection([1, 2], [3, 1, 2, 1]) == [1, 2];
+    expect intersection([3, 2], [1, 2, 3]) == [3, 2];
+    expect intersection([1, 2], [2, 1]) == [1, 2];
   }
 
   // Since v0.7.0 difference and differenceWith are loops (same results).
@@ -104,7 +109,12 @@ module RamdafTests.Edge.Data {
     expect unionWith((a: int, b: int) => a < b, [3, 1, 2], empty) == [3];
     expect differenceWith(par, [1, 2, 3], [4]) == [1];
     expect differenceWith((a: int, b: int) => a == b, [1, 2, 1], [3]) == [1, 2];
-    expect intersectionWith(par, [1, 2, 3], [4, 5]) == [1, 2];
+    // since v0.20.0 the shorter list's elements (node: [4, 5] both ways and
+    // `intersectionWith(lt, [3, 4, 6], [1, 5])` [1, 5]; [1, 2] and [3, 4]
+    // until v0.19.1)
+    expect intersectionWith(par, [1, 2, 3], [4, 5]) == [4, 5];
+    expect intersectionWith(par, [4, 5], [1, 2, 3]) == [4, 5];
+    expect intersectionWith(lt, [3, 4, 6], [1, 5]) == [1, 5];
     expect intersectionWith((a: int, b: int) => a == b, [2, 1, 2], [2]) == [2];
   }
 
@@ -328,5 +338,14 @@ module RamdafTests.Edge.Data {
     expect symmetricDifference(empty, [1, 1]) == [1];
     expect symmetricDifference([1, 1, 2], [3, 3]) == [1, 2, 3];
     expect symmetricDifferenceWith((a: int, b: int) => a % 3 == b % 3, [1, 4, 2], [7, 5]) == [];
+  }
+
+  // clamp (v0.20.0): the bounds themselves are kept, and equal bounds pin
+  // the value (node: 2, 1, 3, -1).
+  method {:test} ClampEdges() {
+    expect clamp(2, 2, 5) == 2;
+    expect clamp(1, 3, 1) == 1;
+    expect clamp(1, 3, 3) == 3;
+    expect clamp(-3, -1, 0) == -1;
   }
 }

@@ -1,4 +1,4 @@
-// Ramda v0.19.1 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.20.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
 // median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real
@@ -19,7 +19,9 @@
 // (`mathMod(17, -5)`, `mathMod(17, 0)` and fractional arguments); v0.4.0's 13
 // "throws if given no arguments" cases (no-argument calls; v0.11.0 removed
 // them); mean's and median's "returns NaN for an empty list" (outside the
-// domain, README) and "handles array-like object" (an `arguments` object).
+// domain, README) and "handles array-like object" (an `arguments` object);
+// v0.20.0's "coerces its arguments to numbers" of add and subtract
+// (strings, booleans, null, undefined and Dates; README "Deviations").
 // (v0.5.0
 // removed subtractN, divideBy and moduloBy with their describes; v0.8.0
 // renamed the maxWith and minWith describes to maxBy and minBy.)

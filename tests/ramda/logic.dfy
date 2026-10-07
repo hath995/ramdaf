@@ -1,6 +1,6 @@
-// Ramda v0.19.1 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.20.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
-// defaultTo.js, propSatisfies.js, when.js and unless.js (until v0.8.0
+// defaultTo.js, propSatisfies.js, when.js, unless.js and until.js (until v0.8.0
 // test.booleans.js, test.allany.js and test.cond.js), transcribed. (v0.16.0
 // passes cond's pairs as one list, `R.cond([[p, f], …])`, the port's form
 // all along.) Not transcribed: the short-circuit cases ("does not evaluate the second
@@ -35,7 +35,12 @@
 // v0.18.0's `defaultTo42(NaN)` line is not transcribed (no NaN). when.js's
 // and unless.js's values are Js values too: `R.is(Number)` and
 // `R.isArrayLike` are not portable, and `R.of` changes the value's type, so
-// they are local functions on Js.
+// they are local functions on Js. v0.20.0's fantasy-land `it`s of both,
+// either and complement (sanctuary's `Just` and `Nothing`: README
+// "Deviations") and cond's "retains highest predicate arity" (arity) are
+// not transcribed. until.js's calls pass a fuel of 100 (README
+// "Deviations"), and "works with lists" runs over `Tree<int>`, where
+// `R.isArrayLike` of an element is `Node?`.
 
 module RamdafTests.Ramda.Logic {
   import opened Ramdaf.Prelude
@@ -411,5 +416,24 @@ module RamdafTests.Ramda.Logic {
     var unlessArrayLike := (f: Js -> Js) => ((x: Js) => unless(IsArrayLike, f, x));
     expect unlessArrayLike(Of)(Num(10)) == Arr([Num(10)]);
     expect unlessArrayLike(Of)(Arr([Num(10)])) == Arr([Num(10)]);
+  }
+
+  // ---- until.js (v0.20.0) ----
+
+  // `R.gt(R.__, 100)`, `R.multiply(2)`
+  method {:test} UntilAppliesFnUntilPredIsSatisfied() {
+    expect until((x: int) => x > 100, (x: int) => 2 * x, 1, 100) == 128;
+  }
+
+  // `R.until(R.none(R.isArrayLike), R.unnest)([1, [2], [[3]]])`
+  method {:test} UntilWorksWithLists() {
+    var noNodes := (l: seq<Tree<int>>) => none((t: Tree<int>) => t.Node?, l);
+    expect until(noNodes, (l: seq<Tree<int>>) => unnest(l), [Leaf(1), Node([Leaf(2)]), Node([Node([Leaf(3)])])], 100) ==
+      [Leaf(1), Leaf(2), Leaf(3)];
+  }
+
+  // `R.until(R.T, R.T, false)`
+  method {:test} UntilIgnoresFnIfPredicateIsAlwaysTrue() {
+    expect until((x: bool) => true, (x: bool) => true, false, 100) == false;
   }
 }

@@ -1,14 +1,14 @@
-// Ramda v0.19.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.20.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, allUniq.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
 // flatten.js, unnest.js, range.js, reverse.js, unfold.js, zip.js,
 // zipWith.js, zipObj.js, fromPairs.js, xprod.js, partition.js, groupBy.js,
-// scan.js, mapAccum.js, mapAccumRight.js, commute.js, commuteMap.js,
+// scan.js, mapAccum.js, mapAccumRight.js,
 // mergeAll.js, aperture.js, none.js, adjust.js, update.js,
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
-// splitWhen.js, transpose.js, without.js and lensIndex.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// splitWhen.js, transpose.js, without.js, lensIndex.js and reduceBy.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -29,8 +29,9 @@
 // ridiculously large inputs" (its `new Array(1000000)` is a million empty
 // slots, which a seq cannot hold) and "handles array-like objects"
 // (flatten's and unnest's: an object with a `length` property is not a
-// seq); zipObj's "extra keys are undefined" (more keys than values is
-// outside the domain, README) and fromPairs's "skips empty Arrays and
+// seq); zipObj's "extra keys are undefined" (until v0.19.1: more keys than
+// values was outside the domain; v0.20.0's "ignores extra keys" is
+// transcribed) and fromPairs's "skips empty Arrays and
 // non-Array elements" (the elements are typed pairs, README "Outside the
 // modeled domain"); times's "throws if second argument is not a valid array
 // length" and init's "throws if applied to null or undefined" (not a nat,
@@ -48,7 +49,7 @@
 // "can compose transducer-style", find's, findIndex's, findLast's and
 // findLastIndex's `into` cases, groupBy's "dispatches on transformer
 // objects") and the dispatch `it`s of map and reduce are not transcribed
-// (`into`, transformers and method dispatch, README "Not portable"); nor are
+// (`into`, transformers and method dispatch, README "Not portable"); nor were
 // commute's and commuteMap's "works on Algebraic Data Types such as
 // "Maybe"" (a Fantasy-land functor, README "Deviations"). v0.14.0's "has
 // Object.is semantics" `it`s of contains, indexOf, lastIndexOf and isSet
@@ -68,7 +69,8 @@
 // empty's arguments object (the port's functions take lists, README
 // "Deviations"), nor are aperture's "can act as a transducer" and
 // commute's and commuteMap's "traverses left to right" (sanctuary's
-// `Either`). (v0.18.0 renamed isSet.js to allUniq.js with the function, and
+// `Either`; v0.20.0 removed commute.js and commuteMap.js with the
+// functions). (v0.18.0 renamed isSet.js to allUniq.js with the function, and
 // rewrote containsWith.js, without its "is curried", and reverse.js;
 // v0.19.0 removed containsWith.js, createMapEntry.js and mapObj.js with the
 // functions.) v0.19.0's new files: indexBy's key function `prop('id')` is a
@@ -86,7 +88,11 @@
 // objects. Not transcribed either: the "filters objects" `it`s of filter
 // and reject (a list here, README "Deviations"), and the "finds function,
 // compared by identity" `it`s of indexOf and lastIndexOf (Dafny functions
-// have no equality).
+// have no equality). v0.20.0's partition's "works with objects" and "works
+// with other filterables" (an object and a sanctuary `Just`: a list here,
+// README "Deviations") and reduceBy's "correctly reports the arity of
+// curried versions" are not transcribed; reduceBy's students and `{type,
+// val}` records are groupBy's.
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -814,6 +820,11 @@ module RamdafTests.Ramda.List {
     expect zipObj(["a", "b", "c"], [1, 2, 3, 4, 5, 6, 7]) == map["a" := 1, "b" := 2, "c" := 3];
   }
 
+  // v0.20.0 (until v0.19.1 "extra keys are undefined", outside the domain)
+  method {:test} ZipObjIgnoresExtraKeys() {
+    expect zipObj(["a", "b", "c", "d", "e", "f"], [1, 2, 3]) == map["a" := 1, "b" := 2, "c" := 3];
+  }
+
   method {:test} ZipObjLastOneInWinsWhenThereAreDuplicateKeys() {
     expect zipObj(["a", "b", "c", "a"], [Num(1), Num(2), Num(3), Str("LAST")]) ==
       map["a" := Str("LAST"), "b" := Num(2), "c" := Num(3)];
@@ -985,46 +996,6 @@ module RamdafTests.Ramda.List {
   method {:test} XprodIsAutomaticallyCurried() {
     var something := (l: seq<int>) => xprod(["a", "b", "c"], l);
     expect something([1, 2]) == [("a", 1), ("a", 2), ("b", 1), ("b", 2), ("c", 1), ("c", 2)];
-  }
-
-  // ---- commute.js, commuteMap.js (v0.8.0; test.commute.js until v0.8.0) ----
-
-  function As(): seq<seq<int>> { [[1], [3, 4]] }
-  function Bs(): seq<seq<int>> { [[1, 2], [3]] }
-  function Cs(): seq<seq<int>> { [[1, 2], [3, 4]] }
-
-  // describe('commute'): `R.of` is List.of (since v0.18.0 the last list's
-  // element varies fastest: `cs` gave `[[1, 3], [2, 3], [1, 4], [2, 4]]`
-  // until v0.17.1, and commuteMap likewise)
-  method {:test} CommutePivotsAList() {
-    expect commute(of, As()) == [[1, 3], [1, 4]];
-    expect commute(of, Bs()) == [[1, 3], [2, 3]];
-    expect commute(of, Cs()) == [[1, 3], [1, 4], [2, 3], [2, 4]];
-  }
-
-  method {:test} CommuteIsCurried() {
-    var cmtArr := (l: seq<seq<int>>) => commute(of, l);
-    expect cmtArr(As()) == [[1, 3], [1, 4]];
-    expect cmtArr(Bs()) == [[1, 3], [2, 3]];
-    expect cmtArr(Cs()) == [[1, 3], [1, 4], [2, 3], [2, 4]];
-  }
-
-  // describe('commuteMap'): `plus10map = R.map(x => x + 10)`
-  function Plus10Map(xs: seq<int>): seq<int> { mapSeq((x: int) => x + 10, xs) }
-
-  method {:test} CommuteMapPivotsAListAndAppliesATransformation() {
-    expect commuteMap(Plus10Map, of, As()) == [[11, 13], [11, 14]];
-    expect commuteMap(Plus10Map, of, Bs()) == [[11, 13], [12, 13]];
-    expect commuteMap(Plus10Map, of, Cs()) == [[11, 13], [11, 14], [12, 13], [12, 14]];
-  }
-
-  // `cmtPlus10 = commuteMap(plus10map)`, `cmtmArr = cmtPlus10(R.of)`
-  method {:test} CommuteMapIsCurried() {
-    var cmtPlus10 := (o: seq<int> -> seq<seq<int>>) => ((l: seq<seq<int>>) => commuteMap(Plus10Map, o, l));
-    var cmtmArr := cmtPlus10(of);
-    expect cmtmArr(As()) == [[11, 13], [11, 14]];
-    expect cmtmArr(Bs()) == [[11, 13], [12, 13]];
-    expect cmtmArr(Cs()) == [[11, 13], [11, 14], [12, 13], [12, 14]];
   }
 
   // ---- partition.js (v0.3.0: partition splits a list by a predicate; its
@@ -1279,7 +1250,9 @@ module RamdafTests.Ramda.List {
     expect sequence(of, [[1, 2, 3, 4], empty]) == [];
   }
 
-  // `R.map(R.add(10))` as Plus10Map (commuteMap's, above)
+  // `R.map(R.add(10))` (until v0.19.1 commuteMap.js's `plus10map`)
+  function Plus10Map(xs: seq<int>): seq<int> { mapSeq((x: int) => x + 10, xs) }
+
   method {:test} TraverseOperatesOnAListOfLists() {
     var none: seq<seq<int>> := [];
     var empty: seq<int> := [];
@@ -1413,5 +1386,38 @@ module RamdafTests.Ramda.List {
 
   method {:test} LensIndexGetOfSetOfSetIsTheLastValue() {
     expect O.view(lensIndex<Js, Js>(0), O.set_(lensIndex<Js, Js>(0), Num(11), O.set_(lensIndex<Js, Js>(0), Num(10), TestList()))) == Num(11);
+  }
+
+  // ---- reduceBy.js (v0.20.0): its students and `{type, val}` records are
+  // groupBy's (`Student`, `byGrade`, `Typed` and `TypeOf`, above) ----
+
+  // `collectNames = (acc, student) => acc.concat(student.name)`
+  function CollectNames(acc: seq<string>, s: map<string, Js>): seq<string>
+  { if "name" in s && s["name"].Str? then acc + [s["name"].s] else acc }
+
+  // `sumValues = (acc, obj) => acc + obj.val`
+  function SumValues(acc: int, o: map<string, Js>): int
+  { acc + (if "val" in o && o["val"].Num? then o["val"].n else 0) }
+
+  method {:test} ReduceBySplitsTheListIntoGroupsAccordingToTheGroupingFunction() {
+    var students := [Student("Abby", 84), Student("Brad", 73), Student("Chris", 89), Student("Dianne", 99),
+                     Student("Eddy", 58), Student("Fred", 67), Student("Gillian", 91), Student("Hannah", 78),
+                     Student("Irene", 85), Student("Jack", 69)];
+    var none: seq<string> := [];
+    expect reduceBy(byGrade, CollectNames, none, students) ==
+      map["A" := ["Dianne", "Gillian"], "B" := ["Abby", "Chris", "Irene"], "C" := ["Brad", "Hannah"],
+          "D" := ["Fred", "Jack"], "F" := ["Eddy"]];
+  }
+
+  method {:test} ReduceByReturnsAnEmptyObjectIfGivenAnEmptyArray() {
+    var none: seq<map<string, Js>> := [];
+    expect reduceBy(TypeOf, SumValues, 0, none) == map[];
+  }
+
+  // `splitByType = R.reduceBy(byType)`, `sumByType = splitByType(sumValues, 0)`
+  method {:test} ReduceByIsCurried() {
+    var sumByType := (l: seq<map<string, Js>>) => reduceBy(TypeOf, SumValues, 0, l);
+    expect sumByType([Typed("A", 10), Typed("B", 20), Typed("A", 30), Typed("A", 40), Typed("C", 50), Typed("B", 60)]) ==
+      map["A" := 80, "B" := 80, "C" := 50];
   }
 }

@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.19.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
-// `propSatisfies`, `when`, `unless`).
+// `propSatisfies`, `when`, `unless`, `until`).
 // (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
 // reused the name `cond` for a new function; v0.9.0 renamed `allPredicates`
 // and `anyPredicates` to `allPass` and `anyPass` and removed `if`; v0.12.0
@@ -13,7 +13,7 @@ module Ramdaf.Logic {
 
   export
     reveals and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo,
-            propSatisfies, when, unless
+            propSatisfies, when, unless, until
     provides Prelude
 
   // `R.and(a, b)` (v0.12.0): `a && b`. From v0.1.4 to v0.11.0 `and` was the
@@ -46,7 +46,11 @@ module Ramdaf.Logic {
   // false]`), which these predicate types exclude (README "Deviations").
   // v0.19.0 makes both and either the short-circuiting function combinators
   // again (`_curry2`, `function _both() { return f.apply(this, arguments) &&
-  // g.apply(this, arguments); }`); complement is still `lift(not)`.
+  // g.apply(this, arguments); }`); complement is still `lift(not)`. Since
+  // v0.20.0 both and either are those combinators when f is a function
+  // (`_isFunction(f)`) and `lift(and)(f, g)` and `lift(or)(f, g)` otherwise,
+  // so they again combine other applicatives (`both([true, false], [true])`
+  // is `[true, false]`), which these predicate types exclude.
 
   // `R.both(f, g)` (v0.12.0, `and` until v0.11.0): `f(...) && g(...)`,
   // short-circuited since v0.7.0 except in v0.18.0 (before, `!!(...)`). JS returns the deciding
@@ -95,7 +99,8 @@ module Ramdaf.Logic {
   // v0.16.0 (f5558cba, "make R.cond a fixed-arity function") JS takes the
   // pairs as one list, as the port always did (until v0.15.1 they were
   // separate arguments, `cond([p1, t1], [p2, t2])`); JS forwards any number
-  // of arguments, and the result here is unary (README "Deviations").
+  // of arguments, and the result here is unary (README "Deviations"); since
+  // v0.20.0 it reports the longest predicate's arity (`_arity`).
   function cond<A, B>(pairs: seq<(A -> bool, A -> B)>): A -> Option<B>
   { x => if |pairs| == 0 then None
          else if pairs[0].0(x) then Some(pairs[0].1(x))
@@ -134,4 +139,15 @@ module Ramdaf.Logic {
   // JS, of another type: README "Deviations").
   function unless<T>(pred: T -> bool, whenFalseFn: T -> T, x: T): T
   { if pred(x) then x else whenFalseFn(x) }
+
+  // `R.until(pred, fn, init)` (v0.20.0, `@category Logic`): `var val = init;
+  // while (!pred(val)) { val = fn(val); } return val;`, fn applied to init
+  // until pred holds (`until(x => x > 100, multiply(2), 1)` is 128), possibly
+  // forever. Dafny functions must terminate, so, as for `List.unfold`, an
+  // extra `fuel` bounds the applications of fn: after `fuel` of them the
+  // value is returned whether or not pred holds (README "Deviations"). JS
+  // lets fn return a value of another type (README "Deviations").
+  function until<T>(pred: T -> bool, fn: T -> T, init: T, fuel: nat): T
+    decreases fuel
+  { if pred(init) || fuel == 0 then init else until(pred, fn, fn(init), fuel - 1) }
 }

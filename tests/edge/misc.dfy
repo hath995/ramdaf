@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.19.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.20.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -573,7 +573,10 @@ module RamdafTests.Edge.Misc {
   // no own key (createMapEntry's assignment, until v0.18.0), and since
   // v0.19.0 the keys of `mergeWith((a, b) => b, <the JSON object>, {})`,
   // and of `mergeWithKey` of it and `JSON.parse('{"__proto__": 6}')`, are
-  // ['a']. A map's keys are all ordinary, and `{}` has no `toString`.
+  // ['a']; since v0.20.0 an own `__proto__` spec function of `applySpec`
+  // (made with Object.defineProperty) is dropped by the spec's copy, so
+  // `applySpec(<{__proto__: x => 5, a: x => 1}>)(0)` has the keys ['a']. A
+  // map's keys are all ordinary, and `{}` has no `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
@@ -591,6 +594,7 @@ module RamdafTests.Edge.Misc {
     expect objOf("__proto__", 1) == map["__proto__" := 1];
     expect mergeWith((a: int, b: int) => b, o, none) == o;
     expect mergeWithKey((k: string, a: int, b: int) => b, o, map["__proto__" := 6]) == map["__proto__" := 6, "a" := 1];
+    expect applySpec(map["__proto__" := (x: int) => 5, "a" := (x: int) => 1])(0) == map["__proto__" := 5, "a" := 1];
   }
 
   // mergeWith and mergeWithKey (v0.19.0): fn only where both objects have
@@ -710,5 +714,41 @@ module RamdafTests.Edge.Misc {
     expect evolve(map["__transducers_reduced__" := (v: Option<int>) => 1], map["a" := 1]) == map["a" := 1];
     expect evolve(map["@@transducer/reduced" := (v: Option<int>) => 1], map["@@transducer/reduced" := 0]) ==
       map["@@transducer/reduced" := 1];
+  }
+
+  // node: applySpec (v0.20.0) copies its spec with `R.map`, whose `_reduce`
+  // ends at a reduced marker: the copy of `{'@@transducer/reduced': x => 1,
+  // a: x => 2}` is undefined (the function's `@@transducer/value`), so
+  // `applySpec` of it throws TypeError ("Cannot read properties of
+  // undefined"). Here the key is ordinary.
+  method {:test} DeviationApplySpecReducedMarkerIsAnOrdinaryKey() {
+    expect applySpec(map["@@transducer/reduced" := (x: int) => 1, "a" := (x: int) => 2])(0) ==
+      map["@@transducer/reduced" := 1, "a" := 2];
+  }
+
+  // applySpec (v0.20.0): every key's function on the one argument, a
+  // function shared by keys included, and `toString` an ordinary key (node:
+  // {a: 2, b: 2}, {toString: 6}).
+  method {:test} ApplySpecEdges() {
+    var addOne := (x: int) => x + 1;
+    expect applySpec(map["a" := addOne, "b" := addOne])(1) == map["a" := 2, "b" := 2];
+    expect applySpec(map["toString" := (x: int) => x * 2])(3) == map["toString" := 6];
+  }
+
+  // until (v0.20.0): fn is not called when pred already holds (node: 5, 4,
+  // [0, 1, 2]).
+  method {:test} UntilEdges() {
+    var none: seq<int> := [];
+    expect until((x: int) => x > 0, (x: int) => x - 1, 5, 100) == 5;
+    expect until((x: int) => x > 3, (x: int) => x + 1, 0, 100) == 4;
+    expect until((l: seq<int>) => |l| > 2, (l: seq<int>) => l + [|l|], none, 100) == [0, 1, 2];
+    expect until((x: int) => x > 3, (x: int) => x + 1, 0, 4) == 4;
+  }
+
+  // JS until (v0.20.0) would loop forever here (`until(x => x < 0, x => x +
+  // 1, 0)`); the fuel bound stops it after that many applications of fn and
+  // returns the value reached (README "Deviations").
+  method {:test} DeviationUntilStopsAtFuel() {
+    expect until((x: int) => x < 0, (x: int) => x + 1, 0, 3) == 3;
   }
 }

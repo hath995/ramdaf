@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.19.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
@@ -172,20 +172,22 @@ module Ramdaf.Object {
   { map k | k in obj && test(obj[k], k, obj) :: obj[k] }
 
   // `R.merge(a, b)` (v0.10.0, "rename R.mixin", with the same body): since
-  // v0.19.0 `mergeWith(function(l, r) { return r; })`, so the body calls
-  // mergeWith (from v0.16.0 to v0.18.0 its own `keys` loops, and
-  // `_extend(_extend({}, a), b)` before, `mixin`'s body since v0.2.4;
-  // before that, `pickAll(keys(a), a)` with b's properties copied over it),
-  // the own properties of a, then of b: b's value wins where both have the
-  // key (until v0.18.0 the body was Dafny's right-biased map union, `a + b`,
-  // with the same results). It was `op`-curried in v0.10.0 and is `_curry2` since v0.11.0,
-  // which only add the placeholder form `merge(__, b)`. (Not the list
-  // `merge` that v0.2.4 removed from Core.)
+  // v0.20.0 `_objectAssign({}, l, r)`, the private `Object.assign`, the own
+  // properties of a, then of b: b's value wins where both have the key. The
+  // body is Dafny's right-biased map union, `a + b`, as it was until
+  // v0.18.0; in v0.19.x merge was `mergeWith(function(l, r) { return r;
+  // })`, and the body called mergeWith (from v0.16.0 to v0.18.0 its own
+  // `keys` loops, and `_extend(_extend({}, a), b)` before, `mixin`'s body
+  // since v0.2.4; before that, `pickAll(keys(a), a)` with b's properties
+  // copied over it), all with the same results. It was `op`-curried in
+  // v0.10.0 and is `_curry2` since v0.11.0, which only add the placeholder
+  // form `merge(__, b)`. (Not the list `merge` that v0.2.4 removed from
+  // Core.)
   function merge<V>(a: map<string, V>, b: map<string, V>): map<string, V>
     ensures merge(a, b).Keys == a.Keys + b.Keys
     ensures forall k :: k in b ==> merge(a, b)[k] == b[k]
     ensures forall k :: k in a && k !in b ==> merge(a, b)[k] == a[k]
-  { mergeWith((l: V, r: V) => r, a, b) }
+  { a + b }
 
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal;
   // in v0.14.0 `_eq`, `Object.is`, and since v0.15.0 `R.equals`, deep

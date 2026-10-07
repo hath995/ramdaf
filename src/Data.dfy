@@ -1,12 +1,13 @@
-// Ramdaf: Ramda v0.19.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn` (removed in v0.19.0), plus `groupBy`, which
 // from v0.3.0 to v0.8.0 was defined in "List Functions" (from v0.2.0 to
 // v0.2.4 an alias of `partition` there) but which stays here (functions do
 // not move between modules); from v0.9.0 on, the functions with `@category
-// Relation` (`equals`, `identical`, `eqBy`, `symmetricDifference` and
-// `symmetricDifferenceWith`; v0.15.0 removed `eqDeep`, v0.9.0, which
+// Relation` (`equals`, `identical`, `eqBy`, `symmetricDifference`,
+// `symmetricDifferenceWith` and `clamp`, whose v0.20.0 JSDoc misspells the
+// category `Relaction`; v0.15.0 removed `eqDeep`, v0.9.0, which
 // `equals` replaces, and `eq`, then in Object.dfy; v0.15.1 restored both,
 // deprecated, with `eq` here by `@category Relation`, and v0.16.0 removed
 // them again).
@@ -32,7 +33,7 @@ module Ramdaf.Data {
   export
     reveals union, unionWith, difference, differenceWith,
             intersection, intersectionWith, countBy, groupBy, project, equals, identical,
-            eqBy, symmetricDifference, symmetricDifferenceWith
+            eqBy, symmetricDifference, symmetricDifferenceWith, clamp
     provides Prelude, List, Object
 
   // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
@@ -104,30 +105,51 @@ module Ramdaf.Data {
            r
          else out }
 
-  // `uniq(filter(flip(contains)(list1), list2))`: the elements of list2 that
-  // occur in list1, each kept at its first occurrence in list2 (since v0.1.1
-  // the order follows list2: `intersection([1, 2, 3, 4], [4, 3, 2]) ==
-  // [4, 3, 2]`).
+  // `uniq(_filter(flip(_contains)(lookupList), filteredList))` (v0.20.0),
+  // where `lookupList` is list1 when it is longer than list2 and list2
+  // otherwise, and `filteredList` the other one: the elements of the
+  // shorter list (list1 when they are equally long) that occur in the
+  // longer, each kept at its first occurrence there, in that list's order
+  // (`intersection([3, 2], [1, 2, 3])` is `[3, 2]`; `intersection([1, 2, 3,
+  // 4], [4, 3, 2])` is `[4, 3, 2]`). From v0.1.1 to v0.19.1 it was
+  // `uniq(filter(flip(contains)(list1), list2))`, always the elements of
+  // list2 in list2's order (`[2, 3]` for the first example).
   function intersection<T(==)>(list1: seq<T>, list2: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |intersection(list1, list2)| ==>
       intersection(list1, list2)[i] in list1 && intersection(list1, list2)[i] in list2
     ensures forall i :: 0 <= i < |list2| && list2[i] in list1 ==> list2[i] in intersection(list1, list2)
     ensures forall i, j :: 0 <= i < j < |intersection(list1, list2)| ==>
       intersection(list1, list2)[i] != intersection(list1, list2)[j]
-  { List.uniq(List.filter(x => x in list1, list2)) }
+  { var lookupList := if |list1| > |list2| then list1 else list2;
+    var filteredList := if |list1| > |list2| then list2 else list1;
+    List.uniq(List.filter(x => x in lookupList, filteredList)) }
 
-  // `uniqWith(pred, results)`, where results are the elements x of list1 with
-  // `pred(x, y)` for some y in list2 (`_containsWith(pred, x, list2)`, the
-  // exported `containsWith` until v0.18.0, written out here).
+  // `uniqWith(pred, results)`, where results are the elements x of
+  // `filteredList` with `pred(x, y)` for some y in `lookupList`
+  // (`_containsWith(pred, x, lookupList)`, the exported `containsWith` until
+  // v0.18.0, written out here), and, since v0.20.0, as in intersection,
+  // `filteredList` is the shorter list (list1 when they are equally long)
+  // and `lookupList` the other (`intersectionWith((a, b) => a % 3 === b % 3,
+  // [4, 5, 7], [1, 2])` is `[1, 2]`). Until v0.19.1 the elements were always
+  // list1's, matched against list2 (`[4, 5]`).
   function intersectionWith<T>(pred: (T, T) -> bool, list1: seq<T>, list2: seq<T>): seq<T>
-    ensures forall i :: 0 <= i < |intersectionWith(pred, list1, list2)| ==>
-      intersectionWith(pred, list1, list2)[i] in list1 &&
-      exists j :: 0 <= j < |list2| && pred(intersectionWith(pred, list1, list2)[i], list2[j])
+    ensures |list1| <= |list2| ==>
+      forall i :: 0 <= i < |intersectionWith(pred, list1, list2)| ==>
+        intersectionWith(pred, list1, list2)[i] in list1 &&
+        exists j :: 0 <= j < |list2| && pred(intersectionWith(pred, list1, list2)[i], list2[j])
+    ensures |list1| > |list2| ==>
+      forall i :: 0 <= i < |intersectionWith(pred, list1, list2)| ==>
+        intersectionWith(pred, list1, list2)[i] in list2 &&
+        exists j :: 0 <= j < |list1| && pred(intersectionWith(pred, list1, list2)[i], list1[j])
     ensures forall i, j :: 0 <= i < j < |intersectionWith(pred, list1, list2)| ==>
       !pred(intersectionWith(pred, list1, list2)[j], intersectionWith(pred, list1, list2)[i])
-  { var results := List.filter(x => exists j :: 0 <= j < |list2| && pred(x, list2[j]), list1);
+  { var lookupList := if |list1| > |list2| then list1 else list2;
+    var filteredList := if |list1| > |list2| then list2 else list1;
+    var results := List.filter(x => exists j :: 0 <= j < |lookupList| && pred(x, lookupList[j]), filteredList);
     var r := List.uniqWith(pred, results);
     assert forall i :: 0 <= i < |r| ==> r[i] in results;
+    assert forall i :: 0 <= i < |r| ==>
+      r[i] in filteredList && exists j :: 0 <= j < |lookupList| && pred(r[i], lookupList[j]);
     r }
 
   // `var key = fn(list[idx]); counts[key] = (has(key, counts) ? counts[key] :
@@ -206,4 +228,15 @@ module Ramdaf.Data {
   // for equality.
   function symmetricDifferenceWith<T>(pred: (T, T) -> bool, list1: seq<T>, list2: seq<T>): seq<T>
   { differenceWith(pred, list1, list2) + differenceWith(pred, list2, list1) }
+
+  // `R.clamp(min, max, value)` (v0.20.0, `@category Relaction`, sic):
+  // `value < min ? min : value > max ? max : value`, value restricted to the
+  // range [min, max] (`clamp(1, 10, -1)` is 1). For `min > max` it throws
+  // Error ("min must not be greater than max in clamp(min, max, value)"), so
+  // min is at most max (README "Outside the modeled domain"). JS compares any
+  // ordered values (`clamp('d', 'n', 'f')` is 'f'); here ints (README
+  // "Deviations").
+  function clamp(min: int, max: int, value: int): int
+    requires min <= max
+  { if value < min then min else if value > max then max else value }
 }

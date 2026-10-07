@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.19.1 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.20.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
 // functions with `@category Math` (`inc`, `dec`, `negate`, `mean`,
 // `median`). (v0.5.0 removed
@@ -19,10 +19,14 @@ module Ramdaf.Math {
             mean, median
     provides Sort
 
+  // `R.add(a, b)`: since v0.20.0 `Number(a) + Number(b)`, which converts
+  // its operands (`add('1', '2')` is 3, where `a + b` concatenated, '12');
+  // on ints the same sum (README "Deviations").
   function add(a: int, b: int): int { a + b }
 
   function multiply(a: int, b: int): int { a * b }
 
+  // `R.subtract(a, b)`: since v0.20.0 `Number(a) - Number(b)`, as add.
   function subtract(a: int, b: int): int { a - b }
 
   // JS `a / 0` is +-Infinity or NaN, which `real` cannot hold.
