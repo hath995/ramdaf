@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.27.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.2 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "String Functions" section; from v0.9.0 on, the functions
 // with `@category String`. (v0.9.0 renamed `toUpperCase` and `toLowerCase`
 // to `toUpper` and `toLower`; v0.14.0 removed `charAt` and `charCodeAt`,
@@ -31,16 +31,20 @@ module Ramdaf.String {
   { if |s| == 0 then ""
     else [if 'A' <= s[0] <= 'Z' then (s[0] as int + 32) as char else s[0]] + toLower(s[1..]) }
 
-  // `R.trim(str)` (v0.6.0): `str.replace(/^[ws][ws]*/, '').replace(/[ws][ws]*$/, '')`
-  // for the 26 characters of `ws` below, the leading and then the trailing
-  // run removed. Ramda uses `String.prototype.trim` only when it strips all
-  // of them; node's does not strip U+180E (a format character since Unicode
-  // 6.3), so node runs this fallback, which does. U+200B, the zero-width
-  // space, is kept. All 26 are in the BMP, so code points and UTF-16 code
-  // units agree here.
+  // `R.trim(str)` (v0.6.0): `String.prototype.trim` when it strips every
+  // character of `ws` and not U+200B (the zero-width space), and otherwise
+  // the fallback `str.replace(/^[ws][ws]*/, '').replace(/[ws][ws]*$/, '')`:
+  // the leading and then the trailing run of the 25 characters below
+  // removed. Since v0.27.2 (94d05703, "Security fix for ReDoS") `ws` lacks
+  // U+180E, so node uses its own trim, which strips exactly these 25
+  // (`trim('\u180Ea')` is '\u180Ea'). Until v0.27.1 `ws` had 26 characters,
+  // U+180E among them (a format character since Unicode 6.3), which node's
+  // trim does not strip, so node ran the fallback, and U+180E was stripped
+  // ('a'). All 25 are in the BMP, so code points and UTF-16 code units agree
+  // here.
   function trim(s: string): string
     decreases |s|
-  { var ws := "\t\n\U{000B}\U{000C}\r \U{00A0}\U{1680}\U{180E}\U{2000}\U{2001}\U{2002}\U{2003}\U{2004}\U{2005}\U{2006}\U{2007}\U{2008}\U{2009}\U{200A}\U{202F}\U{205F}\U{3000}\U{2028}\U{2029}\U{FEFF}";
+  { var ws := "\t\n\U{000B}\U{000C}\r \U{00A0}\U{1680}\U{2000}\U{2001}\U{2002}\U{2003}\U{2004}\U{2005}\U{2006}\U{2007}\U{2008}\U{2009}\U{200A}\U{202F}\U{205F}\U{3000}\U{2028}\U{2029}\U{FEFF}";
     if |s| > 0 && s[0] in ws then trim(s[1..])
     else if |s| > 0 && s[|s| - 1] in ws then trim(s[..|s| - 1])
     else s }

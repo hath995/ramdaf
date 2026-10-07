@@ -1,0 +1,7 @@
+{
+  "ramda": "v0.27.2",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.String.trim", "kind": "breaking", "why": "v0.27.2 drops U+180E from trim's characters (node's native trim is used): a leading or trailing U+180E is kept, where it was stripped"}
+  ]
+}

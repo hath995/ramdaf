@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.27.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.2 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,

@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.27.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.27.2 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -366,11 +366,12 @@ module RamdafTests.Edge.Misc {
     expect replace("\U{1F600}", "x", "a\U{1F600}b") == "axb";
   }
 
-  // trim (v0.6.0) strips the leading and trailing runs of its 26 whitespace
-  // characters: node strips U+180E (Ramda's fallback) and keeps U+200B and
-  // U+0085, and inner whitespace stays.
+  // trim (v0.6.0) strips the leading and trailing runs of its 25 whitespace
+  // characters: node keeps U+180E (since v0.27.2, the native trim; until
+  // v0.27.1 Ramda's fallback stripped it, 'x'), U+200B and U+0085, and inner
+  // whitespace stays.
   method {:test} TrimEdges() {
-    expect trim("\U{180E} x \U{180E}") == "x";
+    expect trim("\U{180E} x \U{180E}") == "\U{180E} x \U{180E}";
     expect trim("\U{200B} x \U{200B}") == "\U{200B} x \U{200B}";
     expect trim("\U{0085} x \U{0085}") == "\U{0085} x \U{0085}";
     expect trim("") == "";
