@@ -1,4 +1,4 @@
-// Ramda v0.15.0 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.15.1 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js and
 // defaultTo.js (until v0.8.0 test.booleans.js, test.allany.js and
 // test.cond.js), transcribed.

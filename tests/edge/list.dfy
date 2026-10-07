@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.15.0's own suite does not cover, each checked against
-// dist/ramda.js v0.15.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.15.1's own suite does not cover, each checked against
+// dist/ramda.js v0.15.1 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -411,13 +411,16 @@ module RamdafTests.Edge.List {
   }
 
   // lensIndex (v0.14.0). Node: `lensIndex(0)([1, 2])` 1, `lensIndex(-1)` 2,
-  // `lensIndex(-2)` 1; `.set(9, [1, 2])` [9, 2] at 0, [1, 9] at 1, [1, 2, 9]
-  // at 2 and at 5 (`_slice` clamps), [9, 1, 2] at -1 (the first cut is
-  // empty, the second the whole list); `lensIndex(-1).set(9, [])` and
-  // `lensIndex(0).set(9, [])` [9]; `lensIndex(-1).map(x => x + 1, [1, 2])`
-  // [3, 1, 2]; `lensIndex(1).map(x => x + 1, [1, 2, 3])` [1, 3, 3]. (Outside
-  // the domain: `lensIndex(5)([1, 2])` and `lensIndex(-3)([1, 2])` are
-  // undefined, `lensIndex(-2).set(9, [1, 2])` is [9, undefined, 1, 2].)
+  // `lensIndex(-2)` 1; since v0.15.1 the setter is `update(n)`:
+  // `.set(9, [1, 2])` [9, 2] at 0 and -2, [1, 9] at 1 and -1, and [1, 2] at
+  // 2, 5 and -3 (out of range, the list); `lensIndex(0).set(9, [])` and
+  // `lensIndex(-1).set(9, [])` []; `lensIndex(-1).map(x => x + 1, [1, 2])`
+  // [1, 3], `lensIndex(-2).map(…)` [2, 2], `lensIndex(1).map(x => x + 1, [1,
+  // 2, 3])` [1, 3, 3]. (In v0.14.0 and v0.15.0 the `_slice` setter gave [1,
+  // 2, 9] at 2 and 5, [9, 1, 2] at -1, [9] for [], and `map` at -1 [3, 1,
+  // 2]; it read undefined holes for n <= -2. Outside the domain:
+  // `lensIndex(5)([1, 2])` and `lensIndex(-3)([1, 2])` are undefined, and
+  // `lensIndex(5).map(x => x + 1, [1, 2])` calls fn on undefined.)
   method {:test} LensIndexEdges() {
     var none: seq<int> := [];
     expect lensIndex<int>(0).get([1, 2]) == 1;
@@ -425,12 +428,15 @@ module RamdafTests.Edge.List {
     expect lensIndex<int>(-2).get([1, 2]) == 1;
     expect lensIndex<int>(0).set_(9, [1, 2]) == [9, 2];
     expect lensIndex<int>(1).set_(9, [1, 2]) == [1, 9];
-    expect lensIndex<int>(2).set_(9, [1, 2]) == [1, 2, 9];
-    expect lensIndex<int>(5).set_(9, [1, 2]) == [1, 2, 9];
-    expect lensIndex<int>(-1).set_(9, [1, 2]) == [9, 1, 2];
-    expect lensIndex<int>(-1).set_(9, none) == [9];
-    expect lensIndex<int>(0).set_(9, none) == [9];
-    expect lensIndex<int>(-1).map_((x: int) => x + 1, [1, 2]) == [3, 1, 2];
+    expect lensIndex<int>(2).set_(9, [1, 2]) == [1, 2];
+    expect lensIndex<int>(5).set_(9, [1, 2]) == [1, 2];
+    expect lensIndex<int>(-1).set_(9, [1, 2]) == [1, 9];
+    expect lensIndex<int>(-2).set_(9, [1, 2]) == [9, 2];
+    expect lensIndex<int>(-3).set_(9, [1, 2]) == [1, 2];
+    expect lensIndex<int>(-1).set_(9, none) == [];
+    expect lensIndex<int>(0).set_(9, none) == [];
+    expect lensIndex<int>(-1).map_((x: int) => x + 1, [1, 2]) == [1, 3];
+    expect lensIndex<int>(-2).map_((x: int) => x + 1, [1, 2]) == [2, 2];
     expect lensIndex<int>(1).map_((x: int) => x + 1, [1, 2, 3]) == [1, 3, 3];
   }
 

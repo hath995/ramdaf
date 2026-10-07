@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.15.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.15.1 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -6,6 +6,7 @@ module RamdafTests.Edge.Data {
   import opened Ramdaf.Sort
   import opened Ramdaf.Data
   import M = Ramdaf.Math
+  import L = Ramdaf.List
   import opened Support
 
   method {:test} ComparatorSigns() {
@@ -177,16 +178,18 @@ module RamdafTests.Edge.Data {
     expect sort((a: int, b: int) => -1, [1, 2, 3]) == [1, 2, 3];
   }
 
-  // `union` is `uniq` of the concatenation, and since v0.15.0 uniq keeps a
-  // JS `Set`, which compares objects by reference, so none of these is
-  // shared (node: 8; with `===`, 8 until v0.14.0 too); Dafny `==` compares
-  // their contents. (intersection and difference gave 0 and 4 until
-  // v0.14.0; since v0.15.0 they compare with `R.equals`, as here:
-  // SetOperationsCompareDeeply.)
-  method {:test} DeviationStructuralEquality() {
+  // node (v0.15.1): `uniq` is `uniqWith(equals)` again, so
+  // `uniq([{a: 1}, {a: 1}])` is [{a: 1}], `uniq([[1], [1]])` [[1]], and
+  // `union`, `uniq` of the concatenation, gives `union(Ro, So).length` 6, as
+  // here. (In v0.15.0 uniq kept a JS `Set`, which compares objects by
+  // reference: both elements, and 8; with `===`, 8 until v0.14.0 too. This
+  // was the pin DeviationStructuralEquality.)
+  method {:test} UniqAndUnionCompareDeeply() {
     var ro := [map["a" := 1], map["a" := 2], map["a" := 3], map["a" := 4]];
     var so := [map["a" := 3], map["a" := 4], map["a" := 5], map["a" := 6]];
     expect |union(ro, so)| == 6;
+    expect L.uniq([map["a" := 1], map["a" := 1]]) == [map["a" := 1]];
+    expect L.uniq([[1], [1]]) == [[1]];
   }
 
   // node (v0.15.0): `intersection(Ro, So).length` and `difference(Ro,
@@ -213,10 +216,12 @@ module RamdafTests.Edge.Data {
     expect countBy((x: int) => "__proto__", [1, 2]) == map["__proto__" := 2];
   }
 
-  // equals (v0.15.0; eqDeep, v0.9.0 to v0.14.0, gave the same) compares
-  // structure: node gives true, true, false, false (a trailing undefined
-  // element), false (an undefined property against none) and false (`[]`
-  // against `{}`); identical (v0.15.0) of equal ints and strings is true.
+  // equals (v0.15.0; eqDeep, v0.9.0 to v0.14.0 and, deprecated, its alias
+  // since v0.15.1, gives the same) compares structure: node gives true, true,
+  // false, false (a trailing undefined element), false (an undefined
+  // property against none) and false (`[]` against `{}`); identical
+  // (v0.15.0) and eq (deprecated, restored in v0.15.1) of equal ints and
+  // strings are true, of different ones false.
   method {:test} EqualsEdges() {
     expect equals([[1], [2, 3]], [[1], [2, 3]]) == true;
     expect equals(map["a" := 1, "b" := 2], map["b" := 2, "a" := 1]) == true;
@@ -227,6 +232,10 @@ module RamdafTests.Edge.Data {
     expect equals(Arr([]), Obj(map[])) == false;
     expect identical(1, 1) == true;
     expect identical("a", "a") == true;
+    expect eqDeep([[1], [2, 3]], [[1], [2, 3]]) == true;
+    expect eqDeep(map["a" := [1, 2]], map["a" := [2, 1]]) == false;
+    expect eq(1, 1) == true;
+    expect eq("a", "b") == false;
   }
 
   // node: sort((a, b) => a < b ? -1 : a > b ? 1 : 0, 'cab') is ['a', 'b',
@@ -240,11 +249,13 @@ module RamdafTests.Edge.Data {
   }
 
   // node: equals(negate(0), 0) and equals([negate(0)], [0]) are false
-  // (v0.15.0; eqDeep([negate(0)], [0]) since v0.9.0): numbers are compared
-  // with identical, `Object.is`, and negate(0) is -0; an int has no -0.
+  // (v0.15.0; eqDeep([negate(0)], [0]) since v0.9.0, and again since
+  // v0.15.1, where eqDeep is equals): numbers are compared with identical,
+  // `Object.is`, and negate(0) is -0; an int has no -0.
   method {:test} DeviationEqualsSignedZero() {
     expect equals(M.negate(0), 0) == true;
     expect equals([M.negate(0)], [0]) == true;
+    expect eqDeep([M.negate(0)], [0]) == true;
   }
 
   // node: `Array.prototype.sort` puts undefined elements last without

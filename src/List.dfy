@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.15.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.15.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -406,12 +406,13 @@ module Ramdaf.List {
   // order (`uniq([1, 2, 1, 3, 2]) == [1, 2, 3]`). The body recurses on all
   // but the last element and then decides the last one, which is the loop.
   // In v0.14.0 `R.uniq = uniqWith(eq)`, the same loop with `Object.is`, and
-  // since v0.15.0 a loop that keeps a JS `Set` of the items, which compares
-  // by `SameValueZero` (objects by reference), except that `0`, `-0` and an
-  // object with an `equals` method are looked up with `R.equals`; the
-  // results on Dafny values are the same (README "Deviations" on `-0` and
-  // reference equality), and the body keeps its own recursion, as `head`
-  // and `last` did when v0.8.0 wrote them on `nth`.
+  // since v0.15.1 `uniqWith(equals)`, with deep equality (4b417682 reverted
+  // v0.15.0's loop, which kept a JS `Set` of the items, comparing by
+  // `SameValueZero`, objects by reference, except that `0`, `-0` and an
+  // object with an `equals` method were looked up with `R.equals`); the
+  // results on Dafny values are the same (README "Deviations" on `-0`), and
+  // the body keeps its own recursion, as `head` and `last` did when v0.8.0
+  // wrote them on `nth`.
   function {:isolate_assertions} uniq<T(==)>(list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |uniq(list)| ==> uniq(list)[i] in list
     ensures forall i :: 0 <= i < |list| ==> list[i] in uniq(list)
@@ -511,7 +512,9 @@ module Ramdaf.List {
 
   // `map(prop(p), list)` (since v0.14.0 the exported, dispatching `map`; the
   // private `_map` before, the same on lists): a missing property is JS
-  // undefined, here None.
+  // undefined, here None. (In JS a name of an `Object.prototype` member that
+  // an object lacks gives the inherited member, as for `prop`: README
+  // "Deviations".)
   function pluck<V>(p: string, list: seq<map<string, V>>): seq<Option<V>>
     ensures |pluck(p, list)| == |list|
   { mapSeq((obj: map<string, V>) => if p in obj then Some(obj[p]) else None, list) }
@@ -839,23 +842,22 @@ module Ramdaf.List {
   function dropRepeats<T(==)>(list: seq<T>): seq<T>
   { dropRepeatsWith((a: T, b: T) => a == b, list) }
 
-  // `R.lensIndex(n)` (v0.14.0, `@category List`): `lens(nth(n), function(x,
-  // xs) { return _slice(xs, 0, n).concat([x], _slice(xs, n + 1)); })`, a lens
-  // on the element at n. The getter is `nth(n)`, a negative n counting from
-  // the end; out of range it is undefined, which no element holds, so it
-  // requires the index in the list (`R.nth` is Core's, which List does not
-  // import, so it is written out). The setter cuts with `_slice`, which
-  // clamps the end into the list: n at or past the end appends
-  // (`lensIndex(5).set(9, [1, 2])` is `[1, 2, 9]`), and n == -1 prepends, as
-  // `_slice(xs, 0, -1)` is empty and `_slice(xs, 0)` the whole list
-  // (`lensIndex(-1).set(9, [1, 2])` is `[9, 1, 2]`). For n <= -2 `_slice(xs,
-  // n + 1)` reads undefined holes before the start
-  // (`lensIndex(-2).set(9, [1, 2])` is `[9, undefined, 1, 2]`), so the setter
-  // requires n >= -1 (README "Outside the modeled domain").
+  // `R.lensIndex(n)` (v0.14.0, `@category List`): since v0.15.1
+  // `_curry1(lens(nth(n), update(n)))` (77d7863a), a lens on the element at
+  // n. The getter is `nth(n)`, a negative n counting from the end; out of
+  // range it is undefined, which no element holds, so it requires the index
+  // in the list (`R.nth` is Core's, which List does not import, so it is
+  // written out), and so does map_, which calls fn on the getter's result.
+  // The setter is `update(n)`, which replaces the element at n (a negative n
+  // counting from the end) and leaves the list as it is out of range
+  // (`lensIndex(5).set(9, [1, 2])` and `lensIndex(0).set(9, [])` are `[1,
+  // 2]` and `[]`, `lensIndex(-1).set(9, [1, 2])` is `[1, 9]`). In v0.14.0
+  // and v0.15.0 the setter was `_slice(xs, 0, n).concat([x], _slice(xs, n +
+  // 1))`, which appended for n at or past the end (`[1, 2, 9]`), prepended
+  // for n == -1 (`[9, 1, 2]`) and read undefined holes before the start for
+  // n <= -2, so it required n >= -1 (README "Outside the modeled domain").
   function lensIndex<T>(n: int): Lens<seq<T>, T>
   { lens((xs: seq<T>) requires 0 <= (if n < 0 then |xs| + n else n) < |xs| =>
            xs[if n < 0 then |xs| + n else n],
-         (x: T, xs: seq<T>) requires n >= -1 =>
-           xs[..(if n < 0 then 0 else if n < |xs| then n else |xs|)] + [x] +
-           xs[(if n + 1 < |xs| then n + 1 else |xs|)..]) }
+         (x: T, xs: seq<T>) => update(n, x, xs)) }
 }

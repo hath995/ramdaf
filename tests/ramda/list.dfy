@@ -1,4 +1,4 @@
-// Ramda v0.15.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.15.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js, find.js,
@@ -56,7 +56,8 @@
 // test `-0` and NaN, which an int does not have (README "Deviations",
 // pinned in tests/edge/list.dfy), and v0.15.0's "has R.equals semantics"
 // `it`s of contains, isSet, uniq and dropRepeats (`-0`, NaN and objects
-// with an `equals` method), chain's transducer, dispatch and arity `it`s,
+// with an `equals` method; v0.15.1 adds uniq's `[[1], [1]]` line, which is
+// transcribed alone), chain's transducer, dispatch and arity `it`s,
 // and reduced.js (transducers, README "Not portable"); adjust's and update's "accepts an
 // array-like object" pass an `arguments` object; intersperse's "dispatches"
 // (method dispatch) and the "can act as a transducer" `it`s of dropRepeats
@@ -412,6 +413,14 @@ module RamdafTests.Ramda.List {
   // v0.15.0: `uniq([undefined, null, undefined, null])`
   method {:test} UniqHandlesNullAndUndefinedElements() {
     expect uniq([Undefined, Null, Undefined, Null]) == [Undefined, Null];
+  }
+
+  // "has R.equals semantics" (v0.15.0): v0.15.1's line `R.uniq([[1],
+  // [1]]).length === 1` (deep equality: `uniq` is `uniqWith(equals)` again;
+  // in v0.15.0 its `Set` kept both arrays). The `-0`, NaN and `Just` lines
+  // cannot be written (README "Deviations").
+  method {:test} UniqHasREqualsSemantics() {
+    expect |uniq([[1], [1]])| == 1;
   }
 
   // describe('uniqWith') (v0.2.4). The objects' `x` holds `alwaysTrue` or

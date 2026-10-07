@@ -1,0 +1,9 @@
+{
+  "ramda": "v0.15.1",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.List.lensIndex", "kind": "breaking", "why": "v0.15.1's lensIndex is lens(nth(n), update(n)) (77d7863a): the setter leaves the list out of range and counts a negative n from the end (lensIndex(5).set(9, [1, 2]) went from [1, 2, 9] to [1, 2], lensIndex(-1).set(9, [1, 2]) from [9, 1, 2] to [1, 9]); its n >= -1 precondition is dropped"},
+    {"symbol": "Ramdaf.Data.eq", "kind": "added", "why": "v0.15.1 restores R.eq, deprecated, @category Relation (\"Deprecate eq and deepEq\"): _curry2(_eq), Object.is; v0.15.0 had removed Ramdaf.Object.eq"},
+    {"symbol": "Ramdaf.Data.eqDeep", "kind": "added", "why": "v0.15.1 restores R.eqDeep, deprecated, @category Relation, as R.equals itself (an alias)"}
+  ]
+}

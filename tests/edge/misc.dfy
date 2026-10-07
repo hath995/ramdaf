@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.15.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.15.1 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -11,6 +11,7 @@ module RamdafTests.Edge.Misc {
   import opened Ramdaf.Logic
   import opened Ramdaf.Functions
   import D = Ramdaf.Data
+  import L = Ramdaf.List
   import opened Support
 
   method {:test} PickFamilyEdges() {
@@ -599,12 +600,34 @@ module RamdafTests.Edge.Misc {
     expect lensProp("__proto__").set_(1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
   }
 
-  // node: identical([], []) is false (two distinct array objects; eq([], [])
-  // until v0.14.0, which v0.15.0 replaced with identical).
+  // node: identical([], []) and eq([], []) are false (two distinct array
+  // objects; eq until v0.14.0, which v0.15.0 replaced with identical and
+  // v0.15.1 restored, deprecated, as `_curry2(_eq)`, `Object.is`).
   method {:test} DeviationIdenticalIsStructural() {
     var a: seq<int> := [];
     var b: seq<int> := [];
     expect D.identical(a, b) == true;
+    expect D.eq(a, b) == true;
+  }
+
+  // node: a read of a name that the object lacks finds the inherited
+  // `Object.prototype` member: `prop('toString', {})` is the function (since
+  // v0.1.0), and so are `props(['toString', 'a'], {a: 1})[0]` (v0.8.0; the
+  // second is 1), `pluck('toString', [{}])[0]`, the `toString` of
+  // `pickAll(['toString'], {})` and of `project(['toString'], [{}])[0]`
+  // (since v0.1.0), and `where({toString: x => x === undefined}, {})` is
+  // false, as the predicate gets it (since v0.14.0; until v0.13.0 a function
+  // entry was called for an inherited property, so `where({toString: () =>
+  // true}, {})` was true, except in v0.2.3). A map has no prototype: the
+  // reads give None.
+  method {:test} DeviationInheritedMembersAreAbsent() {
+    var none: map<string, int> := map[];
+    expect prop("toString", none) == None;
+    expect props(["toString", "a"], map["a" := 1]) == [None, Some(1)];
+    expect pickAll(["toString"], none) == map["toString" := None];
+    expect L.pluck("toString", [none]) == [None];
+    expect D.project(["toString"], [none]) == [map["toString" := None]];
+    expect where(map["toString" := (x: Option<int>) => x.None?], none) == true;
   }
 
   // node: 'STRASSE' and 'Ä'; case conversion is ASCII-only here.
@@ -631,9 +654,10 @@ module RamdafTests.Edge.Misc {
     expect invert(map["a" := "__proto__", "b" := "x"]) == map["__proto__" := {"a"}, "x" := {"b"}];
   }
 
-  // node: identical(negate(0), 0), identical(multiply(-1, 0), 0) and
-  // identical(modulo(-4, 2), 0) are false (`Object.is`; with `eq`, which
-  // v0.15.0 replaced with identical, since v0.9.0), as each left side is -0;
+  // node: identical(negate(0), 0), identical(multiply(-1, 0), 0),
+  // identical(modulo(-4, 2), 0) and eq(negate(0), 0) are false (`Object.is`;
+  // with `eq`, which v0.15.0 replaced with identical and v0.15.1 restored,
+  // since v0.9.0), as each left side is -0;
   // and `propEq('a', negate(0), {a: 0})`, `eqProps('a', {a: negate(0)}, {a:
   // 0})` and `whereEq({a: 0}, {a: negate(0)})` are false since v0.14.0
   // (`Object.is`, since v0.15.0 `R.equals`, which compares numbers with
@@ -642,6 +666,7 @@ module RamdafTests.Edge.Misc {
     expect D.identical(negate(0), 0) == true;
     expect D.identical(multiply(-1, 0), 0) == true;
     expect D.identical(modulo(-4, 2), 0) == true;
+    expect D.eq(negate(0), 0) == true;
     expect propEq("a", negate(0), map["a" := 0]) == true;
     expect eqProps("a", map["a" := negate(0)], map["a" := 0]) == true;
     expect whereEq(map["a" := 0], map["a" := negate(0)]) == true;

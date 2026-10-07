@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.15.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.15.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensOn`, `lensProp`, `whereEq`). A JS object is a map<string, V>; a missing
@@ -11,7 +11,8 @@
 // function; v0.9.0 removed `cloneObj`, which `clone` (Core.dfy) took over;
 // v0.10.0 renamed `mixin` to `merge`; v0.12.0 removed `propOf` and the `get`
 // alias of `prop`, deprecated in v0.11.0; v0.15.0 removed `eq`, whose
-// `Object.is` is now `identical`, `@category Relation`, in Data.dfy.)
+// `Object.is` is now `identical`, `@category Relation`, in Data.dfy, where
+// v0.15.1 restores `eq` itself, deprecated.)
 
 module Ramdaf.Object {
   import opened Prelude
@@ -22,14 +23,18 @@ module Ramdaf.Object {
             assoc, propEq, evolve, invert, invertObj, dissoc, lensOn, lensProp, whereEq
     provides Prelude
 
-  // `obj[p]`
+  // `obj[p]`, undefined (None) when obj lacks p. In JS a name of an
+  // `Object.prototype` member that obj lacks finds the inherited member
+  // (`prop('toString', {})` is a function); a map has no prototype, so it is
+  // None (README "Deviations").
   function prop<V>(p: string, obj: map<string, V>): Option<V>
   { if p in obj then Some(obj[p]) else None }
 
   // `R.props(ps, obj)` (v0.8.0, "multiple `get`"): `out[idx] = obj[ps[idx]]`
   // for each name in ps, so the values in the order of ps, undefined (None)
-  // where obj lacks the property. (Until v0.7.2 `props` was the function
-  // that v0.8.0 renamed `propOf` and v0.12.0 removed.)
+  // where obj lacks the property (an inherited `Object.prototype` member in
+  // JS, as for prop). (Until v0.7.2 `props` was the function that v0.8.0
+  // renamed `propOf` and v0.12.0 removed.)
   function props<V>(ps: seq<string>, obj: map<string, V>): seq<Option<V>>
     ensures |props(ps, obj)| == |ps|
   { seq(|ps|, i requires 0 <= i < |ps| => prop(ps[i], obj)) }
@@ -141,7 +146,9 @@ module Ramdaf.Object {
     ensures pick(names, obj).Keys == obj.Keys * set n | n in names
   { map k | k in obj && k in names :: obj[k] }
 
-  // Every listed property, `undefined` (None) where obj lacks it.
+  // Every listed property, `undefined` (None) where obj lacks it (in JS
+  // `obj[name]`, so a name of an `Object.prototype` member gets the
+  // inherited member, as for prop: README "Deviations").
   function pickAll<V>(names: seq<string>, obj: map<string, V>): map<string, Option<V>>
     ensures pickAll(names, obj).Keys == set n | n in names
   { map k | k in names :: prop(k, obj) }
@@ -183,8 +190,10 @@ module Ramdaf.Object {
   // `whereEq`): `for (var prop in spec) { if (_has(prop, spec) &&
   // !spec[prop](testObj[prop])) { return false; } } return true;`, every own
   // spec property is a predicate that holds for the test object's property,
-  // undefined (None) when the test object lacks it (a JS test object also
-  // passes an inherited member; a map has none). Until v0.13.0 a spec entry
+  // undefined (None) when the test object lacks it (a JS test object passes
+  // an inherited `Object.prototype` member for such a name: `where({toString:
+  // x => x === undefined}, {})` is false; a map has none, README
+  // "Deviations"). Until v0.13.0 a spec entry
   // was a function, called with the property and the whole test object only
   // when the property was there (since v0.2.3; before, with undefined too),
   // or a value compared with `===`, the removed `Prelude.SpecVal`; since

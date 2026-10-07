@@ -1,4 +1,4 @@
-// Ramda v0.15.0 test/reduce.js, reduceRight.js, reduceIndexed.js and
+// Ramda v0.15.1 test/reduce.js, reduceRight.js, reduceIndexed.js and
 // reduceRightIndexed.js (v0.9.x foldl.js, foldr.js, foldlIndexed.js and
 // foldrIndexed.js; until v0.8.0 test.fold.js), transcribed. Not transcribed:
 // the "should correctly report the arity of curried versions" cases (Dafny
