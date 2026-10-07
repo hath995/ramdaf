@@ -1,6 +1,6 @@
 {
   "ramda": "v0.7.0",
-  "tier": "minor",
+  "tier": "patch",
   "changes": [
     {"symbol": "Ramdaf.Data.difference", "kind": "compatible", "why": "v0.7.0 rewrites difference as one loop (push first[idx] unless it is in second or already in out) instead of uniq(reject(flip(contains)(second), first)); the revealed body no longer calls List.uniq, List.reject or List.contains, same results"},
     {"symbol": "Ramdaf.Data.differenceWith", "kind": "compatible", "why": "v0.7.0 rewrites differenceWith as one loop testing R.containsWith(pred) against second and against the output instead of uniqWith(pred)(reject(...)); the revealed body no longer calls List.uniqWith or List.reject, same results"},

@@ -277,7 +277,7 @@ examples through `dox` and is not transcribed.
 | v0.5.0 | 2014-09-16 | ported | — |
 | v0.6.0 | 2014-10-04 | ported | — |
 | v0.7.0 | 2014-10-22 | ported | — |
-| v0.7.1 | 2014-10-22 | pending | — |
+| v0.7.1 | 2014-10-22 | ported | — |
 | v0.7.2 | 2014-10-24 | pending | — |
 | v0.8.0 | 2014-11-19 | pending | — |
 | v0.9.0 | 2015-01-24 | pending | — |
@@ -1084,6 +1084,19 @@ examples through `dox` and is not transcribed.
 - **Expected tier: patch.** `scanl`, `createMapEntry`, `has`, `hasIn` and
   `replace` were added; `difference` and `differenceWith` have rewritten
   revealed bodies with the same results (`casestudy/expected/v0.7.0.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.7.1 (2014-10-22)
+
+- **Ramda:** version bump only. `ramda.js` changes only `R.version`
+  (`'0.7.0'` → `'0.7.1'`; not ported, see "Not portable"), and `test/` is
+  byte-identical to v0.7.0. The README's CDN links, `bower.json`,
+  `package.json` and `ramda.min.js` follow.
+- **Ramdaf:** no source or test change; this entry and the manifest only,
+  as for v0.4.3 (strictly `ramda.js` is not byte-identical, but its one
+  changed line is the unported `version` string).
+- **Expected tier: patch.** Nothing changed (`casestudy/expected/v0.7.1.json`,
+  with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
