@@ -1,4 +1,4 @@
-// Ramda v0.6.0 test/test.sql.js, transcribed. Not transcribed:
+// Ramda v0.7.0 test/test.sql.js, transcribed. Not transcribed:
 // - the three "does not work for non-primitives" cases (union/intersection/
 //   difference of distinct-but-equal objects): JS `===` compares references,
 //   Dafny `==` structure (README "Deviations"; pinned in tests/edge/data.dfy);
@@ -66,6 +66,8 @@ module RamdafTests.Ramda.Sql {
   function R2(): seq<int> { [1, 2, 3, 4, 1, 2, 3, 4] }
   function S(): seq<int> { [3, 4, 5, 6] }
   function S2(): seq<int> { [3, 3, 4, 4, 5, 5, 6, 6] }
+  function Z(): seq<int> { [3, 4, 5, 6, 10] }
+  function Z2(): seq<int> { [1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8] }
   function A(n: int): map<string, int> { map["a" := n] }
   function Ro(): seq<map<string, int>> { [A(1), A(2), A(3), A(4)] }
   function So(): seq<map<string, int>> { [A(3), A(4), A(5), A(6)] }
@@ -102,6 +104,26 @@ module RamdafTests.Ramda.Sql {
 
   method {:test} DifferenceHasNoDuplicates() {
     expect difference(R2(), S2()) == [1, 2];
+  }
+
+  // v0.7.0
+  method {:test} DifferenceWorksForArraysOfDifferentLengths() {
+    expect difference(Z(), Z2()) == [10];
+    expect difference(Z2(), Z()) == [1, 2, 7, 8];
+  }
+
+  // v0.7.0
+  method {:test} DifferenceReturnsAnEmptyArrayIfThereAreNoDifferentElements() {
+    var empty: seq<int> := [];
+    expect difference(R2(), R()) == [];
+    expect difference(R(), R2()) == [];
+    expect difference(empty, R2()) == [];
+  }
+
+  // v0.7.0 (its `typeof` check holds by construction)
+  method {:test} DifferenceIsCurried() {
+    var diff123 := (l: seq<int>) => difference([1, 2, 3], l);
+    expect diff123([1, 3]) == [2];
   }
 
   // describe('differenceWith')

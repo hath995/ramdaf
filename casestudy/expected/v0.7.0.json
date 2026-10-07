@@ -1,0 +1,13 @@
+{
+  "ramda": "v0.7.0",
+  "tier": "minor",
+  "changes": [
+    {"symbol": "Ramdaf.Data.difference", "kind": "compatible", "why": "v0.7.0 rewrites difference as one loop (push first[idx] unless it is in second or already in out) instead of uniq(reject(flip(contains)(second), first)); the revealed body no longer calls List.uniq, List.reject or List.contains, same results"},
+    {"symbol": "Ramdaf.Data.differenceWith", "kind": "compatible", "why": "v0.7.0 rewrites differenceWith as one loop testing R.containsWith(pred) against second and against the output instead of uniqWith(pred)(reject(...)); the revealed body no longer calls List.uniqWith or List.reject, same results"},
+    {"symbol": "Ramdaf.List.scanl", "kind": "added", "why": "new in v0.7.0: R.scanl(fn, acc, list), the accumulator followed by each successive fn(acc, x)"},
+    {"symbol": "Ramdaf.List.createMapEntry", "kind": "added", "why": "new in v0.7.0: R.createMapEntry(key, val) is {key: val} (defined in ramda.js's List Functions section)"},
+    {"symbol": "Ramdaf.Object.has", "kind": "added", "why": "new in v0.7.0: R.has(prop, obj) = hasOwnProperty.call(obj, prop)"},
+    {"symbol": "Ramdaf.Object.hasIn", "kind": "added", "why": "new in v0.7.0: R.hasIn(prop, obj) = prop in obj, so own properties and Object.prototype's members"},
+    {"symbol": "Ramdaf.String.replace", "kind": "added", "why": "new in v0.7.0: R.replace(pattern, replacement, str) = str.replace(pattern, replacement), ported for a string pattern (first occurrence; $$, $&, $` and $' expanded)"}
+  ]
+}

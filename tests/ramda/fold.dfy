@@ -1,4 +1,4 @@
-// Ramda v0.6.0 test/test.fold.js, transcribed. Not transcribed: the "should
+// Ramda v0.7.0 test/test.fold.js, transcribed. Not transcribed: the "should
 // correctly report the arity of curried versions" cases (Dafny functions have
 // no arity) and the "throws on zero arguments" cases (v0.5.0; no-argument
 // calls). The alias `it`s assert `strictEqual` on the function objects, which
@@ -39,6 +39,7 @@ module RamdafTests.Ramda.Fold {
     expect catAll(["1", "2", "3", "4"]) == "1234";
   }
 
+  // (since v0.7.0 only `strictEqual(R.reduce, R.foldl)`)
   method {:test} FoldlIsAliasedByReduce() {
     expect reduce(add, 0, [1, 2, 3, 4]) == 10;
     expect reduce(add, 0, [1, 2, 3, 4]) == foldl(add, 0, [1, 2, 3, 4]);
@@ -66,6 +67,7 @@ module RamdafTests.Ramda.Fold {
     expect rcat(["1", "2", "3", "4"]) == "4321";
   }
 
+  // (since v0.7.0 only `strictEqual(R.reduceRight, R.foldr)`)
   method {:test} FoldrIsAliasedByReduceRight() {
     expect reduceRight(avg, 54.0, [12.0, 4.0, 10.0, 6.0]) == 12.0;
     expect reduceRight(avg, 54.0, [12.0, 4.0, 10.0, 6.0]) == foldr(avg, 54.0, [12.0, 4.0, 10.0, 6.0]);

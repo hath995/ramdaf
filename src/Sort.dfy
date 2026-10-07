@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.6.0 `comparator` and `sort` (ramda.js lines 3148-3193) and
-// `sortBy` (line 5270).
+// Ramdaf: Ramda v0.7.0 `comparator` and `sort` (ramda.js lines 3281-3326) and
+// `sortBy` (line 5567).
 //
 // `sort` is `clone(list).sort(comparator)`, i.e. JS Array.prototype.sort, which
 // is stable (ES2019; node is the reference). For a comparator that is

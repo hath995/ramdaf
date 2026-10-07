@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.6.0 "List Functions" (ramda.js lines 1505-3262), except
+// Ramdaf: Ramda v0.7.0 "List Functions" (ramda.js lines 1526-3395), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
 // (Data.dfy). (v0.4.1 removed the aliases `drop`, `nth`, `flatMap`,
 // `flattenDeep` and `flattenShallow`, and renamed `all`/`any` to their
@@ -15,7 +15,7 @@ module Ramdaf.List {
             uniq, isSet, uniqWith, pluck, flatten, zipWith, zip, xprodWith, xprod, reverse,
             range, indexOf, indexOfFrom, lastIndexOf, lastIndexOfFrom, join, slice, sliceFrom,
             remove, insert, insertAll, partition,
-            ap, of, empty, chain, unnest, zipObj, fromPairs
+            ap, of, empty, chain, unnest, zipObj, fromPairs, scanl, createMapEntry
     provides Prelude
 
   // `acc = fn(acc, list[idx])` for idx ascending. Since v0.4.0 `reduce` holds
@@ -71,6 +71,14 @@ module Ramdaf.List {
   function foldrIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
     ensures |list| == 0 ==> foldrIdx(fn, acc, list) == acc
   { reduceRightIdx(fn, acc, list) }
+
+  // `R.scanl(fn, acc, list)` (v0.7.0): `result[0] = acc; while (++idx < len)
+  // { acc = fn(acc, list[idx - 1]); result[idx] = acc; }`, the accumulator
+  // followed by each successive `fn(acc, x)` (fn gets exactly those two).
+  function scanl<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): seq<A>
+    ensures |scanl(fn, acc, list)| == |list| + 1
+    ensures scanl(fn, acc, list)[0] == acc
+  { [acc] + (if |list| == 0 then [] else scanl(fn, fn(acc, list[0]), list[1..])) }
 
   // JS loops until `fn` returns a falsy value (None here), possibly forever;
   // Dafny functions must terminate, so at most `fuel` elements are produced.
@@ -480,6 +488,13 @@ module Ramdaf.List {
   function fromPairs<V>(pairs: seq<(string, V)>): map<string, V>
   { if |pairs| == 0 then map[]
     else fromPairs(pairs[..|pairs| - 1])[pairs[|pairs| - 1].0 := pairs[|pairs| - 1].1] }
+
+  // `R.createMapEntry(key, val)` (v0.7.0): `var obj = {}; obj[key] = val;
+  // return obj;`, the object with the one property. Defined in "List
+  // Functions", hence here. JS converts the key to a string, and a
+  // `__proto__` key sets the prototype instead of a property (README
+  // "Deviations").
+  function createMapEntry<V>(key: string, val: V): map<string, V> { map[key := val] }
 
   // Every pair, the first list's index outermost.
   function xprodWith<A, B, C>(fn: (A, B) -> C, a: seq<A>, b: seq<B>): seq<C>

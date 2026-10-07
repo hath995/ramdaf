@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.6.0 under node; the methods named Deviation* pin documented
+// ramda.js v0.7.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -172,6 +172,9 @@ module RamdafTests.Edge.Misc {
 
   method {:test} MathEdges() {
     var empty: seq<int> := [];
+    // ties (v0.7.0's createMaxMin keeps the first winner)
+    expect max([3, 3]) == 3;
+    expect min([2, 2, 5]) == 2;
     expect subtract(2, 5) == -3;
     expect divide(6.0, 3.0) == 2.0;
     expect max([3, 9, 2]) == 9;
@@ -249,6 +252,45 @@ module RamdafTests.Edge.Misc {
     expect big(1) == "small";
     // `cond((a, b) => a < b, (a, b) => b - a, (a, b) => a - b)(2, 5)`
     expect cond((p: (int, int)) => p.0 < p.1, (p: (int, int)) => p.1 - p.0, (p: (int, int)) => p.0 - p.1)((2, 5)) == 3;
+  }
+
+  // has (v0.7.0) sees own properties only; hasIn also sees the 12 members of
+  // Object.prototype (node: `hasIn('toString', {})` is true).
+  method {:test} HasAndHasInEdges() {
+    var none: map<string, int> := map[];
+    expect has("toString", none) == false;
+    expect has("hasOwnProperty", map["hasOwnProperty" := 1]) == true;
+    expect has("a", map["a" := Undefined]) == true;
+    expect hasIn("toString", none) == true;
+    expect hasIn("__proto__", none) == true;
+    expect hasIn("constructor", none) == true;
+    expect hasIn("valueOf", none) == true;
+    expect hasIn("hasOwnProperty", none) == true;
+    expect hasIn("isPrototypeOf", none) == true;
+    expect hasIn("x", none) == false;
+    expect hasIn("a", map["a" := Undefined]) == true;
+  }
+
+  // replace (v0.7.0) with a string pattern: the first occurrence only, and
+  // the `$$`, `$&`, `` $` `` and `$'` patterns of the replacement.
+  method {:test} ReplaceEdges() {
+    expect replace("a", "x", "banana") == "bxnana";
+    expect replace("", "x", "abc") == "xabc";
+    expect replace("", "x", "") == "x";
+    expect replace(".", "!", "a.b.c") == "a!b.c";
+    expect replace("aa", "b", "aaa") == "ba";
+    expect replace("z", "x", "banana") == "banana";
+    expect replace("b", "$&$&", "abc") == "abbc";
+    expect replace("b", "$$", "abc") == "a$c";
+    expect replace("b", "$`", "abc") == "aac";
+    expect replace("b", "$'", "abc") == "acc";
+    expect replace("b", "$1", "abc") == "a$1c";
+    expect replace("b", "$0", "abc") == "a$0c";
+    expect replace("b", "$<x>", "abc") == "a$<x>c";
+    expect replace("b", "$", "abc") == "a$c";
+    expect replace("b", "$$$", "abc") == "a$$c";
+    expect replace("b", "a$&b$`c$'d$$e", "abc") == "aabbaccd$ec";
+    expect replace("\U{1F600}", "x", "a\U{1F600}b") == "axb";
   }
 
   // trim (v0.6.0) strips the leading and trailing runs of its 26 whitespace

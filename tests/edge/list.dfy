@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.6.0's own suite does not cover, each checked against
-// ramda.js v0.6.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.7.0's own suite does not cover, each checked against
+// ramda.js v0.7.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -371,6 +371,24 @@ module RamdafTests.Edge.List {
     expect skipUntil((x: int) => x > 0, empty) == [];
   }
 
+  // scanl (v0.7.0): the accumulator, then each successive fn(acc, x).
+  method {:test} ScanlEdges() {
+    var none: seq<int> := [];
+    expect scanl((a: int, b: int) => a - b, 10, [1, 2, 3]) == [10, 9, 7, 4];
+    expect scanl((a: seq<int>, x: int) => [x] + a, none, [1, 2, 3]) == [[], [1], [2, 1], [3, 2, 1]];
+    // `scanl(add, '', 'abc')`: a string is a list of characters
+    expect scanl((a: string, c: char) => a + [c], "", "abc") == ["", "a", "ab", "abc"];
+    expect scanl((a: int, b: int) => a + b, 0, none) == [0];
+  }
+
+  // createMapEntry (v0.7.0)
+  method {:test} CreateMapEntryEdges() {
+    expect createMapEntry("", 1) == map["" := 1];
+    expect createMapEntry("a", Undefined) == map["a" := Undefined];
+    // `createMapEntry(1, 'x')`: JS converts the key 1 to "1"
+    expect createMapEntry("1", "x") == map["1" := "x"];
+  }
+
   method {:test} FlattenEdges() {
     var empty: seq<Tree<int>> := [];
     expect flatten(empty) == [];
@@ -448,11 +466,13 @@ module RamdafTests.Edge.List {
   }
 
   // node: zipObj(['__proto__', 'a'], [1, 2]) is {a: 2} and
-  // fromPairs([['__proto__', 5], ['a', 1]]) is {a: 1}: assigning
+  // fromPairs([['__proto__', 5], ['a', 1]]) is {a: 1}, and since v0.7.0
+  // createMapEntry('__proto__', 1) has no own key: assigning
   // `__proto__` sets the prototype (a primitive is ignored) instead of a
   // property. A map's keys are all ordinary.
-  method {:test} DeviationPrototypeKeysAreOrdinaryInZipObjAndFromPairs() {
+  method {:test} DeviationPrototypeKeysAreOrdinaryInListBuilders() {
     expect zipObj(["__proto__", "a"], [1, 2]) == map["__proto__" := 1, "a" := 2];
     expect fromPairs([("__proto__", 5), ("a", 1)]) == map["__proto__" := 5, "a" := 1];
+    expect createMapEntry("__proto__", 1) == map["__proto__" := 1];
   }
 }

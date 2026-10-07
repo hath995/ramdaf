@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against ramda.js v0.6.0 under node;
+// Edge cases for Sort and Data, checked against ramda.js v0.7.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -47,6 +47,16 @@ module RamdafTests.Edge.Data {
     expect intersection([1, 2, 3, 4], [4, 3, 2]) == [4, 3, 2];
     expect intersection([1, 2, 1, 3], [3, 1, 1]) == [3, 1];
     expect intersection([1, 2], [3, 1, 2, 1]) == [1, 2];
+  }
+
+  // Since v0.7.0 difference and differenceWith are loops (same results).
+  method {:test} DifferenceEdges() {
+    expect difference([1, 2, 1, 3], [2]) == [1, 3];
+    // `difference('abcab', 'b')`: strings are lists of characters
+    expect difference("abcab", "b") == "ac";
+    expect differenceWith((a: int, b: int) => a < b, [3, 1, 2, 5, 4], [2]) == [3, 5];
+    expect differenceWith((a: int, b: int) => a < b, [5, 4, 3, 2, 1], [0]) == [5];
+    expect differenceWith((a: int, b: int) => a % 3 == b % 3, [1, 2, 3, 4, 5, 6], [3]) == [1, 2];
   }
 
   function mod3(a: int, b: int): bool { a % 3 == b % 3 }

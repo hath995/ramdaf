@@ -1,4 +1,4 @@
-// Ramda v0.6.0 test/test.list.js, test/test.indexof.js,
+// Ramda v0.7.0 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js,
@@ -16,7 +16,8 @@
 // with a `length` property is not a seq); test.zip.js's zipObj "extra keys
 // are undefined" (more keys than values is outside the domain, README) and
 // fromPairs "skips empty Arrays and non-Array elements" (the elements are
-// typed pairs, README "Outside the modeled domain"). test.zip.js's v0.4.0
+// typed pairs, README "Outside the modeled domain"). Also transcribed here:
+// v0.7.0's new test.createMapEntry.js and test.scanl.js. test.zip.js's v0.4.0
 // toPairs and toPairsIn describes test Object functions and are transcribed
 // in tests/ramda/object.dfy. (v0.4.1 removed test.list.js's describe('nth')
 // with the function.)
@@ -704,6 +705,39 @@ module RamdafTests.Ramda.List {
   // describe('fromPairs') (v0.3.0)
   method {:test} FromPairsCombinesTwoElementArraysIntoAnObject() {
     expect fromPairs([("a", 1), ("b", 2), ("c", 3)]) == map["a" := 1, "b" := 2, "c" := 3];
+  }
+
+  // ---- test.createMapEntry.js (v0.7.0; describe('mapEntry')) ----
+
+  method {:test} CreateMapEntryCreatesAnObjectContainingASingleKeyValuePair() {
+    expect createMapEntry("foo", 42) == map["foo" := 42];
+  }
+
+  method {:test} CreateMapEntryIsAutomaticallyCurried() {
+    var foo := (v: int) => createMapEntry("foo", v);
+    expect foo(42) == map["foo" := 42];
+  }
+
+  // ---- test.scanl.js (v0.7.0). Not transcribed: "correctly reports the
+  // arity of curried versions" and the two no-argument cases. ----
+
+  method {:test} ScanlScansSimpleFunctionsWithTheSuppliedAccumulator() {
+    expect scanl((a: int, b: int) => a + b, 0, [1, 2, 3, 4]) == [0, 1, 3, 6, 10];
+    expect scanl((a: int, b: int) => a * b, 1, [1, 2, 3, 4]) == [1, 1, 2, 6, 24];
+  }
+
+  method {:test} ScanlReturnsTheAccumulatorForAnEmptyArray() {
+    var empty: seq<int> := [];
+    expect scanl((a: int, b: int) => a + b, 0, empty) == [0];
+    expect scanl((a: int, b: int) => a * b, 1, empty) == [1];
+  }
+
+  // `scanl(add)` with JS `+`: numbers and strings
+  method {:test} ScanlIsAutomaticallyCurried() {
+    var sum := (l: seq<int>) => scanl((a: int, b: int) => a + b, 0, l);
+    expect sum([1, 2, 3, 4]) == [0, 1, 3, 6, 10];
+    var cat := (l: seq<string>) => scanl((a: string, b: string) => a + b, "", l);
+    expect cat(["1", "2", "3", "4"]) == ["", "1", "12", "123", "1234"];
   }
 
   // ---- test.product.js ----

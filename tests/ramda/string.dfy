@@ -1,4 +1,4 @@
-// Ramda v0.6.0 test/test.stringBasics.js, transcribed. Not transcribed:
+// Ramda v0.7.0 test/test.stringBasics.js and test/test.replace.js, transcribed. Not transcribed:
 // describe('match') (regular expressions are not portable, README), and
 // trim's "falls back to a shim if String.prototype.trim is not present"
 // (v0.6.0), which is only registered when that method is missing, so not
@@ -89,6 +89,19 @@ module RamdafTests.Ramda.String {
   method {:test} TrimDoesNotTrimTheZeroWidthSpace() {
     expect trim("\U{200B}") == "\U{200B}";
     expect |trim("\U{200B}")| == 1;
+  }
+
+  // ---- test.replace.js (v0.7.0). Not transcribed: "replaces regex matches
+  // of the input string" (a RegExp pattern, README "Deviations") and the
+  // `instanceof Function` checks of "is curried up to 3 arguments" (with null
+  // arguments). ----
+
+  method {:test} ReplaceReplacesSubstringsOfTheInputString() {
+    expect replace("1", "one", "1 two three") == "one two three";
+  }
+  method {:test} ReplaceIsCurriedUpTo3Arguments() {
+    var removeSemicolon := (s: string) => replace(";", "", s);
+    expect removeSemicolon("return 42;") == "return 42";
   }
 
   // describe('split')

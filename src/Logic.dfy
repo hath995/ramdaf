@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.6.0 "Logic Functions" (ramda.js lines 4072-4253).
+// Ramdaf: Ramda v0.7.0 "Logic Functions" (ramda.js lines 4259-4440).
 
 module Ramdaf.Logic {
   export
@@ -9,10 +9,13 @@ module Ramdaf.Logic {
   // arguments to the predicates; the port's predicates are unary (tuple the
   // arguments for more).
 
-  // `!!(f(...) && g(...))`, short-circuited.
+  // `f(...) && g(...)`, short-circuited (v0.7.0; before, `!!(...)`). JS now
+  // returns the deciding operand, not a boolean; with boolean predicates
+  // that is the same bool (README "Deviations").
   function and<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) && g(x) }
 
-  // `!!(f(...) || g(...))`, short-circuited.
+  // `f(...) || g(...)`, short-circuited (v0.7.0; before, `!!(...)`), as for
+  // and.
   function or<T>(f: T -> bool, g: T -> bool): T -> bool { x => f(x) || g(x) }
 
   // `!f(...)`

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.6.0 "String Functions" (ramda.js lines 4675-4979): the
+// Ramdaf: Ramda v0.7.0 "String Functions" (ramda.js lines 4890-5245): the
 // String.prototype methods, with JS's index clamping. A Dafny `string` is a
 // sequence of Unicode scalar values where JS counts UTF-16 code units, and
 // case conversion is ASCII-only (see README "Deviations").
@@ -6,7 +6,7 @@
 module Ramdaf.String {
   export
     reveals substring, substringFrom, substringTo, charAt, charCodeAt,
-            strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, trim, split
+            strIndexOf, strLastIndexOf, toUpperCase, toLowerCase, trim, replace, split
 
   // `String.prototype.substring(start, end)`: each index is clamped to
   // [0, |s|], and the two are swapped when start > end.
@@ -82,6 +82,35 @@ module Ramdaf.String {
     if |s| > 0 && s[0] in ws then trim(s[1..])
     else if |s| > 0 && s[|s| - 1] in ws then trim(s[..|s| - 1])
     else s }
+
+  // `R.replace(pattern, replacement, str)` (v0.7.0): `str.replace(pattern,
+  // replacement)` with a string pattern (a RegExp pattern or a function
+  // replacement is not portable, README "Deviations"): the FIRST occurrence
+  // of pattern is replaced, and in the replacement `$$` is `$`, `$&` the
+  // match, `` $` `` the text before it and `$'` the text after it
+  // (GetSubstitution; a string pattern has no captures, so `$1`, `$<` and any
+  // other `$` stay literal). The body expands the replacement one token at a
+  // time, left to right, recursing on the rest of the replacement.
+  function replace(pattern: string, replacement: string, str: string): string
+    ensures strIndexOf(pattern, str) < 0 ==> replace(pattern, replacement, str) == str
+    ensures strIndexOf(pattern, str) >= 0 ==>
+      str[..strIndexOf(pattern, str)] <= replace(pattern, replacement, str)
+    decreases |replacement|
+  { var i := strIndexOf(pattern, str);
+    if i < 0 then str
+    else
+      var before, after := str[..i], str[i + |pattern|..];
+      if |replacement| == 0 then before + after
+      else
+        var r := replacement;
+        var special := |r| >= 2 && r[0] == '$' && r[1] in "$&`'";
+        var piece := if !special then [r[0]]
+                     else if r[1] == '$' then "$"
+                     else if r[1] == '&' then pattern
+                     else if r[1] == '`' then before
+                     else after;
+        var rest := replace(pattern, if special then r[2..] else r[1..], str);
+        before + piece + rest[|before|..] }
 
   // `String.prototype.split(sep)`: the pieces between occurrences of sep;
   // an empty separator splits into single characters (and "" into []).

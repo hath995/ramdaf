@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.6.0 "Object Functions" (ramda.js lines 3263-3965) and `propEq`
-// (line 5031). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.7.0 "Object Functions" (ramda.js lines 3396-4152) and `propEq`
+// (line 5297). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None. The functions that build an object by assigning
 // properties (`pick`, `pickAll`, `pickWith`, `omit`, `mixin`, `cloneObj`)
 // drop an own `__proto__` property in JS, as the assignment sets the
@@ -9,7 +9,7 @@ module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, get, props, propOr, keys, keysIn, toPairs, toPairsIn,
+    reveals eq, prop, get, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickWith, mixin, cloneObj, eqProps, where,
             propEq
     provides Prelude
@@ -33,6 +33,21 @@ module Ramdaf.Object {
   // property of a map is its own.
   function propOr<V>(p: string, val: V, obj: map<string, V>): V
   { if p in obj then obj[p] else val }
+
+  // `R.has(prop, obj)` (v0.7.0): `hasOwnProperty.call(obj, prop)`. Every
+  // property of a map is its own.
+  function has<V>(p: string, obj: map<string, V>): bool { p in obj }
+
+  // `R.hasIn(prop, obj)` (v0.7.0): `prop in obj`, an own property or one on
+  // the prototype chain. A plain object's chain is `Object.prototype`, whose
+  // own property names are exactly these 12 (node:
+  // `Object.getOwnPropertyNames(Object.prototype)`), so `hasIn("toString",
+  // map[])` is true, as `hasIn('toString', {})` is in node.
+  function hasIn<V>(p: string, obj: map<string, V>): bool
+  { p in obj ||
+    p in {"__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__",
+          "__proto__", "constructor", "hasOwnProperty", "isPrototypeOf",
+          "propertyIsEnumerable", "toLocaleString", "toString", "valueOf"} }
 
   // The own enumerable property names. JS returns them in insertion order;
   // a Dafny map has no order, so the result is a set.
@@ -104,7 +119,9 @@ module Ramdaf.Object {
     }
   }
 
-  // The listed properties that exist on obj.
+  // The listed properties that exist on obj. (Since v0.7.0 pick, omit and
+  // pickWith iterate `keysIn(obj)`, so inherited enumerable properties count
+  // too; a map has none.)
   function pick<V>(names: seq<string>, obj: map<string, V>): map<string, V>
     ensures pick(names, obj).Keys == obj.Keys * set n | n in names
   { map k | k in obj && k in names :: obj[k] }
@@ -119,7 +136,7 @@ module Ramdaf.Object {
     ensures omit(names, obj).Keys == obj.Keys - set n | n in names
   { map k | k in obj && k !in names :: obj[k] }
 
-  // v0.2.3: the own properties of obj for which `test(val, key, obj)` is
+  // v0.2.3: the properties of obj for which `test(val, key, obj)` is
   // truthy (pick and omit are now written with it, with unchanged results).
   function pickWith<V>(test: (V, string, map<string, V>) -> bool, obj: map<string, V>): map<string, V>
     ensures pickWith(test, obj).Keys == set k | k in obj && test(obj[k], k, obj)

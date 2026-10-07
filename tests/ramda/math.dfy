@@ -1,4 +1,4 @@
-// Ramda v0.6.0 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.7.0 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). `subtract`,
 // `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` are
@@ -196,6 +196,14 @@ module RamdafTests.Ramda.Math {
     expect max([2, 1, 2, 8, 6, 7, 5, 3, 0, 9]) == 9;
     expect max([7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1]) == 52;
   }
+  // v0.7.0 (its "returns -Infinity for an empty list" is outside the domain,
+  // and "returns a number" has string elements)
+  method {:test} MaxFindsMaxInAnyPosition() {
+    expect max([6, 2, 1, 3]) == 6;
+    expect max([3, 6, 2, 1]) == 6;
+    expect max([3, 1, 6, 2]) == 6;
+    expect max([3, 1, 2, 6]) == 6;
+  }
   // "accepts negative numbers, decimals, and even strings": the negative
   // numbers only, with the decimals -4.3 and -1.1 truncated to ints.
   method {:test} MaxAcceptsNegativeNumbers() {
@@ -204,6 +212,13 @@ module RamdafTests.Ramda.Math {
   method {:test} MinCalculatesTheSmallestValue() {
     expect min([2, 1, 2, 8, 6, 7, 5, 3, 0, 9]) == 0;
     expect min([7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1]) == 1;
+  }
+  // v0.7.0 (as for max)
+  method {:test} MinFindsMinInAnyPosition() {
+    expect min([0, 2, 1, 3]) == 0;
+    expect min([3, 0, 2, 1]) == 0;
+    expect min([3, 1, 0, 2]) == 0;
+    expect min([3, 1, 2, 0]) == 0;
   }
   // As above for min.
   method {:test} MinAcceptsNegativeNumbers() {

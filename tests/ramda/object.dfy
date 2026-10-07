@@ -1,4 +1,4 @@
-// Ramda v0.6.0 test/test.objectBasics.js, test/test.keysvals.js,
+// Ramda v0.7.0 test/test.objectBasics.js, test/test.keysvals.js,
 // test/test.tapeq.js and test/test.zip.js's toPairs and toPairsIn describes,
 // transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument
@@ -13,10 +13,16 @@
 // the given object's prototype properties"), and propOr's (propOrDefault's
 // until v0.5.0) "should not return properties from the prototype chain", toPairs "only
 // iterates the object's own properties" and toPairsIn "iterates properties
-// on the object's prototype chain": a map has no prototype. Also skipped:
+// on the object's prototype chain", and v0.7.0's pick "retrieves prototype
+// properties", omit "includes prototype properties", pickWith "retrieves
+// prototype properties", has "does not check properties from the prototype
+// chain" and hasIn "checks properties from the prototype chain" (objects
+// built by a constructor whose prototype has properties): a map has no
+// prototype. Also skipped:
 // the no-argument cases, prop's "should throw when called with no
 // arguments" (v0.4.0) and propOr's, where's and eq's "throws if given
-// no arguments" (v0.4.1); and eq's "is curried" (v0.4.1), which relies on
+// no arguments" (v0.4.1), has's and hasIn's (v0.7.0); describe('tap'),
+// whose arguments v0.7.0 reversed (not portable); and eq's "is curried" (v0.4.1), which relies on
 // `[] !== []`, reference inequality (README "Deviations"). toPairs and toPairsIn return a set (a map has no key order, README
 // "Deviations").
 
@@ -36,8 +42,10 @@ module RamdafTests.Ramda.Object {
     expect nm(Fred()) == Some(Str("Fred"));
   }
 
+  // (since v0.7.0 only `strictEqual(R.get, R.prop)`; compared by results)
   method {:test} PropIsAliasedByGet() {
     expect get("age", Fred()) == Some(Num(23));
+    expect get("age", Fred()) == prop("age", Fred());
   }
 
   // describe('pluck')
@@ -68,6 +76,30 @@ module RamdafTests.Ramda.Object {
   method {:test} PropOrReturnsTheDefaultValueWhenThePropertyDoesNotExist() {
     var nm := (o: map<string, Js>) => propOr("name", Str("Unknown"), o);
     expect nm(map["age" := Num(99)]) == Str("Unknown");
+  }
+
+  // describe('has') (v0.7.0); `anon` is `{age: 99}`
+  method {:test} HasReturnsAFunctionThatChecksTheAppropriateProperty() {
+    var nm := (o: map<string, Js>) => has("name", o);
+    expect nm(Fred()) == true;
+    expect nm(map["age" := Num(99)]) == false;
+  }
+
+  method {:test} HasWorksProperlyWhenCalledWithTwoArguments() {
+    expect has("name", Fred()) == true;
+    expect has("name", map["age" := Num(99)]) == false;
+  }
+
+  // describe('hasIn') (v0.7.0)
+  method {:test} HasInReturnsAFunctionThatChecksTheAppropriateProperty() {
+    var nm := (o: map<string, Js>) => hasIn("name", o);
+    expect nm(Fred()) == true;
+    expect nm(map["age" := Num(99)]) == false;
+  }
+
+  method {:test} HasInWorksProperlyWhenCalledWithTwoArguments() {
+    expect hasIn("name", Fred()) == true;
+    expect hasIn("name", map["age" := Num(99)]) == false;
   }
 
   function Abc(): map<string, int> { map["a" := 1, "b" := 2, "c" := 3, "d" := 4, "e" := 5, "f" := 6] }

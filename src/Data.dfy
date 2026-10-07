@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.6.0 "Data Analysis and Grouping Functions" (ramda.js lines
-// 4980-5362), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
+// Ramdaf: Ramda v0.7.0 "Data Analysis and Grouping Functions" (ramda.js lines
+// 5246-5659), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
 // unportable `functions`/`functionsIn`, and `groupBy`, which since v0.3.0 is
-// defined in "List Functions" (line 3227 in v0.6.0; from v0.2.0 to v0.2.4 an
+// defined in "List Functions" (line 3360 in v0.7.0; from v0.2.0 to v0.2.4 an
 // alias of `partition` there) but which stays here (functions do not move
 // between modules).
 //
@@ -9,7 +9,9 @@
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
 // class, for the `*With` functions) is kept at its FIRST occurrence. (Until
 // v0.2.3 `uniq` and `uniqWith` kept the last one, and the `*With` functions
-// here carried `uniqWith`'s right-to-left recursion themselves.)
+// here carried `uniqWith`'s right-to-left recursion themselves.) Since v0.7.0
+// `difference` and `differenceWith` are their own loops, with the same
+// results.
 
 module Ramdaf.Data {
   import opened Prelude
@@ -38,26 +40,44 @@ module Ramdaf.Data {
       exists j :: 0 <= j < |unionWith(pred, list1, list2)| && pred(x, unionWith(pred, list1, list2)[j])
   { List.uniqWith(pred, list1 + list2) }
 
-  // `uniq(reject(flip(contains)(second), first))`
+  // `if (indexOf(second, first[idx]) === -1 && indexOf(out, first[idx]) ===
+  // -1) out.push(first[idx])` for idx ascending (v0.7.0; before, it was
+  // `uniq(reject(flip(contains)(second), first))`, with the same results):
+  // the elements of first not in second, each kept at its first occurrence.
+  // The body recurses on all but the last element, as the loop does.
   function difference<T(==)>(first: seq<T>, second: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |difference(first, second)| ==>
       difference(first, second)[i] in first && difference(first, second)[i] !in second
     ensures forall i :: 0 <= i < |first| && first[i] !in second ==> first[i] in difference(first, second)
-  { List.uniq(List.reject(x => List.contains(x, second), first)) }
+  { if |first| == 0 then []
+    else var init := first[..|first| - 1];
+         var x := first[|first| - 1];
+         var out := difference(init, second);
+         assert forall y | y in first :: y == x || y in init;
+         assert forall i :: 0 <= i < |init| ==> init[i] == first[i];
+         if x !in second && x !in out then out + [x] else out }
 
-  // `uniqWith(pred)(reject(flip(containsWith(pred))(second), first))`: the
-  // elements x of first with no y in second such that `pred(x, y)`, then
-  // uniqWith.
+  // `if (!containsPred(first[idx], second) && !containsPred(first[idx], out))
+  // out.push(first[idx])` with `containsPred = R.containsWith(pred)` (v0.7.0;
+  // before, it was `uniqWith(pred)(reject(flip(containsWith(pred))(second),
+  // first))`, with the same results): x is kept unless `pred(x, y)` holds for
+  // some y in second or for some element already kept.
   function differenceWith<T>(pred: (T, T) -> bool, first: seq<T>, second: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |differenceWith(pred, first, second)| ==>
       differenceWith(pred, first, second)[i] in first &&
       forall j :: 0 <= j < |second| ==> !pred(differenceWith(pred, first, second)[i], second[j])
     ensures forall i, j :: 0 <= i < j < |differenceWith(pred, first, second)| ==>
       !pred(differenceWith(pred, first, second)[j], differenceWith(pred, first, second)[i])
-  { var kept := List.reject(x => List.containsWith(pred, x, second), first);
-    var r := List.uniqWith(pred, kept);
-    assert forall i :: 0 <= i < |r| ==> r[i] in kept;
-    r }
+  { if |first| == 0 then []
+    else var init := first[..|first| - 1];
+         var x := first[|first| - 1];
+         var out := differenceWith(pred, init, second);
+         assert forall y | y in init :: y in first;
+         if !List.containsWith(pred, x, second) && !List.containsWith(pred, x, out) then
+           var r := out + [x];
+           assert forall k :: 0 <= k < |out| ==> r[k] == out[k];
+           r
+         else out }
 
   // `uniq(filter(flip(contains)(list1), list2))`: the elements of list2 that
   // occur in list1, each kept at its first occurrence in list2 (since v0.1.1

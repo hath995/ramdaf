@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.6.0 "Arithmetic Functions" (ramda.js lines 4254-4674).
+// Ramdaf: Ramda v0.7.0 "Arithmetic Functions" (ramda.js lines 4441-4889).
 // (v0.5.0 removed `subtractN`, `divideBy` and `moduloBy`.)
 // JS numbers are IEEE doubles; the port uses int, and real for division
 // (see README "Deviations").
@@ -68,8 +68,10 @@ module Ramdaf.Math {
 
   function gte(a: int, b: int): bool { a >= b }
 
-  // `foldl(binary(Math.max), -Infinity, list)` (v0.2.0; it was
-  // `Math.max.apply(null, list)`, the same on numbers); `max([])` is -Infinity
+  // `createMaxMin(gt, -Infinity)` (v0.7.0): a loop that replaces the winner
+  // when `+list[idx]` is strictly greater, skipping NaN and non-numbers
+  // (v0.2.0 to v0.6.0 `foldl(binary(Math.max), -Infinity, list)`, before that
+  // `Math.max.apply(null, list)`, the same on ints); `max([])` is -Infinity
   // in JS, which int cannot hold, so the empty list is excluded.
   function max(list: seq<int>): int
     requires |list| > 0
@@ -80,7 +82,8 @@ module Ramdaf.Math {
          assert list == [list[0]] + list[1..];
          if list[0] < m then m else list[0] }
 
-  // `foldl(binary(Math.min), Infinity, list)`; `min([])` is Infinity in JS.
+  // `createMaxMin(lt, Infinity)` (v0.7.0; `foldl(binary(Math.min), Infinity,
+  // list)` before, the same on ints); `min([])` is Infinity in JS.
   function min(list: seq<int>): int
     requires |list| > 0
     ensures min(list) in list
@@ -90,7 +93,8 @@ module Ramdaf.Math {
          assert list == [list[0]] + list[1..];
          if m < list[0] then m else list[0] }
 
-  // `maxWith(keyFn, list)` (v0.2.0; it took a comparator before): the running
+  // `maxWith(keyFn, list)` (v0.2.0; it took a comparator before; since v0.7.0
+  // `curry2(createMaxMinWith(gt))`, the same loop): the running
   // winner is replaced only when `keyFn(list[idx]) > max`, so the FIRST
   // element with the greatest key wins. The empty list gives undefined (null
   // before v0.2.0), here None. Keys are ints (README "Deviations"). The body
