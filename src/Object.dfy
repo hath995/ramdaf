@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.15.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensOn`, `lensProp`, `whereEq`). A JS object is a map<string, V>; a missing
@@ -10,24 +10,17 @@
 // `pickBy`, and `props` to `propOf`, reusing the name `props` for a new
 // function; v0.9.0 removed `cloneObj`, which `clone` (Core.dfy) took over;
 // v0.10.0 renamed `mixin` to `merge`; v0.12.0 removed `propOf` and the `get`
-// alias of `prop`, deprecated in v0.11.0.)
+// alias of `prop`, deprecated in v0.11.0; v0.15.0 removed `eq`, whose
+// `Object.is` is now `identical`, `@category Relation`, in Data.dfy.)
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
+    reveals prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
             assoc, propEq, evolve, invert, invertObj, dissoc, lensOn, lensProp, whereEq
     provides Prelude
-
-  // `a === b` until v0.8.0; since v0.9.0 `Object.is`: `1 / a === 1 / b`
-  // when a is 0, and `a === b || (a !== a && b !== b)` otherwise, so `-0`
-  // and `0` differ and `NaN` equals itself. On ints that is `==`; JS
-  // arithmetic can produce `-0`, which `int` does not have, and Dafny
-  // equality is structural where JS compares objects and arrays by reference
-  // (see README "Deviations").
-  function eq<T(==)>(a: T, b: T): bool { a == b }
 
   // `obj[p]`
   function prop<V>(p: string, obj: map<string, V>): Option<V>
@@ -42,7 +35,7 @@ module Ramdaf.Object {
   { seq(|ps|, i requires 0 <= i < |ps| => prop(ps[i], obj)) }
 
   // `R.propOr(val, p, obj)` (`src/propOr.js`): `has(p, obj) ? obj[p] :
-  // val`, obj's own property p, or val when obj lacks it. v0.9.0 moved the
+  // val` (since v0.15.0 also val for a null or undefined obj), obj's own property p, or val when obj lacks it. v0.9.0 moved the
   // default to the first argument ("take default value as first argument to
   // R.propOr"); until v0.8.0 it was `propOr(p, val, obj)`, with
   // `hasOwnProperty.call(obj, p)`. (v0.6.0 renamed `propOrDefault`, added in
@@ -140,7 +133,10 @@ module Ramdaf.Object {
   // The listed properties that exist on obj. (Since v0.7.0 pick, omit and
   // pickBy, `pickWith` until v0.7.2, iterate `keysIn(obj)`, since v0.11.0
   // with their own `for (var prop in obj)` loops, so inherited enumerable
-  // properties count too; a map has none.)
+  // properties count too; a map has none. Since v0.15.0 pick loops over the
+  // names instead, `if (names[idx] in obj)`, which also holds for the
+  // non-enumerable members of `Object.prototype`: `pick(['toString'], {})`
+  // has the inherited function as its `toString`, README "Deviations".)
   function pick<V>(names: seq<string>, obj: map<string, V>): map<string, V>
     ensures pick(names, obj).Keys == obj.Keys * set n | n in names
   { map k | k in obj && k in names :: obj[k] }
@@ -178,8 +174,8 @@ module Ramdaf.Object {
   { a + b }
 
   // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal;
-  // since v0.14.0 `_eq(obj1[p], obj2[p])`, `Object.is`: README "Deviations"
-  // on `-0`).
+  // in v0.14.0 `_eq`, `Object.is`, and since v0.15.0 `R.equals`, deep
+  // equality: README "Deviations" on `-0`).
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
   { prop(p, obj1) == prop(p, obj2) }
 
@@ -199,15 +195,16 @@ module Ramdaf.Object {
   { forall k :: k in spec ==> spec[k](prop(k, test)) }
 
   // `R.whereEq(spec, testObj)` (v0.14.0, `@category Object`):
-  // `where(mapObj(eq, spec), testObj)`, every spec property equal (`eq`,
-  // `Object.is`) to the test object's; an absent test property is undefined,
-  // which no spec value here equals. `R.mapObj` is List's, which Object does
-  // not import, so the spec of predicates is written out as a map
-  // comprehension. A spec property whose value is undefined cannot be
+  // `where(mapObj(equals, spec), testObj)` (since v0.15.0; `eq`, `Object.is`,
+  // in v0.14.0), every spec property equal to the test object's; an absent
+  // test property is undefined, which no spec value here equals. `R.mapObj`
+  // is List's, which Object does not import, so the spec of predicates is
+  // written out as a map comprehension, and `R.equals` (Data's, which
+  // imports Object) as `==`. A spec property whose value is undefined cannot be
   // written (README "Outside the modeled domain"), and `mapObj`'s copy drops
   // an own `__proto__` spec property in JS (README "Deviations").
   function whereEq<V(==)>(spec: map<string, V>, test: map<string, V>): bool
-  { where(map k | k in spec :: (x: Option<V>) => x.Some? && eq(spec[k], x.value), test) }
+  { where(map k | k in spec :: (x: Option<V>) => x.Some? && spec[k] == x.value, test) }
 
   // `R.assoc(prop, val, obj)` (v0.8.0): `_assoc`, `for (var p in obj)
   // result[p] = obj[p]; result[prop] = val;` (v0.11.0; until v0.10.0
@@ -220,23 +217,32 @@ module Ramdaf.Object {
   function assoc<V>(p: string, val: V, obj: map<string, V>): map<string, V>
   { obj[p := val] }
 
-  // `obj[name] === val` (since v0.14.0 `_eq(obj[name], val)`, `Object.is`:
-  // README "Deviations" on `-0`)
+  // `obj[name] === val` (in v0.14.0 `_eq(obj[name], val)`, `Object.is`,
+  // since v0.15.0 `R.equals`, deep equality: README "Deviations" on `-0`)
   function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool
   { name in obj && obj[name] == val }
 
-  // `R.evolve(transformations, object)` (v0.9.0): `_extend(_extend({},
-  // object), mapObjIndexed((fn, key) => fn(object[key]), transformations))`,
-  // a copy of object in which every key of transformations is set to its
-  // function applied to `object[key]`, which is undefined (None) when object
-  // lacks the key (Ramda's test "invokes function with undefined if object
-  // does not contain the key"). JS lets a transformation change the value's
-  // type, and since v0.12.0 an `@@transducer/reduced` transformation
-  // (`__transducers_reduced__` until v0.13.0) with a truthy result ends
-  // `mapObjIndexed`'s fold (README "Deviations").
+  // `R.evolve(transformations, object)` (v0.9.0): since v0.15.0 `for (key in
+  // object) { transformation = transformations[key]; result[key] = typeof
+  // transformation === 'function' ? transformation(object[key]) : typeof
+  // transformation === 'object' ? evolve(transformation, object[key]) :
+  // object[key]; }`, a copy of object in which each key that has a
+  // transformation is set to it applied to the value (Ramda's test "does not
+  // invoke function if object does not contain the key": a transformation
+  // for a key the object lacks adds nothing, `evolve({n: add(1)}, {})` is
+  // `{}`). From v0.9.0 to v0.14.0 it was `_extend(_extend({}, object),
+  // mapObjIndexed((fn, key) => fn(object[key]), transformations))`, which
+  // added every key of transformations, calling its function with undefined
+  // (None) when object lacked it (`{n: NaN}`). The transformations keep the
+  // `Option<V> -> V` type and now always get `Some`. A nested transformation
+  // object (Ramda's test "is recursive") and a value that is neither a
+  // function nor an object cannot be written (README "Outside the modeled
+  // domain"). JS lets a transformation change the value's type, and an own
+  // key of object that names an `Object.prototype` member is transformed by
+  // that member (README "Deviations").
   function evolve<V>(transformations: map<string, Option<V> -> V>, obj: map<string, V>): map<string, V>
-    ensures evolve(transformations, obj).Keys == obj.Keys + transformations.Keys
-  { obj + map k | k in transformations :: transformations[k](prop(k, obj)) }
+    ensures evolve(transformations, obj).Keys == obj.Keys
+  { map k | k in obj :: if k in transformations then transformations[k](prop(k, obj)) else obj[k] }
 
   // `R.invert(obj)` (v0.9.0): `if (!has(val, out)) { out[val] = []; }
   // out[val].push(key);` over `keys(obj)` (v0.10.0, "ignore inherited

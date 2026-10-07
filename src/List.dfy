@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.15.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -165,7 +165,9 @@ module Ramdaf.List {
   // a `chain` method is dispatched to. f returns a list here; JS keeps a
   // result that is not array-like (a number, a string) as one element
   // (README "Deviations"). The body concatenates the mapped lists (with
-  // `reduce`, `foldl` until v0.9.1).
+  // `reduce`, `foldl` until v0.9.1). (Since v0.15.0 it is
+  // `_dispatchable('chain', _xchain, _chain)` with `_chain = unnest(map(f,
+  // list))`, the exported `map`: a transformer makes it a transducer.)
   function chain<A, B>(f: A -> seq<B>, list: seq<A>): seq<B>
   { reduce((acc: seq<B>, xs: seq<B>) => acc + xs, [], mapSeq(f, list)) }
 
@@ -282,17 +284,19 @@ module Ramdaf.List {
   { var i := findIndex(x => !fn(x), list);
     if i == -1 then list else list[..i] }
 
-  // `_slice(list, 0, Math.min(n, list.length))` (v0.3.0; v0.1.5 set a
-  // copy's length to that; before, `take(5, [1, 2])` had three undefined
-  // slots): the first n elements, or the whole list. Since v0.8.0 `_slice`
-  // allocates `Math.max(0, to - from)` elements, so a negative n gives []
-  // (`take(-1, [1, 2, 3])`); until v0.7.2 it threw RangeError, and n was a
-  // nat. Since v0.14.0 the body is `_slice(list, 0, n)`, as `_slice` clamps
-  // the end into the list, with the same results.
+  // `slice(0, n < 0 ? Infinity : n, xs)` (v0.15.0, the exported `slice`,
+  // which dispatches to the target's own `slice`): the first n elements, or
+  // the whole list, which a negative n now gives too (`take(-1, [1, 2, 3])`
+  // is `[1, 2, 3]`; Infinity is the end, clamped to the length). From v0.3.0
+  // to v0.14.0 it was `_slice(list, 0, …)` (v0.1.5 set a copy's length to
+  // `Math.min(n, list.length)`; before, `take(5, [1, 2])` had three
+  // undefined slots), and from v0.8.0, where `_slice` allocates
+  // `Math.max(0, to - from)` elements, a negative n gave []; until v0.7.2 it
+  // threw RangeError, and n was a nat.
   function take<T>(n: int, list: seq<T>): seq<T>
-    ensures |take(n, list)| == if n < 0 then 0 else if n <= |list| then n else |list|
+    ensures |take(n, list)| == if n < 0 || n > |list| then |list| else n
     ensures take(n, list) <= list
-  { if n < 0 then [] else if n <= |list| then list[..n] else list }
+  { slice(0, if n < 0 then |list| else n, list) }
 
   // `R.dropWhile(pred, list)` (v0.9.0, in place of `skipUntil`, which
   // skipped until the predicate held): `while (++idx < len &&
@@ -308,9 +312,10 @@ module Ramdaf.List {
 
   // `R.drop` (v0.9.0, which renamed `skip` with the same code; it dispatches
   // to a `drop` method of a non-array where `skip` called `skip`):
-  // `n <= 0 ? list : _slice(list, n)` (v0.14.0, "treat negative number as
-  // zero"): all but the first n elements, the whole list for n <= 0, or []
-  // when n is at least the length (`_slice` copies nothing past the end).
+  // `slice(Math.max(0, n), Infinity, xs)` (v0.15.0, the exported `slice`,
+  // Infinity being the end; v0.14.0's `n <= 0 ? list : _slice(list, n)`, the
+  // same results, "treat negative number as zero"): all but the first n
+  // elements, the whole list for n <= 0, or [] when n is at least the length.
   // From v0.5.0 ("Fix a bug in R.skip") to v0.13.0 the body was
   // `n < list.length ? _slice(list, n) : []`, so a negative n read undefined
   // holes before the start (`drop(-1, [1, 2])` was `[undefined, 1, 2]`) and
@@ -321,7 +326,7 @@ module Ramdaf.List {
     ensures 0 <= n <= |list| ==> drop(n, list) == list[n..]
     ensures n >= |list| ==> drop(n, list) == []
     ensures n <= 0 ==> drop(n, list) == list
-  { if n <= 0 then list else if n < |list| then list[n..] else [] }
+  { slice(if n < 0 then 0 else n, |list|, list) }
 
   // The first element satisfying fn; JS returns undefined when none does.
   function find<T>(fn: T -> bool, list: seq<T>): Option<T>
@@ -385,9 +390,9 @@ module Ramdaf.List {
   function any<T>(fn: T -> bool, list: seq<T>): bool
   { exists i :: 0 <= i < |list| && fn(list[i]) }
 
-  // `_indexOf(list, a) >= 0` (`===` until v0.13.0; since v0.14.0 `_eq`,
-  // `Object.is`, which on Dafny values is `==`; see README on equality and
-  // `-0`; `op`-curried from v0.9.0 to v0.10.0 and `_curry2` since v0.11.0,
+  // `_indexOf(list, a) >= 0` (`===` until v0.13.0, `_eq`, `Object.is`, in
+  // v0.14.0, and since v0.15.0 `R.equals`, deep equality, which on Dafny
+  // values is `==`; see README on `-0`; `op`-curried from v0.9.0 to v0.10.0 and `_curry2` since v0.11.0,
   // which only add the placeholder form `contains(__, list)`).
   function contains<T(==)>(a: T, list: seq<T>): bool { a in list }
 
@@ -400,9 +405,13 @@ module Ramdaf.List {
   // the LAST occurrences): each element at its FIRST occurrence, in list
   // order (`uniq([1, 2, 1, 3, 2]) == [1, 2, 3]`). The body recurses on all
   // but the last element and then decides the last one, which is the loop.
-  // Since v0.14.0 `R.uniq = uniqWith(eq)`, the same loop with `Object.is`
-  // (README "Deviations" on `-0`), with the same results; the body keeps its
-  // own recursion, as `head` and `last` did when v0.8.0 wrote them on `nth`.
+  // In v0.14.0 `R.uniq = uniqWith(eq)`, the same loop with `Object.is`, and
+  // since v0.15.0 a loop that keeps a JS `Set` of the items, which compares
+  // by `SameValueZero` (objects by reference), except that `0`, `-0` and an
+  // object with an `equals` method are looked up with `R.equals`; the
+  // results on Dafny values are the same (README "Deviations" on `-0` and
+  // reference equality), and the body keeps its own recursion, as `head`
+  // and `last` did when v0.8.0 wrote them on `nth`.
   function {:isolate_assertions} uniq<T(==)>(list: seq<T>): seq<T>
     ensures forall i :: 0 <= i < |uniq(list)| ==> uniq(list)[i] in list
     ensures forall i :: 0 <= i < |list| ==> list[i] in uniq(list)
@@ -465,7 +474,7 @@ module Ramdaf.List {
 
   // True exactly when no element occurs twice, which is the body. (v0.2.4
   // checks `indexOf(list, list[i], i + 1) < 0` for every i, since v0.14.0
-  // with `Object.is`; until v0.2.3 it was `uniq(list).length ===
+  // with `Object.is` and since v0.15.0 with `R.equals`; until v0.2.3 it was `uniq(list).length ===
   // list.length`, the same result.)
   function isSet<T(==)>(list: seq<T>): bool
   { forall i, j :: 0 <= i < j < |list| ==> list[i] != list[j] }
@@ -604,8 +613,9 @@ module Ramdaf.List {
     ensures forall i :: 0 <= i < |range(from, to)| ==> range(from, to)[i] == from + i
   { if from >= to then [] else seq(to - from, i => from + i) }
 
-  // `_indexOf(list, obj)`: the first index of obj, or -1 (`===`, since
-  // v0.14.0 `Object.is`: README "Deviations" on `-0`).
+  // `_indexOf(list, obj)`: the first index of obj, or -1 (`===`, in v0.14.0
+  // `Object.is`, since v0.15.0 `R.equals`: README "Deviations" on `-0`;
+  // since v0.15.0 a non-array with an `indexOf` method is dispatched to).
   function indexOf<T(==)>(obj: T, list: seq<T>): int
     ensures -1 <= indexOf(obj, list) < |list|
     ensures indexOf(obj, list) == -1 <==> obj !in list
@@ -617,8 +627,9 @@ module Ramdaf.List {
     else var r := indexOf(obj, list[1..]);
          if r < 0 then -1 else r + 1 }
 
-  // `_lastIndexOf(list, obj)`: the last index of obj, or -1 (`===`, since
-  // v0.14.0 `Object.is`).
+  // `_lastIndexOf(list, obj)`: the last index of obj, or -1 (`===`, in
+  // v0.14.0 `Object.is`, since v0.15.0 `R.equals`, and a non-array's own
+  // `lastIndexOf` is dispatched to).
   function lastIndexOf<T(==)>(obj: T, list: seq<T>): int
     ensures -1 <= lastIndexOf(obj, list) < |list|
     ensures lastIndexOf(obj, list) == -1 <==> obj !in list
@@ -820,10 +831,11 @@ module Ramdaf.List {
     else var r := dropRepeatsWith(pred, list[..|list| - 1]);
          if pred(r[|r| - 1], list[|list| - 1]) then r else r + [list[|list| - 1]] }
 
-  // `R.dropRepeats` (v0.14.0): `dropRepeatsWith(_eq)`, consecutive equal
-  // elements kept once (`dropRepeats([1, 1, 2, 1, 1])` is `[1, 2, 1]`). The
-  // private `_eq` is `Object.is`, which on Dafny values is `==` (README
-  // "Deviations" on `-0` and reference equality).
+  // `R.dropRepeats` (v0.14.0): `dropRepeatsWith(_eq)`, since v0.15.0
+  // `dropRepeatsWith(equals)`, consecutive equal elements kept once
+  // (`dropRepeats([1, 1, 2, 1, 1])` is `[1, 2, 1]`). `Object.is` and, since
+  // v0.15.0, the deep `R.equals` are `==` on Dafny values (README
+  // "Deviations" on `-0`).
   function dropRepeats<T(==)>(list: seq<T>): seq<T>
   { dropRepeatsWith((a: T, b: T) => a == b, list) }
 

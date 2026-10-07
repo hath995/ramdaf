@@ -1,21 +1,25 @@
-// Ramda v0.14.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.15.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
-// countBy.js and sortBy.js (until v0.8.0 test.sql.js, whose copy of the
+// countBy.js, sortBy.js, equals.js and identical.js (until v0.8.0 test.sql.js, whose copy of the
 // groupBy describe v0.9.0 dropped), transcribed. Not transcribed:
-// - the three "does not work for non-primitives" cases (union/intersection/
-//   difference of distinct-but-equal objects): JS `===` compares references,
-//   Dafny `==` structure (README "Deviations"; pinned in tests/edge/data.dfy);
-// - propEq's "has Object.is semantics" (v0.14.0): `-0` and NaN are not ints
-//   (README "Deviations"; pinned in tests/edge/misc.dfy);
+// - the "has R.equals semantics" `it`s (v0.15.0) of union, intersection,
+//   difference and propEq (v0.14.0's "has Object.is semantics" for
+//   propEq): `-0` and NaN are not ints, and their `Just` objects carry an
+//   `equals` method (README "Deviations"; pinned in tests/edge/); v0.15.0
+//   removed the three "does not work for non-primitives" cases (`===`
+//   compared distinct-but-equal objects by reference, which since v0.15.0
+//   only union does, through uniq's `Set`);
 // - describe('sortBy'), which sorts by a string title: sortBy keys are ints
 //   (README "Deviations"); its v0.10.0 "preserves object identity" (reference
 //   identity, by a string key) and "sorts array-like object" (`arguments`,
 //   by a string key) likewise;
-// - eqDeep.js's (v0.9.0) "handles regex", "handles dates", "handles typed
-//   arrays" (no such values), the cyclic `c`/`d` and `e`/`f` lines of
-//   "handles recursive data structures" (a Dafny value cannot contain
-//   itself) and "throws if given no arguments" (until v0.10.0). Its mixed
-//   values are Js.
+// - equals.js's (eqDeep.js's from v0.9.0 to v0.14.0) "handles regex",
+//   "handles dates", "handles typed arrays" (no such values), the cyclic
+//   `c`/`d` and `e`/`f` lines of "handles recursive data structures" (a
+//   Dafny value cannot contain itself), "throws if given no arguments"
+//   (until v0.10.0), and v0.15.0's boxed-primitive `it`s (`new Boolean`,
+//   `new Number`, `new String`) and "dispatches to `equals` method"
+//   (objects with methods). Its mixed values are Js.
 
 module RamdafTests.Ramda.Sql {
   import opened Ramdaf.Prelude
@@ -241,45 +245,84 @@ module RamdafTests.Ramda.Sql {
     expect grouper(Albums()) == GroupedByGenre();
   }
 
-  // ---- eqDeep.js (v0.9.0) ----
+  // ---- equals.js (v0.15.0; eqDeep.js, describe('eqDeep'), from v0.9.0 to
+  // v0.14.0) and identical.js (v0.15.0; eq.js, describe('eq'), until
+  // v0.14.0, with the same asserts) ----
 
-  method {:test} EqDeepTestsForDeepEqualityOfItsOperands() {
+  method {:test} EqualsTestsForDeepEqualityOfItsOperands() {
     var a: seq<int> := [];
     var b := a;
-    expect eqDeep(Num(100), Num(100)) == true;
-    expect eqDeep(Num(100), Str("100")) == false;
+    expect equals(Num(100), Num(100)) == true;
+    expect equals(Num(100), Str("100")) == false;
     var e1: seq<int> := [];
     var e2: seq<int> := [];
-    expect eqDeep(e1, e2) == true;
-    expect eqDeep(a, b) == true;
+    expect equals(e1, e2) == true;
+    expect equals(a, b) == true;
   }
 
-  method {:test} EqDeepHandlesObjects() {
+  method {:test} EqualsConsidersEqualBooleanPrimitivesEqual() {
+    expect equals(true, true) == true;
+    expect equals(false, false) == true;
+    expect equals(true, false) == false;
+    expect equals(false, true) == false;
+  }
+
+  method {:test} EqualsConsidersEqualNumberPrimitivesEqual() {
+    expect equals(0, 0) == true;
+    expect equals(0, 1) == false;
+    expect equals(1, 0) == false;
+  }
+
+  method {:test} EqualsConsidersEqualStringPrimitivesEqual() {
+    expect equals("", "") == true;
+    expect equals("", "x") == false;
+    expect equals("x", "") == false;
+    expect equals("foo", "foo") == true;
+    expect equals("foo", "bar") == false;
+    expect equals("bar", "foo") == false;
+  }
+
+  method {:test} EqualsHandlesObjects() {
     var none: map<string, int> := map[];
-    expect eqDeep(none, none) == true;
-    expect eqDeep(map["a" := 1, "b" := 2], map["a" := 1, "b" := 2]) == true;
-    expect eqDeep(map["a" := 2, "b" := 3], map["b" := 3, "a" := 2]) == true;
-    expect eqDeep(map["a" := 2, "b" := 3], map["a" := 3, "b" := 3]) == false;
-    expect eqDeep(map["a" := 2, "b" := 3, "c" := 1], map["a" := 2, "b" := 3]) == false;
+    expect equals(none, none) == true;
+    expect equals(map["a" := 1, "b" := 2], map["a" := 1, "b" := 2]) == true;
+    expect equals(map["a" := 2, "b" := 3], map["b" := 3, "a" := 2]) == true;
+    expect equals(map["a" := 2, "b" := 3], map["a" := 3, "b" := 3]) == false;
+    expect equals(map["a" := 2, "b" := 3, "c" := 1], map["a" := 2, "b" := 3]) == false;
   }
 
-  method {:test} EqDeepHandlesLists() {
-    expect eqDeep(Arr([]), Obj(map[])) == false;
-    expect eqDeep([1, 2, 3], [1, 3, 2]) == false;
+  method {:test} EqualsHandlesLists() {
+    expect equals(Arr([]), Obj(map[])) == false;
+    expect equals([1, 2, 3], [1, 3, 2]) == false;
   }
 
   // its `nestA`, `nestB` and `nestC` lines
-  method {:test} EqDeepHandlesRecursiveDataStructures() {
+  method {:test} EqualsHandlesRecursiveDataStructures() {
     var nestA := Obj(map["a" := Arr([Num(1), Num(2), Obj(map["c" := Num(1)])]), "b" := Num(1)]);
     var nestB := Obj(map["a" := Arr([Num(1), Num(2), Obj(map["c" := Num(1)])]), "b" := Num(1)]);
     var nestC := Obj(map["a" := Arr([Num(1), Num(2), Obj(map["c" := Num(2)])]), "b" := Num(1)]);
-    expect eqDeep(nestA, nestB) == true;
-    expect eqDeep(nestA, nestC) == false;
+    expect equals(nestA, nestB) == true;
+    expect equals(nestA, nestC) == false;
   }
 
-  method {:test} EqDeepIsCurried() {
+  method {:test} EqualsIsCurried() {
     var a: seq<int> := [];
-    var isA := (x: seq<int>) => eqDeep(a, x);
+    var isA := (x: seq<int>) => equals(a, x);
     expect isA([]) == true;
+  }
+
+  // "has Object.is semantics": its `identical([], [])` (two array objects),
+  // `-0`, NaN and `new Number(0)` lines cannot be written (README
+  // "Deviations"); `null` and `undefined` are the Js values Null and
+  // Undefined. (Its "is curried" compares two arrays by reference.)
+  method {:test} IdenticalHasObjectIsSemantics() {
+    var a: seq<int> := [];
+    var b := a;
+    expect identical(Num(100), Num(100)) == true;
+    expect identical(Num(100), Str("100")) == false;
+    expect identical("string", "string") == true;
+    expect identical(a, b) == true;
+    expect identical(Undefined, Undefined) == true;
+    expect identical(Null, Undefined) == false;
   }
 }

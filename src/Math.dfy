@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.15.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
 // functions with `@category Math` (`inc`, `dec`, `negate`, `mean`,
 // `median`). (v0.5.0 removed
@@ -104,46 +104,61 @@ module Ramdaf.Math {
   // `R.maxBy(keyFn, list)` (v0.8.0 renamed `maxWith` to `maxBy` with the
   // same code, `_curry2(_createMaxMinBy(gt))`; `maxWith` took a key function
   // since v0.2.0, a comparator before; v0.7.0 made it
-  // `curry2(createMaxMinWith(gt))`, the same loop): the running
-  // winner is replaced only when `keyFn(list[idx]) > max`, so the FIRST
-  // element with the greatest key wins. The empty list gives undefined (null
-  // before v0.2.0), here None. Keys are ints (README "Deviations"). The body
-  // recurses on the tail: the tail's winner beats list[0] only when its key
-  // is strictly greater, which picks the same element as the loop.
+  // `curry2(createMaxMinWith(gt))`, the same loop): the running winner is
+  // replaced only when `keyFn(list[idx]) > max`, so the FIRST element with
+  // the greatest key wins. The empty list gives undefined (null before
+  // v0.2.0), here None. Keys are ints (README "Deviations"). Since v0.15.0
+  // (7f7648df, a mechanical `++idx` rewrite) the loop starts from `var idx =
+  // 1; var winner = list[idx];`, so list[0] is never considered: the result
+  // is the first element of `list[1..]` with its greatest key (`maxBy(x =>
+  // x, [9, 1])` is 1, was 9), and a one-element list calls `keyFn(undefined)`
+  // and gives undefined, or throws (`maxBy(prop('x'), [{x: 1}])`), so it is
+  // excluded (README "Outside the modeled domain"). Until v0.14.0 the loop
+  // started at list[0]. The body recurses on the tail, which starts the
+  // same loop one element later: the tail's winner beats list[1] only when
+  // its key is strictly greater.
   function maxBy<T>(keyFn: T -> int, list: seq<T>): Option<T>
+    requires |list| != 1
     ensures maxBy(keyFn, list).None? <==> |list| == 0
-    ensures maxBy(keyFn, list).Some? ==> maxBy(keyFn, list).value in list
+    ensures maxBy(keyFn, list).Some? ==> maxBy(keyFn, list).value in list[1..]
     ensures maxBy(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| ==> keyFn(list[j]) <= keyFn(maxBy(keyFn, list).value)
+      forall j :: 1 <= j < |list| ==> keyFn(list[j]) <= keyFn(maxBy(keyFn, list).value)
     ensures maxBy(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| && keyFn(list[j]) == keyFn(maxBy(keyFn, list).value) &&
-                  (forall i :: 0 <= i < j ==> keyFn(list[i]) < keyFn(list[j]))
+      forall j :: 1 <= j < |list| && keyFn(list[j]) == keyFn(maxBy(keyFn, list).value) &&
+                  (forall i :: 1 <= i < j ==> keyFn(list[i]) < keyFn(list[j]))
                   ==> list[j] == maxBy(keyFn, list).value
   { if |list| == 0 then None
+    else if |list| == 2 then Some(list[1])
     else match maxBy(keyFn, list[1..])
-      case None => Some(list[0])
+      case None => None
       case Some(m) =>
-        assert forall j :: 1 <= j < |list| ==> list[j] == list[1..][j - 1];
-        if keyFn(m) > keyFn(list[0]) then Some(m) else Some(list[0]) }
+        assert forall j :: 2 <= j < |list| ==> list[j] == list[1..][j - 1];
+        assert m in list[1..][1..] && list[1..][1..] == list[2..];
+        if keyFn(m) > keyFn(list[1]) then Some(m) else Some(list[1]) }
 
   // `R.minBy` (v0.8.0, `minWith` renamed, with the same code): as maxBy,
   // replacing the running winner when `keyFn(list[idx]) < min`: the FIRST
-  // element with the least key wins.
+  // element with the least key wins. Since v0.15.0 it skips list[0] and
+  // excludes a one-element list, as maxBy (`minBy(x => x, [-5, 2, 1])` is
+  // 1, was -5).
   function minBy<T>(keyFn: T -> int, list: seq<T>): Option<T>
+    requires |list| != 1
     ensures minBy(keyFn, list).None? <==> |list| == 0
-    ensures minBy(keyFn, list).Some? ==> minBy(keyFn, list).value in list
+    ensures minBy(keyFn, list).Some? ==> minBy(keyFn, list).value in list[1..]
     ensures minBy(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| ==> keyFn(minBy(keyFn, list).value) <= keyFn(list[j])
+      forall j :: 1 <= j < |list| ==> keyFn(minBy(keyFn, list).value) <= keyFn(list[j])
     ensures minBy(keyFn, list).Some? ==>
-      forall j :: 0 <= j < |list| && keyFn(list[j]) == keyFn(minBy(keyFn, list).value) &&
-                  (forall i :: 0 <= i < j ==> keyFn(list[j]) < keyFn(list[i]))
+      forall j :: 1 <= j < |list| && keyFn(list[j]) == keyFn(minBy(keyFn, list).value) &&
+                  (forall i :: 1 <= i < j ==> keyFn(list[j]) < keyFn(list[i]))
                   ==> list[j] == minBy(keyFn, list).value
   { if |list| == 0 then None
+    else if |list| == 2 then Some(list[1])
     else match minBy(keyFn, list[1..])
-      case None => Some(list[0])
+      case None => None
       case Some(m) =>
-        assert forall j :: 1 <= j < |list| ==> list[j] == list[1..][j - 1];
-        if keyFn(m) < keyFn(list[0]) then Some(m) else Some(list[0]) }
+        assert forall j :: 2 <= j < |list| ==> list[j] == list[1..][j - 1];
+        assert m in list[1..][1..] && list[1..][1..] == list[2..];
+        if keyFn(m) < keyFn(list[1]) then Some(m) else Some(list[1]) }
 
   // `R.inc = add(1)` (v0.9.0).
   function inc(n: int): int { add(1, n) }

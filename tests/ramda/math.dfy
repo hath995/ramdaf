@@ -1,4 +1,4 @@
-// Ramda v0.14.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.15.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
 // min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
 // median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real
@@ -248,7 +248,7 @@ module RamdafTests.Ramda.Math {
     expect maxBy(X, empty) == None;
   }
   method {:test} MaxByIsProperlyCurried() {
-    var highestX := (l: seq<map<string, int>>) => maxBy(X, l);
+    var highestX := (l: seq<map<string, int>>) requires |l| != 1 => maxBy(X, l);
     expect highestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(5, 10));
   }
 
@@ -262,7 +262,7 @@ module RamdafTests.Ramda.Math {
     expect minBy(X, empty) == None;
   }
   method {:test} MinByIsProperlyCurried() {
-    var lowestX := (l: seq<map<string, int>>) => minBy(X, l);
+    var lowestX := (l: seq<map<string, int>>) requires |l| != 1 => minBy(X, l);
     expect lowestX([Xy(3, 1), Xy(5, 10), Xy(-2, 0)]) == Some(Xy(-2, 0));
   }
 

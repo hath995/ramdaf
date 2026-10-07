@@ -1,0 +1,16 @@
+{
+  "ramda": "v0.15.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.Object.eq", "kind": "removed", "why": "v0.15.0 removed R.eq; its Object.is is the new R.identical (@category Relation)"},
+    {"symbol": "Ramdaf.Data.eqDeep", "kind": "removed", "why": "v0.15.0 removed R.eqDeep; its deep equality is the new R.equals (@category Relation)"},
+    {"symbol": "Ramdaf.List.take", "kind": "breaking", "why": "v0.15.0's take is slice(0, n < 0 ? Infinity : n, xs): a negative n takes the whole list (take(-1, [1, 2, 3]) went from [] to [1, 2, 3])"},
+    {"symbol": "Ramdaf.Math.maxBy", "kind": "breaking", "why": "v0.15.0's _createMaxMinBy starts from winner = list[1] (7f7648df), so list[0] is never considered (maxBy(x => x, [9, 1]) went from 9 to 1) and a one-element list calls keyFn(undefined), giving undefined or a throw: results change and a new precondition excludes the one-element list"},
+    {"symbol": "Ramdaf.Math.minBy", "kind": "breaking", "why": "as maxBy (v0.15.0's _createMaxMinBy): list[0] is skipped (minBy(x => x, [-5, 2, 1]) went from -5 to 1) and a one-element list is excluded"},
+    {"symbol": "Ramdaf.Object.evolve", "kind": "breaking", "why": "v0.15.0's evolve loops over the object's own keys, so a transformation for a key the object lacks is no longer called with undefined and added (evolve({n: add(1)}, {}) went from {n: NaN} to {}): the result's keys are obj's"},
+    {"symbol": "Ramdaf.List.drop", "kind": "compatible", "why": "v0.15.0's drop is slice(Math.max(0, n), Infinity, xs), calling the exported slice: the revealed body is slice(…) instead of the explicit cases, with the same results"},
+    {"symbol": "Ramdaf.Object.whereEq", "kind": "compatible", "why": "v0.15.0's whereEq maps the spec with equals instead of the removed eq: the revealed body writes the comparison as == instead of calling eq, with the same results"},
+    {"symbol": "Ramdaf.Data.equals", "kind": "added", "why": "new in v0.15.0 (@category Relation): R.equals(a, b), deep equality with Object.is on numbers (eqDeep's successor)"},
+    {"symbol": "Ramdaf.Data.identical", "kind": "added", "why": "new in v0.15.0 (@category Relation): R.identical(a, b), Object.is (eq's successor)"}
+  ]
+}

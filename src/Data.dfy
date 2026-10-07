@@ -1,10 +1,11 @@
-// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.15.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
 // defined in "List Functions" (from v0.2.0 to v0.2.4 an alias of `partition`
 // there) but which stays here (functions do not move between modules); from
-// v0.9.0 on, the functions with `@category Relation` (`eqDeep`).
+// v0.9.0 on, the functions with `@category Relation` (`equals` and
+// `identical`; v0.15.0 removed `eqDeep`, v0.9.0, which `equals` replaces).
 //
 // The set functions are `uniq`/`uniqWith` of a combined or filtered list, as
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
@@ -12,9 +13,11 @@
 // v0.2.3 `uniq` and `uniqWith` kept the last one, and the `*With` functions
 // here carried `uniqWith`'s right-to-left recursion themselves.) Since v0.7.0
 // `difference` and `differenceWith` are their own loops, with the same
-// results. Since v0.14.0 `uniq`, `difference` and `intersection` compare with
-// `Object.is` (`_eq`), which on Dafny values is `==` (README "Deviations" on
-// `-0`).
+// results. In v0.14.0 `uniq`, `difference` and `intersection` compared with
+// `Object.is` (`_eq`), and since v0.15.0 `difference` and `intersection`
+// compare with `R.equals` (deep equality) and `uniq` with a JS `Set` (by
+// reference, but `R.equals` for 0 and -0); on Dafny values each is `==`
+// (README "Deviations" on `-0` and reference equality).
 
 module Ramdaf.Data {
   import opened Prelude
@@ -23,7 +26,7 @@ module Ramdaf.Data {
 
   export
     reveals union, unionWith, difference, differenceWith,
-            intersection, intersectionWith, countBy, groupBy, project, eqDeep
+            intersection, intersectionWith, countBy, groupBy, project, equals, identical
     provides Prelude, List, Object
 
   // `compose(uniq, _concat)` (v0.8.0; `compose(uniq, R.concat)` from v0.2.4
@@ -146,10 +149,22 @@ module Ramdaf.Data {
   function project<V>(names: seq<string>, list: seq<map<string, V>>): seq<map<string, Option<V>>>
   { List.mapSeq((obj: map<string, V>) => Object.pickAll(names, obj), list) }
 
-  // `R.eqDeep(a, b)` (v0.9.0, `@category Relation`): `_eqDeep(a, b, [], [])`,
-  // values of the same `type` that are `eq` or, for arrays and objects, have
-  // the same own keys with deeply equal values (with cycle detection, Date
-  // times and RegExp flags). On Dafny values that is structural equality.
-  // (It inherits `eq`'s `Object.is`: README "Deviations".)
-  function eqDeep<T(==)>(a: T, b: T): bool { a == b }
+  // `R.equals(a, b)` (v0.15.0, `@category Relation`, which replaces
+  // `eqDeep`, v0.9.0 to v0.14.0): `a.equals(b)` or `b.equals(a)` when either
+  // has an `equals` method (Fantasy-land), and otherwise `_equals(a, b, [],
+  // [])`: values of the same `type` that are `identical` or, for arrays and
+  // objects, have the same number of own keys and, for each key of a, a key
+  // of b with a deeply equal value (with cycle detection, Date times, RegExp
+  // flags and boxed primitives compared by value). On Dafny values that is
+  // structural equality. Numbers are compared with `identical`, so `-0`
+  // differs from `0` (README "Deviations").
+  function equals<T(==)>(a: T, b: T): bool { a == b }
+
+  // `R.identical(a, b)` (v0.15.0, `@category Relation`, in place of `eq`,
+  // v0.1.0 to v0.14.0, which was `Object.is` since v0.9.0): `a === b ? a !==
+  // 0 || 1 / a === 1 / b : a !== a && b !== b`, `Object.is`. On ints that is
+  // `==`; JS can make `-0`, which an int does not have, and Dafny equality is
+  // structural where JS compares objects and arrays by reference (README
+  // "Deviations").
+  function identical<T(==)>(a: T, b: T): bool { a == b }
 }

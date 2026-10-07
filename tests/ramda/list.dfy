@@ -1,4 +1,4 @@
-// Ramda v0.14.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.15.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js, find.js,
@@ -54,7 +54,10 @@
 // "Maybe"" (a Fantasy-land functor, README "Deviations"). v0.14.0's "has
 // Object.is semantics" `it`s of contains, indexOf, lastIndexOf and isSet
 // test `-0` and NaN, which an int does not have (README "Deviations",
-// pinned in tests/edge/list.dfy); adjust's and update's "accepts an
+// pinned in tests/edge/list.dfy), and v0.15.0's "has R.equals semantics"
+// `it`s of contains, isSet, uniq and dropRepeats (`-0`, NaN and objects
+// with an `equals` method), chain's transducer, dispatch and arity `it`s,
+// and reduced.js (transducers, README "Not portable"); adjust's and update's "accepts an
 // array-like object" pass an `arguments` object; intersperse's "dispatches"
 // (method dispatch) and the "can act as a transducer" `it`s of dropRepeats
 // and dropRepeatsWith (`into`) are not transcribed either, and the `typeof`
@@ -189,11 +192,35 @@ module RamdafTests.Ramda.List {
     expect empty([1, 2, 3]) == [];
   }
 
-  // describe('chain') (v0.3.0): `dbl` is `map(multiply(2))`.
+  // describe('chain') (v0.3.0; v0.15.0 rewrote chain.js): `times2(x) = [x *
+  // 2]`, `add1(x) = [x + 1]`, `dec(x) = [x - 1]`. (Until v0.14.0 the first
+  // `it` mapped `dbl = map(multiply(2))` over a list of lists.)
+  function Times2(x: int): seq<int> { [x * 2] }
   method {:test} ChainMapsAFunctionOverANestedListAndFlattensTheResult() {
-    var dbl := (l: seq<int>) => mapSeq((x: int) => x * 2, l);
-    expect chain(dbl, [[1, 2, 3], [1], [0, 10, -3, 5, 7]]) == [2, 4, 6, 2, 0, 20, -6, 10, 14];
-    expect chain(dbl, [[1, 2, 3], []]) == [2, 4, 6];
+    expect chain(Times2, [1, 2, 3, 1, 0, 10, -3, 5, 7]) == [2, 4, 6, 2, 0, 20, -6, 10, 14];
+    expect chain(Times2, [1, 2, 3]) == [2, 4, 6];
+  }
+
+  // v0.15.0: `f(xs) = xs[0] ? [xs[0]] : []` over `[[1], [[2], 100], [], [3,
+  // [4]]]`, Js values (`xs[0]` of [] is undefined, falsy)
+  method {:test} ChainDoesNotFlattenRecursively() {
+    var f := (xs: Js) => if xs.Arr? && |xs.items| > 0 && Truthy(xs.items[0]) then [xs.items[0]] else [];
+    expect chain(f, [Arr([Num(1)]), Arr([Arr([Num(2)]), Num(100)]), Arr([]), Arr([Num(3), Arr([Num(4)])])]) ==
+      [Num(1), Arr([Num(2)]), Num(3)];
+  }
+
+  // v0.15.0: `mdec(mdouble([10, 20, 30]))` with `mdouble = R.chain(times2)`,
+  // `mdec = R.chain(dec)`
+  method {:test} ChainComposes() {
+    var mdouble := (l: seq<int>) => chain(Times2, l);
+    var mdec := (l: seq<int>) => chain((x: int) => [x - 1], l);
+    expect mdec(mdouble([10, 20, 30])) == [19, 39, 59];
+  }
+
+  // v0.15.0: `flatInc = R.chain(add1)`
+  method {:test} ChainIsCurried() {
+    var flatInc := (l: seq<int>) => chain((x: int) => [x + 1], l);
+    expect flatInc([1, 2, 3, 4, 5, 6]) == [2, 3, 4, 5, 6, 7];
   }
 
   // describe('init') (v0.9.0)
@@ -274,6 +301,19 @@ module RamdafTests.Ramda.List {
   method {:test} LastIndexOfFindsA() { expect lastIndexOf(Str("a"), Ana()) == 2; }
   method {:test} LastIndexOfDoesNotFindC() { expect lastIndexOf(Str("c"), Ana()) == -1; }
   method {:test} LastIndexOfUsesStrictEquality() { expect lastIndexOf(Str("1"), Ana()) == -1; }
+
+  // v0.15.0 "dispatches to `indexOf` method" and "… `lastIndexOf` method":
+  // their string lines (a JS string's own method, here the seq of
+  // characters); the `List` objects with methods are not lists
+  method {:test} IndexOfDispatchesToIndexOfMethod() {
+    expect indexOf('a', "banana") == 1;
+    expect indexOf('x', "banana") == -1;
+  }
+
+  method {:test} LastIndexOfDispatchesToLastIndexOfMethod() {
+    expect lastIndexOf('a', "banana") == 5;
+    expect lastIndexOf('x', "banana") == -1;
+  }
 
   // v0.5.0: "returns -1 for an empty array" calls `lastIndexOf('x', 2, [])`
   // and `lastIndexOf('x', -5, [])`, three arguments to the binary curried
@@ -367,6 +407,11 @@ module RamdafTests.Ramda.List {
   method {:test} UniqOfTheEmptyArray() {
     var empty: seq<int> := [];
     expect uniq(empty) == [];
+  }
+
+  // v0.15.0: `uniq([undefined, null, undefined, null])`
+  method {:test} UniqHandlesNullAndUndefinedElements() {
+    expect uniq([Undefined, Null, Undefined, Null]) == [Undefined, Null];
   }
 
   // describe('uniqWith') (v0.2.4). The objects' `x` holds `alwaysTrue` or

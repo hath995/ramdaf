@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.14.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.15.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -10,6 +10,7 @@ module RamdafTests.Edge.Misc {
   import opened Ramdaf.String
   import opened Ramdaf.Logic
   import opened Ramdaf.Functions
+  import D = Ramdaf.Data
   import opened Support
 
   method {:test} PickFamilyEdges() {
@@ -27,7 +28,6 @@ module RamdafTests.Edge.Misc {
     expect eqProps("x", map["x" := 1], none) == false;
     expect propEq("nope", 1, map["foo" := 1]) == false;
     expect prop("nope", map["a" := 1]) == None;
-    expect eq(1, 1) == true;
     expect keys(none) == {};
   }
 
@@ -268,19 +268,26 @@ module RamdafTests.Edge.Misc {
   // v0.2.0: maxWith/minWith (since v0.8.0 maxBy/minBy) take a key function,
   // and the running winner is replaced only by a strictly better key, so the
   // first of equals wins (node: `maxBy(k => k % 3, [1, 3, 3, 2])` is 2).
+  // Since v0.15.0 the first element is skipped: node gives [5, 1] and [1, 1]
+  // here, and 3 for `maxBy(x => x % 2, [1, 3, 2])` and 4 for `minBy(x => x %
+  // 2, [2, 4, 1])` (1 and 2 until v0.14.0).
   method {:test} MaxByMinByKeepTheFirstOfEquals() {
     expect maxBy((r: (int, int)) => r.0, [(3, 0), (5, 1), (5, 2), (1, 3)]) == Some((5, 1));
     expect minBy((r: (int, int)) => r.0, [(3, 0), (1, 1), (1, 2)]) == Some((1, 1));
-    expect maxBy((x: int) => x % 2, [1, 3, 2]) == Some(1);
-    expect minBy((x: int) => x % 2, [2, 4, 1]) == Some(2);
+    expect maxBy((x: int) => x % 2, [1, 3, 2]) == Some(3);
+    expect minBy((x: int) => x % 2, [2, 4, 1]) == Some(4);
   }
 
+  // Node (v0.15.0): `maxBy(x => -x, [1, 2, 3])` is 2 (1 until v0.14.0, as
+  // list[0] is skipped), `minBy(x => -x, [1, 2, 3])` 3, `minBy(x => x, [])`
+  // undefined, and `maxBy(x => x, [9, 1])` 1. (`maxBy(x => x, [7])` is
+  // undefined, 7 until v0.14.0, outside the domain.)
   method {:test} MaxByMinByCompareKeys() {
     var empty: seq<int> := [];
-    expect maxBy((x: int) => -x, [1, 2, 3]) == Some(1);
+    expect maxBy((x: int) => -x, [1, 2, 3]) == Some(2);
     expect minBy((x: int) => -x, [1, 2, 3]) == Some(3);
-    expect maxBy((x: int) => x, [7]) == Some(7);
     expect minBy((x: int) => x, empty) == None;
+    expect maxBy((x: int) => x, [9, 1]) == Some(1);
   }
 
   // Since v0.12.0 substring is slice: a negative index counts from the end,
@@ -499,14 +506,17 @@ module RamdafTests.Edge.Misc {
     expect defaultTo(0, prop("a", map["a" := 7])) == 7;
   }
 
-  // evolve (v0.9.0) sets each transformed key to fn(obj[key]), with
-  // undefined (None) for a missing key (node: {a: 2, b: 2}, {a: 1, c: 'U'},
-  // {a: 1}).
+  // evolve (v0.9.0) sets each transformed key to fn(obj[key]); since v0.15.0
+  // only the object's own keys are visited (node: {a: 2, b: 2}, {a: 1}, {a:
+  // 1}; until v0.14.0 the second was {a: 1, c: 'U'}, as a missing key gave
+  // fn(undefined)).
   method {:test} EvolveEdges() {
     var incOr := (v: Option<int>) => if v.Some? then v.value + 1 else -1;
     expect evolve(map["a" := incOr], map["a" := 1, "b" := 2]) == map["a" := 2, "b" := 2];
+    // v0.15.0: a transformation for a key the object lacks adds nothing
+    // (node {a: 1}; until v0.14.0 {a: 1, c: 'U'})
     expect evolve(map["c" := (v: Option<Js>) => if v.None? then Str("U") else v.value], map["a" := Num(1)]) ==
-      map["a" := Num(1), "c" := Str("U")];
+      map["a" := Num(1)];
     var noFns: map<string, Option<int> -> int> := map[];
     expect evolve(noFns, map["a" := 1]) == map["a" := 1];
   }
@@ -560,13 +570,19 @@ module RamdafTests.Edge.Misc {
   // Object.defineProperty). Likewise assoc (v0.8.0): the keys of
   // `assoc('__proto__', 1, {a: 1})` are ['a'], and those of `assoc('a', 2,
   // JSON.parse('{"__proto__": 5, "b": 1}'))` are ['b', 'a']; and since v0.9.0
-  // `invertObj({a: '__proto__', b: 'c'})` is {c: 'b'}, `evolve({a: x => x},
-  // <the JSON object>)` has the keys ['a'], and `evolve({toString: x =>
-  // typeof x}, {})` passes the inherited member (the result is {toString:
-  // 'function'}); and since v0.14.0 `whereEq(<JSON {"__proto__": 1}>, {})`
-  // is true (`mapObj`'s copy of the spec drops the property, so it is not
-  // tested) and the keys of `lensProp('__proto__').set(1, {a: 1})` are ['a']
-  // (`assoc`). A map's keys are all ordinary, and `{}` has no `toString`.
+  // `invertObj({a: '__proto__', b: 'c'})` is {c: 'b'} and `evolve({a: x =>
+  // x}, <the JSON object>)` has the keys ['a']; since v0.14.0
+  // `whereEq(<JSON {"__proto__": 1}>, {})` is true (`mapObj`'s copy of the
+  // spec drops the property, so it is not tested) and the keys of
+  // `lensProp('__proto__').set(1, {a: 1})` are ['a'] (`assoc`); and since
+  // v0.15.0 `pick(['toString'], {})` has the inherited function as its
+  // `toString` (`names[idx] in obj`), and `evolve({a: f}, {toString: 4})` is
+  // {toString: '[object Undefined]'}, as the object's own `toString` key
+  // finds the transformations' inherited `toString` and calls it. (From
+  // v0.9.0 to v0.14.0 `evolve({toString: x => typeof x}, {})` passed the
+  // inherited member to the transformation, {toString: 'function'}; since
+  // v0.15.0 it is {}, as here.) A map's keys are all ordinary, and `{}` has
+  // no `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
@@ -575,20 +591,20 @@ module RamdafTests.Edge.Misc {
     expect dissoc("x", o) == o;
     expect invertObj(map["a" := "__proto__", "b" := "c"]) == map["__proto__" := "a", "c" := "b"];
     expect evolve(map["a" := (v: Option<int>) => if v.Some? then v.value else 0], o) == o;
-    var kind := (v: Option<string>) => if v.None? then "undefined" else "string";
-    var noStrings: map<string, string> := map[];
-    expect evolve(map["toString" := kind], noStrings) == map["toString" := "undefined"];
+    expect evolve(map["a" := (v: Option<int>) => 0], map["toString" := 4]) == map["toString" := 4];
+    expect pick(["toString"], none) == map[];
     expect assoc("__proto__", 1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
     expect assoc("a", 2, map["__proto__" := 5, "b" := 1]) == map["__proto__" := 5, "b" := 1, "a" := 2];
     expect whereEq(map["__proto__" := 1], none) == false;
     expect lensProp("__proto__").set_(1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
   }
 
-  // node: eq([], []) is false (two distinct array objects).
-  method {:test} DeviationEqIsStructural() {
+  // node: identical([], []) is false (two distinct array objects; eq([], [])
+  // until v0.14.0, which v0.15.0 replaced with identical).
+  method {:test} DeviationIdenticalIsStructural() {
     var a: seq<int> := [];
     var b: seq<int> := [];
-    expect eq(a, b) == true;
+    expect D.identical(a, b) == true;
   }
 
   // node: 'STRASSE' and 'Ä'; case conversion is ASCII-only here.
@@ -615,16 +631,17 @@ module RamdafTests.Edge.Misc {
     expect invert(map["a" := "__proto__", "b" := "x"]) == map["__proto__" := {"a"}, "x" := {"b"}];
   }
 
-  // node: eq(negate(0), 0), eq(multiply(-1, 0), 0) and eq(modulo(-4, 2), 0)
-  // are false since v0.9.0 (eq is `Object.is`, and each left side is -0),
-  // and so is eqDeep([negate(0)], [0]); since v0.14.0 so are
-  // `propEq('a', negate(0), {a: 0})`, `eqProps('a', {a: negate(0)}, {a: 0})`
-  // and `whereEq({a: 0}, {a: negate(0)})`, which compare with `Object.is`
-  // too (true until v0.13.0, with `===`). An int has no -0.
-  method {:test} DeviationEqSignedZero() {
-    expect eq(negate(0), 0) == true;
-    expect eq(multiply(-1, 0), 0) == true;
-    expect eq(modulo(-4, 2), 0) == true;
+  // node: identical(negate(0), 0), identical(multiply(-1, 0), 0) and
+  // identical(modulo(-4, 2), 0) are false (`Object.is`; with `eq`, which
+  // v0.15.0 replaced with identical, since v0.9.0), as each left side is -0;
+  // and `propEq('a', negate(0), {a: 0})`, `eqProps('a', {a: negate(0)}, {a:
+  // 0})` and `whereEq({a: 0}, {a: negate(0)})` are false since v0.14.0
+  // (`Object.is`, since v0.15.0 `R.equals`, which compares numbers with
+  // identical; true until v0.13.0, with `===`). An int has no -0.
+  method {:test} DeviationIdenticalSignedZero() {
+    expect D.identical(negate(0), 0) == true;
+    expect D.identical(multiply(-1, 0), 0) == true;
+    expect D.identical(modulo(-4, 2), 0) == true;
     expect propEq("a", negate(0), map["a" := 0]) == true;
     expect eqProps("a", map["a" := negate(0)], map["a" := 0]) == true;
     expect whereEq(map["a" := 0], map["a" := negate(0)]) == true;
@@ -640,21 +657,16 @@ module RamdafTests.Edge.Misc {
     expect anyPass(none)(5) == false;
   }
 
-  // node: evolve({'@@transducer/reduced': x => 1}, {a: 1}) is {a: 1} since
-  // v0.14.0 (with `__transducers_reduced__` from v0.12.0 to v0.13.0):
-  // mapObjIndexed's fold over the transformations meets a truthy
-  // `@@transducer/reduced` and returns its `@@transducer/value`, undefined,
-  // so no transformed key is added. Here the key is ordinary.
-  method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
-    expect evolve(map["@@transducer/reduced" := (v: Option<int>) => 1], map["a" := 1]) ==
-      map["a" := 1, "@@transducer/reduced" := 1];
-  }
-
-  // node: since v0.14.0 `__transducers_reduced__` is an ordinary key, as
-  // here: evolve({__transducers_reduced__: x => 1}, {a: 1}) is {a: 1,
-  // __transducers_reduced__: 1} (v0.12.0 and v0.13.0 gave {a: 1}).
-  method {:test} OldReducedMarkerIsAnOrdinaryKey() {
-    expect evolve(map["__transducers_reduced__" := (v: Option<int>) => 1], map["a" := 1]) ==
-      map["a" := 1, "__transducers_reduced__" := 1];
+  // node: since v0.15.0 evolve loops over the object's own keys instead of
+  // folding the transformations with mapObjIndexed, so neither marker key
+  // ends anything: evolve({'@@transducer/reduced': x => 1}, {a: 1}) and
+  // evolve({__transducers_reduced__: x => 1}, {a: 1}) are {a: 1}, as here
+  // (and the key the object lacks is not added). (This was the pin
+  // DeviationReducedMarkerIsAnOrdinaryKey in v0.12.0 to v0.14.0.)
+  method {:test} EvolveIgnoresTheReducedMarker() {
+    expect evolve(map["@@transducer/reduced" := (v: Option<int>) => 1], map["a" := 1]) == map["a" := 1];
+    expect evolve(map["__transducers_reduced__" := (v: Option<int>) => 1], map["a" := 1]) == map["a" := 1];
+    expect evolve(map["@@transducer/reduced" := (v: Option<int>) => 1], map["@@transducer/reduced" := 0]) ==
+      map["@@transducer/reduced" := 1];
   }
 }

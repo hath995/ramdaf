@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.14.0's own suite does not cover, each checked against
-// dist/ramda.js v0.14.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.15.0's own suite does not cover, each checked against
+// dist/ramda.js v0.15.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -436,9 +436,13 @@ module RamdafTests.Edge.List {
 
   method {:test} TakeDropEdges() {
     var empty: seq<int> := [];
-    expect take(-1, [1, 2, 3]) == [];
+    // v0.15.0: a negative n takes the whole list (`take(-1, [1, 2, 3])` is
+    // [1, 2, 3], `take(-1, 'abc')` 'abc'; [] and [] until v0.14.0), and
+    // `take(2, 'abc')` is the string 'ab'
+    expect take(-1, [1, 2, 3]) == [1, 2, 3];
     expect take(-5, empty) == [];
-    expect take(-1, "abc") == "";
+    expect take(-1, "abc") == "abc";
+    expect take(2, "abc") == "ab";
     expect take(0, [1]) == [];
     expect take(0, [1, 2]) == [];
     expect take(2, [1, 2]) == [1, 2];

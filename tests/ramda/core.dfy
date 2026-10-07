@@ -1,4 +1,4 @@
-// Ramda v0.14.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
+// Ramda v0.15.0 test/isEmpty.js, prepend.js, append.js, concat.js, nth.js,
 // head.js, last.js, tail.js, length.js, sort.js, comparator.js, clone.js,
 // identity.js and isNil.js, transcribed
 // (v0.9.0 splits the suite into one file per function; until v0.8.0 these

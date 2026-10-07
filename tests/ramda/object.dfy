@@ -1,7 +1,7 @@
-// Ramda v0.14.0 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.15.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
-// valuesIn.js, eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
+// valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
 // invertObj.js, dissoc.js, lensOn.js and lensProp.js (v0.9.x mixin.js; until
 // v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
@@ -15,8 +15,13 @@
 // have no equality here) and "matches specs that have undefined properties"
 // (a spec value that is undefined cannot be written, README "Outside the
 // modeled domain"), and the `null` spec of their "is true for an empty
-// spec"; eqProps's "has Object.is semantics" (v0.14.0; `-0` and NaN are
-// not ints, README "Deviations", pinned in tests/edge/misc.dfy) and pluck's "behaves as a transducer…" (v0.14.0;
+// spec"; eqProps's "has Object.is semantics" (v0.14.0; since v0.15.0 "has
+// R.equals semantics", with an object carrying an `equals` method; `-0`
+// and NaN are not ints, README "Deviations", pinned in
+// tests/edge/misc.dfy), evolve's "is recursive" (v0.15.0; a nested
+// transformation object cannot be written, README "Outside the modeled
+// domain"), propOr's "returns the default value when the object is nil"
+// (v0.15.0; null and undefined are not maps) and pluck's "behaves as a transducer…" (v0.14.0;
 // transducers, README "Not portable"); the cases on an object built by a constructor whose prototype has
 // properties (keys's, keysIn's, values's and valuesIn's "does not include"/
 // "includes the given object's prototype properties", propOr's "does not
@@ -51,7 +56,11 @@
 // "returns a function with `set` and `map` properties" and the `typeof`
 // checks of its "is curried" hold by construction: a `LensOn` always has its
 // three fields, applied as `.get()`, `.set_(v)` and `.map_(fn)` (README
-// "Deviations"). v0.14.0 rewrote where.js for specs of predicates: it
+// "Deviations"). v0.15.0 deleted eq.js with `eq` (identical.js, in
+// tests/ramda/sql.dfy, has its asserts), replaced evolve's "invokes function
+// with undefined if object does not contain the key" with "does not invoke
+// function if object does not contain the key", and where.js's `R.eq`
+// with `R.equals`. v0.14.0 rewrote where.js for specs of predicates: it
 // dropped "calls any functions in the spec against the test object value
 // for that property", "is false if the test object is null-ish", "reports
 // true when the object equals the spec" and "matches inherited functions",
@@ -63,6 +72,7 @@ module RamdafTests.Ramda.Object {
   import opened Ramdaf.List
   import opened Ramdaf.Object
   import Funcs = Ramdaf.Functions
+  import D = Ramdaf.Data
   import S = Ramdaf.String
   import opened Support
 
@@ -172,6 +182,13 @@ module RamdafTests.Ramda.Object {
     expect pick(["a", "c", "g"], Abc()) == map["a" := 1, "c" := 3];
   }
 
+  // v0.15.0: "handles numbers as properties", `pick([1], obj)` with `obj`'s
+  // extra `1: 7`; the name is the key "1" here (keys are strings, README
+  // "Deviations").
+  method {:test} PickHandlesNumbersAsProperties() {
+    expect pick(["1"], Abc()["1" := 7]) == map["1" := 7];
+  }
+
   method {:test} PickIsAutomaticallyCurried() {
     var copyAB := (o: map<string, int>) => pick(["a", "b"], o);
     expect copyAB(Abc()) == map["a" := 1, "b" := 2];
@@ -236,10 +253,11 @@ module RamdafTests.Ramda.Object {
   }
 
   // describe('where') (v0.14.0 rewrote where.js: every spec value is a
-  // predicate on the test object's property). `R.eq(a)` is a predicate that
-  // holds for a property equal to a and fails on an absent one (undefined).
+  // predicate on the test object's property). `R.equals(a)` (`R.eq(a)`
+  // until v0.14.0) is a predicate that holds for a property equal to a and
+  // fails on an absent one (undefined).
   function Xy(x: int, y: int): map<string, int> { map["x" := x, "y" := y] }
-  function EqP(a: int): Option<int> -> bool { (v: Option<int>) => v.Some? && eq(a, v.value) }
+  function EqP(a: int): Option<int> -> bool { (v: Option<int>) => v.Some? && D.equals(a, v.value) }
 
   method {:test} WhereReturnsTrueIfTheTestObjectSatisfiesTheSpec() {
     var spec := map["x" := EqP(1), "y" := EqP(2)];
@@ -255,7 +273,7 @@ module RamdafTests.Ramda.Object {
     expect where(spec, map["w" := 1, "x" := 100, "y" := 100, "z" := 100]) == true;
   }
 
-  // "matches specs that have undefined properties": `R.eq(undefined)` holds
+  // "matches specs that have undefined properties": `R.equals(undefined)` holds
   // for undefined (None) only; `{x: undefined}` is the object without x here
   // (README mapping), and `{x: null}` has the Js value Null.
   method {:test} WhereMatchesSpecsThatHaveUndefinedProperties() {
@@ -388,20 +406,6 @@ module RamdafTests.Ramda.Object {
       Obj(map["x" := Num(200), "y" := Num(300)]), Str("D"), Null, Undefined};
   }
 
-  // ---- eq.js (test.tapeq.js's describe('eq') until v0.8.0) ----
-
-  method {:test} EqTestsStrictEquality() {
-    var a: seq<int> := [];
-    var b := a;
-    expect eq(Num(100), Num(100)) == true;
-    expect eq(Num(100), Str("100")) == false;
-    expect eq("string", "string") == true;
-    expect eq(a, b) == true;
-    // v0.9.0
-    expect eq(Undefined, Undefined) == true;
-    expect eq(Null, Undefined) == false;
-  }
-
   // ---- toPairs.js, toPairsIn.js (v0.4.0; in test.zip.js until v0.8.0) ----
 
   method {:test} ToPairsConvertsAnObjectIntoKeyValuePairs() {
@@ -451,7 +455,8 @@ module RamdafTests.Ramda.Object {
   // ---- evolve.js (v0.9.0) ----
 
   // `R.add(k)` over the Js numbers it meets here (`add(1)(undefined)` would
-  // be NaN, which these cases never reach)
+  // be NaN, which these cases never reach; since v0.15.0 evolve calls a
+  // transformation only on a key the object has)
   function AddJs(k: int): Option<Js> -> Js
   { (v: Option<Js>) => if v.Some? && v.value.Num? then Num(v.value.n + k) else Undefined }
 
@@ -463,12 +468,11 @@ module RamdafTests.Ramda.Object {
     expect evolve(transf, Tomato(100, 1400)) == Tomato(101, 1399);
   }
 
-  // `{wow: String}`: `String(undefined)` is 'undefined' (the only value the
-  // transformation meets here)
-  method {:test} EvolveInvokesFunctionWithUndefinedIfObjectDoesNotContainTheKey() {
-    var transf := map["wow" := (v: Option<Js>) => if v.None? then Str("undefined") else v.value];
-    var none: map<string, Js> := map[];
-    expect evolve(transf, none) == map["wow" := Str("undefined")];
+  // v0.15.0 (in place of v0.9.0's "invokes function with undefined if
+  // object does not contain the key"): `{n: add(1), m: add(1)}` on `{m: 3}`
+  method {:test} EvolveDoesNotInvokeFunctionIfObjectDoesNotContainTheKey() {
+    var transf := map["n" := AddJs(1), "m" := AddJs(1)];
+    expect evolve(transf, map["m" := Num(3)]) == map["m" := Num(4)];
   }
 
   // The object is a value, so the check holds trivially.

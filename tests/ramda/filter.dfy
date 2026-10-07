@@ -1,4 +1,4 @@
-// Ramda v0.14.0 test/filter.js, filterIndexed.js, reject.js,
+// Ramda v0.15.0 test/filter.js, filterIndexed.js, reject.js,
 // rejectIndexed.js, takeWhile.js, take.js, dropWhile.js and drop.js (until
 // v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
 // the partially applied function in full). The "should start at the
@@ -8,7 +8,9 @@
 // "dispatches to passed-in non-Array object with a `filter` method" (method
 // dispatch), v0.10.0's reject "dispatches to `filter` method" (likewise)
 // and the "throws on zero arguments" cases (no-argument calls; v0.11.0
-// removed them).
+// removed them); v0.15.0's take and drop "never returns the input array"
+// (reference identity) and the object halves of their "dispatches to
+// `slice` method" (method dispatch).
 // (v0.4.1 removed skip's "should be aliased by `drop`" with `drop`; v0.9.0
 // renamed the filter.idx, reject.idx and skip describes to filterIndexed,
 // rejectIndexed and drop, and replaced skipUntil's with dropWhile's, whose
@@ -153,6 +155,19 @@ module RamdafTests.Ramda.Filter {
     expect take(3, empty) == [];
   }
 
+  // v0.15.0 (until v0.14.0 a negative n gave []); its `take(-Infinity, …)`
+  // line is not an int
+  method {:test} TakeReturnsAnEquivalentListIfNIsBelowZero() {
+    expect take(-1, [1, 2, 3]) == [1, 2, 3];
+  }
+
+  // v0.15.0 "dispatches to `slice` method": its string line (a JS string's
+  // own `slice`; the same seq here); the object with a `slice` method is
+  // not a list
+  method {:test} TakeDispatchesToSliceMethod() {
+    expect take(3, "Ramda") == "Ram";
+  }
+
   method {:test} TakeIsAutomaticallyCurried() {
     var take3 := (l: seq<string>) => take(3, l);
     expect take3(["a", "b", "c", "d", "e", "f", "g"]) == ["a", "b", "c"];
@@ -199,6 +214,11 @@ module RamdafTests.Ramda.Filter {
   method {:test} DropReturnsAnEquivalentListIfNIsAtMostZero() {
     expect drop(0, [1, 2, 3]) == [1, 2, 3];
     expect drop(-1, [1, 2, 3]) == [1, 2, 3];
+  }
+
+  // v0.15.0 "dispatches to `slice` method": its string line
+  method {:test} DropDispatchesToSliceMethod() {
+    expect drop(3, "Ramda") == "da";
   }
 
   method {:test} DropIsAutomaticallyCurried() {

@@ -1,4 +1,4 @@
-// Ramda v0.14.0 test/always.js, T.js, F.js, compose.js, pipe.js,
+// Ramda v0.15.0 test/always.js, T.js, F.js, compose.js, pipe.js,
 // converge.js, flip.js, ap.js, composeL.js and pipeL.js (until v0.8.0 test.always.js,
 // test.compose.js and test.functionBasics.js), transcribed. A call with no
 // arguments is a call with the unit value `()`. Not transcribed: the Date
@@ -22,7 +22,8 @@
 // composeP, pipeP, curry, curryN, op, partial, partialRight, wrap, forEach,
 // forEachIndexed, installTo (until v0.11.0), path, pathOn, pathEq, is, isArrayLike, type,
 // functions, functionsIn, bind, invoker, lift, liftN, nthArg, and v0.9.0's
-// new arity.js and call.js, and v0.14.0's uncurryN.js; test.examplesRunner.js runs the JSDoc examples
+// new arity.js and call.js, v0.14.0's uncurryN.js and v0.15.0's
+// addIndex.js; test/helpers/test.examplesRunner.js (test/ until v0.14.0) runs the JSDoc examples
 // through `dox` and is not a hand-written suite. (v0.1.3 moved test.lazy.js
 // out of test/, v0.4.1 removed test.always.js's "should be aliased by
 // `constant`" with `constant`, and v0.9.0 removed alwaysZero's describe with
@@ -34,7 +35,8 @@
 // internal/_curry2.js and internal/_curry3.js; v0.12.0 removed installTo.js
 // with the function and added the unportable invoke.js, into.js and
 // transduce.js; v0.13.0 added isNaN.js and retitled the "is automatically
-// curried" `it`s "is curried"; v0.14.0 removed func.js with the function.)
+// curried" `it`s "is curried"; v0.14.0 removed func.js with the function;
+// v0.15.0 removed isNaN.js with the function.)
 
 module RamdafTests.Ramda.Functions {
   import opened Ramdaf.Prelude
