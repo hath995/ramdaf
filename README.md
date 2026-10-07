@@ -262,7 +262,7 @@ prototypes, string-keyed `sortBy`, and the unportable functions' files
 | v0.4.0 | 2014-08-28 | ported | — |
 | v0.4.1 | 2014-08-31 | ported | — |
 | v0.4.2 | 2014-09-01 | ported | — |
-| v0.4.3 | 2014-09-01 | pending | — |
+| v0.4.3 | 2014-09-01 | ported | — |
 | v0.5.0 | 2014-09-16 | pending | — |
 | v0.6.0 | 2014-10-04 | pending | — |
 | v0.7.0 | 2014-10-22 | pending | — |
@@ -915,6 +915,16 @@ prototypes, string-keyed `sortBy`, and the unportable functions' files
 - **Expected tier: major.** `fork` was removed (`converge` added);
   `findLast`, `findLastIndex` and `mathMod` changed results, and `mathMod`'s
   precondition moved to the modulus (`casestudy/expected/v0.4.2.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.4.3 (2014-09-01)
+
+- **Ramda:** packaging only. The README's CDN links, `bower.json` and
+  `package.json` move to 0.4.3; `ramda.js` (whose header still says 0.4.2)
+  and `test/` are byte-identical to v0.4.2.
+- **Ramdaf:** no source or test change; this entry and the manifest only.
+- **Expected tier: patch.** Nothing changed (`casestudy/expected/v0.4.3.json`,
+  with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
