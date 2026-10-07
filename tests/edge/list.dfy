@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.26.0's own suite does not cover, each checked against
-// dist/ramda.js v0.26.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.26.1's own suite does not cover, each checked against
+// dist/ramda.js v0.26.1 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -895,5 +895,26 @@ module RamdafTests.Edge.List {
     expect includes(2, [3, 1]) == false;
     expect includes(1, none) == false;
     expect includes([1], [[2], [1]]) == true;
+  }
+
+  // move (v0.26.1): the element at from goes to to in the rest, and an index
+  // outside the list leaves it (node: [2, 3, 1], [3, 1, 2], [3, 1, 2],
+  // [1, 2, 3], [1, 2, 3], [], [1, 2, 3]).
+  method {:test} MoveEdges() {
+    var none: seq<int> := [];
+    expect move(0, 2, [1, 2, 3]) == [2, 3, 1];
+    expect move(2, 0, [1, 2, 3]) == [3, 1, 2];
+    expect move(-1, -3, [1, 2, 3]) == [3, 1, 2];
+    expect move(1, 1, [1, 2, 3]) == [1, 2, 3];
+    expect move(3, 0, [1, 2, 3]) == [1, 2, 3];
+    expect move(0, 0, none) == [];
+    expect move(0, 3, [1, 2, 3]) == [1, 2, 3];
+  }
+
+  // node: `move(0, 1, 'abc')` throws `TypeError: result.splice is not a
+  // function` (v0.26.1), as a JS string has no `splice`; here a string is a
+  // seq of characters, and they are moved (README "Deviations").
+  method {:test} DeviationMoveOnAString() {
+    expect move(0, 1, "abc") == "bac";
   }
 }

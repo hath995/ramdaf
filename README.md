@@ -100,7 +100,9 @@ For each Ramda tag, in order:
     why.
   - `tests/edge/*.dfy` adds cases Ramda's suite misses. Their expected values
     are node's output for that release (ground truth: `node -e` with the
-    tag's `ramda.js`, or from v0.9.0 its `dist/ramda.js`).
+    tag's `ramda.js`, or from v0.9.0 its `dist/ramda.js`; the committed
+    `dist/ramda.js` of v0.26.1 and v0.27.0 is v0.26.0's, so for those tags
+    the ES modules of `source/` are converted to CommonJS and required).
 - **Verification.**
   - `src/*.dfy` verifies with zero warnings, because `lem publish` aborts on
     warnings in the package's own source.
@@ -128,13 +130,13 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0 and `{'@@functional/placeholder': true}` since v0.15.0, which also curries `concat` and `contains` this way, and since v0.10.0 `merge`) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) Since v0.11.0 `op` is gone and every curried function takes the placeholder in any position: `f(R.__, b)` is still `x => f(x, b)`, while `f(R.__)` is `f` itself, so `subtract(R.__)(5)` is `x => 5 - x` (from v0.6.0 to v0.10.0 `op` made it `x => x - 5`). |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type. (Since v0.11.0 a curried Ramda function called with no arguments returns itself, `identity()` is `identity`; the functions Ramda returns, such as `always(7)`, `T` and `cond(…)`'s result, are not curried, and they are the ones called this way.) |
 
-## Modules and exports (v0.26.0)
+## Modules and exports (v0.26.1)
 
 | Module | Exports |
 |---|---|
 | `Ramdaf.Core` | clone, isEmpty, prepend, nth, head, last, tail, append, concat, identity, times, length, isNil |
 | `Ramdaf.Functions` | compose, pipe, flip, converge, always, T, F, composeK, pipeK, juxt, applySpec, o, applyTo, thunkify, pipeWith, composeWith |
-| `Ramdaf.List` | reduce, reduceRight, unfold, mapSeq (`map`), mapObjIndexed, filter, reject, takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex, all, any, contains, uniq, uniqWith, pluck, flatten, zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice, remove, insert, insertAll, partition, ap, of, empty, chain, unnest, zipObj, fromPairs, scan, repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none, adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex, dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose, without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes |
+| `Ramdaf.List` | reduce, reduceRight, unfold, mapSeq (`map`), mapObjIndexed, filter, reject, takeWhile, take, dropWhile, drop, find, findIndex, findLast, findLastIndex, all, any, contains, uniq, uniqWith, pluck, flatten, zipWith, zip, lens, xprod, reverse, range, indexOf, lastIndexOf, join, slice, remove, insert, insertAll, partition, ap, of, empty, chain, unnest, zipObj, fromPairs, scan, repeat, init, mapAccum, mapAccumRight, mergeAll, aperture, none, adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex, dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy, pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose, without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes, move |
 | `Ramdaf.Sort` | comparator, ascend, descend, sortWith; sort and sortBy by contract (`provides`) |
 | `Ramdaf.Object` | prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn, values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where, assoc, propEq, evolve, invert, invertObj, dissoc, lensProp, whereEq, view, over, set_ (`set`), objOf, mergeWith, mergeWithKey, mergeLeft, mergeRight |
 | `Ramdaf.Logic` | and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo, propSatisfies, when, unless, until |
@@ -142,7 +144,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | toUpper, toLower, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, countBy, groupBy, project, equals, identical, eqBy, symmetricDifference, symmetricDifferenceWith, clamp, innerJoin |
 
-That is 202 of Ramda v0.26.0's 254 export names (since v0.9.0 Ramda has no
+That is 203 of Ramda v0.26.1's 255 export names (since v0.9.0 Ramda has no
 functions stored as properties of exports). The other 52 names are listed
 under "Not portable".
 
@@ -169,7 +171,7 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.26.0 does not export the helpers `_makeFlat`, `_checkForMethod` and
+Ramda v0.26.1 does not export the helpers `_makeFlat`, `_checkForMethod` and
 `_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
@@ -225,7 +227,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.26.0 exports are not ported, rather than faked:
+These Ramda v0.26.1 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -253,7 +255,7 @@ These Ramda v0.26.0 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.26.0 (node) | Ramdaf |
+| Function | Ramda v0.26.1 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`, and since v0.16.0 `head('')` and `last('')` → `''`, not a character; `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `repeat` (`repeatN` until v0.8.0), `times` | `new Array(n)` throws `RangeError` for a negative n: `repeat(7, -2)` (since v0.2.0; it was `[]`), `times(f, -1)` (v0.2.3; since v0.19.1 `times` throws its own `RangeError: n must be a non-negative number`, for NaN too) | `n: nat` |
@@ -279,7 +281,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.26.0 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.26.1 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `identical` (`eq` until v0.14.0 and in v0.15.1) | `identical` (`Object.is`) compares arrays and objects by reference: `identical([], [])` → `false`. (Until v0.14.0 `===` or `Object.is` also made `contains`, `indexOf`, `lastIndexOf`, `isSet`, `uniq`, `union`, `intersection`, `difference`, `propEq`, `eqProps`, `whereEq` (v0.14.0; `where`'s value entries before) and `dropRepeats` (v0.14.0) compare by reference: for `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(Ro, So).length` → `0` and `difference(…)` → `4`. Since v0.15.0 they compare with `R.equals`, deep equality, as here, except that in v0.15.0 alone `uniq` kept a JS `Set`, which compares by reference (unless an object has an `equals` method), so `uniq([{a: 1}, {a: 1}])` kept both and `union(Ro, So).length` was still `8`; v0.15.1 makes `uniq` `uniqWith(equals)` again.) | Structural `==`: `true` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets | A `map` has no key order. |
@@ -313,6 +315,7 @@ a signature (an arity or an operand type) is enforced by the types.
 | `mapSeq` (`map`), `ap`, `chain`, `complement`, `filter`, `reject`, `both` and `either` (in v0.18.0, and since v0.20.0), `partition` (v0.20.0) | since v0.18.0 they take other functors: `map` maps an object's values (`map(dec, {x: 4, y: 5})` → `{x: 3, y: 4}`, which `mapObj` does) and composes with a function (`map(f, g)(10)` is `f(g(10))`); `ap` and `chain` take functions, the reader applicative and monad (`ap(f, g)(x)` is `f(x)(g(x))`, `chain(f, g)(x)` is `f(g(x))(x)` (since v0.23.0; `g(f(x))(x)` before)); and `both`, `either` and `complement` are `lift(and)`, `lift(or)` and `lift(not)`, so they combine any applicative's values (`both([true, false], [true])` → `[true, false]`, `complement([true, false])` → `[false, true]`; v0.19.0 makes `both` and `either` function combinators again, and since v0.20.0 they are again `lift(and)` and `lift(or)` when the first argument is not a function); and since v0.19.0 `filter` and `reject` take an object, giving its own properties that pass (`filter(x => x > 1, {a: 1, b: 2})` → `{b: 2}`), and so, since v0.20.0, does `partition`, `juxt([filter, reject])` (`partition(x => x % 2, {a: 0, b: 1})` → `[{b: 1}, {a: 0}]`) | `mapSeq`, `filter`, `reject` and `partition` take a list, `ap` and `chain` take lists, and `both`, `either` and `complement` take `T -> bool` predicates | Typed: one Dafny signature per function. |
 | `sort`, `sortBy` | `Array.prototype.sort` puts `undefined` elements last without calling the comparator: `sortBy(x => x === undefined ? -1 : x, [1, undefined, 0])` → `[0, 1, undefined]` (since v0.9.1, which sorts the elements rather than key/value pairs, and still since v0.10.0's `_slice` copy; v0.9.0 gave `[undefined, 0, 1]`), and `sort` with the same key comparison → `[0, 1, undefined]` (always, and since v0.14.0 on a `_slice` copy too; an omission of the earlier ports) | `Undefined` is ordered like any other element: `[Undefined, Num(0), Num(1)]` with the key -1 | A generic `T` has no `undefined` to single out. |
 | `sort` | an inconsistent comparator gives an engine-defined order: `sort(() => -1, [1, 2, 3])` → `[3, 2, 1]` | The postconditions say nothing for inconsistent comparators; the implementation (stable insertion sort) gives `[1, 2, 3]`. | ECMAScript leaves it unspecified. |
+| `move` | (v0.26.1) copies the list with `slice` and takes the element out with `splice`, which a JS string lacks: `move(0, 1, 'abc')` throws `TypeError: result.splice is not a function` | a string is a `seq<char>`, and its characters are moved: `move(0, 1, "abc") == "bac"` | A Dafny `string` is a `seq<char>`; a generic seq cannot tell a string apart. |
 | string functions | count UTF-16 code units: `"😀".length` → `2`, `split('', "😀")` → two halves of a surrogate pair, and since v0.18.0 `reverse("a😀")` reverses the code units into an ill-formed string (`nthCharCode(0, "😀")` → `55357` until v0.18.0 removed `nthCharCode`, and `charCodeAt` until v0.14.0) | count code points: `1`, `["😀"]`, `"😀a"` | A Dafny `string` is a sequence of Unicode scalar values. |
 | `toUpper`, `toLower` (`toUpperCase`, `toLowerCase` until v0.8.0) | full Unicode case mapping: `toUpper("straße")` → `"STRASSE"`, `toUpper("ä")` → `"Ä"` | ASCII letters only: `"STRAßE"`, `"ä"` | Unicode case tables are out of scope. |
 
@@ -333,7 +336,7 @@ also lists what it skips: arity checks, side-effect counting, calls with no
 arguments, `null` or `undefined` in place of a list, JS coercion, reference
 equality, method dispatch on non-array objects, array-like objects,
 prototypes, string-keyed `sortBy`, and the unportable functions' files
-(v0.26.0: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
+(v0.26.1: `addIndex.js`, `binary.js`, `bind.js`, `call.js`, `composeK.js`, `construct.js`,
 `constructN.js`, `curry.js`, `curryN.js`, `forEach.js`,
 `into.js`, `lensPath.js`, `pathSatisfies.js`,
 `invoker.js`, `is.js`, `lift.js`, `liftN.js`, `pipeK.js`, `propIs.js`,
@@ -416,7 +419,7 @@ and is not transcribed.
 | v0.24.1 | 2017-06-01 | ported | — |
 | v0.25.0 | 2017-10-09 | ported | — |
 | v0.26.0 | 2018-11-17 | ported | — |
-| v0.26.1 | 2018-11-27 | pending | — |
+| v0.26.1 | 2018-11-27 | ported | — |
 | v0.27.0 | 2019-05-25 | pending | — |
 | v0.27.1 | 2020-07-30 | pending | — |
 | v0.27.2 | 2022-01-11 | pending | — |
@@ -2778,6 +2781,28 @@ and is not transcribed.
 - **Expected tier: major.** `adjust` and `mapAccumRight` changed signature;
   `update`, `lensIndex`, `none`, `T` and `F` have rewritten revealed bodies;
   six symbols were added (`casestudy/expected/v0.26.0.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.26.1 (2018-11-27)
+
+- **Ramda** (every `source/` module compared in normalised form, the
+  `test/` diff, behaviour checked in node with a differential run of the
+  ported exports; the committed `dist/ramda.js` is still v0.26.0's, so the
+  checks run on `source/` converted to CommonJS):
+  - New: `move(from, to, list)` (`@category List`), the element at from
+    moved to to, a negative index counting from the end; an index outside
+    the list gives the list itself (`move(0, 1, ['a', 'b', 'c'])` →
+    `['b', 'a', 'c']`); a JS string throws, as it has no `splice`.
+  - Not visible in this encoding: `none`, `then`, `otherwise`, `pipeWith`
+    and `thunkify` use `var` for `const`; JSDoc fixes.
+- **Ramdaf:**
+  - Added `move` (List).
+  - Deviations: a new row for `move` on a string (pinned).
+  - The README's test convention notes the stale `dist/ramda.js`; the
+    headers cite v0.26.1.
+  - Tests: move.js; new edges and the pin `DeviationMoveOnAString`.
+- **Expected tier: patch.** `move` was added
+  (`casestudy/expected/v0.26.1.json`).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain

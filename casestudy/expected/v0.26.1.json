@@ -1,0 +1,7 @@
+{
+  "ramda": "v0.26.1",
+  "tier": "patch",
+  "changes": [
+    {"symbol": "Ramdaf.List.move", "kind": "added", "why": "new in v0.26.1 (@category List): the element at from moved to to, the list itself when an index is outside it"}
+  ]
+}

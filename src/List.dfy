@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.26.0 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.26.1 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -7,7 +7,8 @@
 // `dropLastWhile`, `takeLast`, `takeLastWhile`, `splitEvery`, `uniqBy`,
 // `pair`, `indexBy`, `sequence`, `traverse`, `splitAt`,
 // `splitWhen`, `transpose`, `without`, `reduceBy`, `groupWith`, `reduceWhile`,
-// `startsWith`, `endsWith`, `includes` and the renamed functions below; since v0.16.0 the
+// `startsWith`, `endsWith`, `includes`, `move` and the renamed functions
+// below; since v0.16.0 the
 // JSDoc of `lens` and `lensIndex` says `@category Object`, and functions do
 // not move). (v0.4.1
 // removed the aliases `drop`, `nth`, `flatMap`, `flattenDeep` and
@@ -46,7 +47,7 @@ module Ramdaf.List {
             adjust, update, intersperse, dropRepeats, dropRepeatsWith, lensIndex,
             dropLast, dropLastWhile, takeLast, takeLastWhile, splitEvery, uniqBy,
             pair, indexBy, sequence, traverse, splitAt, splitWhen, transpose,
-            without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes
+            without, reduceBy, groupWith, reduceWhile, startsWith, endsWith, includes, move
     provides Prelude
 
   // `_curry3(_reduce)` (`src/reduce.js`), `acc = fn(acc, list[idx])` for idx
@@ -1088,4 +1089,21 @@ module Ramdaf.List {
   // string's own `indexOf` finds a substring (`includes('ba', 'banana')` is
   // true); here a string's element is a character (README "Deviations").
   function includes<T(==)>(a: T, list: seq<T>): bool { a in list }
+
+  // `R.move(from, to, list)` (v0.26.1, `@category List`): `result =
+  // list.slice()`, a negative index counting from the end (`length +
+  // from`), `item = result.splice(positiveFrom, 1)`, and then the list
+  // itself when either index is outside it, and otherwise
+  // `[].concat(result.slice(0, positiveTo)).concat(item)
+  // .concat(result.slice(positiveTo, list.length))`: the element at from
+  // taken out and put back at to (`move(0, 1, ['a', 'b', 'c'])` is `['b',
+  // 'a', 'c']`, `move(-1, 0, [1, 2, 3])` is `[3, 1, 2]`). A JS string has no
+  // `splice`, so `move(0, 1, 'abc')` throws TypeError; here a string is a
+  // seq of characters, which are moved (README "Deviations").
+  function move<T>(from: int, to: int, list: seq<T>): seq<T>
+  { var f := if from < 0 then |list| + from else from;
+    var t := if to < 0 then |list| + to else to;
+    if f < 0 || f >= |list| || t < 0 || t >= |list| then list
+    else var rest := list[..f] + list[f + 1..];
+         rest[..t] + [list[f]] + rest[t..] }
 }

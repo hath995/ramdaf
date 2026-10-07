@@ -1,4 +1,4 @@
-// Ramda v0.26.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.26.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -9,7 +9,7 @@
 // intersperse.js, dropRepeats.js, dropRepeatsWith.js, splitEvery.js,
 // uniqBy.js, pair.js, indexBy.js, sequence.js, traverse.js, splitAt.js,
 // splitWhen.js, transpose.js, without.js, lensIndex.js, reduceBy.js,
-// groupWith.js, reduceWhile.js, startsWith.js and endsWith.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// groupWith.js, reduceWhile.js, startsWith.js, endsWith.js and move.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -1341,5 +1341,25 @@ module RamdafTests.Ramda.List {
 
   method {:test} EndsWithShouldReturnFalseWhenAnArrayDoesNotEndWithTheProvidedValues() {
     expect endsWith(["a", "b"], ["a", "b", "c"]) == false;
+  }
+
+  // ---- move.js (v0.26.1): `list = ['a', 'b', 'c', 'd', 'e', 'f']` ----
+
+  method {:test} MoveMovesAnElementFromAnIndexToAnother() {
+    var list := ["a", "b", "c", "d", "e", "f"];
+    expect move(0, 1, list) == ["b", "a", "c", "d", "e", "f"];
+    expect move(2, 1, list) == ["a", "c", "b", "d", "e", "f"];
+    expect move(-1, 0, list) == ["f", "a", "b", "c", "d", "e"];
+    expect move(0, -1, list) == ["b", "c", "d", "e", "f", "a"];
+  }
+
+  method {:test} MoveDoesNothingWhenIndexesAreOutsideTheListOutbounds() {
+    var list := ["a", "b", "c", "d", "e", "f"];
+    expect move(-20, 2, list) == list;
+    expect move(20, 2, list) == list;
+    expect move(2, 20, list) == list;
+    expect move(2, -20, list) == list;
+    expect move(20, 20, list) == list;
+    expect move(-20, -20, list) == list;
   }
 }
