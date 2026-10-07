@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Data Analysis and Grouping Functions" section, except
 // `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the unportable
 // `functions`/`functionsIn`, plus `groupBy`, which from v0.3.0 to v0.8.0 was
@@ -107,9 +107,14 @@ module Ramdaf.Data {
     assert forall i :: 0 <= i < |r| ==> r[i] in results;
     r }
 
-  // For each key fn produces, how many elements produce it. In JS a key that
-  // names an `Object.prototype` member (`__proto__`, `hasOwnProperty`) is not
-  // an ordinary property; here every key is (README "Deviations").
+  // `var key = fn(list[idx]); counts[key] = (has(key, counts) ? counts[key] :
+  // 0) + 1;` for idx ascending (v0.9.1, "ignore inherited properties in
+  // R.countBy"): for each key fn produces, how many elements produce it.
+  // Until v0.9.0 `counts[key] || 0` read an inherited `Object.prototype`
+  // member, so `countBy(x => 'toString', [1, 2])` was `{toString: 'function
+  // toString() { [native code] }11'}`; node now gives 2, as the port always
+  // did. A `__proto__` key is still not an ordinary property in JS (the count
+  // is dropped); here every key is (README "Deviations").
   function countBy<T>(fn: T -> string, list: seq<T>): map<string, nat>
   { var keys := set i | 0 <= i < |list| :: fn(list[i]);
     map k | k in keys :: |List.filter(x => fn(x) == k, list)| }

@@ -1,10 +1,12 @@
-// Ramdaf: Ramda v0.9.0 `src/comparator.js`, `src/sort.js` and
+// Ramdaf: Ramda v0.9.1 `src/comparator.js`, `src/sort.js` and
 // `src/sortBy.js`.
 //
 // `sort` is `clone(list).sort(comparator)`, i.e. JS Array.prototype.sort, which
 // is stable (ES2019; node is the reference). (Since v0.9.0 `clone` is a deep
 // copy, so the elements are copies, and it returns a JS string as it is,
-// which has no `sort` method: `sort(cmp, 'cab')` throws, README
+// which has no `sort` method: `sort(cmp, 'cab')` throws, and an element
+// object loses an own `__proto__` key. `Array.prototype.sort` has always put
+// `undefined` elements last without calling the comparator. README
 // "Deviations".) For a comparator that is
 // consistent on the list's elements the postconditions determine the result
 // completely: the stable sorted permutation. JS leaves the order unspecified
@@ -40,8 +42,13 @@ module Ramdaf.Sort {
   { SortCorrect(cmp, list);
     insertionSort(cmp, list) }
 
-  // `pluck("val", keyValue(fn, list).sort(comparator(function(a, b) {return a.key < b.key;})))`:
-  // a stable sort by key. The keys are ints (see README "Deviations").
+  // `clone(list).sort(function(a, b) { var aa = fn(a); var bb = fn(b); return
+  // aa < bb ? -1 : aa > bb ? 1 : 0; })` (v0.9.1; until v0.9.0 the list's
+  // `{key, val}` pairs were sorted by key and the values plucked): a stable
+  // sort by key. Since v0.9.1 node sorts a deep copy of the elements
+  // themselves, so a JS string throws, `undefined` elements go last, and an
+  // element object loses an own `__proto__` key (README "Deviations"). The
+  // keys are ints (see README "Deviations").
   function sortBy<T>(fn: T -> int, list: seq<T>): seq<T>
     ensures |sortBy(fn, list)| == |list|
     ensures multiset(sortBy(fn, list)) == multiset(list)

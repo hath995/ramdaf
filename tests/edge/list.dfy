@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.9.0's own suite does not cover, each checked against
-// dist/ramda.js v0.9.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.9.1's own suite does not cover, each checked against
+// dist/ramda.js v0.9.1 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {

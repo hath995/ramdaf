@@ -1,4 +1,4 @@
-// Ramda v0.9.0 test/substring.js, substringFrom.js, substringTo.js,
+// Ramda v0.9.1 test/substring.js, substringFrom.js, substringTo.js,
 // charAt.js, charCodeAt.js, strIndexOf.js, strLastIndexOf.js, toUpper.js,
 // toLower.js, trim.js, split.js and replace.js (until v0.8.0
 // test.stringBasics.js and test.replace.js), transcribed. Not transcribed:

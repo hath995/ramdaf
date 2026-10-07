@@ -1,4 +1,4 @@
-// Ramda v0.9.0 test/filter.js, filterIndexed.js, reject.js,
+// Ramda v0.9.1 test/filter.js, filterIndexed.js, reject.js,
 // rejectIndexed.js, takeWhile.js, take.js, dropWhile.js and drop.js (until
 // v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
 // the partially applied function in full). The "should start at the

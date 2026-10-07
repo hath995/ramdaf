@@ -1,4 +1,4 @@
-// Ramda v0.9.0 test/foldl.js, foldr.js, foldlIndexed.js and foldrIndexed.js
+// Ramda v0.9.1 test/foldl.js, foldr.js, foldlIndexed.js and foldrIndexed.js
 // (until v0.8.0 test.fold.js), transcribed. Not transcribed: the "should
 // correctly report the arity of curried versions" cases (Dafny functions have
 // no arity) and the "throws on zero arguments" cases (v0.5.0; no-argument

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`).
 // A JS object is a map<string, V>; a missing property is JS undefined, here

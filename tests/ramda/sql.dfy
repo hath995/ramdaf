@@ -1,4 +1,4 @@
-// Ramda v0.9.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.9.1 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js and sortBy.js (until v0.8.0 test.sql.js, whose copy of the
 // groupBy describe v0.9.0 dropped), transcribed. Not transcribed:
@@ -190,6 +190,16 @@ module RamdafTests.Ramda.Sql {
     var counter := (l: seq<map<string, string>>) => countBy(Genre, l);
     expect counter(Albums()) == map["Baroque" := 2, "Rock" := 2, "Jazz" := 2, "Romantic" := 1,
       "Metal" := 1, "Modern" := 1, "Broadway" := 1, "Folk" := 1, "Classical" := 1];
+  }
+
+  // v0.9.1: "ignores inherited properties" (`countBy(R.identity, ['abc',
+  // 'toString'])`; until v0.9.0 node counted on from the inherited
+  // `toString`)
+  method {:test} CountByIgnoresInheritedProperties() {
+    var result := countBy((s: string) => s, ["abc", "toString"]);
+    expect "abc" in result && "toString" in result;
+    expect result["abc"] == 1;
+    expect result["toString"] == 1;
   }
 
   // describe('groupBy')

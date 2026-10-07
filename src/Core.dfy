@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Core Functions" section (`isEmpty`, `prepend`,
 // `prependTo`, `nth`, `head`, `last`, `tail`, `append`, `appendTo`,
 // `concat`, `identity`, `I`, `times`), `clone` and `length`; and, from

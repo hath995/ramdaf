@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.9.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.9.1 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic`. (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with
 // the alias `if`, and reused the name `cond` for a new function; v0.9.0

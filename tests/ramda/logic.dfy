@@ -1,4 +1,4 @@
-// Ramda v0.9.0 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
+// Ramda v0.9.1 test/and.js, or.js, not.js, allPass.js, anyPass.js, all.js,
 // any.js, ifElse.js and cond.js (until v0.8.0 test.booleans.js,
 // test.allany.js and test.cond.js), transcribed.
 // Not transcribed: the short-circuit cases ("does not evaluate the second

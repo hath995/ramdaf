@@ -126,7 +126,7 @@ For each Ramda tag, in order:
 | multi-argument function, auto-curried | an **uncurried** Dafny function with the same parameter order. Dafny cannot partially apply a function, so `f(a)` becomes `x => f(a, x)`. For the `op` functions (`subtract`, `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt`, `gte`), `f(a)` is `x => f(a, x)` too, and `f(R.__, b)` (the placeholder, since v0.6.0; a non-enumerable `undefined` until v0.8.0, the exported object `{ramda: 'placeholder'}` since v0.9.0, which also curries `concat` and `contains` this way) is `x => f(x, b)`. (In v0.5.0 alone, `f(a)` was `x => f(x, a)` and `f(a, R._)` was `x => f(a, x)`.) |
 | a call with no arguments, `f()` | `f(())` when the function takes one argument of any type |
 
-## Modules and exports (v0.9.0)
+## Modules and exports (v0.9.1)
 
 | Module | Exports |
 |---|---|
@@ -140,7 +140,7 @@ For each Ramda tag, in order:
 | `Ramdaf.String` | substring, substringFrom, substringTo, charAt, charCodeAt, strIndexOf, strLastIndexOf, toUpper, toLower, trim, replace, split |
 | `Ramdaf.Data` | union, unionWith, difference, differenceWith, intersection, intersectionWith, countBy, groupBy, project, eqDeep |
 
-That is 159 of Ramda v0.9.0's 200 export names (v0.9.0 has no functions
+That is 159 of Ramda v0.9.1's 200 export names (v0.9.x has no functions
 stored as properties of exports). The other 41 names are listed under "Not
 portable".
 
@@ -159,14 +159,16 @@ These are exported but are not Ramda functions:
 
 ### Internal Ramda functions
 
-Ramda v0.9.0 does not export `_keyValue`, nor the helpers `_makeFlat`,
-`_checkForMethod` and `_isInteger` (v0.3.0) or `_pairWith` and
+Ramda v0.9.1 does not export the helpers `_makeFlat`, `_checkForMethod` and
+`_isInteger` (v0.3.0) or `_pairWith` and
 `_functionsWith` (v0.4.0, behind `toPairs`/`toPairsIn` and
 `functions`/`functionsIn`); v0.8.0 gave every private helper a `_` prefix
 and added more, such as `_baseCopy` (behind `clone` since v0.9.0),
 `_pCompose`, `_prepend`/`_append`, `_map`, `_filter`, `_pickBy` and
 `_pickAll`, and v0.9.0 adds `_all`, `_any`, `_ap`, `_eqDeep`,
-`_filterIndexed`, `_foldl`, `_forEach`, `_gt`, `_lt`, `_nth` and `_pluck`.
+`_filterIndexed`, `_foldl`, `_forEach`, `_gt`, `_lt`, `_nth` and `_pluck`
+(v0.9.1 deletes `_keyValue`, `keyValue` until v0.7.2, and `_compareKeys`,
+with which `countBy` and `sortBy` were written).
 Since v0.9.0 they are the modules `src/internal/_*.js` (until v0.8.0 local
 to `ramda.js`), and Ramdaf does not export them either. (`isArrayLike`, private since v0.3.0, is exported in v0.5.0 and is
 not portable.) (`containsWith` was
@@ -177,7 +179,7 @@ does.)
 
 ## Not portable
 
-These Ramda v0.9.0 exports are not ported, rather than faked:
+These Ramda v0.9.1 exports are not ported, rather than faked:
 
 | Export | Why |
 |---|---|
@@ -205,7 +207,7 @@ These Ramda v0.9.0 exports are not ported, rather than faked:
 
 ## Outside the modeled domain (preconditions)
 
-| Function | Ramda v0.9.0 (node) | Ramdaf |
+| Function | Ramda v0.9.1 (node) | Ramdaf |
 |---|---|---|
 | `head`, `last` | `head([])` → `undefined` (`[]`, the empty list itself, in v0.1.0); `last([])` → `undefined` (since v0.8.0 they are `nth(0)` and `nth(-1)`; `car`, an alias of `head` until v0.8.0, shared the row) | `requires \|list\| > 0` |
 | `drop` (`skip` until v0.8.0) | `drop(-1, [1, 2])` → `[undefined, 1, 2]`. (From v0.2.0 to v0.4.3 `skip(5, [1, 2])` threw `RangeError`, as `_slice` allocated `new Array(2 - 5)`, and Ramdaf required `n <= \|list\|`; since v0.5.0 it is `[]`, as it was before v0.2.0.) | `n: nat` |
@@ -227,7 +229,7 @@ These are differences on input the encoding can represent. A behavioural
 difference is pinned by a `Deviation*` test in `tests/edge/`; a difference in
 a signature (an arity or an operand type) is enforced by the types.
 
-| Function(s) | Ramda v0.9.0 (node) | Ramdaf | Why |
+| Function(s) | Ramda v0.9.1 (node) | Ramdaf | Why |
 |---|---|---|---|
 | `eq`, `contains`, `indexOf`, `lastIndexOf`, `uniq`, `isSet`, `union`, `difference`, `intersection`, `propEq`, `eqProps`, `where` (value entries) | `===` compares arrays and objects by reference: `eq([], [])` → `false`. For `Ro = [{a:1},…,{a:4}]` and `So = [{a:3},…,{a:6}]`, `union(Ro, So).length` → `8`, `intersection(…)` → `0`, `difference(…)` → `4`. | Structural `==`: `true`, `6`, `2`, `2` | Dafny values have no identity. |
 | `keys`, `keysIn`, `toPairs`, `toPairsIn`, `invert` | `keys({b: 1, a: 2})` → `['b', 'a']` and `toPairs({b: 1, a: 2})` → `[['b', 1], ['a', 2]]`, in insertion order, and `invert({b: 'v', a: 'v'})` (v0.9.0) → `{v: ['b', 'a']}` | `{"a", "b"}`, `{("a", 2), ("b", 1)}` and `map["v" := {"a", "b"}]`, sets | A `map` has no key order. |
@@ -255,10 +257,11 @@ a signature (an arity or an operand type) is enforced by the types.
 | `commute`, `commuteMap` | work on a Fantasy-land functor, with `of` building the result's functor (v0.8.0; the documentation points at `Maybe` and `Either`); since v0.9.0 the private `_map` and `_ap` call only the `ap` method of `of`'s result, so a functor's `map` is no longer used | arrays only: `fn: seq<A> -> seq<B>`, `of: seq<B> -> seq<seq<B>>` | Typed; no Dafny value has methods (as for `of` and `chain`). |
 | `lens` | returns a function with properties (v0.8.0): `l(a)` is `get(a)`, and `l.set(v, a)` and `l.map(fn, a)` (curried since v0.9.0) are properties of `l`; `fn` may return a value of another type | a `Prelude.Lens` record of partial arrows: `l.get(a)`, `l.set_(v, a)`, `l.map_(fn, a)`, with `fn: V -> V` | A Dafny function value has no properties (and `set` and `map` are keywords); typed. |
 | `flatten`, `unnest` | since v0.3.0 flatten every array-like element. Since v0.7.2 that is an array, an `arguments` object, or another object (not a `String`) whose `length` is 0, or is positive with own properties `0` and `length - 1`, or (with `nodeType === 1`) is truthy: `flatten([{length: 0}])` → `[]`, `flatten([{length: 2, 0: 'a', 1: 'b'}])` → `['a', 'b']`, `flatten([{nodeType: 1, length: -1}])` → `[]`. (v0.3.0 also counted a function, whose `length` is its arity, until v0.4.0; and v0.3.0 to v0.7.1 counted any object with a numeric `length` of at least 0, so `flatten([{length: 2}])` was `[undefined, undefined]`, where node and the port now agree on `[{length: 2}]`.) | only a `Node` is flattened: `flatten([Leaf(map["length" := 0])])` is `[map["length" := 0]]` | `Tree<T>` marks nesting by constructor. |
-| `groupBy`, `countBy`, `zipObj`, `fromPairs`, `createMapEntry`, `clone`, `mixin`, `assoc`, `evolve`, `invert`, `invertObj` | a key that names an `Object.prototype` member is not an ordinary property: `groupBy(x => 'hasOwnProperty', [1])` → `{hasOwnProperty: [undefined, 1]}`, `countBy(x => '__proto__', [1, 2])` → `{}`, `zipObj(['__proto__', 'a'], [1, 2])` → `{a: 2}`, `createMapEntry('__proto__', 1)` (v0.7.0) has no own key, the keys of `assoc('__proto__', 1, {a: 1})` (v0.8.0) are `['a']`, `invertObj({a: '__proto__', b: 'c'})` (v0.9.0) → `{c: 'b'}`, `evolve({toString: x => typeof x}, {})` (v0.9.0) passes the inherited member (→ `{toString: 'function'}`), and `groupBy(x => '__proto__', [1, 2])` throws `RangeError` and `invert({a: 'toString'})` (v0.9.0, any of the 12 names) `TypeError: out[val].push is not a function` (`groupBy` and `countBy` did all this before v0.3.0 as well). Every function that copies properties by assignment drops an own `__proto__` property, which only `JSON.parse` or `Object.defineProperty` can create: `clone` (`cloneObj` from v0.5.0 and `cloneDeep` in v0.8.0, which v0.9.0 merged into it) and `mixin` of `JSON.parse('{"__proto__": 5, "a": 1}')` → `{a: 1}`, and `mapObj`, `mapObjIndexed`, `pick`, `pickAll`, `pickBy`, `omit`, `assoc` (v0.8.0), `evolve` (v0.9.0) and `project` likewise | every key is ordinary (`evolve` passes `None` for a key that obj lacks): `map["hasOwnProperty" := [1]]`, `map["__proto__" := 2]`, `map["__proto__" := 1, "a" := 2]`, and the copies keep `"__proto__"`; the throw is not modeled | A `map` has no prototype. |
+| `groupBy`, `countBy`, `zipObj`, `fromPairs`, `createMapEntry`, `clone`, `mixin`, `assoc`, `evolve`, `invert`, `invertObj` | a key that names an `Object.prototype` member is not an ordinary property: `groupBy(x => 'hasOwnProperty', [1])` → `{hasOwnProperty: [undefined, 1]}`, `countBy(x => '__proto__', [1, 2])` → `{}` (since v0.9.1 `countBy` counts every other member name as an ordinary key; until v0.9.0 `countBy(x => 'hasOwnProperty', [1, 2])` → `'function hasOwnProperty() { [native code] }11'`), `zipObj(['__proto__', 'a'], [1, 2])` → `{a: 2}`, `createMapEntry('__proto__', 1)` (v0.7.0) has no own key, the keys of `assoc('__proto__', 1, {a: 1})` (v0.8.0) are `['a']`, `invertObj({a: '__proto__', b: 'c'})` (v0.9.0) → `{c: 'b'}`, `evolve({toString: x => typeof x}, {})` (v0.9.0) passes the inherited member (→ `{toString: 'function'}`), and `groupBy(x => '__proto__', [1, 2])` throws `RangeError` and `invert({a: 'toString'})` (v0.9.0, any of the 12 names) `TypeError: out[val].push is not a function` (`groupBy` and `countBy` did all this before v0.3.0 as well). Every function that copies properties by assignment drops an own `__proto__` property, which only `JSON.parse` or `Object.defineProperty` can create: `clone` (`cloneObj` from v0.5.0 and `cloneDeep` in v0.8.0, which v0.9.0 merged into it) and `mixin` of `JSON.parse('{"__proto__": 5, "a": 1}')` → `{a: 1}`, and `mapObj`, `mapObjIndexed`, `pick`, `pickAll`, `pickBy`, `omit`, `assoc` (v0.8.0), `evolve` (v0.9.0) and `project` likewise; and `sort` (since v0.9.0, an omission of that port) and `sortBy` (v0.9.1), which sort deep copies of the elements, drop it from each element object (`Object.keys(sortBy(x => 0, [<that object>])[0])` → `['a']`) | every key is ordinary (`evolve` passes `None` for a key that obj lacks): `map["hasOwnProperty" := [1]]`, `map["__proto__" := 2]`, `map["__proto__" := 1, "a" := 2]`, and the copies keep `"__proto__"`; the throw is not modeled | A `map` has no prototype. |
 | `sortBy`, `maxBy`, `minBy` | compare keys with JS `<`/`>`, so string keys work: `sortBy(s => s, ["b", "a", "c"])` → `["a", "b", "c"]` | `int` keys | Dafny cannot order arbitrary key types, and overloading by key type is not possible. |
 | `evolve` | a transformation may return a value of another type: `evolve({wow: String}, {})` (v0.9.0) → `{wow: 'undefined'}` | `transformations: map<string, Option<V> -> V>`, one value type | Typed. |
-| `sort` | since v0.9.0 `clone(list).sort(cmp)` deep-copies the list and returns a JS string as it is, so a string throws: `sort((a, b) => a < b ? -1 : a > b ? 1 : 0, 'cab')` → `TypeError: clone(...).sort is not a function` (v0.8.0 gave `['a', 'b', 'c']`) | `sort(cmp, "cab") == "abc"`: a `string` is a `seq<char>` | A precondition on the generic `sort` cannot single out the string case. |
+| `sort`, `sortBy` | `clone(list).sort(…)` (`sort` since v0.9.0, `sortBy` since v0.9.1) deep-copies the list and returns a JS string as it is, so a string throws: `sort((a, b) => a < b ? -1 : a > b ? 1 : 0, 'cab')` and `sortBy(c => c.charCodeAt(0), 'cba')` → `TypeError: clone(...).sort is not a function` (`sort` gave `['a', 'b', 'c']` until v0.8.0, `sortBy` until v0.9.0) | `sort(cmp, "cab") == "abc"`, `sortBy(c => c as int, "cba") == "abc"`: a `string` is a `seq<char>` | A precondition on the generic `sort` and `sortBy` cannot single out the string case. |
+| `sort`, `sortBy` | `Array.prototype.sort` puts `undefined` elements last without calling the comparator: `sortBy(x => x === undefined ? -1 : x, [1, undefined, 0])` → `[0, 1, undefined]` (since v0.9.1, which sorts the elements rather than key/value pairs; v0.9.0 gave `[undefined, 0, 1]`), and `sort` with the same key comparison → `[0, 1, undefined]` (always; an omission of the earlier ports) | `Undefined` is ordered like any other element: `[Undefined, Num(0), Num(1)]` with the key -1 | A generic `T` has no `undefined` to single out. |
 | `sort` | an inconsistent comparator gives an engine-defined order: `sort(() => -1, [1, 2, 3])` → `[3, 2, 1]` | The postconditions say nothing for inconsistent comparators; the implementation (stable insertion sort) gives `[1, 2, 3]`. | ECMAScript leaves it unspecified. |
 | string functions | count UTF-16 code units: `charCodeAt(0, "😀")` → `55357`, `"😀".length` → `2` | count code points: `0x1F600`, `1` | A Dafny `string` is a sequence of Unicode scalar values. |
 | `toUpper`, `toLower` (`toUpperCase`, `toLowerCase` until v0.8.0) | full Unicode case mapping: `toUpper("straße")` → `"STRASSE"`, `toUpper("ä")` → `"Ä"` | ASCII letters only: `"STRAßE"`, `"ä"` | Unicode case tables are out of scope. |
@@ -318,7 +321,7 @@ and is not transcribed.
 | v0.7.2 | 2014-10-24 | ported | — |
 | v0.8.0 | 2014-11-19 | ported | — |
 | v0.9.0 | 2015-01-24 | ported | — |
-| v0.9.1 | 2015-01-27 | pending | — |
+| v0.9.1 | 2015-01-27 | ported | — |
 | v0.10.0 | 2015-02-15 | pending | — |
 | v0.11.0 | 2015-03-08 | pending | — |
 | v0.12.0 | 2015-03-21 | pending | — |
@@ -1388,6 +1391,39 @@ and is not transcribed.
   `commuteMap` have rewritten revealed bodies, and `ap`, `chain` and
   `commute` follow (compatible); 28 symbols were added
   (`casestudy/expected/v0.9.0.json`).
+- **lem:** — (not yet published from this history).
+
+### v0.9.1 (2015-01-27)
+
+- **Ramda** (the `src/` and `test/` diff, behaviour checked in node; the rest
+  of the release is build tooling, docs and the regenerated `dist/`):
+  - `countBy` ignores inherited properties of its result ("ignore inherited
+    properties in R.countBy"): `counts[key] = (has(key, counts) ?
+    counts[key] : 0) + 1`, so `countBy(R.identity, ['abc', 'toString'])` →
+    `{abc: 1, toString: 1}`, where v0.9.0 appended the 1s to the inherited
+    `toString`'s source; `__proto__` is still dropped.
+  - `sortBy` sorts a deep copy of the list itself, `clone(list).sort(…)`
+    with the keys computed on the fly ("simplify implementation of
+    R.sortBy"), instead of `{key, val}` pairs. Ordinary lists sort as
+    before; a JS string now throws, `undefined` elements go last, and the
+    elements are copies (an own `__proto__` key is lost, and identity).
+  - `_keyValue` and `_compareKeys` are deleted; a `prop` example leaves the
+    JSDoc.
+- **Ramdaf:** no signature, contract or revealed body changes.
+  - Comments only: `countBy`, `sortBy` and `sort`; the headers cite v0.9.1.
+  - Deviations: the `__proto__` row's `countBy` part narrows to `__proto__`,
+    and the row gains `sortBy` and `sort` (whose deep copies since v0.9.0
+    were an omission of that port); the string row covers `sortBy` too; a
+    new row records that `sort` and `sortBy` put `undefined` elements last
+    (for `sort` an omission of the earlier ports).
+  - Tests: countBy.js's new "ignores inherited properties". The
+    `hasOwnProperty` line of the `groupBy`/`countBy` pin becomes an
+    agreement edge (`CountByOfPrototypeNamedKeys`), with `sortBy` edges and
+    the pins `DeviationSortByOfAString`, `DeviationSortAndSortByUndefinedLast`
+    and `DeviationPrototypeKeysAreOrdinaryInSortedCopies`.
+- **Expected tier: patch.** Node moved to the port's results for `countBy`,
+  and `sortBy` changed only on input the port cannot single out
+  (`casestudy/expected/v0.9.1.json`, with no changes).
 - **lem:** — (not yet published from this history).
 
 ## Toolchain
