@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.26.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
 // `merge`, `dissoc`, `lensProp`, `whereEq`, `view`, `over`, `set_`,
@@ -40,7 +40,10 @@ module Ramdaf.Object {
   // for each name in ps, so the values in the order of ps, undefined (None)
   // where obj lacks the property (an inherited `Object.prototype` member in
   // JS, as for prop). (Until v0.7.2 `props` was the function that v0.8.0
-  // renamed `propOf` and v0.12.0 removed.)
+  // renamed `propOf` and v0.12.0 removed.) Since v0.27.0 it is
+  // `ps.map(function(p) { return path([p], obj); })`, which reads an integer
+  // name with `nth` and gives undefineds for a nil obj; the names here are
+  // strings, so the results are the same.
   function props<V>(ps: seq<string>, obj: map<string, V>): seq<Option<V>>
     ensures |props(ps, obj)| == |ps|
   { seq(|ps|, i requires 0 <= i < |ps| => prop(ps[i], obj)) }
@@ -63,7 +66,8 @@ module Ramdaf.Object {
   // `R.has(prop, obj)` (v0.7.0): `hasOwnProperty.call(obj, prop)` (since
   // v0.11.0 `_curry2(_has)`, which also takes the placeholder, `has(__,
   // obj)`; since v0.26.0 `hasPath([prop], obj)`, which is `_has` for one
-  // name). Every property of a map is its own.
+  // name, and since v0.27.0 false for a null or undefined obj, where it threw
+  // TypeError). Every property of a map is its own.
   function has<V>(p: string, obj: map<string, V>): bool { p in obj }
 
   // `R.hasIn(prop, obj)` (v0.7.0): `prop in obj`, an own property or one on

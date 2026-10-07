@@ -1,4 +1,4 @@
-// Ramda v0.26.1 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.27.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, includes.js, uniq.js, uniqWith.js, map.js,
 // mapObjIndexed.js, find.js, findIndex.js, findLast.js, findLastIndex.js,
@@ -1361,5 +1361,19 @@ module RamdafTests.Ramda.List {
     expect move(2, -20, list) == list;
     expect move(20, 20, list) == list;
     expect move(-20, -20, list) == list;
+  }
+
+  // ---- reduceBy.js (v0.27.0): "splits the list into mutation-free groups",
+  // whose collectNames pushes the name onto the accumulator; here acc +
+  // [name], CollectNames above ----
+
+  method {:test} ReduceBySplitsTheListIntoMutationFreeGroups() {
+    var students := [Student("Abby", 84), Student("Brad", 73), Student("Chris", 89), Student("Dianne", 99),
+                     Student("Eddy", 58), Student("Fred", 67), Student("Gillian", 91), Student("Hannah", 78),
+                     Student("Irene", 85), Student("Jack", 69)];
+    var none: seq<string> := [];
+    expect reduceBy(CollectNames, none, byGrade, students) ==
+      map["A" := ["Dianne", "Gillian"], "B" := ["Abby", "Chris", "Irene"], "C" := ["Brad", "Hannah"],
+          "D" := ["Fred", "Jack"], "F" := ["Eddy"]];
   }
 }

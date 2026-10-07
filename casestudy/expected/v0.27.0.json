@@ -1,0 +1,7 @@
+{
+  "ramda": "v0.27.0",
+  "tier": "patch",
+  "changes": [
+    {"symbol": "Ramdaf.Logic.xor", "kind": "added", "why": "new in v0.27.0 (@category Logic): Boolean(!a ^ !b)"}
+  ]
+}

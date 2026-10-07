@@ -1,6 +1,6 @@
-// Ramda v0.26.1 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.27.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js,
-// defaultTo.js, propSatisfies.js, when.js, unless.js and until.js (until v0.8.0
+// defaultTo.js, propSatisfies.js, when.js, unless.js, until.js and xor.js (until v0.8.0
 // test.booleans.js, test.allany.js and test.cond.js), transcribed. (v0.16.0
 // passes cond's pairs as one list, `R.cond([[p, f], …])`, the port's form
 // all along.) Not transcribed: the short-circuit cases ("does not evaluate the second
@@ -398,5 +398,25 @@ module RamdafTests.Ramda.Logic {
   // `R.until(R.T, R.T, false)`
   method {:test} UntilIgnoresFnIfPredicateIsAlwaysTrue() {
     expect until((x: bool) => true, (x: bool) => true, false, 100) == false;
+  }
+
+  // ---- xor.js (v0.27.0). Its truthy and falsy `it`s use non-bool operands
+  // (JS truthiness), which the bool operands exclude, as for and and or. ----
+
+  method {:test} XorComparesTwoValuesWithExclusiveOr() {
+    expect xor(true, true) == false;
+    expect xor(true, false) == true;
+    expect xor(false, true) == true;
+    expect xor(false, false) == false;
+  }
+
+  // `R.xor()(a)(b)`: the call with no arguments returns xor itself, which
+  // the port has no form for; the curried calls are lambdas
+  method {:test} XorReturnsACurriedFunction() {
+    var x := (a: bool) => ((b: bool) => xor(a, b));
+    expect x(true)(true) == false;
+    expect x(true)(false) == true;
+    expect x(false)(true) == true;
+    expect x(false)(false) == false;
   }
 }

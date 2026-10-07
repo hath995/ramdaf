@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.26.1 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.27.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -811,5 +811,14 @@ module RamdafTests.Edge.Misc {
     var ap := (f: int -> int, r: int) => f(r);
     expect pipeWith(ap, ((x: int) => x + 1, (x: int) => x * 2))(3) == 8;
     expect composeWith(ap, ((x: int) => x + 1, (x: int) => x * 2))(3) == 7;
+  }
+
+  // xor (v0.27.0): true when exactly one operand is true (node: false, true,
+  // true, false).
+  method {:test} XorEdges() {
+    expect xor(false, false) == false;
+    expect xor(false, true) == true;
+    expect xor(true, false) == true;
+    expect xor(true, true) == false;
   }
 }

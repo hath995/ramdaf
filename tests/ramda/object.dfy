@@ -1,4 +1,4 @@
-// Ramda v0.26.1 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.27.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
 // where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
 // valuesIn.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
@@ -652,5 +652,14 @@ module RamdafTests.Ramda.Object {
     var a := map["x" := Obj(map["u" := Num(1), "v" := Num(2)]), "y" := Num(0)];
     var b := map["x" := Obj(map["u" := Num(3), "w" := Num(4)]), "z" := Num(0)];
     expect mergeRight(a, b) == map["x" := Obj(map["u" := Num(3), "w" := Num(4)]), "y" := Num(0), "z" := Num(0)];
+  }
+
+  // ---- has.js (v0.27.0): "tests currying", `R.has('a')({a: {b: 1}})`; its
+  // "returns false for non-objects" (undefined, null, true, '', a RegExp)
+  // has no map argument ----
+
+  method {:test} HasTestsCurrying() {
+    var hasA := (o: map<string, Js>) => has("a", o);
+    expect hasA(map["a" := Obj(map["b" := Num(1)])]) == true;
   }
 }

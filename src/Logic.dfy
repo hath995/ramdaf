@@ -1,7 +1,7 @@
-// Ramdaf: Ramda v0.26.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`,
-// `propSatisfies`, `when`, `unless`, `until`).
+// `propSatisfies`, `when`, `unless`, `until`, `xor`).
 // (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
 // reused the name `cond` for a new function; v0.9.0 renamed `allPredicates`
 // and `anyPredicates` to `allPass` and `anyPass` and removed `if`; v0.12.0
@@ -13,7 +13,7 @@ module Ramdaf.Logic {
 
   export
     reveals and, or, not, both, either, complement, allPass, anyPass, ifElse, cond, defaultTo,
-            propSatisfies, when, unless, until
+            propSatisfies, when, unless, until, xor
     provides Prelude
 
   // `R.and(a, b)` (v0.12.0): `a && b`. From v0.1.4 to v0.11.0 `and` was the
@@ -150,4 +150,11 @@ module Ramdaf.Logic {
   function until<T>(pred: T -> bool, fn: T -> T, init: T, fuel: nat): T
     decreases fuel
   { if pred(init) || fuel == 0 then init else until(pred, fn, fn(init), fuel - 1) }
+
+  // `R.xor(a, b)` (v0.27.0, `@category Logic`): `Boolean(!a ^ !b)`, true
+  // when exactly one of a and b is truthy (`xor(true, false)` is true,
+  // `xor(true, true)` false). JS takes any values by their truthiness
+  // (`xor(1, '')` is true); the operands here are bool, as for and, or and
+  // not (README "Deviations"), and `!a ^ !b` on bools is `!a != !b`.
+  function xor(a: bool, b: bool): bool { !a != !b }
 }

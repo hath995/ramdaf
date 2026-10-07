@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.26.1 `source/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.27.0 `source/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "List Functions" section, except `comparator`/`sort`
 // (Sort.dfy), `length` (Core.dfy) and `groupBy` (Data.dfy); from v0.9.0 on,
 // the functions with `@category List` (`repeat`, `init`, `mapAccum`,
@@ -1021,8 +1021,10 @@ module Ramdaf.List {
   // not import) is written out as `key in acc`. JS converts the key to a
   // string (README "Deviations"), a `__proto__` key sets the prototype
   // instead of a property, and `_reduce` ends at a reduced marker key
-  // (README "Deviations"); a mutable valueAcc is one object shared by every
-  // group in JS, which an immutable Dafny value cannot be.
+  // (README "Deviations"). Until v0.26.1 a mutable valueAcc was one object
+  // shared by every group in JS (a valueFn that pushed onto it filled every
+  // group), which an immutable Dafny value cannot be; since v0.27.0 each
+  // group starts from `_clone(valueAcc, [], [], false)`, a copy, as here.
   function reduceBy<T, A>(valueFn: (A, T) -> A, valueAcc: A, keyFn: T -> string, list: seq<T>): map<string, A>
   { reduce((acc: map<string, A>, elt: T) =>
              acc[keyFn(elt) := valueFn(if keyFn(elt) in acc then acc[keyFn(elt)] else valueAcc, elt)],
