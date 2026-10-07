@@ -1,10 +1,10 @@
-// Ramdaf: Ramda v0.13.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Object Functions" section and `propEq`; from v0.9.0 on,
 // the functions with `@category Object` (`evolve`, `invert`, `invertObj`,
-// `merge`, `dissoc`, `lensOn`). A JS object is a map<string, V>; a missing
+// `merge`, `dissoc`, `lensOn`, `lensProp`, `whereEq`). A JS object is a map<string, V>; a missing
 // property is JS undefined, here None. The functions that build an object by
 // assigning properties (`pick`, `pickAll`, `pickBy`, `omit`, `merge`,
-// `assoc`, `evolve`, `invertObj`, `dissoc`) drop an own `__proto__`
+// `assoc`, `evolve`, `invertObj`, `dissoc`, `lensProp`'s setter) drop an own `__proto__`
 // property in JS, as the assignment sets the prototype instead; a map's keys
 // are all ordinary (README "Deviations"). (v0.8.0 renamed `pickWith` to
 // `pickBy`, and `props` to `propOf`, reusing the name `props` for a new
@@ -18,7 +18,7 @@ module Ramdaf.Object {
   export
     reveals eq, prop, props, propOr, has, hasIn, keys, keysIn, toPairs, toPairsIn,
             values, valuesIn, pick, pickAll, omit, pickBy, merge, eqProps, where,
-            assoc, propEq, evolve, invert, invertObj, dissoc, lensOn
+            assoc, propEq, evolve, invert, invertObj, dissoc, lensOn, lensProp, whereEq
     provides Prelude
 
   // `a === b` until v0.8.0; since v0.9.0 `Object.is`: `1 / a === 1 / b`
@@ -177,24 +177,37 @@ module Ramdaf.Object {
     ensures forall k :: k in a && k !in b ==> merge(a, b)[k] == a[k]
   { a + b }
 
-  // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal).
+  // `obj1[p] === obj2[p]` (two missing properties are both undefined: equal;
+  // since v0.14.0 `_eq(obj1[p], obj2[p])`, `Object.is`: README "Deviations"
+  // on `-0`).
   function eqProps<V(==)>(p: string, obj1: map<string, V>, obj2: map<string, V>): bool
   { prop(p, obj1) == prop(p, obj2) }
 
-  // Every function entry is a property of test and holds,
-  // `(key in testObj) && spec[key](testObj[key], testObj)`, and every other
-  // entry equals the property, `spec[key] === testObj[key]` (v0.2.4, which
-  // also accepts inherited properties where v0.2.3 checked
-  // `hasOwnProperty`; a map has none; a null-ish test gives false). Since v0.2.3 a function entry whose
-  // property is absent fails without being called; before, it was called with
-  // undefined (None). So a function now only ever sees Some. Neither a spec
-  // property whose value is undefined nor a null test can be written here (an
-  // undefined property is an absent one, and the test is a map).
-  function where<V(==)>(spec: map<string, SpecVal<V>>, test: map<string, V>): bool
-  { forall k :: k in spec ==>
-      match spec[k]
-        case Pred(fn) => k in test && fn(Some(test[k]), test)
-        case Val(v) => k in test && test[k] == v }
+  // `R.where(spec, testObj)` (v0.14.0, which moved the value entries to
+  // `whereEq`): `for (var prop in spec) { if (_has(prop, spec) &&
+  // !spec[prop](testObj[prop])) { return false; } } return true;`, every own
+  // spec property is a predicate that holds for the test object's property,
+  // undefined (None) when the test object lacks it (a JS test object also
+  // passes an inherited member; a map has none). Until v0.13.0 a spec entry
+  // was a function, called with the property and the whole test object only
+  // when the property was there (since v0.2.3; before, with undefined too),
+  // or a value compared with `===`, the removed `Prelude.SpecVal`; since
+  // v0.14.0 a value entry throws TypeError ("spec[prop] is not a function"),
+  // and a predicate on an absent property is called (`where({a: x => x ===
+  // undefined}, {})` is true, was false).
+  function where<V>(spec: map<string, Option<V> -> bool>, test: map<string, V>): bool
+  { forall k :: k in spec ==> spec[k](prop(k, test)) }
+
+  // `R.whereEq(spec, testObj)` (v0.14.0, `@category Object`):
+  // `where(mapObj(eq, spec), testObj)`, every spec property equal (`eq`,
+  // `Object.is`) to the test object's; an absent test property is undefined,
+  // which no spec value here equals. `R.mapObj` is List's, which Object does
+  // not import, so the spec of predicates is written out as a map
+  // comprehension. A spec property whose value is undefined cannot be
+  // written (README "Outside the modeled domain"), and `mapObj`'s copy drops
+  // an own `__proto__` spec property in JS (README "Deviations").
+  function whereEq<V(==)>(spec: map<string, V>, test: map<string, V>): bool
+  { where(map k | k in spec :: (x: Option<V>) => x.Some? && eq(spec[k], x.value), test) }
 
   // `R.assoc(prop, val, obj)` (v0.8.0): `_assoc`, `for (var p in obj)
   // result[p] = obj[p]; result[prop] = val;` (v0.11.0; until v0.10.0
@@ -207,7 +220,8 @@ module Ramdaf.Object {
   function assoc<V>(p: string, val: V, obj: map<string, V>): map<string, V>
   { obj[p := val] }
 
-  // `obj[name] === val`
+  // `obj[name] === val` (since v0.14.0 `_eq(obj[name], val)`, `Object.is`:
+  // README "Deviations" on `-0`)
   function propEq<V(==)>(name: string, val: V, obj: map<string, V>): bool
   { name in obj && obj[name] == val }
 
@@ -217,8 +231,9 @@ module Ramdaf.Object {
   // function applied to `object[key]`, which is undefined (None) when object
   // lacks the key (Ramda's test "invokes function with undefined if object
   // does not contain the key"). JS lets a transformation change the value's
-  // type, and since v0.12.0 a `__transducers_reduced__` transformation with
-  // a truthy result ends `mapObjIndexed`'s fold (README "Deviations").
+  // type, and since v0.12.0 an `@@transducer/reduced` transformation
+  // (`__transducers_reduced__` until v0.13.0) with a truthy result ends
+  // `mapObjIndexed`'s fold (README "Deviations").
   function evolve<V>(transformations: map<string, Option<V> -> V>, obj: map<string, V>): map<string, V>
     ensures evolve(transformations, obj).Keys == obj.Keys + transformations.Keys
   { obj + map k | k in transformations :: transformations[k](prop(k, obj)) }
@@ -261,12 +276,27 @@ module Ramdaf.Object {
   // return set(fn(get(obj))); }; return lns;`, a lens bound to obj, here the
   // record `Prelude.LensOn` (README "Deviations"; `set` is a Dafny keyword).
   // JS calls get on each use, so a later mutation of obj shows; a Dafny value
-  // does not change. The JSDoc's `@sig` and example put obj first
-  // (`R.lensOn(xo, get, set)`, which throws in node: "get is not a
-  // function"); the code and Ramda's tests take it last, as here.
+  // does not change. The code and Ramda's tests take obj last, as here (and
+  // since v0.14.0 the JSDoc; v0.11.0 to v0.13.0's `@sig` and example put it
+  // first, `R.lensOn(xo, get, set)`, which throws in node: "get is not a
+  // function").
   // As for `lens`, get and set_ are partial arrows: the bound get requires
   // get's precondition on obj, and map_ that and set_'s on the mapped value.
   function lensOn<A, V, B>(get: A --> V, set_: V --> B, obj: A): LensOn<V, B>
   { LensOn(() requires get.requires(obj) => get(obj), set_,
            (fn: V -> V) requires get.requires(obj) && set_.requires(fn(get(obj))) => set_(fn(get(obj)))) }
+
+  // `R.lensProp(k)` (v0.14.0, `@category Object`): `lens(prop(k),
+  // assoc(k))`, a lens on the property k. The getter `prop(k)` is undefined
+  // when obj lacks k (and is the inherited member for a name of
+  // `Object.prototype`), which the value type cannot hold, so it requires
+  // the key (README "Outside the modeled domain"); the setter is `assoc`,
+  // total (`lensProp('x').set(9, {})` is `{x: 9}`). `R.lens` is List's, which
+  // Object does not import, so its body is written out: map_ is set_ of fn
+  // applied to get, requiring both.
+  function lensProp<V>(k: string): Lens<map<string, V>, V>
+  { var get := (obj: map<string, V>) requires k in obj => obj[k];
+    var set_ := (v: V, obj: map<string, V>) => assoc(k, v, obj);
+    Lens(get, set_, (fn: V -> V, obj: map<string, V>) requires get.requires(obj) && set_.requires(fn(get(obj)), obj) =>
+                      set_(fn(get(obj)), obj)) }
 }

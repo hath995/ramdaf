@@ -1,16 +1,23 @@
-// Ramda v0.13.0 test/prop.js, props.js, propOr.js, has.js,
+// Ramda v0.14.0 test/prop.js, props.js, propOr.js, has.js,
 // hasIn.js, pluck.js, pick.js, pickAll.js, omit.js, pickBy.js, eqProps.js,
-// where.js, merge.js, assoc.js, keys.js, keysIn.js, values.js, valuesIn.js,
-// eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js, invertObj.js,
-// dissoc.js and lensOn.js (v0.9.x mixin.js; until v0.8.0 test.objectBasics.js,
+// where.js, whereEq.js, merge.js, assoc.js, keys.js, keysIn.js, values.js,
+// valuesIn.js, eq.js, toPairs.js, toPairsIn.js, evolve.js, invert.js,
+// invertObj.js, dissoc.js, lensOn.js and lensProp.js (v0.9.x mixin.js; until
+// v0.8.0 test.objectBasics.js,
 // test.keysvals.js, test.tapeq.js and test.zip.js's toPairs and toPairsIn
 // describes), transcribed. Not
 // transcribed: keys's and values's "should work for primitives" cases (v0.2.4;
 // keys/values of null, 55, "" and the like: the argument is a map); where's
-// cases on prototypes ("matches inherited props", "doesnt match inherited
-// spec", the `toString` half of "matches inherited functions") and on
-// `where(Lib, Lib)` ("equal objects are true": one object as both spec and
-// test); the cases on an object built by a constructor whose prototype has
+// and whereEq's cases on prototypes (where's "matches inherited properties"
+// and "does not match inherited spec", whereEq's "matches inherited props"
+// and "does not match inherited spec"), whereEq's "reports true when the
+// object equals the spec" (`whereEq(R, R)`: an object of functions, which
+// have no equality here) and "matches specs that have undefined properties"
+// (a spec value that is undefined cannot be written, README "Outside the
+// modeled domain"), and the `null` spec of their "is true for an empty
+// spec"; eqProps's "has Object.is semantics" (v0.14.0; `-0` and NaN are
+// not ints, README "Deviations", pinned in tests/edge/misc.dfy) and pluck's "behaves as a transducer…" (v0.14.0;
+// transducers, README "Not portable"); the cases on an object built by a constructor whose prototype has
 // properties (keys's, keysIn's, values's and valuesIn's "does not include"/
 // "includes the given object's prototype properties", propOr's "does not
 // return properties from the prototype chain", toPairs's "only iterates the
@@ -44,12 +51,19 @@
 // "returns a function with `set` and `map` properties" and the `typeof`
 // checks of its "is curried" hold by construction: a `LensOn` always has its
 // three fields, applied as `.get()`, `.set_(v)` and `.map_(fn)` (README
-// "Deviations").
+// "Deviations"). v0.14.0 rewrote where.js for specs of predicates: it
+// dropped "calls any functions in the spec against the test object value
+// for that property", "is false if the test object is null-ish", "reports
+// true when the object equals the spec" and "matches inherited functions",
+// retitled "takes a spec and a test object…" "returns true if the test
+// object satisfies the spec", and moved the value specs to whereEq.js.
 
 module RamdafTests.Ramda.Object {
   import opened Ramdaf.Prelude
   import opened Ramdaf.List
   import opened Ramdaf.Object
+  import Funcs = Ramdaf.Functions
+  import S = Ramdaf.String
   import opened Support
 
   function Fred(): map<string, Js> { map["name" := Str("Fred"), "age" := Num(23)] }
@@ -221,59 +235,76 @@ module RamdafTests.Ramda.Object {
     expect sameName(map["name" := Str("fred"), "age" := Num(10)], map["name" := Str("fred"), "age" := Num(12)]) == true;
   }
 
-  // describe('where')
+  // describe('where') (v0.14.0 rewrote where.js: every spec value is a
+  // predicate on the test object's property). `R.eq(a)` is a predicate that
+  // holds for a property equal to a and fails on an absent one (undefined).
   function Xy(x: int, y: int): map<string, int> { map["x" := x, "y" := y] }
+  function EqP(a: int): Option<int> -> bool { (v: Option<int>) => v.Some? && eq(a, v.value) }
 
-  method {:test} WhereTakesASpecAndATestObject() {
-    var spec := map["x" := Val(1), "y" := Val(2)];
+  method {:test} WhereReturnsTrueIfTheTestObjectSatisfiesTheSpec() {
+    var spec := map["x" := EqP(1), "y" := EqP(2)];
     expect where(spec, Xy(0, 200)) == false;
     expect where(spec, Xy(0, 10)) == false;
     expect where(spec, Xy(1, 101)) == false;
     expect where(spec, Xy(1, 2)) == true;
   }
 
-  // `obj.b + obj.c` etc.: the test objects all have a, b and c.
-  function F(o: map<string, int>, k: string): int { if k in o then o[k] else 0 }
-  function V(v: Option<int>): int { if v.Some? then v.value else 0 }
-  function Abc3(a: int, b: int, c: int): map<string, int> { map["a" := a, "b" := b, "c" := c] }
-
-  method {:test} WhereCallsFunctionsInTheSpecOnTheProperty() {
-    var spec := map[
-      "a" := Pred((a: Option<int>, obj: map<string, int>) => V(a) < F(obj, "b") + F(obj, "c")),
-      "b" := Pred((b: Option<int>, obj: map<string, int>) => V(b) < F(obj, "a") + F(obj, "c")),
-      "c" := Pred((c: Option<int>, obj: map<string, int>) => V(c) < F(obj, "a") + F(obj, "b"))];
-    expect where(spec, Abc3(3, 4, 5)) == true;
-    expect where(spec, Abc3(6, 8, 9)) == true;
-    expect where(spec, Abc3(2, 8, 12)) == false;
-    expect where(spec, Abc3(3, 11, 5)) == false;
-  }
-
   method {:test} WhereAllowsATestObjectWithMoreProperties() {
-    var spec := map["x" := Val(100)];
+    var spec := map["x" := EqP(100)];
     expect where(spec, map["x" := 20, "y" := 100, "z" := 100]) == false;
     expect where(spec, map["w" := 1, "x" := 100, "y" := 100, "z" := 100]) == true;
   }
 
-  // "is false if the test object is null-ish" and "matches specs that have
-  // undefined properties" (v0.1.5) are not transcribed: a test object is a
-  // map, never null, and an undefined property is an absent one here.
+  // "matches specs that have undefined properties": `R.eq(undefined)` holds
+  // for undefined (None) only; `{x: undefined}` is the object without x here
+  // (README mapping), and `{x: null}` has the Js value Null.
+  method {:test} WhereMatchesSpecsThatHaveUndefinedProperties() {
+    var spec := map["x" := (v: Option<Js>) => v.None?];
+    var none: map<string, Js> := map[];
+    expect where(spec, none) == true;
+    expect where(spec, map["x" := Null]) == false;
+    expect where(spec, none) == true;
+    expect where(spec, map["x" := Num(1)]) == false;
+  }
+
   method {:test} WhereIsAutomaticallyCurried() {
-    var pred := (o: map<string, int>) => where(map["x" := Val(1), "y" := Val(2)], o);
+    var pred := (o: map<string, int>) => where(map["x" := EqP(1), "y" := EqP(2)], o);
     expect pred(map["x" := 1, "y" := 2, "z" := 3]) == true;
     expect pred(map["x" := 3, "y" := 2, "z" := 1]) == false;
   }
 
-  // v0.2.4: "empty spec is true" (its `where(null, {a: 1})` case cannot be
+  // "is true for an empty spec" (its `where(null, {a: 1})` case cannot be
   // written: the spec is a map)
   method {:test} WhereEmptySpecIsTrue() {
-    var empty: map<string, SpecVal<int>> := map[];
+    var empty: map<string, Option<int> -> bool> := map[];
     expect where(empty, map["a" := 1]) == true;
   }
 
-  // v0.2.4: "matches inherited functions", the case that does not rely on
-  // Object.prototype (`toString`): a function entry on a missing property.
-  method {:test} WhereMatchesInheritedFunctions() {
-    expect where(map["a" := Pred((v: Option<int>, o: map<string, int>) => true)], map["x" := 1]) == false;
+  // describe('whereEq') (v0.14.0)
+  method {:test} WhereEqReturnsTrueIfTheTestObjectSatisfiesTheSpec() {
+    var spec := map["x" := 1, "y" := 2];
+    expect whereEq(spec, Xy(0, 200)) == false;
+    expect whereEq(spec, Xy(0, 10)) == false;
+    expect whereEq(spec, Xy(1, 101)) == false;
+    expect whereEq(spec, Xy(1, 2)) == true;
+  }
+
+  method {:test} WhereEqAllowsATestObjectWithMoreProperties() {
+    var spec := map["x" := 100];
+    expect whereEq(spec, map["x" := 20, "y" := 100, "z" := 100]) == false;
+    expect whereEq(spec, map["w" := 1, "x" := 100, "y" := 100, "z" := 100]) == true;
+  }
+
+  method {:test} WhereEqIsCurried() {
+    var pred := (o: map<string, int>) => whereEq(map["x" := 1, "y" := 2], o);
+    expect pred(map["x" := 1, "y" := 2, "z" := 3]) == true;
+    expect pred(map["x" := 3, "y" := 2, "z" := 1]) == false;
+  }
+
+  // (its `whereEq(null, {a: 1})` case cannot be written)
+  method {:test} WhereEqIsTrueForAnEmptySpec() {
+    var empty: map<string, int> := map[];
+    expect whereEq(empty, map["a" := 1]) == true;
   }
 
   // describe('merge') (describe('mixin') until v0.9.1)
@@ -530,5 +561,59 @@ module RamdafTests.Ramda.Object {
     expect partial2(map["x" := Str("cow")]).set_(Str("moo")) == map["x" := Str("moo")];
     var x2 := (x: Js) => if x.Num? then Num(x.n * 2) else x;
     expect partial2(map["x" := Num(100)]).map_(x2) == map["x" := Num(200)];
+  }
+
+  // ---- lensProp.js (v0.14.0) ----
+
+  // `phraseLens = R.lensProp('catchphrase')`, `xLens = R.lensProp('x')`; the
+  // object mixes numbers and strings, so it holds Js values.
+  function LpObj(): map<string, Js> { map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")] }
+  // `uc(s) = s.toUpperCase()`
+  function Uc(v: Js): Js { if v.Str? then Str(S.toUpper(v.s)) else v }
+
+  method {:test} LensPropRetrievesValuesFromInsideAnObject() {
+    expect lensProp<Js>("catchphrase").get(LpObj()) == Str("zing!");
+  }
+
+  method {:test} LensPropSetsPropertiesOnAnObjectAndReturnsTheNewObject() {
+    expect lensProp<Js>("catchphrase").set_(Str("cow"), LpObj()) ==
+      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("cow")];
+  }
+
+  // The second assertion holds trivially: the object is a value.
+  method {:test} LensPropTheSetterShouldNotMutateTheObject() {
+    var obj := LpObj();
+    expect lensProp<Js>("catchphrase").set_(Str("kapow!"), obj) ==
+      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("kapow!")];
+    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
+  }
+
+  method {:test} LensPropMapsAPropertyFromGetterToSetter() {
+    expect lensProp<Js>("catchphrase").map_(Uc, LpObj()) ==
+      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("ZING!")];
+  }
+
+  method {:test} LensPropTheModifierShouldNotMutateTheObject() {
+    var obj := LpObj();
+    expect lensProp<Js>("catchphrase").map_(Uc, obj) ==
+      map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("ZING!")];
+    expect obj == map["x" := Num(100), "y" := Num(200), "catchphrase" := Str("zing!")];
+  }
+
+  // `xPlus3 = R.compose(xLens.map(R.add(1)), xLens.map(R.add(2)))` and
+  // `set0Plus1 = R.compose(xLens.map(R.add(1)), xLens.set(0))`. The getter,
+  // and so map_, requires the key, while compose takes total functions, so
+  // each curried map_ is guarded by `"x" in o`, which these objects always
+  // pass; the setter is total.
+  function PlusJs(k: int): Js -> Js { (v: Js) => if v.Num? then Num(v.n + k) else v }
+  function XMap(k: int): map<string, Js> -> map<string, Js>
+  { (o: map<string, Js>) => if "x" in o then lensProp<Js>("x").map_(PlusJs(k), o) else o }
+
+  method {:test} LensPropCurriesMapAndSetAndModifiesWithComposedLens() {
+    var xPlus3 := Funcs.compose(XMap(1), XMap(2));
+    expect xPlus3(LpObj()) == map["x" := Num(103), "y" := Num(200), "catchphrase" := Str("zing!")];
+    var set0 := (o: map<string, Js>) => lensProp<Js>("x").set_(Num(0), o);
+    var set0Plus1 := Funcs.compose(XMap(1), set0);
+    expect set0Plus1(LpObj()) == map["x" := Num(1), "y" := Num(200), "catchphrase" := Str("zing!")];
   }
 }

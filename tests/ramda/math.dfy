@@ -1,8 +1,8 @@
-// Ramda v0.13.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
+// Ramda v0.14.0 test/add.js, multiply.js, subtract.js, divide.js, modulo.js,
 // mathMod.js, sum.js, product.js, lt.js, lte.js, gt.js, gte.js, max.js,
-// min.js, maxBy.js, minBy.js, inc.js, dec.js and negate.js (until v0.8.0
-// test.math.js), transcribed. Numbers are ints (real for
-// division); the string comparisons in lt/lte/gt/gte and the decimal/string
+// min.js, maxBy.js, minBy.js, inc.js, dec.js, negate.js, mean.js and
+// median.js (until v0.8.0 test.math.js), transcribed. Numbers are ints (real
+// for division and for mean's and median's results); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). `subtract`,
 // `divide`, `modulo`, `mathMod`, `lt`, `lte`, `gt` and `gte` were
 // `op`-curried until v0.10.0 and are `_curry2` since v0.11.0, with the same
@@ -18,7 +18,9 @@
 // and the four NaN asserts of v0.4.2's "computes the true modulo function"
 // (`mathMod(17, -5)`, `mathMod(17, 0)` and fractional arguments); v0.4.0's 13
 // "throws if given no arguments" cases (no-argument calls; v0.11.0 removed
-// them). (v0.5.0
+// them); mean's and median's "returns NaN for an empty list" (outside the
+// domain, README) and "handles array-like object" (an `arguments` object).
+// (v0.5.0
 // removed subtractN, divideBy and moduloBy with their describes; v0.8.0
 // renamed the maxWith and minWith describes to maxBy and minBy.)
 
@@ -285,5 +287,24 @@ module RamdafTests.Ramda.Math {
     expect negate(-1) == 1;
     expect negate(0) == 0;
     expect negate(1) == -1;
+  }
+
+  // ---- mean.js and median.js (v0.14.0) ----
+
+  method {:test} MeanReturnsMeanOfANonemptyList() {
+    expect mean([2]) == 2.0;
+    expect mean([2, 7]) == 4.5;
+    expect mean([2, 7, 9]) == 6.0;
+    expect mean([2, 7, 9, 10]) == 7.0;
+  }
+
+  method {:test} MedianReturnsMiddleValueOfAnOddLengthList() {
+    expect median([2]) == 2.0;
+    expect median([2, 9, 7]) == 7.0;
+  }
+
+  method {:test} MedianReturnsMeanOfTwoMiddleValuesOfANonemptyEvenLengthList() {
+    expect median([7, 2]) == 4.5;
+    expect median([7, 2, 10, 9]) == 8.0;
   }
 }

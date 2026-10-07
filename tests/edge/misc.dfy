@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// dist/ramda.js v0.13.0 under node; the methods named Deviation* pin documented
+// dist/ramda.js v0.14.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -146,22 +146,66 @@ module RamdafTests.Edge.Misc {
     expect clone(map["a" := x1, "b" := Num(2)])["a"] == x1;
   }
 
-  // Since v0.2.3 a function entry fails on an absent property without being
-  // called (it was called with undefined, None, before); a value entry fails
-  // on an absent property.
+  // where (v0.14.0): every spec value is a predicate on the test object's
+  // property, called with undefined (None) when it is absent. Node: true
+  // for `where({x: v => v === undefined}, {y: 1})` and `where({x: v =>
+  // true}, {y: 1})` (both false until v0.13.0, which did not call a
+  // function on an absent property), false for `where({x: v => v === 1},
+  // {y: 1})`, true for `where({}, {a: 1})`, and true, false, false for
+  // `where({x: v => v === 1, y: v => v > 1}, …)` on {x: 1, y: 2}, {x: 1, y:
+  // 0} and {x: 1}.
   method {:test} WhereEdges() {
     var y1 := map["y" := 1];
-    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => v.None?)], y1) == false;
-    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => true)], y1) == false;
-    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => true)], map["x" := 1]) == true;
-    expect where(map["x" := Pred((v: Option<int>, o: map<string, int>) => v == Some(1))], y1) == false;
-    expect where(map["x" := Val(1)], y1) == false;
-    var empty: map<string, SpecVal<int>> := map[];
+    expect where(map["x" := (v: Option<int>) => v.None?], y1) == true;
+    expect where(map["x" := (v: Option<int>) => true], y1) == true;
+    expect where(map["x" := (v: Option<int>) => v == Some(1)], y1) == false;
+    var empty: map<string, Option<int> -> bool> := map[];
     expect where(empty, map["a" := 1]) == true;
-    var mixed := map["x" := Val(1), "y" := Pred((v: Option<int>, o: map<string, int>) => v.Some? && "x" in o && v.value > o["x"])];
-    expect where(mixed, map["x" := 1, "y" := 2]) == true;
-    expect where(mixed, map["x" := 1, "y" := 0]) == false;
-    expect where(mixed, map["x" := 1]) == false;
+    var two := map["x" := (v: Option<int>) => v == Some(1), "y" := (v: Option<int>) => v.Some? && v.value > 1];
+    expect where(two, map["x" := 1, "y" := 2]) == true;
+    expect where(two, map["x" := 1, "y" := 0]) == false;
+    expect where(two, map["x" := 1]) == false;
+  }
+
+  // whereEq (v0.14.0). Node: true for `whereEq({a: 1}, {a: 1, b: 2})`,
+  // `whereEq({}, {})` and `whereEq({toString: 'x'}, {toString: 'x'})`, false
+  // for `whereEq({a: 1}, {b: 1})` and `whereEq({a: 1, b: 2}, {a: 1})`.
+  method {:test} WhereEqEdges() {
+    expect whereEq(map["a" := 1], map["a" := 1, "b" := 2]) == true;
+    var none: map<string, int> := map[];
+    expect whereEq(none, none) == true;
+    expect whereEq(map["toString" := "x"], map["toString" := "x"]) == true;
+    expect whereEq(map["a" := 1], map["b" := 1]) == false;
+    expect whereEq(map["a" := 1, "b" := 2], map["a" := 1]) == false;
+  }
+
+  // lensProp (v0.14.0). Node: `lensProp('a')({a: 1})` is 1,
+  // `lensProp('x').set(9, {})` is {x: 9} (the setter is `assoc`, total), and
+  // `lensProp('a').map(x => x + 1, {a: 1, b: 2})` is {a: 2, b: 2}.
+  // (`lensProp('x')({})` is undefined, outside the getter's domain.)
+  method {:test} LensPropEdges() {
+    expect lensProp("a").get(map["a" := 1]) == 1;
+    var none: map<string, int> := map[];
+    expect lensProp("x").set_(9, none) == map["x" := 9];
+    expect lensProp("a").map_((x: int) => x + 1, map["a" := 1, "b" := 2]) == map["a" := 2, "b" := 2];
+  }
+
+  // composeL and pipeL (v0.14.0) of property lenses. Node: for
+  // `l = composeL(lensProp('b'), lensProp('a'))` and `s = {a: {b: 1}, c: {d:
+  // 2}}`, `l(s)` is 1, `l.set(9, s)` is {a: {b: 9}, c: {d: 2}}, `l.map(x =>
+  // x + 1, s)` is {a: {b: 2}, c: {d: 2}}, `l.set(9, {a: {}})` is {a: {b: 9}};
+  // `pipeL(lensProp('a'), lensProp('b'))` gives the same.
+  method {:test} ComposeLEdges() {
+    var l := composeL(lensProp<int>("b"), lensProp<map<string, int>>("a"));
+    var s := map["a" := map["b" := 1], "c" := map["d" := 2]];
+    expect l.get(s) == 1;
+    expect l.set_(9, s) == map["a" := map["b" := 9], "c" := map["d" := 2]];
+    expect l.map_((x: int) => x + 1, s) == map["a" := map["b" := 2], "c" := map["d" := 2]];
+    var noB: map<string, int> := map[];
+    expect l.set_(9, map["a" := noB]) == map["a" := map["b" := 9]];
+    var p := pipeL(lensProp<map<string, int>>("a"), lensProp<int>("b"));
+    expect p.get(s) == 1;
+    expect p.set_(9, s) == map["a" := map["b" := 9], "c" := map["d" := 2]];
   }
 
   // JS `%` truncates toward zero: the remainder takes the dividend's sign.
@@ -266,11 +310,6 @@ module RamdafTests.Edge.Misc {
     expect nthChar(-5, "abc") == "";
     expect nthCharCode(0, "abc") == 97;
     expect nthCharCode(-1, "abc") == 99;
-  }
-
-  method {:test} CharAtOutOfRangeIsEmpty() {
-    expect charAt(10, "abc") == "";
-    expect charAt(-1, "abc") == "";
   }
 
   method {:test} SplitEdges() {
@@ -524,7 +563,10 @@ module RamdafTests.Edge.Misc {
   // `invertObj({a: '__proto__', b: 'c'})` is {c: 'b'}, `evolve({a: x => x},
   // <the JSON object>)` has the keys ['a'], and `evolve({toString: x =>
   // typeof x}, {})` passes the inherited member (the result is {toString:
-  // 'function'}). A map's keys are all ordinary, and `{}` has no `toString`.
+  // 'function'}); and since v0.14.0 `whereEq(<JSON {"__proto__": 1}>, {})`
+  // is true (`mapObj`'s copy of the spec drops the property, so it is not
+  // tested) and the keys of `lensProp('__proto__').set(1, {a: 1})` are ['a']
+  // (`assoc`). A map's keys are all ordinary, and `{}` has no `toString`.
   method {:test} DeviationPrototypeKeysAreOrdinaryInObjectCopies() {
     var o := map["__proto__" := 5, "a" := 1];
     var none: map<string, int> := map[];
@@ -538,6 +580,8 @@ module RamdafTests.Edge.Misc {
     expect evolve(map["toString" := kind], noStrings) == map["toString" := "undefined"];
     expect assoc("__proto__", 1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
     expect assoc("a", 2, map["__proto__" := 5, "b" := 1]) == map["__proto__" := 5, "b" := 1, "a" := 2];
+    expect whereEq(map["__proto__" := 1], none) == false;
+    expect lensProp("__proto__").set_(1, map["a" := 1]) == map["__proto__" := 1, "a" := 1];
   }
 
   // node: eq([], []) is false (two distinct array objects).
@@ -553,9 +597,11 @@ module RamdafTests.Edge.Misc {
     expect toUpper("ä") == "ä";
   }
 
-  // node: 55357 (a UTF-16 surrogate) and length 2; a Dafny char is a code point.
+  // node: `nthCharCode(0, '\u{1F600}')` is 55357 (a UTF-16 surrogate; until
+  // v0.13.0 the pin used `charCodeAt`, which v0.14.0 removed) and the length
+  // is 2; a Dafny char is a code point.
   method {:test} DeviationCharactersAreCodePoints() {
-    expect charCodeAt(0, "\U{1F600}") == 0x1F600;
+    expect nthCharCode(0, "\U{1F600}") == 0x1F600;
     expect |"\U{1F600}"| == 1;
   }
 
@@ -571,11 +617,17 @@ module RamdafTests.Edge.Misc {
 
   // node: eq(negate(0), 0), eq(multiply(-1, 0), 0) and eq(modulo(-4, 2), 0)
   // are false since v0.9.0 (eq is `Object.is`, and each left side is -0),
-  // and so is eqDeep([negate(0)], [0]); an int has no -0.
+  // and so is eqDeep([negate(0)], [0]); since v0.14.0 so are
+  // `propEq('a', negate(0), {a: 0})`, `eqProps('a', {a: negate(0)}, {a: 0})`
+  // and `whereEq({a: 0}, {a: negate(0)})`, which compare with `Object.is`
+  // too (true until v0.13.0, with `===`). An int has no -0.
   method {:test} DeviationEqSignedZero() {
     expect eq(negate(0), 0) == true;
     expect eq(multiply(-1, 0), 0) == true;
     expect eq(modulo(-4, 2), 0) == true;
+    expect propEq("a", negate(0), map["a" := 0]) == true;
+    expect eqProps("a", map["a" := negate(0)], map["a" := 0]) == true;
+    expect whereEq(map["a" := 0], map["a" := negate(0)]) == true;
   }
 
   // node: allPass([]) and anyPass([]) throw "First argument to arity must be
@@ -588,11 +640,20 @@ module RamdafTests.Edge.Misc {
     expect anyPass(none)(5) == false;
   }
 
-  // node: evolve({__transducers_reduced__: x => 1}, {a: 1}) is {a: 1} since
-  // v0.12.0: mapObjIndexed's fold over the transformations meets a truthy
-  // `__transducers_reduced__` and returns its `value`, undefined, so no
-  // transformed key is added. Here the key is ordinary.
+  // node: evolve({'@@transducer/reduced': x => 1}, {a: 1}) is {a: 1} since
+  // v0.14.0 (with `__transducers_reduced__` from v0.12.0 to v0.13.0):
+  // mapObjIndexed's fold over the transformations meets a truthy
+  // `@@transducer/reduced` and returns its `@@transducer/value`, undefined,
+  // so no transformed key is added. Here the key is ordinary.
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
+    expect evolve(map["@@transducer/reduced" := (v: Option<int>) => 1], map["a" := 1]) ==
+      map["a" := 1, "@@transducer/reduced" := 1];
+  }
+
+  // node: since v0.14.0 `__transducers_reduced__` is an ordinary key, as
+  // here: evolve({__transducers_reduced__: x => 1}, {a: 1}) is {a: 1,
+  // __transducers_reduced__: 1} (v0.12.0 and v0.13.0 gave {a: 1}).
+  method {:test} OldReducedMarkerIsAnOrdinaryKey() {
     expect evolve(map["__transducers_reduced__" := (v: Option<int>) => 1], map["a" := 1]) ==
       map["a" := 1, "__transducers_reduced__" := 1];
   }

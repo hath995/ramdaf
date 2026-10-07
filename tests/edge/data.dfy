@@ -1,4 +1,4 @@
-// Edge cases for Sort and Data, checked against dist/ramda.js v0.13.0 under node;
+// Edge cases for Sort and Data, checked against dist/ramda.js v0.14.0 under node;
 // the last methods pin documented deviations (README "Deviations").
 
 module RamdafTests.Edge.Data {
@@ -62,38 +62,30 @@ module RamdafTests.Edge.Data {
   }
 
   // Since v0.7.0 difference and differenceWith are loops (same results).
-  // Since v0.11.0 differenceWith requires the kept elements to be a prefix of
-  // the first list (node leaves a hole at every dropped index before a kept
-  // one: `differenceWith((a, b) => a < b, [3, 1, 2, 5, 4], [2])` is `[3,
-  // <2 empty items>, 5]`, `[3, 5]` until v0.10.0); the asserts name what
-  // drops each later element (node: [5], [1, 2]).
+  // Since v0.14.0 differenceWith pushes its kept elements again: node gives
+  // `differenceWith((a, b) => a < b, [3, 1, 2, 5, 4], [2])` → [3, 5] (v0.11.0
+  // to v0.13.0 left a hole at every dropped index before a kept one, `[3,
+  // <2 empty items>, 5]`, outside the port's domain then), and [5], [1, 2].
   method {:test} DifferenceEdges() {
     expect difference([1, 2, 1, 3], [2]) == [1, 3];
     // `difference('abcab', 'b')`: strings are lists of characters
     expect difference("abcab", "b") == "ac";
-    var f1 := [5, 4, 3, 2, 1];
-    assert lt(f1[1], f1[..1][0]) && lt(f1[2], f1[..1][0]) && lt(f1[3], f1[..1][0]) && lt(f1[4], f1[..1][0]);
-    expect differenceWith(lt, f1, [0]) == [5];
-    var f2, s2 := [1, 2, 3, 4, 5, 6], [3];
-    assert mod3(f2[2], s2[0]) && mod3(f2[3], f2[..2][0]) && mod3(f2[4], f2[..2][1]) && mod3(f2[5], s2[0]);
-    expect differenceWith(mod3, f2, s2) == [1, 2];
+    expect differenceWith((a: int, b: int) => a < b, [3, 1, 2, 5, 4], [2]) == [3, 5];
+    expect differenceWith(lt, [5, 4, 3, 2, 1], [0]) == [5];
+    expect differenceWith(mod3, [1, 2, 3, 4, 5, 6], [3]) == [1, 2];
   }
 
-  // differenceWith (v0.11.0) inside its domain, where node keeps a prefix
-  // (node: [1, 2, 3], [1], [1, 2], [], [1, 2, 3]).
-  method {:test} DifferenceWithKeepsAPrefix() {
+  // differenceWith (node: [1, 2, 3], [1], [1, 2], [], [1, 2, 3], and [1, 3]
+  // for `differenceWith(eq, [1, 2, 3, 4], [2])`, `[1, <hole>, 3, 4]` from
+  // v0.11.0 to v0.13.0).
+  method {:test} DifferenceWithEdges() {
     var none: seq<int> := [];
-    var f1, s1 := [1, 2, 3, 4], [4];
-    assert eqInt(f1[3], s1[0]);
-    expect differenceWith(eqInt, f1, s1) == [1, 2, 3];
-    var f2, s2 := [1, 2], [2];
-    assert eqInt(f2[1], s2[0]);
-    expect differenceWith(eqInt, f2, s2) == [1];
-    var f3 := [1, 2, 1, 1];
-    assert eqInt(f3[2], f3[..2][0]) && eqInt(f3[3], f3[..2][0]);
-    expect differenceWith(eqInt, f3, none) == [1, 2];
+    expect differenceWith(eqInt, [1, 2, 3, 4], [4]) == [1, 2, 3];
+    expect differenceWith(eqInt, [1, 2], [2]) == [1];
+    expect differenceWith(eqInt, [1, 2, 1, 1], none) == [1, 2];
     expect differenceWith(eqInt, none, [1]) == [];
     expect differenceWith(eqInt, [1, 2, 3], [9]) == [1, 2, 3];
+    expect differenceWith(eqInt, [1, 2, 3, 4], [2]) == [1, 3, 4];
   }
 
   function lt(a: int, b: int): bool { a < b }
@@ -109,12 +101,8 @@ module RamdafTests.Edge.Data {
     expect unionWith(mod3, [1, 2], [4, 5, 6]) == [1, 2, 6];
     expect unionWith(mod3, [1, 2, 3, 4], empty) == [1, 2, 3];
     expect unionWith((a: int, b: int) => a < b, [3, 1, 2], empty) == [3];
-    var f1, s1 := [1, 2, 3], [4];
-    assert par(f1[1], s1[0]) && par(f1[2], f1[..1][0]);
-    expect differenceWith(par, f1, s1) == [1];
-    var f2 := [1, 2, 1];
-    assert eqInt(f2[2], f2[..2][0]);
-    expect differenceWith(eqInt, f2, [3]) == [1, 2];
+    expect differenceWith(par, [1, 2, 3], [4]) == [1];
+    expect differenceWith((a: int, b: int) => a == b, [1, 2, 1], [3]) == [1, 2];
     expect intersectionWith(par, [1, 2, 3], [4, 5]) == [1, 2];
     expect intersectionWith((a: int, b: int) => a == b, [2, 1, 2], [2]) == [2];
   }
@@ -226,11 +214,12 @@ module RamdafTests.Edge.Data {
     expect eqDeep(Arr([]), Obj(map[])) == false;
   }
 
-  // node: sort((a, b) => a < b ? -1 : a > b ? 1 : 0, 'cab') throws
-  // "TypeError: clone(...).sort is not a function" since v0.9.0 (`clone`
-  // returns the string, which has no `sort` method; v0.8.0 gave ['a', 'b',
-  // 'c']). Here a string is a seq of characters and sorts.
-  method {:test} DeviationSortOfAString() {
+  // node: sort((a, b) => a < b ? -1 : a > b ? 1 : 0, 'cab') is ['a', 'b',
+  // 'c'] again since v0.14.0, which sorts `_slice(list)` (from v0.9.0 to
+  // v0.13.0 it threw "TypeError: clone(...).sort is not a function", as
+  // `clone` returned the string, and this was the pin
+  // DeviationSortOfAString). A string is a seq of characters and sorts.
+  method {:test} SortOfAString() {
     var cmp := (a: char, b: char) => if a < b then -1 else if a > b then 1 else 0;
     expect sort(cmp, "cab") == "abc";
   }
@@ -255,20 +244,40 @@ module RamdafTests.Edge.Data {
   }
 
   // node: Object.keys(sort(() => 0, [JSON.parse('{"__proto__": 5, "a":
-  // 1}')])[0]) is ['a'] since v0.9.0: the deep copy of each element drops an
-  // own `__proto__` property (sortBy did so in v0.9.1 alone; since v0.10.0
-  // it agrees with the port, SortByOfAStringAndPrototypeKeys above). A map's
-  // keys are all ordinary.
-  method {:test} DeviationPrototypeKeysAreOrdinaryInSortedCopies() {
+  // 1}')])[0]) is ['__proto__', 'a'] since v0.14.0, which sorts a shallow
+  // copy and keeps the element objects; from v0.9.0 to v0.13.0 the deep
+  // copy of each element dropped the own `__proto__` property, ['a'] (this
+  // was the pin DeviationPrototypeKeysAreOrdinaryInSortedCopies; sortBy did
+  // so in v0.9.1 alone, SortByOfAStringAndPrototypeKeys above).
+  method {:test} SortKeepsPrototypeNamedKeys() {
     var o := map["__proto__" := 5, "a" := 1];
     expect sort((m1: map<string, int>, m2: map<string, int>) => 0, [o]) == [o];
   }
 
-  // node: groupBy(x => '__transducers_reduced__', [1, 2]) is undefined since
-  // v0.12.0: the group array is truthy, so `_reduce` takes the accumulator for
-  // the transducer protocol's "reduced" marker and returns its `value`. Here
-  // the key is ordinary.
+  // node: groupBy(x => '@@transducer/reduced', [1, 2]) is undefined since
+  // v0.14.0 (with `__transducers_reduced__` from v0.12.0 to v0.13.0): the
+  // group array is truthy, so `_reduce` takes the accumulator for the
+  // transducer protocol's "reduced" marker and returns its
+  // `@@transducer/value`. Here the key is ordinary.
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
+    expect groupBy((x: int) => "@@transducer/reduced", [1, 2]) == map["@@transducer/reduced" := [1, 2]];
+  }
+
+  // node: groupBy(x => '__transducers_reduced__', [1, 2]) is
+  // {__transducers_reduced__: [1, 2]} since v0.14.0, as here (undefined in
+  // v0.12.0 and v0.13.0).
+  method {:test} OldReducedMarkerIsAnOrdinaryKey() {
     expect groupBy((x: int) => "__transducers_reduced__", [1, 2]) == map["__transducers_reduced__" := [1, 2]];
+  }
+
+  // node: since v0.14.0 `uniq` (`uniqWith(eq)`), and `difference` and
+  // `intersection` (through `_indexOf`), compare with `Object.is`:
+  // `union([0], [negate(0)])` is [0, -0], `intersection([0], [negate(0)])`
+  // [] and `difference([0], [negate(0)])` [0] (with `===` until v0.13.0: [0],
+  // [-0] and []). An int has no -0.
+  method {:test} DeviationSetOperationsSignedZero() {
+    expect union([0], [M.negate(0)]) == [0];
+    expect intersection([0], [M.negate(0)]) == [0];
+    expect difference([0], [M.negate(0)]) == [];
   }
 }

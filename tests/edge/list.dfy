@@ -1,11 +1,12 @@
-// Edge cases Ramda v0.13.0's own suite does not cover, each checked against
-// dist/ramda.js v0.13.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.14.0's own suite does not cover, each checked against
+// dist/ramda.js v0.14.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
   import opened Ramdaf.Prelude
   import opened Ramdaf.Core
   import opened Ramdaf.List
+  import M = Ramdaf.Math
   import opened Support
 
   method {:test} CoreEdges() {
@@ -369,6 +370,70 @@ module RamdafTests.Edge.List {
   // negative n gives [] (it threw RangeError); since v0.5.0 drop (skip until
   // v0.8.0) gives [] for n >= |list| (from v0.2.0 to v0.4.3 it threw
   // RangeError for n > |list|).
+  // adjust and update (v0.14.0). Node: `adjust(x => x + 10, 1, [1, 2, 3])`
+  // [1, 12, 3], with -1 [1, 2, 13], with -3 [11, 2, 3], with 3 and -4 the
+  // list, `adjust(f, 0, [])` [], `adjust(x => 'X', 0, 'abc')` ['X', 'b',
+  // 'c']; `update(1, 9, [1, 2, 3])` [1, 9, 3], with -1 [1, 2, 9], with 3 the
+  // list.
+  method {:test} AdjustUpdateEdges() {
+    var add10 := (x: int) => x + 10;
+    var none: seq<int> := [];
+    expect adjust(add10, 1, [1, 2, 3]) == [1, 12, 3];
+    expect adjust(add10, -1, [1, 2, 3]) == [1, 2, 13];
+    expect adjust(add10, -3, [1, 2, 3]) == [11, 2, 3];
+    expect adjust(add10, 3, [1, 2, 3]) == [1, 2, 3];
+    expect adjust(add10, -4, [1, 2, 3]) == [1, 2, 3];
+    expect adjust(add10, 0, none) == [];
+    expect adjust((c: char) => 'X', 0, "abc") == "Xbc";
+    expect update(1, 9, [1, 2, 3]) == [1, 9, 3];
+    expect update(-1, 9, [1, 2, 3]) == [1, 2, 9];
+    expect update(3, 9, [1, 2, 3]) == [1, 2, 3];
+  }
+
+  // intersperse, dropRepeats and dropRepeatsWith (v0.14.0). Node:
+  // `intersperse(0, [1, 2, 3])` [1, 0, 2, 0, 3], of [] [], of [1] [1],
+  // `intersperse(',', 'abc')` ['a', ',', 'b', ',', 'c']; `dropRepeats([1, 1,
+  // 2, 1, 1])` [1, 2, 1], of 'aabca' ['a', 'b', 'c', 'a'];
+  // `dropRepeatsWith((a, b) => a < b, [1, 3, 2, 5, 4])` [1] (each element is
+  // compared with the last one kept), with `Math.abs(a) === Math.abs(b)` on
+  // [1, -1, 1, 3, -3] [1, 3].
+  method {:test} IntersperseDropRepeatsEdges() {
+    var none: seq<int> := [];
+    expect intersperse(0, [1, 2, 3]) == [1, 0, 2, 0, 3];
+    expect intersperse(0, none) == [];
+    expect intersperse(0, [1]) == [1];
+    expect intersperse(',', "abc") == "a,b,c";
+    expect dropRepeats([1, 1, 2, 1, 1]) == [1, 2, 1];
+    expect dropRepeats("aabca") == "abca";
+    expect dropRepeatsWith((a: int, b: int) => a < b, [1, 3, 2, 5, 4]) == [1];
+    var abs := (n: int) => if n < 0 then -n else n;
+    expect dropRepeatsWith((a: int, b: int) => abs(a) == abs(b), [1, -1, 1, 3, -3]) == [1, 3];
+  }
+
+  // lensIndex (v0.14.0). Node: `lensIndex(0)([1, 2])` 1, `lensIndex(-1)` 2,
+  // `lensIndex(-2)` 1; `.set(9, [1, 2])` [9, 2] at 0, [1, 9] at 1, [1, 2, 9]
+  // at 2 and at 5 (`_slice` clamps), [9, 1, 2] at -1 (the first cut is
+  // empty, the second the whole list); `lensIndex(-1).set(9, [])` and
+  // `lensIndex(0).set(9, [])` [9]; `lensIndex(-1).map(x => x + 1, [1, 2])`
+  // [3, 1, 2]; `lensIndex(1).map(x => x + 1, [1, 2, 3])` [1, 3, 3]. (Outside
+  // the domain: `lensIndex(5)([1, 2])` and `lensIndex(-3)([1, 2])` are
+  // undefined, `lensIndex(-2).set(9, [1, 2])` is [9, undefined, 1, 2].)
+  method {:test} LensIndexEdges() {
+    var none: seq<int> := [];
+    expect lensIndex<int>(0).get([1, 2]) == 1;
+    expect lensIndex<int>(-1).get([1, 2]) == 2;
+    expect lensIndex<int>(-2).get([1, 2]) == 1;
+    expect lensIndex<int>(0).set_(9, [1, 2]) == [9, 2];
+    expect lensIndex<int>(1).set_(9, [1, 2]) == [1, 9];
+    expect lensIndex<int>(2).set_(9, [1, 2]) == [1, 2, 9];
+    expect lensIndex<int>(5).set_(9, [1, 2]) == [1, 2, 9];
+    expect lensIndex<int>(-1).set_(9, [1, 2]) == [9, 1, 2];
+    expect lensIndex<int>(-1).set_(9, none) == [9];
+    expect lensIndex<int>(0).set_(9, none) == [9];
+    expect lensIndex<int>(-1).map_((x: int) => x + 1, [1, 2]) == [3, 1, 2];
+    expect lensIndex<int>(1).map_((x: int) => x + 1, [1, 2, 3]) == [1, 3, 3];
+  }
+
   method {:test} TakeDropEdges() {
     var empty: seq<int> := [];
     expect take(-1, [1, 2, 3]) == [];
@@ -391,6 +456,12 @@ module RamdafTests.Edge.List {
     expect drop(1, "abc") == "bc";
     var drop5 := (l: seq<int>) => drop(5, l);
     expect drop5([1, 2, 3]) == [];
+    // v0.14.0: `drop(-1, [1, 2])` and `drop(-3, [])` give the list, and
+    // `drop(-1, 'abc')` the string itself (until v0.13.0 `[undefined, 1,
+    // 2]` and `[undefined, 'a', 'b', 'c']`)
+    expect drop(-1, [1, 2]) == [1, 2];
+    expect drop(-3, empty) == [];
+    expect drop(-1, "abc") == "abc";
   }
 
   // Since v0.2.0 zip and zipWith stop at the shorter list.
@@ -631,13 +702,30 @@ module RamdafTests.Edge.List {
   }
 
   // node: since v0.12.0 `_reduce` stops when the accumulator has a truthy
-  // `__transducers_reduced__` property and returns its `value` (the
-  // transducer protocol's "reduced" marker): `reduce((acc, x) => assoc('x', x,
-  // acc), {__transducers_reduced__: 1, value: 9}, [1, 2, 3])` is 9,
-  // `mergeAll([{__transducers_reduced__: 1, value: 7}, {a: 2}])` is 7, and
-  // `mapObj(x => x, {__transducers_reduced__: 1, value: 5, z: 3})` and
-  // `mapObjIndexed` of it are undefined. Here the key is ordinary.
+  // `@@transducer/reduced` property and returns its `@@transducer/value`
+  // (the transducer protocol's "reduced" marker; `__transducers_reduced__`
+  // and `value` until v0.13.0): `reduce((acc, x) => assoc('x', x, acc),
+  // {'@@transducer/reduced': 1, '@@transducer/value': 9}, [1, 2, 3])` is 9,
+  // `mergeAll([{'@@transducer/reduced': 1, '@@transducer/value': 7}, {a:
+  // 2}])` is 7, and `mapObj(x => x, {'@@transducer/reduced': 1,
+  // '@@transducer/value': 5, z: 3})` and `mapObjIndexed` of it are
+  // undefined. Here the key is ordinary.
   method {:test} DeviationReducedMarkerIsAnOrdinaryKey() {
+    var marked := map["@@transducer/reduced" := 1, "@@transducer/value" := 9];
+    expect reduce((acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2, 3]) == marked["x" := 3];
+    var m7 := map["@@transducer/reduced" := 1, "@@transducer/value" := 7];
+    expect mergeAll([m7, map["a" := 2]]) == m7["a" := 2];
+    var o := map["@@transducer/reduced" := 1, "@@transducer/value" := 5, "z" := 3];
+    expect mapObj((x: int) => x, o) == o;
+    expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
+  }
+
+  // node: since v0.14.0 the v0.12.0 marker `__transducers_reduced__` is an
+  // ordinary key, as here: the folds run to the end (`reduce` gives
+  // {__transducers_reduced__: 1, value: 9, x: 3}, `mergeAll` {…, a: 2}, and
+  // `mapObj` and `mapObjIndexed` the object; in v0.12.0 and v0.13.0 9, 7 and
+  // undefined).
+  method {:test} OldReducedMarkerIsAnOrdinaryKey() {
     var marked := map["__transducers_reduced__" := 1, "value" := 9];
     expect reduce((acc: map<string, int>, x: int) => acc["x" := x], marked, [1, 2, 3]) == marked["x" := 3];
     var m7 := map["__transducers_reduced__" := 1, "value" := 7];
@@ -645,5 +733,21 @@ module RamdafTests.Edge.List {
     var o := map["__transducers_reduced__" := 1, "value" := 5, "z" := 3];
     expect mapObj((x: int) => x, o) == o;
     expect mapObjIndexed((x: int, k: string, m: map<string, int>) => x, o) == o;
+  }
+
+  // node: since v0.14.0 `contains`, `indexOf`, `lastIndexOf` and `isSet`
+  // (`_indexOf`), `uniq` (`uniqWith(eq)`) and `dropRepeats` (`_eq`) compare
+  // with `Object.is`: `contains(negate(0), [0])` is false, `indexOf` and
+  // `lastIndexOf` of it -1, `isSet([0, negate(0)])` true, and `uniq` and
+  // `dropRepeats` of that list [0, -0] (with `===` until v0.13.0: true, 0,
+  // 0, false, [0]). An int has no -0.
+  method {:test} DeviationListSearchesSignedZero() {
+    var z := M.negate(0);
+    expect contains(z, [0]) == true;
+    expect indexOf(z, [0]) == 0;
+    expect lastIndexOf(z, [0]) == 0;
+    expect isSet([0, z]) == false;
+    expect uniq([0, z]) == [0];
+    expect dropRepeats([0, z]) == [0];
   }
 }

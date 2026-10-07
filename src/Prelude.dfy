@@ -1,10 +1,10 @@
-// Ramdaf: a Dafny port of Ramda v0.13.0 (2015-03-22).
+// Ramdaf: a Dafny port of Ramda v0.14.0 (2015-05-11).
 // Support datatypes shared by the area modules. These are not Ramda exports;
 // they are the encodings the README's "JS -> Dafny mapping" names.
 
 module Ramdaf.Prelude {
   export
-    reveals Option, Tree, SpecVal, Lens, LensOn
+    reveals Option, Tree, Lens, LensOn
 
   // A Ramda result that is a documented "no value" sentinel instead of an
   // element (`find` miss -> undefined, a missing property -> undefined,
@@ -22,12 +22,6 @@ module Ramdaf.Prelude {
   // "Deviations".)
   datatype Tree<T> = Leaf(value: T) | Node(children: seq<Tree<T>>)
 
-  // A value of `where`'s spec object: a function, called with the test
-  // object's property and the whole test object, or any other value, compared
-  // with `===`. (Up to v0.2.2 the function was also called for an absent
-  // property, with None, i.e. JS undefined; since v0.2.3 it is not.)
-  datatype SpecVal<!V> = Pred(fn: (Option<V>, map<string, V>) -> bool) | Val(v: V)
-
   // The result of `R.lens(get, set)` (v0.8.0): JS returns the function
   // `lns(a) = get(a)` carrying two properties, `lns.set = set` and
   // `lns.map(fn, a) = set(fn(get(a)), a)`. A Dafny function value has no
@@ -36,7 +30,11 @@ module Ramdaf.Prelude {
   // Dafny keywords). The fields are partial arrows (`-->`): a JS getter or
   // setter may throw or return undefined on part of its domain, which the
   // port states as a precondition, and only a partial arrow can carry one.
-  // `lens` (List.dfy) builds map_ from get and set_, requiring both.
+  // `lens` (List.dfy) builds map_ from get and set_, requiring both, and so
+  // do `lensIndex` (List.dfy), `lensProp` (Object.dfy), `composeL` and
+  // `pipeL` (Functions.dfy), v0.14.0. (`where`'s spec values were the
+  // datatype `SpecVal`, `Pred(fn)` or `Val(v)`, from v0.1.1 until v0.14.0
+  // made every spec value a predicate and removed it.)
   datatype Lens<!A, !V> = Lens(get: A --> V, set_: (V, A) --> A, map_: (V -> V, A) --> A)
 
   // The result of `R.lensOn(get, set, obj)` (v0.11.0), a lens bound to obj:

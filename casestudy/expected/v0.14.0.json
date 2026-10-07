@@ -1,0 +1,24 @@
+{
+  "ramda": "v0.14.0",
+  "tier": "major",
+  "changes": [
+    {"symbol": "Ramdaf.String.charAt", "kind": "removed", "why": "v0.14.0 removed R.charAt, deprecated in v0.12.0 for nthChar"},
+    {"symbol": "Ramdaf.String.charCodeAt", "kind": "removed", "why": "v0.14.0 removed R.charCodeAt, deprecated in v0.12.0 for nthCharCode"},
+    {"symbol": "Ramdaf.Prelude.SpecVal", "kind": "removed", "why": "v0.14.0 makes every where spec value a predicate and moves the value entries to the new whereEq, so the support datatype for a function-or-value spec entry encodes nothing and is removed"},
+    {"symbol": "Ramdaf.Object.where", "kind": "breaking", "why": "v0.14.0's where calls every spec value as a predicate with the test object's property alone, undefined when absent (a value entry throws; where({a: x => x === undefined}, {}) went from false to true): the signature changed from map<string, SpecVal<V>> to map<string, Option<V> -> bool>"},
+    {"symbol": "Ramdaf.Data.differenceWith", "kind": "compatible", "why": "v0.14.0 pushes each kept element again (out[out.length], f5966efd), so no holes are left (differenceWith(eq, [1, 2, 3, 4], [2]) went from [1, <hole>, 3, 4] to [1, 3, 4]): the kept-prefix precondition is dropped, with every result inside it unchanged"},
+    {"symbol": "Ramdaf.List.drop", "kind": "compatible", "why": "v0.14.0's drop is n <= 0 ? list : _slice(list, n) (\"treat negative number as zero\"): n widens from nat to int and a negative n gives the list (drop(-1, [1, 2]) went from [undefined, 1, 2] to [1, 2]), with every result for n >= 0 unchanged"},
+    {"symbol": "Ramdaf.List.adjust", "kind": "added", "why": "new in v0.14.0 (@category List): adjust(fn, idx, list) applies fn to the element at idx, a negative idx counting from the end; out of range the list"},
+    {"symbol": "Ramdaf.List.update", "kind": "added", "why": "new in v0.14.0 (@category List): update(idx, x, list) is adjust(always(x), idx, list)"},
+    {"symbol": "Ramdaf.List.intersperse", "kind": "added", "why": "new in v0.14.0 (@category List): intersperse(separator, list) puts the separator between the elements"},
+    {"symbol": "Ramdaf.List.dropRepeatsWith", "kind": "added", "why": "new in v0.14.0 (@category List): dropRepeatsWith(pred, list) keeps the first element and each element pred does not match with the last one kept"},
+    {"symbol": "Ramdaf.List.dropRepeats", "kind": "added", "why": "new in v0.14.0 (@category List): dropRepeats is dropRepeatsWith with Object.is"},
+    {"symbol": "Ramdaf.List.lensIndex", "kind": "added", "why": "new in v0.14.0 (@category List): lensIndex(n) is lens(nth(n), set by _slice cuts); the getter requires the index in the list and the setter n >= -1"},
+    {"symbol": "Ramdaf.Object.lensProp", "kind": "added", "why": "new in v0.14.0 (@category Object): lensProp(k) is lens(prop(k), assoc(k)); the getter requires the key"},
+    {"symbol": "Ramdaf.Object.whereEq", "kind": "added", "why": "new in v0.14.0 (@category Object): whereEq(spec, testObj) is where(mapObj(eq, spec), testObj), where's former value entries"},
+    {"symbol": "Ramdaf.Functions.composeL", "kind": "added", "why": "new in v0.14.0 (@category Function): composeL composes lenses right to left (binary here)"},
+    {"symbol": "Ramdaf.Functions.pipeL", "kind": "added", "why": "new in v0.14.0 (@category Function): pipeL composes lenses left to right, composeL of the reversed lenses (binary here)"},
+    {"symbol": "Ramdaf.Math.mean", "kind": "added", "why": "new in v0.14.0 (@category Math): mean(list) is sum(list) / list.length, a real; NaN for [], so the list must not be empty"},
+    {"symbol": "Ramdaf.Math.median", "kind": "added", "why": "new in v0.14.0 (@category Math): median(list) is the mean of the middle one or two elements of the sorted list; NaN for [], so the list must not be empty"}
+  ]
+}

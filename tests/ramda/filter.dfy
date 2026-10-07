@@ -1,4 +1,4 @@
-// Ramda v0.13.0 test/filter.js, filterIndexed.js, reject.js,
+// Ramda v0.14.0 test/filter.js, filterIndexed.js, reject.js,
 // rejectIndexed.js, takeWhile.js, take.js, dropWhile.js and drop.js (until
 // v0.8.0 test.filter.js), transcribed ("automatically curried" cases apply
 // the partially applied function in full). The "should start at the
@@ -192,6 +192,13 @@ module RamdafTests.Ramda.Filter {
   // v0.5.0 (until v0.4.3 skip threw RangeError here)
   method {:test} DropReturnsAnEmptyArrayIfNIsTooLarge() {
     expect drop(20, ["a", "b", "c", "d", "e", "f", "g"]) == [];
+  }
+
+  // v0.14.0 (until v0.13.0 a negative n read undefined holes); its
+  // `drop(-Infinity, …)` line is not an int.
+  method {:test} DropReturnsAnEquivalentListIfNIsAtMostZero() {
+    expect drop(0, [1, 2, 3]) == [1, 2, 3];
+    expect drop(-1, [1, 2, 3]) == [1, 2, 3];
   }
 
   method {:test} DropIsAutomaticallyCurried() {

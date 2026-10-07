@@ -1,10 +1,12 @@
-// Ramda v0.13.0 test/project.js, propEq.js, union.js, unionWith.js,
+// Ramda v0.14.0 test/project.js, propEq.js, union.js, unionWith.js,
 // intersection.js, intersectionWith.js, difference.js, differenceWith.js,
 // countBy.js and sortBy.js (until v0.8.0 test.sql.js, whose copy of the
 // groupBy describe v0.9.0 dropped), transcribed. Not transcribed:
 // - the three "does not work for non-primitives" cases (union/intersection/
 //   difference of distinct-but-equal objects): JS `===` compares references,
 //   Dafny `==` structure (README "Deviations"; pinned in tests/edge/data.dfy);
+// - propEq's "has Object.is semantics" (v0.14.0): `-0` and NaN are not ints
+//   (README "Deviations"; pinned in tests/edge/misc.dfy);
 // - describe('sortBy'), which sorts by a string title: sortBy keys are ints
 //   (README "Deviations"); its v0.10.0 "preserves object identity" (reference
 //   identity, by a string key) and "sorts array-like object" (`arguments`,
@@ -136,26 +138,30 @@ module RamdafTests.Ramda.Sql {
     expect difference(empty, R2()) == [];
   }
 
+  // v0.14.0: `difference(M2, [3]).length` is 3
+  method {:test} DifferenceWillNotCreateASparseArray() {
+    expect |difference(R2(), [3])| == 3;
+  }
+
   // v0.7.0 (its `typeof` check holds by construction)
   method {:test} DifferenceIsCurried() {
     var diff123 := (l: seq<int>) => difference([1, 2, 3], l);
     expect diff123([1, 3]) == [2];
   }
 
-  // describe('differenceWith'). Since v0.11.0 differenceWith requires the
-  // kept elements to be a prefix of the first list (README "Outside the
-  // modeled domain"); both inputs keep a prefix, and the asserts name the
-  // element of the second list that drops each later one.
+  // describe('differenceWith')
   method {:test} DifferenceWithUsesThePredicate() {
-    assert EqA(Ro()[2], So()[0]) && EqA(Ro()[3], So()[1]);
     expect differenceWith(EqA, Ro(), So()) == [A(1), A(2)];
   }
 
   method {:test} DifferenceWithHasNoDuplicates() {
-    var first, second := Ro() + Ro(), So() + So();
-    assert EqA(first[2], second[0]) && EqA(first[3], second[1]) && EqA(first[6], second[0]) && EqA(first[7], second[1]);
-    assert EqA(first[4], first[..2][0]) && EqA(first[5], first[..2][1]);
-    expect differenceWith(EqA, first, second) == [A(1), A(2)];
+    expect differenceWith(EqA, Ro() + Ro(), So() + So()) == [A(1), A(2)];
+  }
+
+  // v0.14.0: `eq = (a, b) => a === b`; the result's length is 2 (v0.11.0 to
+  // v0.13.0 left holes, outside the port's domain then).
+  method {:test} DifferenceWithDoesNotReturnASparseArray() {
+    expect |differenceWith((a: int, b: int) => a == b, [1, 3, 2, 1, 3, 1, 2, 3], [3])| == 2;
   }
 
   function Album(title: string, artist: string, genre: string): map<string, string>

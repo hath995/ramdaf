@@ -1,4 +1,4 @@
-// Ramda v0.13.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
+// Ramda v0.14.0 test/join.js, slice.js, remove.js, insert.js, insertAll.js,
 // times.js, repeat.js, of.js, empty.js, chain.js, init.js, indexOf.js,
 // lastIndexOf.js, contains.js, containsWith.js, isSet.js, uniq.js,
 // uniqWith.js, map.js, mapObj.js, mapIndexed.js, mapObjIndexed.js, find.js,
@@ -6,7 +6,9 @@
 // range.js, reverse.js, unfold.js, zip.js, zipWith.js, zipObj.js,
 // fromPairs.js, xprod.js, partition.js, groupBy.js, createMapEntry.js,
 // scan.js, mapAccum.js, mapAccumRight.js, commute.js, commuteMap.js,
-// lens.js, mergeAll.js, aperture.js and none.js (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
+// lens.js, mergeAll.js, aperture.js, none.js, adjust.js, update.js,
+// intersperse.js, dropRepeats.js, dropRepeatsWith.js and lensIndex.js
+// (v0.9.x unfoldr.js, scanl.js, mapAccumL.js and
 // mapAccumR.js; until v0.8.0 test.list.js, test.indexof.js,
 // test.containsuniq.js, test.map.js, test.find.js, test.flatten.js,
 // test.range.js, test.reverse.js, test.unfold.js, test.zip.js,
@@ -49,7 +51,14 @@
 // objects") and the dispatch `it`s of map and reduce are not transcribed
 // (`into`, transformers and method dispatch, README "Not portable"); nor are
 // commute's and commuteMap's "works on Algebraic Data Types such as
-// "Maybe"" (a Fantasy-land functor, README "Deviations").
+// "Maybe"" (a Fantasy-land functor, README "Deviations"). v0.14.0's "has
+// Object.is semantics" `it`s of contains, indexOf, lastIndexOf and isSet
+// test `-0` and NaN, which an int does not have (README "Deviations",
+// pinned in tests/edge/list.dfy); adjust's and update's "accepts an
+// array-like object" pass an `arguments` object; intersperse's "dispatches"
+// (method dispatch) and the "can act as a transducer" `it`s of dropRepeats
+// and dropRepeatsWith (`into`) are not transcribed either, and the `typeof`
+// check of dropRepeatsWith's "is curried" holds by construction.
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude
@@ -58,6 +67,7 @@ module RamdafTests.Ramda.List {
   import opened Ramdaf.Data
   import Funcs = Ramdaf.Functions
   import S = Ramdaf.String
+  import O = Ramdaf.Object
   import opened Support
 
   // ---- join.js, slice.js, remove.js, insert.js, insertAll.js, times.js,
@@ -1085,5 +1095,162 @@ module RamdafTests.Ramda.List {
   method {:test} GroupByReturnsAnEmptyObjectIfGivenAnEmptyArray() {
     var none: seq<map<string, Js>> := [];
     expect groupBy((o: map<string, Js>) => if "x" in o && o["x"].Str? then o["x"].s else "undefined", none) == map[];
+  }
+
+  // ---- adjust.js, update.js, intersperse.js, dropRepeats.js,
+  // dropRepeatsWith.js and lensIndex.js (v0.14.0) ----
+
+  // `R.add(1)` is `x => x + 1`.
+  method {:test} AdjustAppliesTheGivenFunctionToTheValueAtTheGivenIndex() {
+    expect adjust((x: int) => x + 1, 2, [0, 1, 2, 3]) == [0, 1, 3, 3];
+  }
+
+  method {:test} AdjustOffsetsNegativeIndexesFromTheEndOfTheArray() {
+    expect adjust((x: int) => x + 1, -3, [0, 1, 2, 3]) == [0, 2, 2, 3];
+  }
+
+  method {:test} AdjustReturnsTheOriginalArrayIfTheSuppliedIndexIsOutOfBounds() {
+    var list := [0, 1, 2, 3];
+    expect adjust((x: int) => x + 1, 4, list) == list;
+    expect adjust((x: int) => x + 1, -5, list) == list;
+  }
+
+  // The second assertion holds trivially: list is a value.
+  method {:test} AdjustDoesNotMutateTheOriginalArray() {
+    var list := [0, 1, 2, 3];
+    expect adjust((x: int) => x + 1, 2, list) == [0, 1, 3, 3];
+    expect list == [0, 1, 2, 3];
+  }
+
+  // `R.adjust(R.add(1))(2)([0, 1, 2, 3])`
+  method {:test} AdjustCurriesTheArguments() {
+    var f := (idx: int) => (l: seq<int>) => adjust((x: int) => x + 1, idx, l);
+    expect f(2)([0, 1, 2, 3]) == [0, 1, 3, 3];
+  }
+
+  method {:test} UpdateUpdatesTheValueAtTheGivenIndexOfTheSuppliedArray() {
+    expect update(2, 4, [0, 1, 2, 3]) == [0, 1, 4, 3];
+  }
+
+  method {:test} UpdateOffsetsNegativeIndexesFromTheEndOfTheArray() {
+    expect update(-3, 4, [0, 1, 2, 3]) == [0, 4, 2, 3];
+  }
+
+  method {:test} UpdateReturnsTheOriginalArrayIfTheSuppliedIndexIsOutOfBounds() {
+    var list := [0, 1, 2, 3];
+    expect update(4, 4, list) == list;
+    expect update(-5, 4, list) == list;
+  }
+
+  method {:test} UpdateDoesNotMutateTheOriginalArray() {
+    var list := [0, 1, 2, 3];
+    expect update(2, 4, list) == [0, 1, 4, 3];
+    expect list == [0, 1, 2, 3];
+  }
+
+  // `R.update(2)(4)([0, 1, 2, 3])`
+  method {:test} UpdateCurriesTheArguments() {
+    var f := (idx: int) => (x: int) => (l: seq<int>) => update(idx, x, l);
+    expect f(2)(4)([0, 1, 2, 3]) == [0, 1, 4, 3];
+  }
+
+  method {:test} IntersperseInterposesASeparatorBetweenListItems() {
+    expect intersperse("n", ["ba", "a", "a"]) == ["ba", "n", "a", "n", "a"];
+    expect intersperse("bar", ["foo"]) == ["foo"];
+    var none: seq<string> := [];
+    expect intersperse("bar", none) == [];
+  }
+
+  method {:test} IntersperseIsCurried() {
+    var withN := (l: seq<string>) => intersperse("n", l);
+    expect withN(["ba", "a", "a"]) == ["ba", "n", "a", "n", "a"];
+  }
+
+  function DrObjs(): seq<int> { [1, 2, 3, 4, 5, 3, 2] }
+  function DrObjs2(): seq<int> { [1, 2, 2, 2, 3, 4, 4, 5, 5, 3, 2, 2] }
+
+  method {:test} DropRepeatsRemovesRepeatedElements() {
+    expect dropRepeats(DrObjs2()) == DrObjs();
+    expect dropRepeats(DrObjs()) == DrObjs();
+  }
+
+  method {:test} DropRepeatsReturnsAnEmptyArrayForAnEmptyArray() {
+    var none: seq<int> := [];
+    expect dropRepeats(none) == [];
+  }
+
+  function I(i: int): map<string, int> { map["i" := i] }
+  function IN(i: int, n: int): map<string, int> { map["i" := i, "n" := n] }
+  function DrwObjs(): seq<map<string, int>> { [I(1), I(2), I(3), I(4), I(5), I(3)] }
+  function DrwObjs2(): seq<map<string, int>> { [I(1), I(1), I(1), I(2), I(3), I(3), I(4), I(4), I(5), I(3)] }
+  // `eqI = R.eqProps('i')`
+  function EqI(a: map<string, int>, b: map<string, int>): bool { O.eqProps("i", a, b) }
+
+  method {:test} DropRepeatsWithRemovesRepeatedElementsBasedOnPredicate() {
+    expect dropRepeatsWith(EqI, DrwObjs2()) == DrwObjs();
+    expect dropRepeatsWith(EqI, DrwObjs()) == DrwObjs();
+  }
+
+  method {:test} DropRepeatsWithKeepsElementsFromTheLeft() {
+    expect dropRepeatsWith(EqI, [IN(1, 1), IN(1, 2), IN(1, 3), IN(4, 1), IN(4, 2)]) == [IN(1, 1), IN(4, 1)];
+  }
+
+  method {:test} DropRepeatsWithReturnsAnEmptyArrayForAnEmptyArray() {
+    var none: seq<map<string, int>> := [];
+    expect dropRepeatsWith(EqI, none) == [];
+  }
+
+  method {:test} DropRepeatsWithIsCurried() {
+    var byI := (l: seq<map<string, int>>) => dropRepeatsWith(EqI, l);
+    expect byI(DrwObjs()) == DrwObjs();
+    expect byI(DrwObjs2()) == DrwObjs();
+  }
+
+  // `headOf = R.lensIndex(0)`, over lists of ints, strings or (where a
+  // string is set into a number list) Js values.
+  method {:test} LensIndexRetrievesTheNthValueFromAnArray() {
+    expect lensIndex<int>(0).get([10, 20, 30, 40]) == 10;
+    expect lensIndex<string>(0).get(["a", "b", "c", "d"]) == "a";
+  }
+
+  method {:test} LensIndexSetsAValueAtPositionN() {
+    expect lensIndex<Js>(0).set_(Str("cow"), Nums([1, 2, 3, 4])) == [Str("cow"), Num(2), Num(3), Num(4)];
+  }
+
+  // The second assertion holds trivially: xs is a value.
+  method {:test} LensIndexTheSetterShouldNotMutateTheObject() {
+    var xs := [1, 2, 3, 4];
+    expect lensIndex<int>(0).set_(10, xs) == [10, 2, 3, 4];
+    expect xs == [1, 2, 3, 4];
+  }
+
+  method {:test} LensIndexMapsAnIndexFromGetterToSetter() {
+    expect lensIndex<int>(0).map_((x: int) => x + 10, [-9, 2, 3]) == [1, 2, 3];
+  }
+
+  // `uc(s) = s.toUpperCase()`
+  method {:test} LensIndexTheModifierShouldNotMutateTheObject() {
+    var xs := ["a", "b", "c"];
+    expect lensIndex<string>(0).map_(S.toUpper, xs) == ["A", "b", "c"];
+    expect xs == ["a", "b", "c"];
+  }
+
+  // `headPlus3 = R.compose(headOf.map(R.add(1)), headOf.map(R.add(2)))`,
+  // `set0Plus1 = R.compose(headOf.map(R.add(1)), headOf.set(0))` and
+  // `R.map(headPlus3)`. The getter, and so map_, requires a non-empty list,
+  // while compose and mapSeq take total functions, so each curried map_ is
+  // guarded by `|o| > 0`, which these non-empty lists always pass (node
+  // gives [NaN] for `headOf.map(R.add(1), [])`); the setter is total.
+  function HeadMap(k: int): seq<int> -> seq<int>
+  { (o: seq<int>) => if |o| > 0 then lensIndex<int>(0).map_((x: int) => x + k, o) else o }
+
+  method {:test} LensIndexCurriesMapAndSetAndModifiesWithComposedLens() {
+    var headPlus3 := Funcs.compose(HeadMap(1), HeadMap(2));
+    expect headPlus3([-2, 2, 3]) == [1, 2, 3];
+    var set0 := (o: seq<int>) => lensIndex<int>(0).set_(0, o);
+    var set0Plus1 := Funcs.compose(HeadMap(1), set0);
+    expect set0Plus1([-2, 2, 3]) == [1, 2, 3];
+    var mapHeadPlus3 := (l: seq<seq<int>>) => mapSeq(headPlus3, l);
+    expect mapHeadPlus3([[-2, 2, 3], [-1, 2, 3]]) == [[1, 2, 3], [2, 2, 3]];
   }
 }

@@ -1,13 +1,14 @@
-// Ramdaf: Ramda v0.13.0 `src/comparator.js`, `src/sort.js` and
+// Ramdaf: Ramda v0.14.0 `src/comparator.js`, `src/sort.js` and
 // `src/sortBy.js`.
 //
-// `sort` is `clone(list).sort(comparator)`, i.e. JS Array.prototype.sort, which
-// is stable (ES2019; node is the reference). (Since v0.9.0 `clone` is a deep
-// copy, so the elements are copies, and it returns a JS string as it is,
-// which has no `sort` method: `sort(cmp, 'cab')` throws, and an element
-// object loses an own `__proto__` key. `Array.prototype.sort` has always put
-// `undefined` elements last without calling the comparator. README
-// "Deviations".) For a comparator that is
+// `sort` is `_slice(list).sort(comparator)` (v0.14.0, "Don't clone in sort"),
+// i.e. JS Array.prototype.sort on a shallow copy, which is stable (ES2019;
+// node is the reference). (From v0.9.0 to v0.13.0 it sorted
+// `clone(list)`, a deep copy, so the elements were copies, an element object
+// lost an own `__proto__` key, and a JS string, which `clone` returns as it
+// is, threw: `sort(cmp, 'cab')`, `['a', 'b', 'c']` again since v0.14.0, as
+// here. `Array.prototype.sort` has always put `undefined` elements last
+// without calling the comparator, README "Deviations".) For a comparator that is
 // consistent on the list's elements the postconditions determine the result
 // completely: the stable sorted permutation. JS leaves the order unspecified
 // for inconsistent comparators, and so do the postconditions here. The bodies

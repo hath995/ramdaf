@@ -1,18 +1,22 @@
-// Ramdaf: Ramda v0.13.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Arithmetic Functions" section; from v0.9.0 on, the
-// functions with `@category Math` (`inc`, `dec`, `negate`). (v0.5.0 removed
+// functions with `@category Math` (`inc`, `dec`, `negate`, `mean`,
+// `median`). (v0.5.0 removed
 // `subtractN`, `divideBy` and `moduloBy`; v0.8.0 renamed `maxWith` and
 // `minWith` to `maxBy` and `minBy`.)
-// JS numbers are IEEE doubles; the port uses int, and real for division
-// (see README "Deviations").
+// JS numbers are IEEE doubles; the port uses int, and real for division and
+// for the results of `mean` and `median` (see README "Deviations").
+// `median` sorts with `Sort.sort`, so Math imports Sort (v0.14.0).
 
 module Ramdaf.Math {
   import opened Prelude
+  import Sort
 
   export
     reveals add, multiply, subtract, divide, modulo,
-            sum, product, lt, lte, gt, gte, max, maxBy, minBy, min, mathMod, inc, dec, negate
-    provides Prelude
+            sum, product, lt, lte, gt, gte, max, maxBy, minBy, min, mathMod, inc, dec, negate,
+            mean, median
+    provides Prelude, Sort
 
   function add(a: int, b: int): int { a + b }
 
@@ -151,4 +155,26 @@ module Ramdaf.Math {
   // multiply(-1)` in v0.9.0 and v0.10.0, the same results). JS `negate(0)` is
   // `-0`, which int does not have (README "Deviations", under `eq`).
   function negate(n: int): int { -n }
+
+  // `R.mean(list)` (v0.14.0, `@category Math`): `sum(list) / list.length`,
+  // a real here, as divide's result is (`mean([2, 7])` is 4.5). `mean([])`
+  // is NaN (0 / 0), so the list must not be empty.
+  function mean(list: seq<int>): real
+    requires |list| > 0
+  { sum(list) as real / |list| as real }
+
+  // `R.median(list)` (v0.14.0): NaN for the empty list (excluded, as for
+  // mean); otherwise a copy of the list (`_slice(list)`) sorted with
+  // `function(a, b) { return a < b ? -1 : a > b ? 1 : 0; }`, and the mean of
+  // its middle element (odd length) or two middle elements (even length):
+  // `width = 2 - len % 2`, `idx = (len - width) / 2`, `mean(sorted.slice(idx,
+  // idx + width))` (`median([7, 2, 10, 9])` is 8). JS sorts in place with
+  // `Array.prototype.sort`, which is what `Sort.sort` (`_slice(list).sort`
+  // since v0.14.0) is, by contract.
+  function median(list: seq<int>): real
+    requires |list| > 0
+  { var width := 2 - |list| % 2;
+    var idx := (|list| - width) / 2;
+    var sorted := Sort.sort((a: int, b: int) => if a < b then -1 else if a > b then 1 else 0, list);
+    mean(sorted[idx..idx + width]) }
 }

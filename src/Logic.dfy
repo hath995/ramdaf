@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.13.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "Logic Functions" section; from v0.9.0 on, the functions
 // with `@category Logic` (`defaultTo`, `both`, `either`, `complement`).
 // (v0.8.0 renamed v0.6.0's `cond` to `ifElse`, with the alias `if`, and
@@ -18,10 +18,12 @@ module Ramdaf.Logic {
   // predicate combinator that v0.12.0 renamed `both` (v0.1.0 to v0.1.3 had
   // the operator `!!(a && b)`). JS takes any values and returns the deciding
   // one (`and(1, 0)` is 0); the operands here are bool (README
-  // "Deviations").
+  // "Deviations"). Since v0.14.0 a first argument with an `and` method is
+  // dispatched to (`a.and(b)`, Fantasy-land); a bool has none.
   function and(a: bool, b: bool): bool { a && b }
 
-  // `R.or(a, b)` (v0.12.0): `a || b`, as for and (`either` until v0.11.0).
+  // `R.or(a, b)` (v0.12.0): `a || b`, as for and (`either` until v0.11.0;
+  // since v0.14.0 an `or` method of the first argument is dispatched to).
   function or(a: bool, b: bool): bool { a || b }
 
   // `R.not(a)` (v0.12.0): `!a`, as for and (`complement` until v0.11.0).

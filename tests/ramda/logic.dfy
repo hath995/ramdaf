@@ -1,4 +1,4 @@
-// Ramda v0.13.0 test/both.js, either.js, complement.js, and.js, or.js,
+// Ramda v0.14.0 test/both.js, either.js, complement.js, and.js, or.js,
 // not.js, allPass.js, anyPass.js, all.js, any.js, ifElse.js, cond.js and
 // defaultTo.js (until v0.8.0 test.booleans.js, test.allany.js and
 // test.cond.js), transcribed.
@@ -19,7 +19,8 @@
 // array operands are not bool (README "Deviations"); all.js's and any.js's
 // new `into` and transformer `it`s (transducers, not portable) and ifElse.js's
 // arity and curried `it`s (`R.gt`, `R.subtract` on two arguments) are not
-// transcribed.) defaultTo's values are Js values
+// transcribed, nor are v0.14.0's "dispatches to `and` method" and
+// "dispatches to `or` method", whose operands are objects with methods.) defaultTo's values are Js values
 // (the default 42 and the values differ in type), and its null and undefined
 // are both None (README "Deviations").
 

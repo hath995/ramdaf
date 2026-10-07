@@ -1,8 +1,10 @@
-// Ramda v0.13.0 test/substring.js, substringFrom.js, substringTo.js,
-// charAt.js, charCodeAt.js, nthChar.js, nthCharCode.js, strIndexOf.js, strLastIndexOf.js, toUpper.js,
+// Ramda v0.14.0 test/substring.js, substringFrom.js, substringTo.js,
+// nthChar.js, nthCharCode.js, strIndexOf.js, strLastIndexOf.js, toUpper.js,
 // toLower.js, trim.js, split.js and replace.js (until v0.8.0
-// test.stringBasics.js and test.replace.js), transcribed. Not transcribed:
-// match.js and test.js (regular expressions are not portable, README), and
+// test.stringBasics.js and test.replace.js), transcribed. (v0.14.0 removed
+// charAt.js and charCodeAt.js with the functions.) Not transcribed:
+// match.js and test.js (regular expressions are not portable, README),
+// toString.js (v0.14.0; not portable, README), and
 // trim's "falls back to a shim if String.prototype.trim is not present"
 // (v0.6.0), which is only registered when that method is missing, so not
 // under node (its asserts repeat the other three).
@@ -51,24 +53,6 @@ module RamdafTests.Ramda.String {
   method {:test} SubstringToIsAutomaticallyCurried() {
     var through8 := (s: string) => substringTo(8, s);
     expect through8("abcdefghijklm") == "abcdefgh";
-  }
-
-  // describe('charAt')
-  method {:test} CharAtReturnsTheCharacterAtN() {
-    expect charAt(8, "abcdefghijklm") == "i";
-  }
-  method {:test} CharAtIsAutomaticallyCurried() {
-    var at8 := (s: string) => charAt(8, s);
-    expect at8("abcdefghijklm") == "i";
-  }
-
-  // describe('charCodeAt')
-  method {:test} CharCodeAtReturnsTheCodeAtN() {
-    expect charCodeAt(8, "abcdefghijklm") == 105;
-  }
-  method {:test} CharCodeAtIsAutomaticallyCurried() {
-    var at8 := (s: string) requires |s| > 8 => charCodeAt(8, s);
-    expect at8("abcdefghijklm") == 105;
   }
 
   // describe('nthChar') (v0.12.0)

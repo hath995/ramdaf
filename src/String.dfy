@@ -1,14 +1,16 @@
-// Ramdaf: Ramda v0.13.0 `src/<fn>.js` for the functions ported up to v0.8.0
+// Ramdaf: Ramda v0.14.0 `src/<fn>.js` for the functions ported up to v0.8.0
 // from ramda.js's "String Functions" section; from v0.9.0 on, the functions
 // with `@category String` (`nthChar`, `nthCharCode`; v0.9.0 renamed
-// `toUpperCase` and `toLowerCase` to `toUpper` and `toLower`). The
+// `toUpperCase` and `toLowerCase` to `toUpper` and `toLower`; v0.14.0
+// removed `charAt` and `charCodeAt`, deprecated since v0.12.0 for `nthChar`
+// and `nthCharCode`). The
 // String.prototype methods, with JS's index clamping. A Dafny `string` is a
 // sequence of Unicode scalar values where JS counts UTF-16 code units, and
 // case conversion is ASCII-only (see README "Deviations").
 
 module Ramdaf.String {
   export
-    reveals substring, substringFrom, substringTo, charAt, charCodeAt, nthChar, nthCharCode,
+    reveals substring, substringFrom, substringTo, nthChar, nthCharCode,
             strIndexOf, strLastIndexOf, toUpper, toLower, trim, replace, split
 
   // `R.substring = slice` (v0.12.0; until v0.11.0 `invoker(2, 'substring')`,
@@ -36,29 +38,18 @@ module Ramdaf.String {
   // where `s.substring(0, n)` gave '').
   function substringTo(n: int, s: string): string { substring(0, n, s) }
 
-  // `String.prototype.charAt(n)`: the empty string when n is out of range.
-  // (`@deprecated since v0.12.0` in favour of `nthChar`, still exported with
-  // the same code.)
-  function charAt(n: int, s: string): string
-  { if 0 <= n < |s| then [s[n]] else "" }
-
-  // `String.prototype.charCodeAt(n)`: NaN when n is out of range, which int
-  // cannot hold, so out-of-range indices are excluded. (`@deprecated since
-  // v0.12.0` in favour of `nthCharCode`, still exported with the same code.)
-  function charCodeAt(n: int, s: string): int
-    requires 0 <= n < |s|
-  { s[n] as int }
-
-  // `R.nthChar(n, str)` (v0.12.0): `str.charAt(n < 0 ? str.length + n : n)`,
-  // the character at n, a negative n counting from the end; out of range
-  // the empty string (`nthChar(-2, 'Ramda')` is 'd').
+  // `R.nthChar(n, str)` (v0.12.0, in place of `charAt`, which v0.14.0
+  // removed): `str.charAt(n < 0 ? str.length + n : n)`, the character at n,
+  // a negative n counting from the end; out of range the empty string
+  // (`nthChar(-2, 'Ramda')` is 'd').
   function nthChar(n: int, s: string): string
   { var i := if n < 0 then |s| + n else n;
     if 0 <= i < |s| then [s[i]] else "" }
 
-  // `R.nthCharCode(n, str)` (v0.12.0): `str.charCodeAt(n < 0 ? str.length + n
-  // : n)`; out of range NaN, which int cannot hold, so the index must fall in
-  // the string (README "Outside the modeled domain").
+  // `R.nthCharCode(n, str)` (v0.12.0, in place of `charCodeAt`, which
+  // v0.14.0 removed): `str.charCodeAt(n < 0 ? str.length + n : n)`; out of
+  // range NaN, which int cannot hold, so the index must fall in the string
+  // (README "Outside the modeled domain").
   function nthCharCode(n: int, s: string): int
     requires 0 <= (if n < 0 then |s| + n else n) < |s|
   { s[if n < 0 then |s| + n else n] as int }
