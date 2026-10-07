@@ -1,4 +1,4 @@
-// Ramda v0.3.0 test/test.list.js, test/test.indexof.js,
+// Ramda v0.4.0 test/test.list.js, test/test.indexof.js,
 // test/test.containsuniq.js, test/test.map.js, test/test.find.js,
 // test/test.flatten.js, test/test.range.js, test/test.reverse.js,
 // test/test.unfold.js, test/test.zip.js, test/test.product.js,
@@ -14,7 +14,9 @@
 // with a `length` property is not a seq); test.zip.js's zipObj "extra keys
 // are undefined" (more keys than values is outside the domain, README) and
 // fromPairs "skips empty Arrays and non-Array elements" (the elements are
-// typed pairs, README "Outside the modeled domain").
+// typed pairs, README "Outside the modeled domain"). test.zip.js's v0.4.0
+// toPairs and toPairsIn describes test Object functions and are transcribed
+// in tests/ramda/object.dfy.
 
 module RamdafTests.Ramda.List {
   import opened Ramdaf.Prelude

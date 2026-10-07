@@ -1,5 +1,6 @@
-// Ramda v0.3.0 test/test.objectBasics.js, test/test.keysvals.js and
-// test/test.tapeq.js, transcribed. Not transcribed: v0.2.4's "should work for
+// Ramda v0.4.0 test/test.objectBasics.js, test/test.keysvals.js,
+// test/test.tapeq.js and test/test.zip.js's toPairs and toPairsIn describes,
+// transcribed. Not transcribed: v0.2.4's "should work for
 // primitives" cases (keys/values of null, 55, "" and the like: the argument
 // is a map); v0.2.4's where cases on prototypes ("matches inherited props",
 // "doesnt match inherited spec", the `toString` half of "matches inherited
@@ -9,7 +10,13 @@
 // README "Deviations"; pinned in tests/edge/object.dfy); and
 // test.keysvals.js's cases on an object built by a
 // constructor whose prototype has properties ("does not include"/"includes
-// the given object's prototype properties"): a map has no prototype.
+// the given object's prototype properties"), and v0.4.0's propOrDefault
+// "should not return properties from the prototype chain", toPairs "only
+// iterates the object's own properties" and toPairsIn "iterates properties
+// on the object's prototype chain": a map has no prototype. Also skipped:
+// v0.4.0's prop "should throw when called with no arguments" (no-argument
+// call). toPairs and toPairsIn return a set (a map has no key order, README
+// "Deviations").
 
 module RamdafTests.Ramda.Object {
   import opened Ramdaf.Prelude
@@ -46,6 +53,18 @@ module RamdafTests.Ramda.Object {
     expect p("name") == Some(Str("Fred"));
     expect p("age") == Some(Num(23));
     expect p("feet") == Some(Str("large"));
+  }
+
+  // describe('propOrDefault') (v0.4.0): `nm = propOrDefault('name', 'Unknown')`
+  // (its `typeof nm == 'function'` holds by construction)
+  method {:test} PropOrDefaultReturnsAFunctionThatFetchesTheAppropriateProperty() {
+    var nm := (o: map<string, Js>) => propOrDefault("name", Str("Unknown"), o);
+    expect nm(Fred()) == Str("Fred");
+  }
+
+  method {:test} PropOrDefaultReturnsTheDefaultValueWhenThePropertyDoesNotExist() {
+    var nm := (o: map<string, Js>) => propOrDefault("name", Str("Unknown"), o);
+    expect nm(map["age" := Num(99)]) == Str("Unknown");
   }
 
   function Abc(): map<string, int> { map["a" := 1, "b" := 2, "c" := 3, "d" := 4, "e" := 5, "f" := 6] }
@@ -258,5 +277,15 @@ module RamdafTests.Ramda.Object {
     expect eq(Num(100), Num(100)) == true;
     expect eq(Num(100), Str("100")) == false;
     expect eq(a, b) == true;
+  }
+
+  // ---- test.zip.js: describe('toPairs'), describe('toPairsIn') (v0.4.0) ----
+
+  method {:test} ToPairsConvertsAnObjectIntoKeyValuePairs() {
+    expect toPairs(map["a" := 1, "b" := 2, "c" := 3]) == {("a", 1), ("b", 2), ("c", 3)};
+  }
+
+  method {:test} ToPairsInConvertsAnObjectIntoKeyValuePairs() {
+    expect toPairsIn(map["a" := 1, "b" := 2, "c" := 3]) == {("a", 1), ("b", 2), ("c", 3)};
   }
 }

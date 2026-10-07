@@ -1,0 +1,16 @@
+{
+  "ramda": "v0.4.0",
+  "tier": "patch",
+  "changes": [
+    {"symbol": "Ramdaf.Object.propOrDefault", "kind": "added", "why": "new in v0.4.0: R.propOrDefault(p, val, obj) is hasOwnProperty.call(obj, p) ? obj[p] : val"},
+    {"symbol": "Ramdaf.Object.toPairs", "kind": "added", "why": "new in v0.4.0: R.toPairs = pairWith(R.keys), a [key, obj[key]] pair per own key (a set here: a map has no key order)"},
+    {"symbol": "Ramdaf.Object.toPairsIn", "kind": "added", "why": "new in v0.4.0: R.toPairsIn = pairWith(R.keysIn); a map has no prototype, so the same pairs as toPairs"},
+    {"symbol": "Ramdaf.List.reduce", "kind": "compatible", "why": "v0.4.0 makes reduce the primary (var foldl = R.reduce = curry3(...), @alias foldl): the revealed body now carries the fold, with foldl's ensures, same results"},
+    {"symbol": "Ramdaf.List.foldl", "kind": "compatible", "why": "v0.4.0 makes foldl the alias (R.foldl = R.reduce): the revealed body now calls reduce, same ensures and results"},
+    {"symbol": "Ramdaf.List.foldlIdx", "kind": "compatible", "why": "knock-on of foldl: its revealed body calls foldl, whose body changed; same results"},
+    {"symbol": "Ramdaf.List.reduceIdx", "kind": "compatible", "why": "knock-on of foldlIdx: its revealed body calls foldlIdx; same results"},
+    {"symbol": "Ramdaf.List.ap", "kind": "compatible", "why": "knock-on of foldl: its revealed body calls foldl; same results"},
+    {"symbol": "Ramdaf.List.chain", "kind": "compatible", "why": "knock-on of foldl: its revealed body calls foldl; same results"},
+    {"symbol": "Ramdaf.List.flatMap", "kind": "compatible", "why": "knock-on of chain: its revealed body calls chain; same results"}
+  ]
+}

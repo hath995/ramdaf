@@ -1,9 +1,13 @@
-// Ramda v0.3.0 test/test.core.js and test/test.clone.js, transcribed. Not
+// Ramda v0.4.0 test/test.core.js and test/test.clone.js, transcribed. Not
 // transcribed: describe('isAtom') (not portable, README); head's and last's
 // "returns undefined for an empty list" and "for no arguments" (the empty list
 // is outside their domain, README "Outside the modeled domain"); tail's
 // "returns an empty list for no arguments" (no-argument call of a list
-// function). (v0.2.0 removed test.clone.js's describe('cloneDeep') with the
+// function); v0.4.0's concat cases "delegates to non-String object with a
+// concat method, as second param" (method dispatch on a non-array object) and
+// "throws if not an array, String, or object with a concat method" (object
+// operands); and the `notStrictEqual` half of clone's "returns a copy of an
+// array" (v0.4.0; reference identity). (v0.2.0 removed test.clone.js's describe('cloneDeep') with the
 // function.) The lists that mix strings and arrays are lists of Js values.
 
 module RamdafTests.Ramda.Core {
@@ -45,11 +49,18 @@ module RamdafTests.Ramda.Core {
     expect concat(empty, ["c", "d"]) == ["c", "d"];
   }
 
-  // "works for objects with a concat method": the string case (a string is a
-  // seq here); `concat(z1, z2)`, an object with a `concat` method, is not
-  // portable.
+  // "works on strings" (v0.4.0; until v0.3.0 the string half of "works for
+  // objects with a concat method"). A string is a seq here.
   method {:test} ConcatWorksForStrings() {
     expect concat("foo", "bar") == "foobar";
+  }
+
+  // v0.4.0: "is curried" (its mixed list is a list of Js values)
+  method {:test} ConcatIsCurried() {
+    var conc123 := (l: seq<int>) => concat([1, 2, 3], l);
+    expect conc123([4, 5, 6]) == [1, 2, 3, 4, 5, 6];
+    var conc123Js := (l: seq<Js>) => concat([Num(1), Num(2), Num(3)], l);
+    expect conc123Js([Str("a"), Str("b"), Str("c")]) == [Num(1), Num(2), Num(3), Str("a"), Str("b"), Str("c")];
   }
 
   // describe('head')

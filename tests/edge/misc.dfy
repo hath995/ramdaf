@@ -1,5 +1,5 @@
 // Edge cases for Object, Math, String, Logic and Functions, checked against
-// ramda.js v0.3.0 under node; the methods named Deviation* pin documented
+// ramda.js v0.4.0 under node; the methods named Deviation* pin documented
 // deviations (README "Deviations") and say what node returns.
 
 module RamdafTests.Edge.Misc {
@@ -45,6 +45,39 @@ module RamdafTests.Edge.Misc {
     expect keysIn(none) == {};
     expect keysIn(map["a" := 1, "b" := 2]) == {"a", "b"};
     expect valuesIn(map["a" := 1, "b" := 1]) == multiset{1, 1};
+  }
+
+  // propOrDefault (v0.4.0) returns obj's own property p, or the default.
+  method {:test} PropOrDefaultEdges() {
+    var none: map<string, int> := map[];
+    expect propOrDefault("a", 5, map["a" := 1]) == 1;
+    expect propOrDefault("z", 5, map["a" := 1]) == 5;
+    // a falsy own value is kept
+    expect propOrDefault("a", 5, map["a" := 0]) == 0;
+    // node: `{}` inherits `toString`, which is not an own property
+    expect propOrDefault("toString", 5, none) == 5;
+    expect propOrDefault("hasOwnProperty", 5, map["hasOwnProperty" := 1]) == 1;
+    // an own property whose value is null or undefined is returned (node:
+    // null, undefined)
+    expect propOrDefault("a", Num(5), map["a" := Null]) == Null;
+    expect propOrDefault("a", Num(5), map["a" := Undefined]) == Undefined;
+    // `propOrDefault('a')(5)({})`
+    var aOr5 := (o: map<string, int>) => propOrDefault("a", 5, o);
+    expect aOr5(none) == 5;
+  }
+
+  // toPairs/toPairsIn (v0.4.0): one pair per key (node lists them in key
+  // order: `toPairs({b: 2, a: 1})` is [['b', 2], ['a', 1]], and integer-like
+  // keys come first).
+  method {:test} ToPairsEdges() {
+    var none: map<string, int> := map[];
+    expect toPairs(none) == {};
+    expect toPairs(map["b" := 2, "a" := 1]) == {("a", 1), ("b", 2)};
+    expect toPairs(map["2" := "x", "1" := "y", "b" := "0"]) == {("1", "y"), ("2", "x"), ("b", "0")};
+    expect toPairs(map["hasOwnProperty" := 1]) == {("hasOwnProperty", 1)};
+    expect toPairs(map["a" := Undefined]) == {("a", Undefined)};
+    expect toPairsIn(map["a" := 1, "b" := 2]) == {("a", 1), ("b", 2)};
+    expect toPairsIn(none) == {};
   }
 
   // pickWith (v0.2.3) passes (value, key, object).

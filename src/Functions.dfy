@@ -1,5 +1,5 @@
-// Ramdaf: Ramda v0.3.0 "Function functions" (ramda.js lines 968-1367) and the
-// `always` family (lines 2901-2906, 3182-3194).
+// Ramdaf: Ramda v0.4.0 "Function functions" (ramda.js lines 1002-1452) and the
+// `always` family (lines 3255-3261, 3788-3818).
 // compose/pipe are variadic in JS; the port is binary (nest for more functions).
 
 module Ramdaf.Functions {
@@ -13,7 +13,8 @@ module Ramdaf.Functions {
   // result's reported arity changed.)
   function compose<A, B, C>(f: B -> C, g: A -> B): A -> C { x => f(g(x)) }
 
-  // `pipe(f, g)(x) == g(f(x))`
+  // `pipe(f, g)(x) == g(f(x))` (since v0.4.0 JS `pipe(f)` is f itself, as
+  // `compose(f)` is)
   function pipe<A, B, C>(f: A -> B, g: B -> C): A -> C { x => g(f(x)) }
   function sequence<A, B, C>(f: A -> B, g: B -> C): A -> C { pipe(f, g) }
 

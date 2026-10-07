@@ -1,13 +1,13 @@
-// Ramdaf: Ramda v0.3.0 "Object Functions" (ramda.js lines 2837-3157) and `propEq`
-// (line 3826). A JS object is a map<string, V>; a missing property is JS
+// Ramdaf: Ramda v0.4.0 "Object Functions" (ramda.js lines 3078-3722) and `propEq`
+// (line 4708). A JS object is a map<string, V>; a missing property is JS
 // undefined, here None.
 
 module Ramdaf.Object {
   import opened Prelude
 
   export
-    reveals eq, prop, get, props, keys, keysIn, values, valuesIn, pick, pickAll, omit,
-            pickWith, mixin, eqProps, where, propEq
+    reveals eq, prop, get, props, propOrDefault, keys, keysIn, toPairs, toPairsIn,
+            values, valuesIn, pick, pickAll, omit, pickWith, mixin, eqProps, where, propEq
     provides Prelude
 
   // `a === b`. Dafny equality is structural where JS compares objects and
@@ -19,8 +19,15 @@ module Ramdaf.Object {
   { if p in obj then Some(obj[p]) else None }
   function get<V>(p: string, obj: map<string, V>): Option<V> { prop(p, obj) }
 
-  // `obj && obj[prop]`: prop with the arguments the other way round.
+  // `flip(R.prop)` (v0.4.0; `obj && obj[prop]` before, the same on a map):
+  // prop with the arguments the other way round.
   function props<V>(obj: map<string, V>, p: string): Option<V> { prop(p, obj) }
+
+  // `R.propOrDefault(p, val, obj)` (v0.4.0): `hasOwnProperty.call(obj, p) ?
+  // obj[p] : val`, obj's own property p, or val when obj lacks it. Every
+  // property of a map is its own.
+  function propOrDefault<V>(p: string, val: V, obj: map<string, V>): V
+  { if p in obj then obj[p] else val }
 
   // The own enumerable property names. JS returns them in insertion order;
   // a Dafny map has no order, so the result is a set.
@@ -30,6 +37,18 @@ module Ramdaf.Object {
   // including inherited ones. A map is a plain object with no prototype
   // chain, so these are its keys.
   function keysIn<V>(obj: map<string, V>): set<string> { keys(obj) }
+
+  // `R.toPairs = pairWith(R.keys)` (v0.4.0): `map(key => [key, obj[key]],
+  // keys(obj))`, a [key, value] pair per own property. JS returns them in key
+  // order; a map has none, so the result is a set (the keys are distinct, so
+  // no pair is lost).
+  function toPairs<V(==)>(obj: map<string, V>): set<(string, V)>
+  { set k | k in keys(obj) :: (k, obj[k]) }
+
+  // `R.toPairsIn = pairWith(R.keysIn)` (v0.4.0): the pairs of every
+  // enumerable property, inherited ones included; for a map, toPairs.
+  function toPairsIn<V(==)>(obj: map<string, V>): set<(string, V)>
+  { set k | k in keysIn(obj) :: (k, obj[k]) }
 
   // The own enumerable property values, one per key (so duplicates are kept).
   // JS returns them in key order; the result is a multiset.

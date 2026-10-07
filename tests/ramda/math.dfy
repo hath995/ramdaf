@@ -1,10 +1,13 @@
-// Ramda v0.3.0 test/test.math.js, transcribed. Numbers are ints (real for
+// Ramda v0.4.0 test/test.math.js, transcribed. Numbers are ints (real for
 // division); the string comparisons in lt/lte/gt/gte and the decimal/string
 // cases of max/min are not expressible (README "Deviations"). Not
 // transcribed: mathMod's "requires integer arguments" (string and fractional
 // arguments, which give NaN), and the first two asserts of its "behaves
 // differently than JS modulo": `mathMod(-17, 5)` is NaN (a dividend below 1
-// is outside the domain, README), and 17.2 is fractional.
+// is outside the domain, README), and 17.2 is fractional; v0.4.0's 13
+// "throws if given no arguments" cases (add, multiply, subtract, subtractN,
+// divide, divideBy, modulo, moduloBy, mathMod, lt, lte, gt, gte): no-argument
+// calls.
 
 module RamdafTests.Ramda.Math {
   import opened Ramdaf.Prelude

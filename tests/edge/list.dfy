@@ -1,5 +1,5 @@
-// Edge cases Ramda v0.3.0's own suite does not cover, each checked against
-// ramda.js v0.3.0 under node (the expected values are node's output). The
+// Edge cases Ramda v0.4.0's own suite does not cover, each checked against
+// ramda.js v0.4.0 under node (the expected values are node's output). The
 // last methods pin the documented deviations (README "Deviations").
 
 module RamdafTests.Edge.List {
@@ -206,9 +206,33 @@ module RamdafTests.Edge.List {
     }
   }
 
+  // Since v0.4.0 reduce holds the definition and foldl is its alias.
   method {:test} FoldlIsLeftAssociative() {
     expect foldl((acc: int, x: int) => acc - x, 0, [1, 2, 3]) == -6;
     expect foldl((acc: string, x: string) => acc + x, "", ["a", "b", "c"]) == "abc";
+    expect reduce((acc: int, x: int) => acc - x, 10, [1, 2, 3]) == 4;
+    expect foldl((acc: int, x: int) => acc - x, 10, [1, 2, 3]) == 4;
+    // `reduce(cat, '')('abc')`: a string is a list of characters
+    expect reduce((acc: string, c: char) => acc + [c], "", "abc") == "abc";
+  }
+
+  // Since v0.4.0 a String first argument concatenates as a string even when
+  // it is empty (node: concat('', 'bar') is 'bar'; v0.2.4 to v0.3.0 gave the
+  // array ['b', 'a', 'r'], and concat('', '') gave []).
+  method {:test} ConcatOfStrings() {
+    expect concat("", "bar") == "bar";
+    expect concat("", "") == "";
+    expect concat("foo", "") == "foo";
+  }
+
+  // Since v0.4.0 a function element is a leaf again (v0.3.0 expanded it into
+  // `f.length` undefined elements): node gives 2, 4 and 6 for r.length,
+  // r[0](3) and r[1](3), for both flatten and unnest.
+  method {:test} FunctionElementsAreLeaves() {
+    var r := flatten([Leaf((x: int) => x + 1), Node([Leaf((x: int) => x * 2)])]);
+    expect |r| == 2 && r[0](3) == 4 && r[1](3) == 6;
+    var u := unnest([Leaf((x: int) => x + 1), Node([Leaf((x: int) => x * 2)])]);
+    expect |u| == 2 && u[0].Leaf? && u[0].value(3) == 4 && u[1].Leaf? && u[1].value(3) == 6;
   }
 
   // Since v0.2.4 uniq keeps the first occurrence of each element (it kept
@@ -381,13 +405,18 @@ module RamdafTests.Edge.List {
 
   // node: flatten([{length: 0}]) is [], flatten([{length: 2, 0: 'a', 1: 'b'}])
   // is ['a', 'b'] and unnest([{length: 0}]) is [] (since v0.3.0 an array-like
-  // element is flattened); a Leaf is never flattened.
+  // element is flattened), and since v0.4.0 flatten([{nodeType: 1, length: -1}])
+  // and unnest([{nodeType: 1, length: -1}]) are [] (a DOM-element test); a
+  // Leaf is never flattened.
   method {:test} DeviationLeafIsNeverArrayLike() {
     var len0 := map["length" := 0];
     expect flatten([Leaf(len0)]) == [len0];
     var ab := map["length" := Num(2), "0" := Str("a"), "1" := Str("b")];
     expect flatten([Leaf(ab)]) == [ab];
     expect unnest([Leaf(len0)]) == [Leaf(len0)];
+    var node := map["nodeType" := 1, "length" := -1];
+    expect flatten([Leaf(node)]) == [node];
+    expect unnest([Leaf(node)]) == [Leaf(node)];
   }
 
   // node: chain(x => 'ab', [1, 2]) is ['ab', 'ab'] (a string is not

@@ -1,4 +1,4 @@
-// Ramdaf: Ramda v0.3.0 "List Functions" (ramda.js lines 1368-2836), except
+// Ramdaf: Ramda v0.4.0 "List Functions" (ramda.js lines 1453-3077), except
 // `comparator`/`sort` (Sort.dfy), `size`/`length` (Core.dfy) and `groupBy`
 // (Data.dfy).
 
@@ -17,17 +17,24 @@ module Ramdaf.List {
             zipObj, fromPairs
     provides Prelude
 
-  // `acc = fn(acc, list[idx])` for idx ascending.
+  // `acc = fn(acc, list[idx])` for idx ascending. Since v0.4.0 `reduce` holds
+  // the definition (`var foldl = R.reduce = curry3(...)`, `@alias foldl`) and
+  // `foldl` is the alias (`R.foldl = R.reduce`); until v0.3.0 it was the other
+  // way round. The two keep the same contract.
+  function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
+    ensures |list| > 0 ==>
+      reduce(fn, acc, list) == fn(reduce(fn, acc, list[..|list| - 1]), list[|list| - 1])
+  { if |list| == 0 then acc
+    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
+         reduce(fn, fn(acc, list[0]), list[1..]) }
   function foldl<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A
     ensures |list| > 0 ==>
       foldl(fn, acc, list) == fn(foldl(fn, acc, list[..|list| - 1]), list[|list| - 1])
-  { if |list| == 0 then acc
-    else assert |list| > 1 ==> list[..|list| - 1][1..] == list[1..][..|list| - 2];
-         foldl(fn, fn(acc, list[0]), list[1..]) }
-  function reduce<A, B>(fn: (A, B) -> A, acc: A, list: seq<B>): A { foldl(fn, acc, list) }
+  { reduce(fn, acc, list) }
 
-  // `foldl.idx` (alias `reduce.idx`): `acc = fn(acc, list[idx], idx, list)`
-  // for idx ascending. The body folds over (element, index) pairs.
+  // `foldl.idx` (alias `reduce.idx`; v0.4.0 still defines it as
+  // `R.foldl.idx`): `acc = fn(acc, list[idx], idx, list)` for idx ascending.
+  // The body folds over (element, index) pairs.
   function foldlIdx<A, B>(fn: (A, B, nat, seq<B>) -> A, acc: A, list: seq<B>): A
     ensures |list| == 0 ==> foldlIdx(fn, acc, list) == acc
   { foldl((a: A, p: (B, nat)) => fn(a, p.0, p.1, list), acc, seq(|list|, i requires 0 <= i < |list| => (list[i], i as nat))) }
@@ -409,7 +416,9 @@ module Ramdaf.List {
   // Depth-first, left-to-right concatenation of the leaves. (v0.3.0's
   // `makeFlat(true)` flattens every array-like element, an object with a
   // numeric `length` included, where the loop before it flattened arrays
-  // only; a Leaf is never flattened, README "Deviations".)
+  // only; v0.4.0's `isArrayLike` no longer counts a function, whose `length`
+  // is its arity, but adds an object with `nodeType === 1` and a truthy
+  // `length`. A Leaf is never flattened, README "Deviations".)
   function flatten<T>(list: seq<Tree<T>>): seq<T>
   { if |list| == 0 then []
     else (match list[0] case Leaf(v) => [v] case Node(c) => flatten(c)) + flatten(list[1..]) }

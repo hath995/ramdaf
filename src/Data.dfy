@@ -1,8 +1,9 @@
-// Ramdaf: Ramda v0.3.0 "Data Analysis and Grouping Functions" (ramda.js lines
-// 3776-3980), except `propEq` (Object.dfy) and `sortBy` (Sort.dfy), and
-// `groupBy`, which v0.3.0 defines in "List Functions" (line 2816; from v0.2.0
-// to v0.2.4 an alias of `partition` there) but which stays here (functions do
-// not move between modules).
+// Ramdaf: Ramda v0.4.0 "Data Analysis and Grouping Functions" (ramda.js lines
+// 4659-5025), except `propEq` (Object.dfy), `sortBy` (Sort.dfy) and the
+// unportable `functions`/`functionsIn`, and `groupBy`, which since v0.3.0 is
+// defined in "List Functions" (line 3044 in v0.4.0; from v0.2.0 to v0.2.4 an
+// alias of `partition` there) but which stays here (functions do not move
+// between modules).
 //
 // The set functions are `uniq`/`uniqWith` of a combined or filtered list, as
 // in Ramda, so they follow those functions: since v0.2.4 each element (each
